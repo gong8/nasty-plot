@@ -1,0 +1,7 @@
+{
+  "mcpServers": {
+    "pokemon-team-builder": {
+      "url": "http://localhost:3001/mcp"
+    }
+  }
+}

@@ -1,0 +1,165 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Format {
+  id         String   @id // e.g. "gen9ou"
+  name       String   // e.g. "OU"
+  generation Int
+  gameType   String   // "singles" | "doubles"
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+
+  usageStats    UsageStats[]
+  smogonSets    SmogonSet[]
+  teammateCorrs TeammateCorr[]
+  checkCounters CheckCounter[]
+  teams         Team[]
+}
+
+model UsageStats {
+  id           Int    @id @default(autoincrement())
+  formatId     String
+  pokemonId    String
+  usagePercent Float
+  rank         Int
+  year         Int
+  month        Int
+
+  format Format @relation(fields: [formatId], references: [id])
+
+  @@unique([formatId, pokemonId, year, month])
+  @@index([formatId, rank])
+  @@index([pokemonId])
+}
+
+model SmogonSet {
+  id        Int    @id @default(autoincrement())
+  formatId  String
+  pokemonId String
+  setName   String
+  ability   String
+  item      String
+  nature    String
+  teraType  String?
+  moves     String  // JSON array e.g. ["Earthquake", ["Ice Punch", "Stone Edge"]]
+  evs       String  // JSON object e.g. {"hp": 252, "atk": 252, "spe": 4}
+  ivs       String? // JSON object, null = all 31
+
+  format Format @relation(fields: [formatId], references: [id])
+
+  @@unique([formatId, pokemonId, setName])
+  @@index([formatId, pokemonId])
+}
+
+model TeammateCorr {
+  id                 Int    @id @default(autoincrement())
+  formatId           String
+  pokemonAId         String
+  pokemonBId         String
+  correlationPercent Float
+
+  format Format @relation(fields: [formatId], references: [id])
+
+  @@unique([formatId, pokemonAId, pokemonBId])
+  @@index([formatId, pokemonAId])
+}
+
+model CheckCounter {
+  id            Int    @id @default(autoincrement())
+  formatId      String
+  targetId      String
+  counterId     String
+  koPercent     Float
+  switchPercent Float
+
+  format Format @relation(fields: [formatId], references: [id])
+
+  @@unique([formatId, targetId, counterId])
+  @@index([formatId, targetId])
+}
+
+model Team {
+  id        String   @id @default(uuid())
+  name      String
+  formatId  String
+  mode      String   @default("freeform") // "freeform" | "guided"
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  format       Format        @relation(fields: [formatId], references: [id])
+  slots        TeamSlot[]
+  chatSessions ChatSession[]
+}
+
+model TeamSlot {
+  id        Int    @id @default(autoincrement())
+  teamId    String
+  position  Int // 1-6
+  pokemonId String
+  ability   String
+  item      String
+  nature    String
+  teraType  String?
+  level     Int    @default(100)
+  move1     String
+  move2     String?
+  move3     String?
+  move4     String?
+  evHp      Int    @default(0)
+  evAtk     Int    @default(0)
+  evDef     Int    @default(0)
+  evSpA     Int    @default(0)
+  evSpD     Int    @default(0)
+  evSpe     Int    @default(0)
+  ivHp      Int    @default(31)
+  ivAtk     Int    @default(31)
+  ivDef     Int    @default(31)
+  ivSpA     Int    @default(31)
+  ivSpD     Int    @default(31)
+  ivSpe     Int    @default(31)
+
+  team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@unique([teamId, position])
+}
+
+model DataSyncLog {
+  id         Int      @id @default(autoincrement())
+  source     String // "smogon-stats" | "smogon-sets"
+  formatId   String
+  lastSynced DateTime
+  status     String // "success" | "error"
+  message    String?
+
+  @@unique([source, formatId])
+}
+
+model ChatSession {
+  id        String   @id @default(uuid())
+  teamId    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  team     Team?         @relation(fields: [teamId], references: [id], onDelete: SetNull)
+  messages ChatMessage[]
+}
+
+model ChatMessage {
+  id        Int      @id @default(autoincrement())
+  sessionId String
+  role      String // "user" | "assistant" | "system"
+  content   String
+  toolCalls String? // JSON
+  createdAt DateTime @default(now())
+
+  session ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+}
