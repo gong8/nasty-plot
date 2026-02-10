@@ -1,312 +1,119 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Loader2, Send, User } from "lucide-react";
-
-interface Message {
-  id: string;
-  role: "user" | "assistant";
-  content: string;
-}
-
-interface ToolCallStatus {
-  name: string;
-  status: "executing" | "complete";
-}
+import { useRef, useEffect, useCallback } from "react";
+import { useChatSidebar } from "@/features/chat/context/chat-provider";
+import { useChatStream } from "@/features/chat/hooks/use-chat-stream";
+import { ChatMessage } from "./chat-message";
+import { ChatToolCall } from "./chat-tool-call";
+import { ChatActionNotify } from "./chat-action-notify";
+import { ChatPlanDisplay } from "./chat-plan-display";
+import { ChatInput } from "./chat-input";
 
 interface ChatPanelProps {
   teamId?: string;
   formatId?: string;
   sessionId?: string;
+  mode?: "sidebar" | "fullpage";
 }
 
-const TOOL_LABELS: Record<string, string> = {
-  search_pokemon: "Searching Pokemon...",
-  get_usage_stats: "Fetching usage stats...",
-  calculate_damage: "Calculating damage...",
-  analyze_team: "Analyzing team...",
-  suggest_teammates: "Finding teammates...",
-};
-
-export function ChatPanel({ teamId, formatId, sessionId }: ChatPanelProps) {
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [input, setInput] = useState("");
-  const [isStreaming, setIsStreaming] = useState(false);
-  const [currentSessionId, setCurrentSessionId] = useState(sessionId);
-  const [activeToolCall, setActiveToolCall] = useState<string | null>(null);
+export function ChatPanel({ sessionId, mode = "sidebar" }: ChatPanelProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const bottomRef = useRef<HTMLDivElement>(null);
+  const { activeSessionId } = useChatSidebar();
+  const effectiveSessionId = sessionId ?? activeSessionId ?? undefined;
 
-  // Load existing session messages
+  const {
+    messages,
+    isStreaming,
+    toolCalls,
+    actionNotifications,
+    planSteps,
+    sendMessage,
+    stopGeneration,
+    retryLast,
+    resetForSession,
+  } = useChatStream(effectiveSessionId);
+
+  // Load session when active session changes
+  const prevSessionRef = useRef(effectiveSessionId);
   useEffect(() => {
-    if (!sessionId) return;
-    fetch(`/api/chat/sessions/${sessionId}`)
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.data?.messages) {
-          setMessages(
-            data.data.messages
-              .filter((m: { role: string }) => m.role !== "system")
-              .map((m: { id?: number; role: string; content: string }, i: number) => ({
-                id: m.id?.toString() ?? `loaded-${i}`,
-                role: m.role as "user" | "assistant",
-                content: m.content,
-              }))
-          );
-        }
-      })
-      .catch(console.error);
-  }, [sessionId]);
+    if (effectiveSessionId !== prevSessionRef.current) {
+      prevSessionRef.current = effectiveSessionId;
+      resetForSession(effectiveSessionId ?? null);
+    }
+  }, [effectiveSessionId, resetForSession]);
 
   // Auto-scroll to bottom
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
-  }, [messages, activeToolCall]);
+    bottomRef.current?.scrollIntoView({ behavior: "instant" });
+  }, [messages, toolCalls, planSteps]);
 
-  const sendMessage = useCallback(async () => {
-    const trimmed = input.trim();
-    if (!trimmed || isStreaming) return;
+  const handleSend = useCallback(
+    (text: string) => sendMessage(text),
+    [sendMessage]
+  );
 
-    const userMsg: Message = {
-      id: `user-${Date.now()}`,
-      role: "user",
-      content: trimmed,
-    };
-    setMessages((prev) => [...prev, userMsg]);
-    setInput("");
-    setIsStreaming(true);
-    setActiveToolCall(null);
-
-    const assistantMsg: Message = {
-      id: `assistant-${Date.now()}`,
-      role: "assistant",
-      content: "",
-    };
-    setMessages((prev) => [...prev, assistantMsg]);
-
-    try {
-      const res = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          sessionId: currentSessionId,
-          message: trimmed,
-          teamId,
-          formatId,
-        }),
-      });
-
-      // Capture session ID from response
-      const newSessionId = res.headers.get("X-Session-Id");
-      if (newSessionId && !currentSessionId) {
-        setCurrentSessionId(newSessionId);
-      }
-
-      if (!res.ok || !res.body) {
-        throw new Error("Failed to get response");
-      }
-
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = "";
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split("\n");
-        buffer = lines.pop() ?? "";
-
-        for (const line of lines) {
-          if (!line.startsWith("data: ")) continue;
-          const data = line.slice(6);
-          if (data === "[DONE]") continue;
-
-          try {
-            const parsed = JSON.parse(data);
-
-            if (parsed.content) {
-              setMessages((prev) => {
-                const updated = [...prev];
-                const last = updated[updated.length - 1];
-                if (last && last.role === "assistant") {
-                  updated[updated.length - 1] = {
-                    ...last,
-                    content: last.content + parsed.content,
-                  };
-                }
-                return updated;
-              });
-            }
-
-            if (parsed.toolCall) {
-              const tc = parsed.toolCall as ToolCallStatus;
-              if (tc.status === "executing") {
-                setActiveToolCall(tc.name);
-              } else {
-                setActiveToolCall(null);
-              }
-            }
-
-            if (parsed.error) {
-              setMessages((prev) => {
-                const updated = [...prev];
-                const last = updated[updated.length - 1];
-                if (last && last.role === "assistant") {
-                  updated[updated.length - 1] = {
-                    ...last,
-                    content: `Error: ${parsed.error}`,
-                  };
-                }
-                return updated;
-              });
-            }
-          } catch {
-            // Skip non-JSON
-          }
-        }
-      }
-    } catch (error) {
-      setMessages((prev) => {
-        const updated = [...prev];
-        const last = updated[updated.length - 1];
-        if (last && last.role === "assistant" && !last.content) {
-          updated[updated.length - 1] = {
-            ...last,
-            content:
-              "Sorry, I encountered an error. Please try again.",
-          };
-        }
-        return updated;
-      });
-    } finally {
-      setIsStreaming(false);
-      setActiveToolCall(null);
-    }
-  }, [input, isStreaming, currentSessionId, teamId, formatId]);
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      sendMessage();
-    }
-  };
+  const lastMsg = messages[messages.length - 1];
 
   return (
-    <Card className="flex flex-col h-full">
-      <CardContent className="flex flex-col flex-1 p-0 gap-0">
-        {/* Messages */}
-        <ScrollArea className="flex-1 p-4" ref={scrollRef as React.RefObject<HTMLDivElement>}>
-          <div className="space-y-4">
-            {messages.length === 0 && (
-              <div className="text-center py-12">
-                <img
-                  src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/1025.png"
-                  alt="Pecharunt"
-                  width={64}
-                  height={64}
-                  className="pixelated mx-auto mb-3"
-                />
-                <p className="text-lg font-medium text-foreground">
-                  Pecharunt&apos;s Team Lab
-                </p>
-                <p className="text-sm mt-1 text-muted-foreground">
-                  Ask about competitive sets, damage calcs, meta trends, and team synergy.
-                </p>
-              </div>
-            )}
+    <div className="flex flex-col h-full overflow-hidden">
+      {/* Messages — native scrollable div */}
+      <div ref={scrollRef} className="flex-1 overflow-y-auto overscroll-contain p-4">
+        <div className="space-y-4">
+          {messages.length === 0 && (
+            <div className="text-center py-12">
+              <img
+                src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/1025.png"
+                alt="Pecharunt"
+                width={64}
+                height={64}
+                className="pixelated mx-auto mb-3"
+              />
+              <p className="text-lg font-medium text-foreground">
+                Pecharunt&apos;s Team Lab
+              </p>
+              <p className="text-sm mt-1 text-muted-foreground">
+                Ask about competitive sets, damage calcs, meta trends, and team synergy.
+              </p>
+            </div>
+          )}
 
-            {messages.map((msg) => (
-              <div
-                key={msg.id}
-                className={`flex gap-3 ${
-                  msg.role === "user"
-                    ? "flex-row-reverse"
-                    : "flex-row"
-                }`}
-              >
-                <div
-                  className={`flex-shrink-0 rounded-full flex items-center justify-center ${
-                    msg.role === "user"
-                      ? "w-8 h-8 bg-primary text-primary-foreground"
-                      : "w-9 h-9 bg-accent/15 text-accent"
-                  }`}
-                >
-                  {msg.role === "user" ? (
-                    <User className="w-4 h-4" />
-                  ) : (
-                    <img
-                      src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/1025.png"
-                      alt="Pecharunt"
-                      width={24}
-                      height={24}
-                      className="pixelated"
-                    />
-                  )}
-                </div>
-                <div
-                  className={`max-w-[80%] rounded-lg px-4 py-2 text-sm whitespace-pre-wrap ${
-                    msg.role === "user"
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-muted/50 dark:bg-primary/10 border border-border text-foreground"
-                  }`}
-                >
-                  {msg.content ||
-                    (msg.role === "assistant" && isStreaming && (
-                      <span className="opacity-50">Pecharunt is scheming...</span>
-                    ))}
-                </div>
-              </div>
-            ))}
-
-            {/* Tool call indicator */}
-            {activeToolCall && (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground pl-11">
-                <Loader2 className="w-3 h-3 animate-spin" />
-                <span>
-                  {TOOL_LABELS[activeToolCall] ??
-                    `Running ${activeToolCall}...`}
-                </span>
-              </div>
-            )}
-          </div>
-        </ScrollArea>
-
-        {/* Input area */}
-        <div className="border-t p-4">
-          <div className="flex gap-2">
-            <Textarea
-              ref={textareaRef}
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="Ask about team building, sets, damage calcs..."
-              className="min-h-[44px] max-h-[120px] resize-none"
-              rows={1}
-              disabled={isStreaming}
+          {messages.map((msg) => (
+            <ChatMessage
+              key={msg.id}
+              role={msg.role}
+              content={msg.content}
+              isStreaming={isStreaming && msg === lastMsg}
             />
-            <Button
-              onClick={sendMessage}
-              disabled={!input.trim() || isStreaming}
-              size="icon"
-              className="flex-shrink-0 h-[44px] w-[44px]"
-            >
-              {isStreaming ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Send className="w-4 h-4" />
-              )}
-            </Button>
-          </div>
+          ))}
+
+          {/* Plan display */}
+          <ChatPlanDisplay steps={planSteps} />
+
+          {/* Tool calls */}
+          {Array.from(toolCalls.values()).map((tc) => (
+            <ChatToolCall key={tc.name} toolCall={tc} />
+          ))}
+
+          {/* Action notifications */}
+          {actionNotifications.map((notif, i) => (
+            <ChatActionNotify key={`${notif.name}-${i}`} notification={notif} />
+          ))}
+
+          {/* Scroll anchor */}
+          <div ref={bottomRef} />
         </div>
-      </CardContent>
-    </Card>
+      </div>
+
+      {/* Input area */}
+      <ChatInput
+        onSend={handleSend}
+        onStop={stopGeneration}
+        onRetry={retryLast}
+        isStreaming={isStreaming}
+        hasMessages={messages.length > 0}
+        lastMessageIsAssistant={lastMsg?.role === "assistant"}
+      />
+    </div>
   );
 }

@@ -1,5 +1,6 @@
 import { BattleStreams, Teams } from "@pkmn/sim";
 import { processChunk, parseRequest, updateSideFromRequest } from "./protocol-parser";
+import type { SetPredictor } from "./ai/set-predictor";
 import type {
   BattleState,
   BattleFormat,
@@ -90,6 +91,8 @@ export class BattleManager {
   private destroyed = false;
   private startError: string | null = null;
   private lastProtocolChunk = "";
+  private protocolLog = "";
+  private setPredictor: SetPredictor | null = null;
 
   constructor(config: BattleManagerConfig) {
     this.config = config;
@@ -105,6 +108,11 @@ export class BattleManager {
   /** Set the AI player for p2. */
   setAI(ai: AIPlayer) {
     this.ai = ai;
+  }
+
+  /** Set a SetPredictor for opponent set inference. */
+  setSetPredictor(predictor: SetPredictor) {
+    this.setPredictor = predictor;
   }
 
   /** Set a callback for state updates. */
@@ -198,6 +206,31 @@ export class BattleManager {
     await this.waitForUpdate();
   }
 
+  /**
+   * Get the serialized battle state for MCTS AI.
+   * Returns null if the battle hasn't started or stream has no battle.
+   */
+  getSerializedBattle(): unknown | null {
+    try {
+      // Access the underlying Battle object from the stream
+      const battle = (this.stream as unknown as { battle?: { toJSON(): unknown } }).battle;
+      if (battle && typeof battle.toJSON === "function") {
+        return battle.toJSON();
+      }
+    } catch {
+      // Stream doesn't expose battle or toJSON failed
+    }
+    return null;
+  }
+
+  /**
+   * Get the raw protocol log accumulated so far.
+   * Used for saving battles and replay.
+   */
+  getProtocolLog(): string {
+    return this.protocolLog;
+  }
+
   /** Destroy the battle stream. */
   destroy() {
     this.destroyed = true;
@@ -220,6 +253,9 @@ export class BattleManager {
   }
 
   private processOutput(chunk: string) {
+    // Accumulate raw protocol for replay
+    this.protocolLog += chunk + "\n";
+
     const lines = chunk.split("\n");
     let protocolLines = "";
     const allEntries: BattleLogEntry[] = [];
@@ -259,8 +295,39 @@ export class BattleManager {
       allEntries.push(...entries);
     }
 
+    // Update SetPredictor from opponent observations
+    if (this.setPredictor) {
+      this.updateSetPredictorFromLines(chunk);
+    }
+
     if (allEntries.length > 0 && this.eventHandler) {
       this.eventHandler(this.state, allEntries);
+    }
+  }
+
+  /** Scan protocol lines for p2 observations and update SetPredictor. */
+  private updateSetPredictorFromLines(chunk: string) {
+    if (!this.setPredictor) return;
+    const lines = chunk.split("\n");
+    for (const line of lines) {
+      const parts = line.split("|");
+      if (parts.length < 3) continue;
+      const cmd = parts[1];
+      const arg0 = parts[2] || "";
+
+      // Only track opponent (p2) observations
+      if (!arg0.startsWith("p2")) continue;
+
+      const pokemonName = arg0.replace(/^p2[a-d]?:\s*/, "").trim();
+      const pokemonId = pokemonName.toLowerCase().replace(/[^a-z0-9]/g, "");
+
+      if (cmd === "move" && parts[3]) {
+        this.setPredictor.updateFromObservation(pokemonId, { moveUsed: parts[3] });
+      } else if (cmd === "-item" && parts[3]) {
+        this.setPredictor.updateFromObservation(pokemonId, { itemRevealed: parts[3] });
+      } else if (cmd === "-ability" && parts[3]) {
+        this.setPredictor.updateFromObservation(pokemonId, { abilityRevealed: parts[3] });
+      }
     }
   }
 
@@ -322,6 +389,17 @@ export class BattleManager {
 
     // Add a small delay for realism
     await new Promise((resolve) => setTimeout(resolve, 300 + Math.random() * 700));
+
+    // Pass serialized battle to MCTS AI if available
+    if ("setBattleState" in this.ai && typeof (this.ai as { setBattleState: unknown }).setBattleState === "function") {
+      const serialized = this.getSerializedBattle();
+      if (serialized) {
+        (this.ai as { setBattleState(json: unknown, fmt?: string): void }).setBattleState(
+          serialized,
+          this.config.formatId,
+        );
+      }
+    }
 
     const aiAction = await this.ai.chooseAction(this.state, this.pendingP2Actions);
     const choice = actionToChoice(aiAction);

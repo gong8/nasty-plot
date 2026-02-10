@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { TeamData } from "@nasty-plot/core";
 import type { AIDifficulty, BattleFormat } from "@nasty-plot/battle-engine";
-import { Swords, Zap, Brain } from "lucide-react";
+import { Swords, Zap, Brain, Cpu } from "lucide-react";
 
 interface BattleSetupProps {
   onStart: (config: {
@@ -24,6 +24,7 @@ const AI_OPTIONS: { value: AIDifficulty; label: string; description: string; ico
   { value: "random", label: "Random", description: "Picks random legal moves", icon: Swords },
   { value: "greedy", label: "Greedy", description: "Picks the highest damage move", icon: Zap },
   { value: "heuristic", label: "Smart", description: "Type-aware switching and status", icon: Brain },
+  { value: "expert", label: "Expert", description: "MCTS tree search (slower, strongest)", icon: Cpu },
 ];
 
 const FORMAT_OPTIONS = [
@@ -167,8 +168,17 @@ Timid Nature
 - Recover
 - Nasty Plot`;
 
+interface SampleTeam {
+  id: string;
+  name: string;
+  formatId: string;
+  archetype: string | null;
+  paste: string;
+}
+
 export function BattleSetup({ onStart }: BattleSetupProps) {
   const [teams, setTeams] = useState<TeamData[]>([]);
+  const [sampleTeams, setSampleTeams] = useState<SampleTeam[]>([]);
   const [playerTeamPaste, setPlayerTeamPaste] = useState(SAMPLE_TEAM_1);
   const [opponentTeamPaste, setOpponentTeamPaste] = useState(SAMPLE_TEAM_2);
   const [formatId, setFormatId] = useState("gen9ou");
@@ -183,6 +193,28 @@ export function BattleSetup({ onStart }: BattleSetupProps) {
       })
       .catch(() => {}); // Ignore errors, paste input is primary
   }, []);
+
+  // Fetch sample teams for the selected format
+  useEffect(() => {
+    fetch(`/api/sample-teams?formatId=${formatId}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (Array.isArray(data)) setSampleTeams(data);
+        else setSampleTeams([]);
+      })
+      .catch(() => setSampleTeams([]));
+  }, [formatId]);
+
+  const handleLoadSampleTeam = (sampleTeamId: string, target: "player" | "opponent") => {
+    const sample = sampleTeams.find((t) => t.id === sampleTeamId);
+    if (sample?.paste) {
+      if (target === "player") {
+        setPlayerTeamPaste(sample.paste);
+      } else {
+        setOpponentTeamPaste(sample.paste);
+      }
+    }
+  };
 
   const handleLoadTeam = async (teamId: string, target: "player" | "opponent") => {
     try {
@@ -234,6 +266,23 @@ export function BattleSetup({ onStart }: BattleSetupProps) {
                 </Select>
               </div>
             )}
+            {sampleTeams.length > 0 && (
+              <div>
+                <Label className="text-xs">Load sample team</Label>
+                <Select onValueChange={(v) => handleLoadSampleTeam(v, "player")}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Browse sample teams..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {sampleTeams.map((t) => (
+                      <SelectItem key={t.id} value={t.id}>
+                        {t.name}{t.archetype ? ` (${t.archetype})` : ""}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <div>
               <Label className="text-xs">Team paste (Showdown format)</Label>
               <Textarea
@@ -263,6 +312,23 @@ export function BattleSetup({ onStart }: BattleSetupProps) {
                     {teams.map((t) => (
                       <SelectItem key={t.id} value={t.id}>
                         {t.name} ({t.formatId})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+            {sampleTeams.length > 0 && (
+              <div>
+                <Label className="text-xs">Load sample team</Label>
+                <Select onValueChange={(v) => handleLoadSampleTeam(v, "opponent")}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Browse sample teams..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {sampleTeams.map((t) => (
+                      <SelectItem key={t.id} value={t.id}>
+                        {t.name}{t.archetype ? ` (${t.archetype})` : ""}
                       </SelectItem>
                     ))}
                   </SelectContent>

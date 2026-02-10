@@ -6,7 +6,6 @@ import { useQuery } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { SiteHeader } from "@/components/site-header";
 import {
   Select,
   SelectContent,
@@ -69,9 +68,7 @@ export default function PokemonBrowserPage() {
   const totalPages = pokemonData ? Math.ceil(pokemonData.total / pageSize) : 0;
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <SiteHeader />
-
+    <div className="flex flex-col">
       <main className="flex-1 container mx-auto px-4 py-6">
         <h1 className="text-3xl font-bold font-display mb-2">Pokemon</h1>
         <p className="text-muted-foreground mb-6">Know your options. Know your threats.</p>

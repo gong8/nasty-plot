@@ -12,7 +12,6 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { SiteHeader } from "@/components/site-header";
 import { PokemonSprite } from "@nasty-plot/ui";
 import { useTeams } from "@/features/teams/hooks/use-teams";
 
@@ -21,8 +20,7 @@ export default function TeamsPage() {
   const { data: teams, isLoading } = useTeams();
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <SiteHeader />
+    <div className="flex flex-col">
       <div className="container mx-auto max-w-5xl py-8 px-4">
       <div className="flex items-center justify-between mb-6">
         <div>

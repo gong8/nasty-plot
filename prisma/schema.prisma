@@ -93,9 +93,11 @@ model Team {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  format       Format        @relation(fields: [formatId], references: [id])
-  slots        TeamSlot[]
-  chatSessions ChatSession[]
+  format         Format        @relation(fields: [formatId], references: [id])
+  slots          TeamSlot[]
+  chatSessions   ChatSession[]
+  battlesAsTeam1 Battle[]      @relation("BattleTeam1")
+  battlesAsTeam2 Battle[]      @relation("BattleTeam2")
 }
 
 model TeamSlot {
@@ -145,6 +147,7 @@ model DataSyncLog {
 model ChatSession {
   id        String   @id @default(uuid())
   teamId    String?
+  title     String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -163,4 +166,86 @@ model ChatMessage {
   session ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
   @@index([sessionId])
+}
+
+model Battle {
+  id           String   @id @default(uuid())
+  formatId     String
+  gameType     String   // "singles" | "doubles"
+  mode         String   // "play" | "analyze" | "batch"
+  aiDifficulty String?
+  team1Paste   String
+  team1Name    String   @default("Player")
+  team2Paste   String
+  team2Name    String   @default("Opponent")
+  team1Id      String?
+  team2Id      String?
+  winnerId     String?  // "team1" | "team2" | "draw"
+  turnCount    Int      @default(0)
+  protocolLog  String   // raw @pkmn/sim protocol
+  batchId      String?
+  createdAt    DateTime @default(now())
+
+  team1 Team?            @relation("BattleTeam1", fields: [team1Id], references: [id], onDelete: SetNull)
+  team2 Team?            @relation("BattleTeam2", fields: [team2Id], references: [id], onDelete: SetNull)
+  batch BatchSimulation? @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  turns BattleTurn[]
+
+  @@index([batchId])
+  @@index([createdAt])
+}
+
+model BattleTurn {
+  id            Int    @id @default(autoincrement())
+  battleId      String
+  turnNumber    Int
+  team1Action   String // JSON BattleAction
+  team2Action   String
+  stateSnapshot String // JSON compact state (HP%, field, conditions)
+  winProbTeam1  Float?
+
+  battle Battle @relation(fields: [battleId], references: [id], onDelete: Cascade)
+
+  @@unique([battleId, turnNumber])
+  @@index([battleId])
+}
+
+model BatchSimulation {
+  id             String   @id @default(uuid())
+  formatId       String
+  gameType       String
+  aiDifficulty   String
+  team1Paste     String
+  team1Name      String   @default("Team 1")
+  team2Paste     String
+  team2Name      String   @default("Team 2")
+  totalGames     Int
+  completedGames Int      @default(0)
+  team1Wins      Int      @default(0)
+  team2Wins      Int      @default(0)
+  draws          Int      @default(0)
+  status         String   @default("pending") // pending|running|completed|cancelled
+  analytics      String?  // JSON BatchAnalytics
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  battles Battle[]
+
+  @@index([status])
+}
+
+model SampleTeam {
+  id         String   @id @default(uuid())
+  name       String
+  formatId   String
+  archetype  String?  // rain, sun, stall, balance, hyper-offense, etc.
+  source     String?  // smogon-forums, tournament, usage-generated
+  sourceUrl  String?
+  paste      String
+  pokemonIds String   // comma-separated for LIKE queries
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+
+  @@index([formatId])
+  @@index([formatId, archetype])
 }

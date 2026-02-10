@@ -36,6 +36,7 @@ interface SlotEditorProps {
   onSave: (data: TeamSlotInput) => void;
   onRemove: () => void;
   isNew?: boolean;
+  formatId?: string;
 }
 
 export function SlotEditor({
@@ -45,6 +46,7 @@ export function SlotEditor({
   onSave,
   onRemove,
   isNew = false,
+  formatId,
 }: SlotEditorProps) {
   const [pokemonId, setPokemonId] = useState(slot?.pokemonId ?? "");
   const [nickname, setNickname] = useState(slot?.nickname ?? "");
@@ -95,11 +97,27 @@ export function SlotEditor({
     enabled: !!pokemonId,
   });
 
+  // Fetch Mega form preview when item changes
+  const { data: megaForm } = useQuery<PokemonSpecies | null>({
+    queryKey: ["mega-form", pokemonId, item],
+    queryFn: async () => {
+      const res = await fetch(
+        `/api/pokemon/${pokemonId}/mega-form?item=${encodeURIComponent(item)}`
+      );
+      if (!res.ok) return null;
+      const json = await res.json();
+      return json.data ?? null;
+    },
+    enabled: !!pokemonId && !!item,
+  });
+
   // Fetch learnset for move search
   const { data: learnset = [] } = useQuery<string[]>({
-    queryKey: ["learnset", pokemonId],
+    queryKey: ["learnset", pokemonId, formatId],
     queryFn: async () => {
-      const res = await fetch(`/api/pokemon/${pokemonId}/learnset`);
+      let url = `/api/pokemon/${pokemonId}/learnset`;
+      if (formatId) url += `?format=${encodeURIComponent(formatId)}`;
+      const res = await fetch(url);
       if (!res.ok) return [];
       const json = await res.json();
       const moves = json.data ?? [];
@@ -181,7 +199,7 @@ export function SlotEditor({
     return (
       <div className="flex flex-col gap-4 p-4">
         <h3 className="font-semibold text-lg">Select a Pokemon</h3>
-        <PokemonSearchPanel onSelect={handlePokemonSelect} />
+        <PokemonSearchPanel onSelect={handlePokemonSelect} formatId={formatId} />
       </div>
     );
   }
@@ -270,8 +288,51 @@ export function SlotEditor({
             {/* Item */}
             <div className="space-y-1.5">
               <Label>Item</Label>
-              <ItemCombobox value={item} onChange={setItem} />
+              <ItemCombobox value={item} onChange={setItem} formatId={formatId} />
             </div>
+
+            {/* Mega Form Preview */}
+            {megaForm && (
+              <div className="rounded-md border border-primary/30 bg-primary/5 p-3 space-y-2">
+                <div className="text-xs font-semibold text-primary">
+                  Mega Evolution Preview
+                </div>
+                <div className="flex items-center gap-2">
+                  {megaForm.num ? (
+                    <PokemonSprite pokemonId={megaForm.id} num={megaForm.num} size={32} />
+                  ) : null}
+                  <div>
+                    <div className="text-sm font-medium">{megaForm.name}</div>
+                    <div className="flex gap-1 mt-0.5">
+                      {megaForm.types.map((t: PokemonType) => (
+                        <Badge
+                          key={t}
+                          className="text-[9px] px-1 py-0 text-white"
+                          style={{ backgroundColor: TYPE_COLORS[t] }}
+                        >
+                          {t}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-1 text-xs">
+                  {STATS.map((stat) => (
+                    <div key={stat} className="flex justify-between">
+                      <span className="font-medium" style={{ color: STAT_COLORS[stat] }}>
+                        {STAT_LABELS[stat]}
+                      </span>
+                      <span className="tabular-nums">{megaForm.baseStats[stat]}</span>
+                    </div>
+                  ))}
+                </div>
+                {megaForm.abilities && (
+                  <div className="text-xs text-muted-foreground">
+                    Ability: {Object.values(megaForm.abilities).join(" / ")}
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Nature */}
             <div className="space-y-1.5">

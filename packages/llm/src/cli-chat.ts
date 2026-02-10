@@ -2,6 +2,11 @@ import { spawn, type ChildProcessWithoutNullStreams } from "child_process";
 import { writeFileSync, mkdirSync } from "fs";
 import { join } from "path";
 import { tmpdir } from "os";
+import { getToolLabel, isWriteTool } from "./tool-labels";
+import { StreamParser } from "./stream-parser";
+import type { SSEEvent } from "./sse-events";
+import type { PageContextData } from "./context-builder";
+import { getDisallowedMcpTools, getPageTypeFromPath } from "./tool-context";
 
 const MCP_URL = process.env.MCP_URL || "http://localhost:3001/mcp";
 const CLI_MODEL = process.env.LLM_MODEL || "opus";
@@ -37,8 +42,6 @@ function writeSystemPrompt(content: string): string {
   mkdirSync(dir, { recursive: true });
   const promptPath = join(dir, "system-prompt.txt");
 
-  // Wrap the app's system prompt with guardrails to keep the model
-  // focused on MCP tools and prevent it from trying to use code tools.
   const wrapped = [
     content,
     "",
@@ -61,6 +64,9 @@ export interface CliChatOptions {
   messages: CliMessage[];
   systemPrompt: string;
   model?: string;
+  signal?: AbortSignal;
+  pageContext?: PageContextData;
+  disallowedMcpTools?: string[];
 }
 
 /**
@@ -91,7 +97,7 @@ function buildPrompt(messages: CliMessage[]): string {
  * Spawn the Claude CLI directly with MCP tools and stream the response.
  *
  * The CLI handles the entire agent loop: tool discovery → tool calls → response.
- * We just parse the stream-json output and forward text content as SSE events.
+ * We parse the stream-json output and emit typed SSE events.
  */
 export function streamCliChat(
   options: CliChatOptions,
@@ -107,7 +113,6 @@ export function streamCliChat(
   return new ReadableStream({
     start(controller) {
       // Block built-in code tools so the model uses MCP tools for data lookups.
-      // Keep ListMcpResourcesTool and ReadMcpResourceTool for resource access.
       const blockedTools = [
         "Bash", "Read", "Write", "Edit", "Glob", "Grep",
         "WebFetch", "WebSearch", "Task", "TaskOutput", "NotebookEdit",
@@ -115,6 +120,11 @@ export function streamCliChat(
         "Skill", "TeamCreate", "TeamDelete", "SendMessage", "TaskStop",
         "ToolSearch",
       ];
+
+      // Also block page-specific MCP tools if a page context is provided
+      if (options.disallowedMcpTools) {
+        blockedTools.push(...options.disallowedMcpTools);
+      }
 
       const args = [
         "--print",
@@ -158,33 +168,41 @@ export function streamCliChat(
       } catch (err) {
         const msg = err instanceof Error ? err.message : "Unknown spawn error";
         console.error(`${LOG_PREFIX} Spawn failed: ${msg}`);
-        controller.enqueue(
-          encoder.encode(`data: ${JSON.stringify({ error: msg })}\n\n`),
-        );
-        controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+        sendSSE(controller, encoder, { type: "error", error: msg });
+        sendSSE(controller, encoder, { type: "done" });
         controller.close();
         return;
       }
 
       proc.stdin?.end();
-
       console.log(`${LOG_PREFIX} PID: ${proc.pid}`);
 
-      let buffer = "";
-      // Track active tool calls so we can emit "complete" when we see text resume
-      const activeTools = new Set<string>();
-
-      function send(data: Record<string, unknown>): void {
-        controller.enqueue(
-          encoder.encode(`data: ${JSON.stringify(data)}\n\n`),
-        );
+      // Wire up abort signal to kill subprocess
+      if (options.signal) {
+        options.signal.addEventListener("abort", () => {
+          console.log(`${LOG_PREFIX} Abort signal received, killing PID ${proc.pid}`);
+          proc.kill("SIGTERM");
+        });
       }
 
+      let buffer = "";
+      const activeTools = new Map<string, Record<string, unknown>>();
+      const streamParser = new StreamParser();
+      let closed = false;
+
       function flushActiveTools(): void {
-        for (const name of activeTools) {
-          send({ toolCall: { name, status: "complete" } });
+        for (const name of activeTools.keys()) {
+          sendSSE(controller, encoder, { type: "tool_end", name });
         }
         activeTools.clear();
+      }
+
+      function tryClose(): void {
+        if (closed) return;
+        closed = true;
+        flushActiveTools();
+        sendSSE(controller, encoder, { type: "done" });
+        controller.close();
       }
 
       proc.stdout?.on("data", (chunk: Buffer) => {
@@ -199,7 +217,7 @@ export function streamCliChat(
           try {
             const msg = JSON.parse(trimmed);
 
-            // Content delta — stream text to client
+            // Content delta — pipe through StreamParser to strip plan XML tags
             if (
               msg.type === "stream_event" &&
               msg.event?.type === "content_block_delta" &&
@@ -207,9 +225,14 @@ export function streamCliChat(
             ) {
               const text = msg.event.delta.text;
               if (text) {
-                // If we had active tool calls, they've completed
                 flushActiveTools();
-                send({ content: text });
+                const { cleanContent, events: planEvents } = streamParser.process(text);
+                if (cleanContent) {
+                  sendSSE(controller, encoder, { type: "content", content: cleanContent });
+                }
+                for (const evt of planEvents) {
+                  sendSSE(controller, encoder, evt);
+                }
               }
             }
 
@@ -218,18 +241,31 @@ export function streamCliChat(
               for (const block of msg.message.content) {
                 if (block.type === "tool_use") {
                   const toolName = block.name as string;
-                  const inputSummary = JSON.stringify(block.input ?? {}).slice(
-                    0,
-                    200,
-                  );
+                  const input = (block.input ?? {}) as Record<string, unknown>;
+                  const label = getToolLabel(toolName);
+                  const inputSummary = JSON.stringify(input).slice(0, 200);
                   console.log(
                     `${LOG_PREFIX} ▶ Tool call: ${toolName}(${inputSummary})`,
                   );
-                  activeTools.add(toolName);
-                  send({ toolCall: { name: toolName, status: "executing" } });
+                  activeTools.set(toolName, input);
+                  sendSSE(controller, encoder, {
+                    type: "tool_start",
+                    name: toolName,
+                    label,
+                    input,
+                  });
+
+                  // Emit action notification for write tools
+                  if (isWriteTool(toolName)) {
+                    sendSSE(controller, encoder, {
+                      type: "action_notify",
+                      name: toolName,
+                      label,
+                      input,
+                    });
+                  }
                 }
                 if (block.type === "text" && block.text) {
-                  // Text block in assistant message (non-streaming final content)
                   flushActiveTools();
                 }
               }
@@ -245,6 +281,14 @@ export function streamCliChat(
               console.log(
                 `${LOG_PREFIX} ◀ Result: ${elapsed}ms, ${turns} turns, cost=${cost}`,
               );
+              // Flush any remaining content from the stream parser
+              const { cleanContent, events: finalEvents } = streamParser.flush();
+              if (cleanContent) {
+                sendSSE(controller, encoder, { type: "content", content: cleanContent });
+              }
+              for (const evt of finalEvents) {
+                sendSSE(controller, encoder, evt);
+              }
               flushActiveTools();
             }
           } catch {
@@ -265,17 +309,24 @@ export function streamCliChat(
         console.log(
           `${LOG_PREFIX} === DONE === code=${code} elapsed=${elapsed}ms`,
         );
-        flushActiveTools();
-        controller.enqueue(encoder.encode("data: [DONE]\n\n"));
-        controller.close();
+        tryClose();
       });
 
       proc.on("error", (err) => {
         console.error(`${LOG_PREFIX} Process error: ${err.message}`);
-        send({ error: err.message });
-        controller.enqueue(encoder.encode("data: [DONE]\n\n"));
-        controller.close();
+        sendSSE(controller, encoder, { type: "error", error: err.message });
+        tryClose();
       });
     },
   });
+}
+
+function sendSSE(
+  controller: ReadableStreamDefaultController<Uint8Array>,
+  encoder: TextEncoder,
+  event: SSEEvent,
+): void {
+  controller.enqueue(
+    encoder.encode(`data: ${JSON.stringify(event)}\n\n`),
+  );
 }

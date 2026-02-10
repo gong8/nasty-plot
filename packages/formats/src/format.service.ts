@@ -1,5 +1,5 @@
-import type { FormatDefinition, PokemonSpecies } from "@nasty-plot/core";
-import { getAllSpecies, getSpecies } from "@nasty-plot/pokemon-data";
+import type { FormatDefinition, ItemData, MoveData, PokemonSpecies } from "@nasty-plot/core";
+import { getAllItems, getAllMoves, getAllSpecies, getLearnset, getSpecies } from "@nasty-plot/pokemon-data";
 
 import { FORMAT_DEFINITIONS } from "./data/format-definitions";
 
@@ -32,7 +32,10 @@ export function getFormatPokemon(formatId: string): PokemonSpecies[] {
   if (!format) return [];
 
   const banSet = buildBanSet(format);
-  return getAllSpecies().filter((species) => !isBanned(species, format, banSet));
+  return getAllSpecies().filter((species) => {
+    if (format.dexScope === "sv" && species.isNonstandard === "Past") return false;
+    return !isBanned(species, format, banSet);
+  });
 }
 
 export function isLegalInFormat(pokemonId: string, formatId: string): boolean {
@@ -42,5 +45,41 @@ export function isLegalInFormat(pokemonId: string, formatId: string): boolean {
   const species = getSpecies(pokemonId);
   if (!species) return false;
 
+  if (format.dexScope === "sv" && species.isNonstandard === "Past") return false;
   return !isBanned(species, format, buildBanSet(format));
+}
+
+export function getFormatItems(formatId: string): ItemData[] {
+  const format = getFormat(formatId);
+  if (!format) return [];
+
+  const banSet = buildBanSet(format);
+  return getAllItems().filter((item) => {
+    if (format.dexScope === "sv" && item.isNonstandard === "Past") return false;
+    if (banSet.has(item.name.toLowerCase())) return false;
+    if (banSet.has(item.id.toLowerCase())) return false;
+    return true;
+  });
+}
+
+export function getFormatMoves(formatId: string): MoveData[] {
+  const format = getFormat(formatId);
+  if (!format) return [];
+
+  const banSet = buildBanSet(format);
+  return getAllMoves().filter((move) => {
+    if (format.dexScope === "sv" && move.isNonstandard === "Past") return false;
+    if (banSet.has(move.name.toLowerCase())) return false;
+    if (banSet.has(move.id.toLowerCase())) return false;
+    return true;
+  });
+}
+
+export async function getFormatLearnset(speciesId: string, formatId: string): Promise<string[]> {
+  const format = getFormat(formatId);
+  if (!format) return [];
+
+  const learnset = await getLearnset(speciesId);
+  const legalMoves = new Set(getFormatMoves(formatId).map((m) => m.id));
+  return learnset.filter((moveId) => legalMoves.has(moveId));
 }

@@ -14,7 +14,6 @@ import {
 import { getSpecies, getLearnset, getMove } from "@nasty-plot/pokemon-data";
 import { prisma } from "@nasty-plot/db";
 import { getSetsForPokemon } from "@nasty-plot/smogon-data";
-import { SiteHeader } from "@/components/site-header";
 import { StatBar, TypeBadge } from "@nasty-plot/ui";
 import { CompetitiveData } from "./competitive-data";
 import { STATS, type MoveData, type StatName, type UsageStatsEntry } from "@nasty-plot/core";
@@ -71,9 +70,7 @@ export default async function PokemonDetailPage({ params }: Props) {
   );
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <SiteHeader />
-
+    <div className="flex flex-col">
       <main className="flex-1 container mx-auto px-4 py-6">
         <Link href="/pokemon">
           <Button variant="ghost" size="sm" className="gap-1 mb-4">

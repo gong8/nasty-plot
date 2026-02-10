@@ -1,4 +1,4 @@
-import { getFormat, getAllFormats, getActiveFormats, getFormatPokemon, isLegalInFormat } from "../format.service";
+import { getFormat, getAllFormats, getActiveFormats, getFormatPokemon, isLegalInFormat, getFormatItems, getFormatMoves } from "../format.service";
 
 // ---------------------------------------------------------------------------
 // Mocks
@@ -58,6 +58,19 @@ vi.mock("../data/format-definitions", () => ({
       bans: ["Koraidon"],
       isActive: false,
     },
+    {
+      id: "gen9nationaldex",
+      name: "National Dex",
+      generation: 9,
+      gameType: "singles",
+      dexScope: "natdex",
+      teamSize: 6,
+      maxLevel: 100,
+      defaultLevel: 100,
+      rules: ["Species Clause", "Mega Rayquaza Clause"],
+      bans: ["Koraidon", "Miraidon", "Baton Pass"],
+      isActive: true,
+    },
   ],
 }));
 
@@ -68,18 +81,28 @@ vi.mock("@nasty-plot/pokemon-data", () => ({
       types: ["Dragon", "Ground"],
       baseStats: { hp: 108, atk: 130, def: 95, spa: 80, spd: 85, spe: 102 },
       abilities: { "0": "Sand Veil" }, weightkg: 95, tier: "OU",
+      isNonstandard: null,
     },
     {
       id: "pikachu", name: "Pikachu", num: 25,
       types: ["Electric"],
       baseStats: { hp: 35, atk: 55, def: 40, spa: 50, spd: 50, spe: 90 },
       abilities: { "0": "Static" }, weightkg: 6, tier: "LC",
+      isNonstandard: null,
     },
     {
       id: "koraidon", name: "Koraidon", num: 1007,
       types: ["Fighting", "Dragon"],
       baseStats: { hp: 100, atk: 135, def: 115, spa: 85, spd: 100, spe: 135 },
       abilities: { "0": "Orichalcum Pulse" }, weightkg: 303, tier: "Uber",
+      isNonstandard: null,
+    },
+    {
+      id: "caterpie", name: "Caterpie", num: 658,
+      types: ["Water", "Dark"],
+      baseStats: { hp: 72, atk: 95, def: 67, spa: 103, spd: 71, spe: 122 },
+      abilities: { "0": "Torrent" }, weightkg: 40, tier: "OU",
+      isNonstandard: "Past",
     },
   ]),
   getSpecies: vi.fn((id: string) => {
@@ -89,22 +112,45 @@ vi.mock("@nasty-plot/pokemon-data", () => ({
         types: ["Dragon", "Ground"],
         baseStats: { hp: 108, atk: 130, def: 95, spa: 80, spd: 85, spe: 102 },
         abilities: { "0": "Sand Veil" }, weightkg: 95, tier: "OU",
+        isNonstandard: null,
       },
       koraidon: {
         id: "koraidon", name: "Koraidon", num: 1007,
         types: ["Fighting", "Dragon"],
         baseStats: { hp: 100, atk: 135, def: 115, spa: 85, spd: 100, spe: 135 },
         abilities: { "0": "Orichalcum Pulse" }, weightkg: 303, tier: "Uber",
+        isNonstandard: null,
       },
       pikachu: {
         id: "pikachu", name: "Pikachu", num: 25,
         types: ["Electric"],
         baseStats: { hp: 35, atk: 55, def: 40, spa: 50, spd: 50, spe: 90 },
         abilities: { "0": "Static" }, weightkg: 6, tier: "LC",
+        isNonstandard: null,
+      },
+      caterpie: {
+        id: "caterpie", name: "Caterpie", num: 658,
+        types: ["Water", "Dark"],
+        baseStats: { hp: 72, atk: 95, def: 67, spa: 103, spd: 71, spe: 122 },
+        abilities: { "0": "Torrent" }, weightkg: 40, tier: "OU",
+        isNonstandard: "Past",
       },
     };
     return species[id] ?? null;
   }),
+  getAllItems: vi.fn(() => [
+    { id: "leftovers", name: "Leftovers", description: "Restores HP", isNonstandard: null },
+    { id: "choicescarf", name: "Choice Scarf", description: "Boosts Speed", isNonstandard: null },
+    { id: "charizarditex", name: "Charizardite X", description: "Mega Stone", isNonstandard: "Past" },
+    { id: "electriumz", name: "Electrium Z", description: "Z-Crystal", isNonstandard: "Past" },
+  ]),
+  getAllMoves: vi.fn(() => [
+    { id: "earthquake", name: "Earthquake", type: "Ground", category: "Physical", basePower: 100, accuracy: 100, pp: 10, priority: 0, target: "allAdjacent", flags: {}, isNonstandard: null },
+    { id: "thunderbolt", name: "Thunderbolt", type: "Electric", category: "Special", basePower: 90, accuracy: 100, pp: 15, priority: 0, target: "normal", flags: {}, isNonstandard: null },
+    { id: "hiddenpower", name: "Hidden Power", type: "Normal", category: "Special", basePower: 60, accuracy: 100, pp: 15, priority: 0, target: "normal", flags: {}, isNonstandard: "Past" },
+    { id: "batonpass", name: "Baton Pass", type: "Normal", category: "Status", basePower: 0, accuracy: true, pp: 40, priority: 0, target: "self", flags: {}, isNonstandard: null },
+  ]),
+  getLearnset: vi.fn(async () => ["earthquake", "thunderbolt", "hiddenpower", "batonpass"]),
 }));
 
 // ---------------------------------------------------------------------------
@@ -131,7 +177,7 @@ describe("getAllFormats", () => {
   it("returns all format definitions", () => {
     const result = getAllFormats();
 
-    expect(result.length).toBe(4);
+    expect(result.length).toBe(5);
   });
 });
 
@@ -140,7 +186,7 @@ describe("getActiveFormats", () => {
     const result = getActiveFormats();
 
     expect(result.every((f) => f.isActive)).toBe(true);
-    expect(result.length).toBe(3); // gen9ou, gen9uu, gen9lc are active
+    expect(result.length).toBe(4); // gen9ou, gen9uu, gen9lc, gen9nationaldex are active
   });
 
   it("excludes inactive formats", () => {
@@ -195,5 +241,102 @@ describe("isLegalInFormat", () => {
     const result = isLegalInFormat("fakemon", "gen9ou");
 
     expect(result).toBe(false);
+  });
+
+  it("returns false for Past Pokemon in SV format", () => {
+    const result = isLegalInFormat("caterpie", "gen9ou");
+
+    expect(result).toBe(false);
+  });
+
+  it("returns true for Past Pokemon in NatDex format", () => {
+    const result = isLegalInFormat("caterpie", "gen9nationaldex");
+
+    expect(result).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// NatDex: dexScope filtering
+// ---------------------------------------------------------------------------
+
+describe("getFormatPokemon — NatDex", () => {
+  it("SV format excludes Past Pokemon", () => {
+    const result = getFormatPokemon("gen9ou");
+    const ids = result.map((p) => p.id);
+
+    expect(ids).not.toContain("caterpie");
+    expect(ids).toContain("garchomp");
+  });
+
+  it("NatDex format includes Past Pokemon", () => {
+    const result = getFormatPokemon("gen9nationaldex");
+    const ids = result.map((p) => p.id);
+
+    expect(ids).toContain("caterpie");
+    expect(ids).toContain("garchomp");
+  });
+
+  it("NatDex still respects bans", () => {
+    const result = getFormatPokemon("gen9nationaldex");
+    const ids = result.map((p) => p.id);
+
+    expect(ids).not.toContain("koraidon");
+  });
+});
+
+describe("getFormatItems", () => {
+  it("SV format excludes Past items (Mega Stones, Z-Crystals)", () => {
+    const result = getFormatItems("gen9ou");
+    const ids = result.map((i) => i.id);
+
+    expect(ids).toContain("leftovers");
+    expect(ids).toContain("choicescarf");
+    expect(ids).not.toContain("charizarditex");
+    expect(ids).not.toContain("electriumz");
+  });
+
+  it("NatDex format includes Past items", () => {
+    const result = getFormatItems("gen9nationaldex");
+    const ids = result.map((i) => i.id);
+
+    expect(ids).toContain("leftovers");
+    expect(ids).toContain("charizarditex");
+    expect(ids).toContain("electriumz");
+  });
+
+  it("returns empty array for unknown format", () => {
+    expect(getFormatItems("gen9unknown")).toEqual([]);
+  });
+});
+
+describe("getFormatMoves", () => {
+  it("SV format excludes Past moves", () => {
+    const result = getFormatMoves("gen9ou");
+    const ids = result.map((m) => m.id);
+
+    expect(ids).toContain("earthquake");
+    expect(ids).toContain("thunderbolt");
+    expect(ids).not.toContain("hiddenpower");
+  });
+
+  it("NatDex format includes Past moves", () => {
+    const result = getFormatMoves("gen9nationaldex");
+    const ids = result.map((m) => m.id);
+
+    expect(ids).toContain("earthquake");
+    expect(ids).toContain("hiddenpower");
+  });
+
+  it("NatDex respects move bans", () => {
+    const result = getFormatMoves("gen9nationaldex");
+    const ids = result.map((m) => m.id);
+
+    // Baton Pass is banned in NatDex
+    expect(ids).not.toContain("batonpass");
+  });
+
+  it("returns empty array for unknown format", () => {
+    expect(getFormatMoves("gen9unknown")).toEqual([]);
   });
 });

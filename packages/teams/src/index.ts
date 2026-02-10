@@ -16,3 +16,12 @@ export {
   importIntoTeam,
   exportShowdownPaste,
 } from "./import-export.service";
+export {
+  createSampleTeam,
+  listSampleTeams,
+  getSampleTeam,
+  deleteSampleTeam,
+  importSampleTeamsFromPastes,
+  extractPokemonIds,
+} from "./sample-team.service";
+export type { SampleTeamData } from "./sample-team.service";

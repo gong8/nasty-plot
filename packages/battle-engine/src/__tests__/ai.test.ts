@@ -56,10 +56,10 @@ function makeState(): BattleState {
 function makeActions(): BattleActionSet {
   return {
     moves: [
-      { name: "Magma Storm", id: "magmastorm", pp: 8, maxPp: 8, type: "Fire", disabled: false, target: "normal" },
-      { name: "Earth Power", id: "earthpower", pp: 16, maxPp: 16, type: "Ground", disabled: false, target: "normal" },
-      { name: "Flash Cannon", id: "flashcannon", pp: 16, maxPp: 16, type: "Steel", disabled: false, target: "normal" },
-      { name: "Taunt", id: "taunt", pp: 32, maxPp: 32, type: "Dark", disabled: false, target: "normal" },
+      { name: "Magma Storm", id: "magmastorm", pp: 8, maxPp: 8, type: "Fire", disabled: false, target: "normal", basePower: 100, category: "Special", accuracy: 75, description: "Traps and damages the target for 4-5 turns." },
+      { name: "Earth Power", id: "earthpower", pp: 16, maxPp: 16, type: "Ground", disabled: false, target: "normal", basePower: 90, category: "Special", accuracy: 100, description: "10% chance to lower the target's Sp. Def by 1." },
+      { name: "Flash Cannon", id: "flashcannon", pp: 16, maxPp: 16, type: "Steel", disabled: false, target: "normal", basePower: 80, category: "Special", accuracy: 100, description: "10% chance to lower the target's Sp. Def by 1." },
+      { name: "Taunt", id: "taunt", pp: 32, maxPp: 32, type: "Dark", disabled: false, target: "normal", basePower: 0, category: "Status", accuracy: 100, description: "The target can't use status moves for 3 turns." },
     ],
     canTera: true,
     switches: [

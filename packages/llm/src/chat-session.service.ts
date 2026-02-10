@@ -58,9 +58,41 @@ export async function addMessage(
   });
 }
 
+export async function updateSession(
+  id: string,
+  data: { title?: string }
+): Promise<ChatSessionData | null> {
+  const session = await prisma.chatSession.update({
+    where: { id },
+    data: { title: data.title },
+    include: { messages: { orderBy: { createdAt: "asc" } } },
+  });
+
+  return mapSession(session);
+}
+
+export async function deleteSession(id: string): Promise<void> {
+  // Messages cascade on delete via schema
+  await prisma.chatSession.delete({ where: { id } });
+}
+
+export async function deleteLastAssistantMessage(
+  sessionId: string
+): Promise<void> {
+  const lastAssistant = await prisma.chatMessage.findFirst({
+    where: { sessionId, role: "assistant" },
+    orderBy: { createdAt: "desc" },
+  });
+
+  if (lastAssistant) {
+    await prisma.chatMessage.delete({ where: { id: lastAssistant.id } });
+  }
+}
+
 interface DbSession {
   id: string;
   teamId: string | null;
+  title: string | null;
   createdAt: Date;
   updatedAt: Date;
   messages: {
@@ -76,6 +108,7 @@ function mapSession(session: DbSession): ChatSessionData {
   return {
     id: session.id,
     teamId: session.teamId ?? undefined,
+    title: session.title ?? undefined,
     createdAt: session.createdAt.toISOString(),
     updatedAt: session.updatedAt.toISOString(),
     messages: session.messages.map((m) => ({

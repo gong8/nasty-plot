@@ -2,6 +2,9 @@ import type { Metadata } from "next";
 import { Geist } from "next/font/google";
 import { JetBrains_Mono } from "next/font/google";
 import { Providers } from "@/components/providers";
+import { ChatProvider } from "@/features/chat/context/chat-provider";
+import { PageContextProvider } from "@/features/chat/context/page-context-provider";
+import { AppShell } from "@/components/app-shell";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -33,7 +36,13 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${jetbrainsMono.variable} antialiased`}
       >
-        <Providers>{children}</Providers>
+        <Providers>
+          <ChatProvider>
+            <PageContextProvider>
+              <AppShell>{children}</AppShell>
+            </PageContextProvider>
+          </ChatProvider>
+        </Providers>
       </body>
     </html>
   );

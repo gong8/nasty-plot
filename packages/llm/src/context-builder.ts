@@ -1,4 +1,4 @@
-import type { TeamData, UsageStatsEntry } from "@nasty-plot/core";
+import type { TeamData, UsageStatsEntry, PokemonSpecies } from "@nasty-plot/core";
 
 export function buildTeamContext(teamData: TeamData): string {
   const lines: string[] = [
@@ -66,4 +66,53 @@ export function buildMetaContext(
   }
 
   return lines.join("\n");
+}
+
+export function buildPokemonContext(pokemonId: string, species: PokemonSpecies): string {
+  const bst = Object.values(species.baseStats).reduce((a, b) => a + b, 0);
+  const abilities = Object.entries(species.abilities)
+    .map(([slot, name]) => (slot === "H" ? `${name} (Hidden)` : name))
+    .join(", ");
+
+  return [
+    `## Currently Viewing: ${species.name}`,
+    `- Types: ${species.types.join("/")}`,
+    `- Base Stats: ${species.baseStats.hp}/${species.baseStats.atk}/${species.baseStats.def}/${species.baseStats.spa}/${species.baseStats.spd}/${species.baseStats.spe} (BST: ${bst})`,
+    `- Abilities: ${abilities}`,
+    species.tier ? `- Tier: ${species.tier}` : "",
+    "",
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
+
+export interface PageContextData {
+  pageType: string;
+  contextSummary: string;
+  teamId?: string;
+  pokemonId?: string;
+  formatId?: string;
+}
+
+export function buildPageContextPrompt(context: PageContextData): string {
+  if (!context.contextSummary) return "";
+  return `\n## Current Page Context\n${context.contextSummary}\n`;
+}
+
+export function buildPlanModePrompt(): string {
+  return `
+## Planning
+For complex multi-step tasks (building a team, comprehensive analysis, multi-pokemon comparison),
+create a step-by-step plan first:
+
+<plan>
+<step>Step 1 description</step>
+<step>Step 2 description</step>
+</plan>
+
+As you complete each step, output:
+<step_update index="0" status="complete"/>
+
+For simple questions, answer directly without a plan.
+`;
 }

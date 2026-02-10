@@ -2,7 +2,7 @@ import type { PokemonType, StatsTable } from "@nasty-plot/core";
 
 export type BattlePhase = "setup" | "preview" | "battle" | "ended";
 export type BattleFormat = "singles" | "doubles";
-export type AIDifficulty = "random" | "greedy" | "heuristic";
+export type AIDifficulty = "random" | "greedy" | "heuristic" | "expert";
 
 export type StatusCondition =
   | "brn"
@@ -144,6 +144,10 @@ export interface BattleActionSet {
     type: PokemonType;
     disabled: boolean;
     target: string;
+    basePower: number;
+    category: "Physical" | "Special" | "Status";
+    accuracy: number | true;
+    description: string;
   }[];
   /** Whether tera is available */
   canTera: boolean;

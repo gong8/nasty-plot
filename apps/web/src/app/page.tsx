@@ -1,13 +1,10 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { SiteHeader } from "@/components/site-header";
 
 export default function Home() {
   return (
-    <div className="min-h-screen flex flex-col">
-      <SiteHeader />
-
+    <div className="flex flex-col">
       <main className="flex-1 container mx-auto px-4 py-12">
         <div className="max-w-3xl mx-auto text-center space-y-6">
           <img

@@ -2,7 +2,6 @@
 
 import { useSearchParams } from "next/navigation";
 import { useEffect, Suspense } from "react";
-import { SiteHeader } from "@/components/site-header";
 import { BattleView } from "@/features/battle/components/BattleView";
 import { useBattle } from "@/features/battle/hooks/use-battle";
 import type { AIDifficulty, BattleFormat } from "@nasty-plot/battle-engine";
@@ -10,7 +9,7 @@ import { Loader2 } from "lucide-react";
 
 function BattleLiveContent() {
   const searchParams = useSearchParams();
-  const { state, isLoading, error, startBattle, chooseLead, submitMove, submitSwitch, rematch } = useBattle();
+  const { state, isLoading, error, startBattle, chooseLead, submitMove, submitSwitch, rematch, saveBattle } = useBattle();
 
   // Stable string key so the effect only re-runs when params actually change
   const paramsKey = searchParams.toString();
@@ -68,6 +67,7 @@ function BattleLiveContent() {
       onSwitch={submitSwitch}
       onLeadSelect={chooseLead}
       onRematch={rematch}
+      onSave={saveBattle}
     />
   );
 }
@@ -75,7 +75,6 @@ function BattleLiveContent() {
 export default function BattleLivePage() {
   return (
     <>
-      <SiteHeader />
       <main className="container mx-auto p-4 max-w-5xl">
         <Suspense fallback={
           <div className="flex items-center justify-center py-24">

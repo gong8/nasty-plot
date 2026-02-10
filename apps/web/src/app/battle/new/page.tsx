@@ -1,7 +1,6 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { SiteHeader } from "@/components/site-header";
 import { BattleSetup } from "@/features/battle/components/BattleSetup";
 import type { AIDifficulty, BattleFormat } from "@nasty-plot/battle-engine";
 
@@ -29,7 +28,6 @@ export default function NewBattlePage() {
 
   return (
     <>
-      <SiteHeader />
       <main className="container mx-auto p-4">
         <BattleSetup onStart={handleStart} />
       </main>

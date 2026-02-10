@@ -26,6 +26,7 @@ export interface PokemonSpecies {
   abilities: { [slot: string]: string }; // "0": "Protosynthesis"
   weightkg: number;
   tier?: string;
+  isNonstandard?: string | null; // null = SV-native, "Past" = old-gen
 }
 
 export interface MoveData {
@@ -40,6 +41,7 @@ export interface MoveData {
   target: string;
   flags: Record<string, number>;
   description?: string;
+  isNonstandard?: string | null; // null = SV-native, "Past" = old-gen
 }
 
 export interface AbilityData {
@@ -52,6 +54,7 @@ export interface ItemData {
   id: string;
   name: string;
   description?: string;
+  isNonstandard?: string | null; // null = SV-native, "Past" = old-gen
 }
 
 // --- Nature ---
@@ -293,6 +296,7 @@ export interface ChatMessage {
 export interface ChatSessionData {
   id: string;
   teamId?: string;
+  title?: string;
   messages: ChatMessage[];
   createdAt: string;
   updatedAt: string;

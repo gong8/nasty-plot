@@ -1,12 +1,16 @@
 import { NextResponse } from "next/server";
 import { getSpecies, getLearnset, getMove } from "@nasty-plot/pokemon-data";
+import { getFormatLearnset } from "@nasty-plot/formats";
 import type { ApiResponse, MoveData } from "@nasty-plot/core";
 
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
+  const { searchParams } = new URL(request.url);
+  const formatId = searchParams.get("format");
+
   const species = getSpecies(id);
 
   if (!species) {
@@ -16,7 +20,9 @@ export async function GET(
     );
   }
 
-  const moveIds = await getLearnset(id);
+  const moveIds = formatId
+    ? await getFormatLearnset(id, formatId)
+    : await getLearnset(id);
   const moves: MoveData[] = [];
 
   for (const moveId of moveIds) {

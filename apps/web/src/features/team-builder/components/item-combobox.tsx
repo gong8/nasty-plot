@@ -23,22 +23,24 @@ import type { ItemData, PaginatedResponse } from "@nasty-plot/core";
 interface ItemComboboxProps {
   value: string;
   onChange: (value: string) => void;
+  formatId?: string;
 }
 
-export function ItemCombobox({ value, onChange }: ItemComboboxProps) {
+export function ItemCombobox({ value, onChange, formatId }: ItemComboboxProps) {
   const [open, setOpen] = useState(false);
 
   const { data: items = [] } = useQuery<ItemData[]>({
-    queryKey: ["all-items"],
+    queryKey: ["all-items", formatId],
     queryFn: async () => {
-      const res = await fetch("/api/items?pageSize=100&page=1");
+      const formatParam = formatId ? `&format=${encodeURIComponent(formatId)}` : "";
+      const res = await fetch(`/api/items?pageSize=100&page=1${formatParam}`);
       if (!res.ok) return [];
       const json: PaginatedResponse<ItemData> = await res.json();
       // Fetch all pages if needed
       const allItems = [...json.data];
       const totalPages = Math.ceil(json.total / json.pageSize);
       for (let p = 2; p <= totalPages; p++) {
-        const r = await fetch(`/api/items?pageSize=100&page=${p}`);
+        const r = await fetch(`/api/items?pageSize=100&page=${p}${formatParam}`);
         if (r.ok) {
           const j: PaginatedResponse<ItemData> = await r.json();
           allItems.push(...j.data);

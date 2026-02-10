@@ -6,9 +6,16 @@ import {
   getAllMoves,
   getAbility,
   getItem,
+  getAllItems,
   getLearnset,
   searchSpecies,
   getTypeChart,
+  isMegaStone,
+  getMegaStonesFor,
+  getMegaForm,
+  isZCrystal,
+  getZCrystalType,
+  getSignatureZCrystal,
 } from "./dex.service";
 
 // =============================================================================
@@ -534,5 +541,221 @@ describe("getTypeChart", () => {
         expect(value).toBeDefined();
       }
     }
+  });
+});
+
+// =============================================================================
+// NatDex: isNonstandard field & Past Pokemon inclusion
+// =============================================================================
+
+describe("NatDex species support", () => {
+  it("getAllSpecies includes Past Pokemon (e.g. Caterpie)", () => {
+    const all = getAllSpecies();
+    const ids = all.map((s) => s.id);
+    expect(ids).toContain("caterpie");
+  });
+
+  it("Past Pokemon have isNonstandard set to 'Past'", () => {
+    const caterpie = getSpecies("caterpie");
+    expect(caterpie).not.toBeNull();
+    expect(caterpie!.isNonstandard).toBe("Past");
+  });
+
+  it("SV-native Pokemon have isNonstandard set to null", () => {
+    const garchomp = getSpecies("garchomp");
+    expect(garchomp).not.toBeNull();
+    expect(garchomp!.isNonstandard).toBeNull();
+  });
+
+  it("getAllSpecies returns more than 1000 species (including Past)", () => {
+    const all = getAllSpecies();
+    expect(all.length).toBeGreaterThan(1000);
+  });
+
+  it("excludes CAP Pokemon", () => {
+    const all = getAllSpecies();
+    const ids = all.map((s) => s.id);
+    // Syclant is a well-known CAP
+    expect(ids).not.toContain("syclant");
+  });
+});
+
+// =============================================================================
+// NatDex: Past items (Mega Stones, Z-Crystals)
+// =============================================================================
+
+describe("NatDex item support", () => {
+  it("getAllItems includes Mega Stones", () => {
+    const all = getAllItems();
+    const ids = all.map((i) => i.id);
+    expect(ids).toContain("charizarditex");
+  });
+
+  it("getAllItems includes Z-Crystals", () => {
+    const all = getAllItems();
+    const ids = all.map((i) => i.id);
+    expect(ids).toContain("electriumz");
+  });
+
+  it("Mega Stones have isNonstandard 'Past'", () => {
+    const item = getItem("charizarditex");
+    expect(item).not.toBeNull();
+    expect(item!.isNonstandard).toBe("Past");
+  });
+
+  it("SV-native items have isNonstandard null", () => {
+    const item = getItem("leftovers");
+    expect(item).not.toBeNull();
+    expect(item!.isNonstandard).toBeNull();
+  });
+});
+
+// =============================================================================
+// NatDex: Past moves
+// =============================================================================
+
+describe("NatDex move support", () => {
+  it("getAllMoves includes past moves like Hidden Power", () => {
+    const all = getAllMoves();
+    const ids = all.map((m) => m.id);
+    expect(ids).toContain("hiddenpower");
+  });
+
+  it("past moves have isNonstandard 'Past'", () => {
+    const hp = getMove("hiddenpower");
+    expect(hp).not.toBeNull();
+    expect(hp!.isNonstandard).toBe("Past");
+  });
+
+  it("SV-native moves have isNonstandard null", () => {
+    const tb = getMove("thunderbolt");
+    expect(tb).not.toBeNull();
+    expect(tb!.isNonstandard).toBeNull();
+  });
+});
+
+// =============================================================================
+// Mega Stone utilities
+// =============================================================================
+
+describe("isMegaStone", () => {
+  it("returns true for Charizardite X", () => {
+    expect(isMegaStone("charizarditex")).toBe(true);
+  });
+
+  it("returns true for Venusaurite", () => {
+    expect(isMegaStone("venusaurite")).toBe(true);
+  });
+
+  it("returns false for Leftovers", () => {
+    expect(isMegaStone("leftovers")).toBe(false);
+  });
+
+  it("returns false for Z-Crystals", () => {
+    expect(isMegaStone("electriumz")).toBe(false);
+  });
+
+  it("returns false for empty string", () => {
+    expect(isMegaStone("")).toBe(false);
+  });
+});
+
+describe("getMegaStonesFor", () => {
+  it("returns Charizardite X and Y for Charizard", () => {
+    const stones = getMegaStonesFor("charizard");
+    const ids = stones.map((s) => s.id);
+    expect(ids).toContain("charizarditex");
+    expect(ids).toContain("charizarditey");
+    expect(ids).toHaveLength(2);
+  });
+
+  it("returns empty array for Pokemon without Mega", () => {
+    const stones = getMegaStonesFor("pikachu");
+    expect(stones).toHaveLength(0);
+  });
+
+  it("returns empty array for non-existent Pokemon", () => {
+    const stones = getMegaStonesFor("fakemon");
+    expect(stones).toHaveLength(0);
+  });
+});
+
+describe("getMegaForm", () => {
+  it("returns Mega Charizard X for Charizard + Charizardite X", () => {
+    const mega = getMegaForm("charizard", "charizarditex");
+    expect(mega).not.toBeNull();
+    expect(mega!.name).toBe("Charizard-Mega-X");
+    expect(mega!.types).toEqual(["Fire", "Dragon"]);
+  });
+
+  it("returns null for incompatible stone", () => {
+    const mega = getMegaForm("pikachu", "charizarditex");
+    expect(mega).toBeNull();
+  });
+
+  it("returns null for non-Mega-Stone item", () => {
+    const mega = getMegaForm("charizard", "leftovers");
+    expect(mega).toBeNull();
+  });
+});
+
+// =============================================================================
+// Z-Crystal utilities
+// =============================================================================
+
+describe("isZCrystal", () => {
+  it("returns true for Electrium Z", () => {
+    expect(isZCrystal("electriumz")).toBe(true);
+  });
+
+  it("returns true for signature Z-Crystal (Pikanium Z)", () => {
+    expect(isZCrystal("pikaniumz")).toBe(true);
+  });
+
+  it("returns false for Leftovers", () => {
+    expect(isZCrystal("leftovers")).toBe(false);
+  });
+
+  it("returns false for Mega Stones", () => {
+    expect(isZCrystal("charizarditex")).toBe(false);
+  });
+});
+
+describe("getZCrystalType", () => {
+  it("returns Electric for Electrium Z", () => {
+    expect(getZCrystalType("electriumz")).toBe("Electric");
+  });
+
+  it("returns Fire for Firium Z", () => {
+    expect(getZCrystalType("firiumz")).toBe("Fire");
+  });
+
+  it("returns Normal for Normalium Z", () => {
+    expect(getZCrystalType("normaliumz")).toBe("Normal");
+  });
+
+  it("returns null for signature Z-Crystals", () => {
+    expect(getZCrystalType("pikaniumz")).toBeNull();
+  });
+
+  it("returns null for non-Z items", () => {
+    expect(getZCrystalType("leftovers")).toBeNull();
+  });
+});
+
+describe("getSignatureZCrystal", () => {
+  it("returns Pikachu + Volt Tackle for Pikanium Z", () => {
+    const sig = getSignatureZCrystal("pikaniumz");
+    expect(sig).not.toBeNull();
+    expect(sig!.pokemonId).toBe("pikachu");
+    expect(sig!.moveId).toBe("volttackle");
+  });
+
+  it("returns null for type-based Z-Crystals", () => {
+    expect(getSignatureZCrystal("electriumz")).toBeNull();
+  });
+
+  it("returns null for non-Z items", () => {
+    expect(getSignatureZCrystal("leftovers")).toBeNull();
   });
 });

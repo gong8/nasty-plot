@@ -10,16 +10,19 @@ import { TYPE_COLORS, type PokemonSpecies, type PokemonType } from "@nasty-plot/
 
 interface PokemonSearchPanelProps {
   onSelect: (pokemon: PokemonSpecies) => void;
+  formatId?: string;
 }
 
-export function PokemonSearchPanel({ onSelect }: PokemonSearchPanelProps) {
+export function PokemonSearchPanel({ onSelect, formatId }: PokemonSearchPanelProps) {
   const [search, setSearch] = useState("");
 
   const { data: results = [], isLoading } = useQuery<PokemonSpecies[]>({
-    queryKey: ["pokemon-search", search],
+    queryKey: ["pokemon-search", search, formatId],
     queryFn: async () => {
       if (!search || search.length < 2) return [];
-      const res = await fetch(`/api/pokemon?search=${encodeURIComponent(search)}`);
+      let url = `/api/pokemon?search=${encodeURIComponent(search)}`;
+      if (formatId) url += `&format=${encodeURIComponent(formatId)}`;
+      const res = await fetch(url);
       if (!res.ok) return [];
       const json = await res.json();
       return json.data ?? [];

@@ -671,6 +671,10 @@ export function parseRequest(requestJson: string): {
       type: (moveData?.type || m.type || "Normal") as PokemonType,
       disabled: m.disabled || false,
       target: m.target || "normal",
+      basePower: moveData?.basePower ?? 0,
+      category: (moveData?.category ?? "Status") as "Physical" | "Special" | "Status",
+      accuracy: moveData?.accuracy === true ? true : (moveData?.accuracy ?? 100),
+      description: moveData?.shortDesc || moveData?.desc || "",
     };
   });
 

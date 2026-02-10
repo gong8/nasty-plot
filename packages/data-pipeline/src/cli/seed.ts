@@ -1,20 +1,16 @@
 #!/usr/bin/env tsx
 
 import { prisma } from "@nasty-plot/db";
+import { FORMAT_DEFINITIONS } from "@nasty-plot/formats";
 import { fetchUsageStats, fetchSmogonSets } from "@nasty-plot/smogon-data";
 import { isStale } from "../staleness.service";
 
-// Fallback format definitions (the formats module may provide these later)
-const FORMATS = [
-  { id: "gen9ou", name: "OU", generation: 9, gameType: "singles" as const },
-  { id: "gen9uu", name: "UU", generation: 9, gameType: "singles" as const },
-  { id: "gen9ru", name: "RU", generation: 9, gameType: "singles" as const },
-  { id: "gen9nu", name: "NU", generation: 9, gameType: "singles" as const },
-  { id: "gen9monotype", name: "Monotype", generation: 9, gameType: "singles" as const },
-  { id: "gen9vgc2024", name: "VGC 2024", generation: 9, gameType: "doubles" as const },
-  { id: "gen9vgc2025", name: "VGC 2025", generation: 9, gameType: "doubles" as const },
-  { id: "gen9doublesou", name: "Doubles OU", generation: 9, gameType: "doubles" as const },
-];
+const FORMATS = FORMAT_DEFINITIONS.filter(f => f.isActive).map(f => ({
+  id: f.id,
+  name: f.name,
+  generation: f.generation,
+  gameType: f.gameType,
+}));
 
 interface CliArgs {
   formatId?: string;

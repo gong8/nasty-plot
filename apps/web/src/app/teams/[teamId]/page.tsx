@@ -3,7 +3,7 @@
 import { use, useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, MessageCircle, Plus } from "lucide-react";
+import { ArrowLeft, Plus } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -14,13 +14,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
 import { useTeamBuilder } from "@/features/team-builder/hooks/use-team-builder";
 import {
   useUpdateTeam,
@@ -38,7 +31,6 @@ import { ThreatList } from "@/features/analysis/components/threat-list";
 import { SpeedTiers } from "@/features/analysis/components/speed-tiers";
 import { MatchupMatrix } from "@/features/damage-calc/components/matchup-matrix";
 import { RecommendationPanel } from "@/features/recommendations/components/recommendation-panel";
-import { ChatPanel } from "@/features/chat/components/chat-panel";
 import type { TeamSlotInput, TeamAnalysis, MatchupMatrixEntry } from "@nasty-plot/core";
 
 export default function TeamEditorPage({
@@ -60,7 +52,6 @@ export default function TeamEditorPage({
 
   const [addingNew, setAddingNew] = useState(false);
   const [activeTab, setActiveTab] = useState("overview");
-  const [chatOpen, setChatOpen] = useState(false);
 
   const updateTeamMut = useUpdateTeam();
   const deleteTeamMut = useDeleteTeam();
@@ -313,34 +304,12 @@ export default function TeamEditorPage({
               onSave={handleSaveSlot}
               onRemove={handleRemoveSlot}
               isNew={addingNew}
+              formatId={team.formatId}
             />
           </div>
         </DialogContent>
       </Dialog>
 
-      {/* Chat Sidebar */}
-      <Sheet open={chatOpen} onOpenChange={setChatOpen}>
-        <SheetContent side="right" className="w-full sm:w-[400px] lg:w-[450px] p-0">
-          <SheetHeader className="p-4 pb-0">
-            <SheetTitle>Team Assistant</SheetTitle>
-            <SheetDescription>
-              Ask about competitive sets, damage calcs, and team building
-            </SheetDescription>
-          </SheetHeader>
-          <div className="h-[calc(100%-80px)]">
-            <ChatPanel teamId={teamId} formatId={team.formatId} />
-          </div>
-        </SheetContent>
-      </Sheet>
-
-      {/* Floating Chat Button */}
-      <Button
-        onClick={() => setChatOpen(true)}
-        size="icon"
-        className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg z-50"
-      >
-        <MessageCircle className="h-6 w-6" />
-      </Button>
     </div>
   );
 }
