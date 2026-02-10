@@ -50,9 +50,59 @@ export class ReplayEngine {
       winProbTeam1: 50,
     })
 
-    for (const line of lines) {
-      // Skip request lines and error lines for replay
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i]
+
+      // Skip request lines, error lines, and stream markers for replay
       if (line.startsWith("|request|") || line.startsWith("|error|")) continue
+      if (line === "update" || line === "sideupdate" || line === "p1" || line === "p2") continue
+
+      // Handle |split|<side>: next line is owner view (exact HP),
+      // line after is spectator view (percentage). Keep owner, skip spectator.
+      if (line.startsWith("|split|")) {
+        if (i + 1 < lines.length) {
+          const ownerLine = lines[i + 1]
+          const ownerEntry = processLine(state, ownerLine)
+          if (ownerEntry) {
+            state.log.push(ownerEntry)
+            state.fullLog.push(ownerEntry)
+            currentTurnEntries.push(ownerEntry)
+            if (ownerEntry.type === "turn") {
+              if (lastTurnNumber > 0 || currentTurnEntries.length > 1) {
+                const cloned = deepCloneState(state)
+                let winProb: number | null = null
+                try {
+                  const wp = estimateWinProbability(cloned)
+                  winProb = wp.p1
+                } catch {
+                  /* eval may fail */
+                }
+                this.frames.push({
+                  turnNumber: state.turn,
+                  state: cloned,
+                  entries: [...currentTurnEntries],
+                  winProbTeam1: winProb,
+                })
+              }
+              currentTurnEntries = [ownerEntry]
+              lastTurnNumber = state.turn
+            }
+            if (ownerEntry.type === "win") {
+              const cloned = deepCloneState(state)
+              const wp = estimateWinProbability(cloned)
+              this.frames.push({
+                turnNumber: state.turn,
+                state: cloned,
+                entries: [...currentTurnEntries],
+                winProbTeam1: wp.p1,
+              })
+              currentTurnEntries = []
+            }
+          }
+        }
+        i += 2 // skip past owner + spectator lines
+        continue
+      }
 
       const entry = processLine(state, line)
 

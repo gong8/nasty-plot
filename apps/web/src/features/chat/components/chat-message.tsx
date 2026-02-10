@@ -51,6 +51,7 @@ export function ChatMessage({ role, content, isStreaming }: ChatMessageProps) {
   return (
     <div className="flex gap-3 flex-row">
       <div className="flex-shrink-0 rounded-full flex items-center justify-center w-9 h-9 bg-accent/15 text-accent">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/1025.png"
           alt="Pecharunt"

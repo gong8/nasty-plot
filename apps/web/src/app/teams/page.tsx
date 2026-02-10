@@ -59,6 +59,7 @@ export default function TeamsPage() {
         {!isLoading && teams && teams.length === 0 && (
           <Card className="py-12">
             <CardContent className="flex flex-col items-center gap-4 text-center">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/1025.png"
                 alt="Pecharunt"

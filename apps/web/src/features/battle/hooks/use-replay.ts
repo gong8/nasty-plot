@@ -26,7 +26,7 @@ export function useReplay(config: UseReplayConfig) {
     engine.parse()
     engineRef.current = engine
 
-    setTotalFrames(engine.totalFrames)
+    setTotalFrames(engine.totalFrames) // eslint-disable-line react-hooks/set-state-in-effect -- engine initialization
     setIsReady(true)
 
     const first = engine.getFrame(0)

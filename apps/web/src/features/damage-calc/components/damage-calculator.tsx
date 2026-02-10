@@ -13,7 +13,6 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Slider } from "@/components/ui/slider"
-import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
 import { Separator } from "@/components/ui/separator"
 import { Progress } from "@/components/ui/progress"
@@ -25,7 +24,6 @@ import {
   STATS,
   STAT_LABELS,
   STAT_COLORS,
-  TYPE_COLORS,
   MAX_SINGLE_EV,
   type PokemonType,
   type NatureName,
@@ -98,10 +96,6 @@ function PokemonPanel({
 
   const updateEv = (stat: keyof StatsTable, value: number) => {
     onChange({ ...config, evs: { ...config.evs, [stat]: value } })
-  }
-
-  const updateIv = (stat: keyof StatsTable, value: number) => {
-    onChange({ ...config, ivs: { ...config.ivs, [stat]: value } })
   }
 
   const updateBoost = (stat: keyof StatsTable, value: number) => {

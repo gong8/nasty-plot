@@ -1,10 +1,11 @@
 "use client"
 
-import { useState, useRef } from "react"
+import { useState, useRef, useMemo } from "react"
 import { cn } from "@/lib/utils"
 import type { BattleState, MoveHint } from "@nasty-plot/battle-engine"
 import { BattleField } from "./BattleField"
 import { BattleLog } from "./BattleLog"
+import { BattleScreen, type SidebarTab } from "./BattleScreen"
 import { MoveSelector } from "./MoveSelector"
 import { SwitchMenu } from "./SwitchMenu"
 import { TeamPreview } from "./TeamPreview"
@@ -13,19 +14,11 @@ import { HintPanel } from "./HintPanel"
 import { CommentaryPanel } from "./CommentaryPanel"
 import { useBattleHints } from "../hooks/use-battle-hints"
 import { useBattleAnimations } from "../hooks/use-battle-animations"
+import { useBattleStatePublisher } from "../context/battle-state-context"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import {
-  Trophy,
-  RotateCcw,
-  ArrowLeft,
-  Lightbulb,
-  MessageSquare,
-  Save,
-  Loader2,
-  ChevronDown,
-  ChevronUp,
-} from "lucide-react"
+import { Trophy, RotateCcw, ArrowLeft, MessageCircle, Save, Loader2 } from "lucide-react"
+import { useChatSidebar } from "@/features/chat/context/chat-provider"
 import Link from "next/link"
 
 interface BattleViewProps {
@@ -48,18 +41,16 @@ export function BattleView({
   className,
 }: BattleViewProps) {
   const [showSwitchMenu, setShowSwitchMenu] = useState(false)
-  const [hintsEnabled, setHintsEnabled] = useState(false)
-  const [commentaryEnabled, setCommentaryEnabled] = useState(false)
   const [commentaryAutoMode, setCommentaryAutoMode] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [savedId, setSavedId] = useState<string | null>(null)
-  const [expandedPanel, setExpandedPanel] = useState(false)
+  const [textSpeed, setTextSpeed] = useState(1)
+  const { openNewChatModal } = useChatSidebar()
+  useBattleStatePublisher(state)
 
   const commentaryRef = useRef<Record<number, string>>({})
 
-  const [textSpeed, setTextSpeed] = useState(1)
-
-  const { hints, winProb } = useBattleHints(state, { enabled: hintsEnabled })
+  const { hints, winProb } = useBattleHints(state, { enabled: true })
   const animState = useBattleAnimations(state, { speed: textSpeed })
 
   const handleHintSelect = (hint: MoveHint) => {
@@ -73,7 +64,6 @@ export function BattleView({
   const handleCommentaryGenerated = (turn: number, text: string) => {
     commentaryRef.current[turn] = text
 
-    // If battle is already saved, persist commentary incrementally
     if (savedId) {
       fetch(`/api/battles/${savedId}/commentary`, {
         method: "PUT",
@@ -93,6 +83,51 @@ export function BattleView({
     setIsSaving(false)
   }
 
+  const recentEntries = state.log.slice(-10)
+
+  // Sidebar tabs — always Log + Hints + Commentary
+  const sidebarTabs = useMemo(() => {
+    const tabs: SidebarTab[] = [
+      {
+        value: "log",
+        label: "Log",
+        content: (
+          <div className="border rounded-lg overflow-hidden h-full">
+            <BattleLog entries={state.fullLog} />
+          </div>
+        ),
+      },
+    ]
+
+    if (hints) {
+      tabs.push({
+        value: "hints",
+        label: "Hints",
+        content: <HintPanel hints={hints.rankedMoves} onSelectHint={handleHintSelect} />,
+      })
+    }
+
+    tabs.push({
+      value: "commentary",
+      label: "Commentary",
+      content: (
+        <CommentaryPanel
+          state={state}
+          recentEntries={recentEntries}
+          team1Name={state.sides.p1.name}
+          team2Name={state.sides.p2.name}
+          autoMode={commentaryAutoMode}
+          showAutoToggle
+          onAutoModeChange={setCommentaryAutoMode}
+          onCommentaryGenerated={handleCommentaryGenerated}
+        />
+      ),
+    })
+
+    return tabs
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.fullLog, state.log, hints, commentaryAutoMode, state, recentEntries])
+
   // Team Preview Phase
   if (state.phase === "preview") {
     return (
@@ -111,7 +146,7 @@ export function BattleView({
   if (state.phase === "ended") {
     const playerWon = state.winner === "p1"
     return (
-      <div className={cn("space-y-4", className)}>
+      <div className={cn("space-y-3", className)}>
         <BattleField
           state={state}
           animationStates={animState.slotAnimations}
@@ -182,181 +217,85 @@ export function BattleView({
   const isForceSwitch = state.availableActions?.forceSwitch ?? false
   const showSwitch = showSwitchMenu || isForceSwitch
   const activePokemon = state.sides.p1.active[0]
-
-  // Gate controls on animation state
   const controlsDisabled = animState.isAnimating
-
-  // Recent log entries for commentary (last turn's entries)
-  const recentEntries = state.log.slice(-10)
 
   return (
     <div className={cn("flex flex-col h-[calc(100vh-80px)]", className)}>
-      {/* Top bar: turn indicator + toggles */}
-      <div className="flex items-center justify-between px-2 py-1.5 shrink-0">
+      {/* Top bar: turn + names */}
+      <div className="flex items-center justify-between px-3 py-1 shrink-0">
         <span className="text-sm font-semibold tabular-nums">Turn {state.turn}</span>
-        <div className="flex items-center gap-2">
-          <Button
-            size="sm"
-            variant={hintsEnabled ? "default" : "ghost"}
-            onClick={() => setHintsEnabled((v) => !v)}
-            className="h-7 text-xs gap-1"
-          >
-            <Lightbulb className="h-3 w-3" />
-            Hints
-          </Button>
-          <Button
-            size="sm"
-            variant={commentaryEnabled ? "default" : "ghost"}
-            onClick={() => {
-              setCommentaryEnabled((v) => !v)
-              if (!commentaryEnabled) {
-                // Opening commentary panel — expand it
-                setExpandedPanel(true)
-              }
-            }}
-            className="h-7 text-xs gap-1"
-          >
-            <MessageSquare className="h-3 w-3" />
-            Commentary
-          </Button>
-          <div className="flex items-center gap-0.5">
-            {[1, 2, 4].map((s) => (
-              <Button
-                key={s}
-                size="sm"
-                variant={textSpeed === s ? "default" : "ghost"}
-                onClick={() => setTextSpeed(s)}
-                className="h-7 text-xs px-1.5"
-              >
-                {s}x
-              </Button>
-            ))}
-          </div>
-          {commentaryEnabled && (
-            <Button
-              size="sm"
-              variant={commentaryAutoMode ? "default" : "outline"}
-              onClick={() => setCommentaryAutoMode((v) => !v)}
-              className="h-7 text-xs gap-1"
-            >
-              {commentaryAutoMode ? "Live" : "Live"}
-            </Button>
-          )}
-        </div>
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <span>{state.sides.p1.name}</span>
-          <span className="text-xs">vs</span>
-          <span>{state.sides.p2.name}</span>
-        </div>
-      </div>
-
-      {/* Win probability bar */}
-      {winProb && (
-        <div className="px-2 shrink-0">
+        {winProb && (
           <EvalBar
+            className="flex-1 mx-4"
             p1WinProb={winProb.p1}
             p2WinProb={winProb.p2}
             p1Name={state.sides.p1.name}
             p2Name={state.sides.p2.name}
           />
-        </div>
-      )}
-
-      {/* Middle: field (70%) + battle log (30%) side by side */}
-      <div className="flex-1 flex gap-2 px-2 py-1.5 min-h-0">
-        {/* Battle field */}
-        <div className="flex-[7] min-w-0 min-h-[200px]">
-          <BattleField
-            state={state}
-            animationStates={animState.slotAnimations}
-            textMessage={animState.textMessage}
-            damageNumbers={animState.damageNumbers}
-            textSpeed={textSpeed}
-          />
-        </div>
-
-        {/* Battle log sidebar */}
-        <div className="flex-[3] min-w-0 border rounded-lg overflow-hidden">
-          <BattleLog entries={state.fullLog} />
-        </div>
-      </div>
-
-      {/* Bottom: full-width controls */}
-      <div className="shrink-0 px-2 pb-2 max-h-[40vh] overflow-y-auto">
-        {state.waitingForChoice && state.availableActions && (
-          <Card className={cn(controlsDisabled && "opacity-60 pointer-events-none")}>
-            <CardContent className="pt-3 pb-3">
-              {showSwitch ? (
-                <SwitchMenu
-                  actions={state.availableActions}
-                  onSwitch={(idx) => {
-                    onSwitch(idx)
-                    setShowSwitchMenu(false)
-                  }}
-                  onBack={isForceSwitch ? undefined : () => setShowSwitchMenu(false)}
-                  team={state.sides.p1.team}
-                />
-              ) : (
-                <MoveSelector
-                  actions={state.availableActions}
-                  onMoveSelect={onMove}
-                  onSwitchClick={() => setShowSwitchMenu(true)}
-                  canTera={state.availableActions.canTera && state.sides.p1.canTera}
-                  teraType={activePokemon?.teraType}
-                  format={state.format}
-                  activeSlot={state.availableActions.activeSlot}
-                />
-              )}
-            </CardContent>
-          </Card>
         )}
-
-        {!state.waitingForChoice && state.phase === "battle" && (
-          <Card>
-            <CardContent className="pt-3 pb-3 text-center text-muted-foreground text-sm">
-              Waiting for opponent...
-            </CardContent>
-          </Card>
-        )}
-      </div>
-
-      {/* Collapsible: hints + commentary */}
-      {(hintsEnabled || commentaryEnabled) && (
-        <div className="shrink-0 px-2 pb-2 max-h-[25vh] overflow-y-auto">
-          <button
-            onClick={() => setExpandedPanel((v) => !v)}
-            className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors mb-1"
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <span>{state.sides.p1.name}</span>
+          <span className="text-xs">vs</span>
+          <span>{state.sides.p2.name}</span>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={openNewChatModal}
+            className="h-7 text-xs gap-1"
           >
-            {expandedPanel ? (
-              <ChevronDown className="h-3 w-3" />
-            ) : (
-              <ChevronUp className="h-3 w-3" />
-            )}
-            {hintsEnabled && "Hints"}
-            {hintsEnabled && commentaryEnabled && " & "}
-            {commentaryEnabled && "Commentary"}
-          </button>
-
-          {expandedPanel && (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
-              {hintsEnabled && hints && (
-                <HintPanel hints={hints.rankedMoves} onSelectHint={handleHintSelect} />
-              )}
-
-              {commentaryEnabled && (
-                <CommentaryPanel
-                  state={state}
-                  recentEntries={recentEntries}
-                  team1Name={state.sides.p1.name}
-                  team2Name={state.sides.p2.name}
-                  autoMode={commentaryAutoMode}
-                  onCommentaryGenerated={handleCommentaryGenerated}
-                />
-              )}
-            </div>
-          )}
+            <MessageCircle className="h-3 w-3" />
+            Coach
+          </Button>
         </div>
-      )}
+      </div>
+
+      {/* BattleScreen with controls nested below the field */}
+      <div className="flex-1 px-2 py-1 min-h-0">
+        <BattleScreen
+          state={state}
+          animState={animState}
+          textSpeed={textSpeed}
+          speed={textSpeed}
+          onSpeedChange={setTextSpeed}
+          sidebarTabs={sidebarTabs}
+          bottomContent={
+            state.waitingForChoice && state.availableActions ? (
+              <Card className={cn("h-full", controlsDisabled && "opacity-60 pointer-events-none")}>
+                <CardContent className="pt-3 pb-3 h-full">
+                  {showSwitch ? (
+                    <SwitchMenu
+                      actions={state.availableActions}
+                      onSwitch={(idx) => {
+                        onSwitch(idx)
+                        setShowSwitchMenu(false)
+                      }}
+                      onBack={isForceSwitch ? undefined : () => setShowSwitchMenu(false)}
+                      team={state.sides.p1.team}
+                    />
+                  ) : (
+                    <MoveSelector
+                      actions={state.availableActions}
+                      onMoveSelect={onMove}
+                      onSwitchClick={() => setShowSwitchMenu(true)}
+                      canTera={state.availableActions.canTera && state.sides.p1.canTera}
+                      teraType={activePokemon?.teraType}
+                      format={state.format}
+                      activeSlot={state.availableActions.activeSlot}
+                    />
+                  )}
+                </CardContent>
+              </Card>
+            ) : (
+              <Card className="h-full">
+                <CardContent className="pt-3 pb-3 h-full flex items-center justify-center text-muted-foreground text-sm">
+                  {state.phase === "battle" ? "Waiting for opponent..." : "\u00A0"}
+                </CardContent>
+              </Card>
+            )
+          }
+          className="h-full"
+        />
+      </div>
     </div>
   )
 }

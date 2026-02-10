@@ -9,7 +9,7 @@ interface DamageNumberProps {
   className?: string
 }
 
-export function DamageNumber({ value, side, slotIndex = 0, className }: DamageNumberProps) {
+export function DamageNumber({ value, side, className }: DamageNumberProps) {
   if (!value) return null
 
   const isHeal = value.startsWith("+")

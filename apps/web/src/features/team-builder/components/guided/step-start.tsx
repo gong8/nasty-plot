@@ -33,8 +33,8 @@ export function StepStart({
         </CardHeader>
         <CardContent className="flex flex-1 flex-col justify-between gap-4">
           <p className="text-sm text-muted-foreground">
-            Build your team from the ground up. We'll guide you through picking Pokemon one at a
-            time, with recommendations at every step.
+            Build your team from the ground up. We&apos;ll guide you through picking Pokemon one at
+            a time, with recommendations at every step.
           </p>
           <Button onClick={onStartFromScratch} className="w-full">
             Get Started

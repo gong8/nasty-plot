@@ -14,6 +14,7 @@ export default function ChatPage() {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] px-4">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/1025.png"
         alt="Pecharunt"

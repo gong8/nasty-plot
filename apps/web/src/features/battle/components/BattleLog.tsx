@@ -1,6 +1,6 @@
 "use client"
 
-import { useRef, useEffect, useState, useCallback } from "react"
+import { useRef, useEffect, useState, useCallback, useMemo } from "react"
 import { ArrowDown } from "lucide-react"
 import type { BattleLogEntry } from "@nasty-plot/battle-engine"
 import { Button } from "@/components/ui/button"
@@ -35,8 +35,21 @@ export function BattleLog({ entries, className }: BattleLogProps) {
     setIsAtBottom(true)
   }, [])
 
-  // Group entries by turn for visual separation
-  let currentTurn = -1
+  // Pre-compute which entries should show a turn separator
+  const turnSeparators = useMemo(() => {
+    const set = new Set<number>()
+    let prevTurn = -1
+    for (let i = 0; i < entries.length; i++) {
+      const entry = entries[i]
+      if (entry.type === "turn" && entry.turn !== prevTurn) {
+        set.add(i)
+        prevTurn = entry.turn
+      } else if (entry.type === "turn") {
+        prevTurn = entry.turn
+      }
+    }
+    return set
+  }, [entries])
 
   return (
     <div className={cn("relative flex flex-col h-full", className)}>
@@ -49,25 +62,20 @@ export function BattleLog({ entries, className }: BattleLogProps) {
           {entries.length === 0 && (
             <p className="text-muted-foreground italic px-2">Battle log will appear here...</p>
           )}
-          {entries.map((entry, i) => {
-            const showTurnSeparator = entry.type === "turn" && entry.turn !== currentTurn
-            if (entry.type === "turn") currentTurn = entry.turn
-
-            return (
-              <div key={i}>
-                {showTurnSeparator && (
-                  <div className="flex items-center gap-3 my-3 first:mt-1">
-                    <div className="flex-1 h-px bg-border" />
-                    <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                      Turn {entry.turn}
-                    </span>
-                    <div className="flex-1 h-px bg-border" />
-                  </div>
-                )}
-                {entry.type !== "turn" && <LogEntry entry={entry} />}
-              </div>
-            )
-          })}
+          {entries.map((entry, i) => (
+            <div key={i}>
+              {turnSeparators.has(i) && (
+                <div className="flex items-center gap-3 my-3 first:mt-1">
+                  <div className="flex-1 h-px bg-border" />
+                  <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    Turn {entry.turn}
+                  </span>
+                  <div className="flex-1 h-px bg-border" />
+                </div>
+              )}
+              {entry.type !== "turn" && <LogEntry entry={entry} />}
+            </div>
+          ))}
           <div ref={bottomRef} />
         </div>
       </div>

@@ -117,13 +117,7 @@ export function StepPickPokemon({
       </div>
 
       {/* Role suggestion banner (only for build phase) */}
-      {!isLead && (
-        <RoleSuggestionBanner
-          analysis={analysis}
-          filledSlotCount={filledSlotCount}
-          slotNumber={slotNumber}
-        />
-      )}
+      {!isLead && <RoleSuggestionBanner analysis={analysis} filledSlotCount={filledSlotCount} />}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main content: recommendations + manual search */}

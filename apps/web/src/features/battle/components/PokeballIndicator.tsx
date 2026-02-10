@@ -1,39 +1,67 @@
 "use client"
 
 import type { BattlePokemon } from "@nasty-plot/battle-engine"
+import { Icons } from "@pkmn/img"
 import { cn } from "@/lib/utils"
+import { CircleHelp } from "lucide-react"
 
 interface PokeballIndicatorProps {
   team: BattlePokemon[]
   teamSize?: number
+  vertical?: boolean
   className?: string
 }
 
-function getPokeballColor(pokemon?: BattlePokemon): string {
-  if (!pokemon) return "bg-muted-foreground/30" // Unknown/empty slot
-  if (pokemon.fainted) return "bg-red-500/60 dark:bg-red-600/60"
-  if (pokemon.status) return "bg-yellow-500 dark:bg-yellow-400"
-  return "bg-green-500 dark:bg-green-400"
-}
+function PokemonIcon({ pokemon }: { pokemon?: BattlePokemon }) {
+  if (!pokemon) {
+    // Unrevealed opponent Pokemon — placeholder
+    return (
+      <div className="w-[28px] h-[24px] flex items-center justify-center opacity-40">
+        <CircleHelp className="w-3.5 h-3.5 text-muted-foreground" />
+      </div>
+    )
+  }
 
-export function PokeballIndicator({ team, teamSize = 6, className }: PokeballIndicatorProps) {
-  const balls = Array.from({ length: teamSize }, (_, i) => team[i])
+  const icon = Icons.getPokemon(pokemon.speciesId || pokemon.name)
 
   return (
-    <div className={cn("flex gap-1.5", className)}>
-      {balls.map((pokemon, i) => (
-        <div
-          key={i}
-          className={cn(
-            "w-3 h-3 rounded-full border border-black/20 dark:border-white/20 transition-colors duration-300",
-            getPokeballColor(pokemon),
-          )}
-          title={
-            pokemon
-              ? `${pokemon.name}${pokemon.fainted ? " (fainted)" : pokemon.status ? ` (${pokemon.status})` : ""}`
-              : "Unknown"
-          }
-        />
+    <div
+      className={cn(
+        "w-[28px] h-[24px] overflow-hidden shrink-0",
+        pokemon.fainted && "grayscale opacity-40",
+        pokemon.status && !pokemon.fainted && "brightness-90 sepia-[0.3]",
+      )}
+      title={
+        pokemon.name +
+        (pokemon.fainted ? " (fainted)" : pokemon.status ? ` (${pokemon.status})` : "")
+      }
+    >
+      <div
+        style={{
+          width: 40,
+          height: 30,
+          imageRendering: "pixelated" as const,
+          background: `transparent url(${icon.url}) no-repeat scroll ${icon.left}px ${icon.top}px`,
+          transform: "scale(0.7)",
+          transformOrigin: "top left",
+        }}
+      />
+    </div>
+  )
+}
+
+export function PokeballIndicator({
+  team,
+  teamSize = 6,
+  vertical = false,
+  className,
+}: PokeballIndicatorProps) {
+  const slots = Array.from({ length: teamSize }, (_, i) => team[i])
+
+  return (
+    <div className={cn("flex gap-0.5 items-center", vertical && "flex-col", className)}>
+      {slots.map((pokemon, i) => (
+        <PokemonIcon key={i} pokemon={pokemon} />
       ))}
     </div>
   )

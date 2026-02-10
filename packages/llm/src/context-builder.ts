@@ -126,6 +126,84 @@ export function buildPageContextPrompt(context: PageContextData): string {
   return "\n" + lines.join("\n") + "\n"
 }
 
+// --- Context Mode Prompts ---
+
+const CONTEXT_MODE_PROMPTS: Record<string, string> = {
+  "guided-builder": `You are acting as a **team building advisor** in the guided team builder. The user is constructing a team step-by-step. You have full access to all tools including team CRUD operations.
+
+Guide them through team building decisions:
+- Suggest Pokemon that complement their current team
+- Explain type synergy and coverage gaps
+- Recommend sets (moves, EVs, nature, item, ability) for each pick
+- Consider the format's metagame when making suggestions
+- Be proactive: if you see a weakness, call it out`,
+
+  "team-editor": `You are acting as a **team optimization expert**. The user is editing an existing team. You have full access to all tools including team CRUD operations.
+
+Help them refine their team:
+- Analyze existing sets and suggest improvements
+- Identify coverage gaps and suggest fixes
+- Run damage calcs when relevant
+- Suggest alternative spreads, moves, or Pokemon swaps
+- Consider the format's metagame threats`,
+
+  "battle-live": `You are acting as a **real-time battle coach**. The user is in a live battle simulation. You can look up Pokemon data and run analysis but CANNOT modify teams.
+
+Provide tactical advice:
+- Analyze the current game state (HP, field conditions, matchups)
+- Suggest optimal moves for the current turn
+- Warn about opponent threats and predict their plays
+- Explain type matchups and damage ranges
+- Keep advice concise — the user needs to act quickly`,
+
+  "battle-replay": `You are acting as a **post-battle analyst**. The user is reviewing a battle replay. You can look up Pokemon data and run analysis but CANNOT modify teams.
+
+Analyze the battle:
+- Evaluate key decisions and turning points
+- Identify misplays or missed opportunities
+- Explain why certain moves were good or bad choices
+- Discuss alternative lines of play
+- Reference specific turns when analyzing`,
+}
+
+export function buildContextModePrompt(contextMode: string, contextData?: string): string {
+  const modePrompt = CONTEXT_MODE_PROMPTS[contextMode]
+  if (!modePrompt) return ""
+
+  const lines: string[] = [modePrompt]
+
+  if (contextData) {
+    try {
+      const data = JSON.parse(contextData)
+
+      if (contextMode === "guided-builder" || contextMode === "team-editor") {
+        if (data.teamName) lines.push(`\nTeam: "${data.teamName}"`)
+        if (data.formatId) lines.push(`Format: ${data.formatId}`)
+        if (data.paste) lines.push(`\nTeam Paste:\n\`\`\`\n${data.paste}\n\`\`\``)
+      }
+
+      if (contextMode === "battle-live") {
+        if (data.formatId) lines.push(`\nFormat: ${data.formatId}`)
+        if (data.team1Name) lines.push(`Player: ${data.team1Name}`)
+        if (data.team2Name) lines.push(`Opponent: ${data.team2Name}`)
+        if (data.aiDifficulty) lines.push(`AI Difficulty: ${data.aiDifficulty}`)
+      }
+
+      if (contextMode === "battle-replay") {
+        if (data.formatId) lines.push(`\nFormat: ${data.formatId}`)
+        if (data.team1Name) lines.push(`${data.team1Name} vs ${data.team2Name}`)
+        if (data.turnCount) lines.push(`${data.turnCount} turns`)
+        if (data.winnerId)
+          lines.push(`Winner: ${data.winnerId === "team1" ? data.team1Name : data.team2Name}`)
+      }
+    } catch {
+      // Invalid JSON is fine — skip context data
+    }
+  }
+
+  return "\n" + lines.join("\n") + "\n"
+}
+
 export function buildPlanModePrompt(): string {
   return `
 ## Planning

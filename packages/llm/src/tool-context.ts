@@ -42,25 +42,37 @@ const ALL_MCP_TOOLS = Object.values(TOOL_CATEGORIES)
   .map((name) => `${MCP_PREFIX}${name}`)
 
 export type PageType =
+  | "guided-builder"
   | "team-editor"
   | "pokemon-detail"
   | "pokemon-browser"
   | "damage-calc"
   | "battle-live"
+  | "battle-replay"
   | "chat"
   | "home"
   | "other"
 
 /** Map page types to which tool categories are ALLOWED */
 const TOOL_CONTEXT_MAP: Record<PageType, string[]> = {
+  "guided-builder": ["dataQuery", "analysis", "teamCrud", "metaRecs"],
   "team-editor": ["dataQuery", "analysis", "teamCrud", "metaRecs"],
   "pokemon-detail": ["dataQuery", "analysis"],
   "pokemon-browser": ["dataQuery", "metaRecs"],
   "damage-calc": ["dataQuery", "analysis"],
   "battle-live": ["dataQuery", "analysis"],
+  "battle-replay": ["dataQuery", "analysis"],
   chat: ["dataQuery", "analysis", "teamCrud", "metaRecs"],
   home: ["dataQuery", "analysis", "teamCrud", "metaRecs"],
   other: ["dataQuery", "analysis", "teamCrud", "metaRecs"],
+}
+
+/** Map context modes to allowed tool categories (overrides page-based filtering) */
+const CONTEXT_MODE_TOOL_MAP: Record<string, string[]> = {
+  "guided-builder": ["dataQuery", "analysis", "teamCrud", "metaRecs"],
+  "team-editor": ["dataQuery", "analysis", "teamCrud", "metaRecs"],
+  "battle-live": ["dataQuery", "analysis"],
+  "battle-replay": ["dataQuery", "analysis"],
 }
 
 /**
@@ -79,14 +91,33 @@ export function getDisallowedMcpTools(pageType: PageType): string[] {
 }
 
 /**
+ * Get MCP tool names that should be disallowed for a given context mode.
+ * Context mode overrides page-based filtering for locked sessions.
+ */
+export function getDisallowedMcpToolsForContextMode(contextMode: string): string[] {
+  const allowedCategories = CONTEXT_MODE_TOOL_MAP[contextMode]
+  if (!allowedCategories) return [] // unknown mode = allow all
+
+  const allowedTools = new Set(
+    allowedCategories.flatMap(
+      (cat) => TOOL_CATEGORIES[cat]?.map((name) => `${MCP_PREFIX}${name}`) ?? [],
+    ),
+  )
+
+  return ALL_MCP_TOOLS.filter((tool) => !allowedTools.has(tool))
+}
+
+/**
  * Determine the page type from a pathname.
  */
 export function getPageTypeFromPath(pathname: string): PageType {
+  if (pathname.match(/^\/teams\/[^/]+\/guided$/)) return "guided-builder"
   if (pathname.match(/^\/teams\/[^/]+$/)) return "team-editor"
   if (pathname.match(/^\/pokemon\/[^/]+$/)) return "pokemon-detail"
   if (pathname === "/pokemon") return "pokemon-browser"
   if (pathname === "/damage-calc") return "damage-calc"
   if (pathname === "/battle/live") return "battle-live"
+  if (pathname.match(/^\/battle\/replay\//)) return "battle-replay"
   if (pathname === "/chat") return "chat"
   if (pathname === "/") return "home"
   return "other"

@@ -32,7 +32,7 @@ export function HealthBar({
     const prev = prevPercentRef.current
     if (prev !== percent && animate) {
       if (percent < prev) {
-        setGlowClass("animate-battle-damage-glow")
+        setGlowClass("animate-battle-damage-glow") // eslint-disable-line react-hooks/set-state-in-effect -- animation trigger on value change
       } else if (percent > prev) {
         setGlowClass("animate-battle-heal-glow")
       }

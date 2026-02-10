@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { Badge } from "@/components/ui/badge"
-import { POKEMON_TYPES, TYPE_COLORS, type PokemonType, type TypeCoverage } from "@nasty-plot/core"
+import { POKEMON_TYPES, TYPE_COLORS, type TypeCoverage } from "@nasty-plot/core"
 import { cn } from "@/lib/utils"
 
 interface CoverageChartProps {

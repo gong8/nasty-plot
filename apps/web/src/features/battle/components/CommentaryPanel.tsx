@@ -19,6 +19,10 @@ interface CommentaryPanelProps {
   onCommentaryGenerated?: (turn: number, text: string) => void
   /** When true, automatically fetch commentary at end of each turn */
   autoMode?: boolean
+  /** Show a toggle for auto/live mode inside the panel header */
+  showAutoToggle?: boolean
+  /** Callback when auto mode is toggled */
+  onAutoModeChange?: (enabled: boolean) => void
 }
 
 export function CommentaryPanel({
@@ -30,6 +34,8 @@ export function CommentaryPanel({
   initialCommentary,
   onCommentaryGenerated,
   autoMode = false,
+  showAutoToggle = false,
+  onAutoModeChange,
 }: CommentaryPanelProps) {
   const [comments, setComments] = useState<Record<number, string>>(initialCommentary ?? {})
   const [isLoading, setIsLoading] = useState(false)
@@ -164,29 +170,41 @@ export function CommentaryPanel({
 
   return (
     <Card className={className}>
-      <CardHeader className="py-3 px-4 flex flex-row items-center justify-between">
+      <CardHeader className="py-2 px-4 flex flex-row items-center justify-between gap-2">
         <CardTitle className="text-sm font-medium flex items-center gap-1.5">
-          <MessageSquare className="h-4 w-4" />
+          <MessageSquare className="h-3.5 w-3.5" />
           Commentary
         </CardTitle>
-        {!autoMode && (
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => fetchCommentary()}
-            disabled={isLoading || recentEntries.length === 0 || hasCurrent}
-            className="h-7 text-xs"
-          >
-            {isLoading ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : null}
-            {hasCurrent ? "Analyzed" : "Analyze Turn"}
-          </Button>
-        )}
-        {autoMode && isLoading && (
-          <span className="flex items-center gap-1 text-xs text-muted-foreground">
-            <Loader2 className="h-3 w-3 animate-spin" />
-            Analyzing...
-          </span>
-        )}
+        <div className="flex items-center gap-1.5">
+          {showAutoToggle && (
+            <Button
+              size="sm"
+              variant={autoMode ? "default" : "outline"}
+              onClick={() => onAutoModeChange?.(!autoMode)}
+              className="h-6 text-[11px] px-2"
+            >
+              {autoMode ? "Live" : "Live"}
+            </Button>
+          )}
+          {!autoMode && (
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => fetchCommentary()}
+              disabled={isLoading || recentEntries.length === 0 || hasCurrent}
+              className="h-6 text-[11px] px-2"
+            >
+              {isLoading ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : null}
+              {hasCurrent ? "Analyzed" : "Analyze Turn"}
+            </Button>
+          )}
+          {autoMode && isLoading && (
+            <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
+              <Loader2 className="h-3 w-3 animate-spin" />
+              Analyzing...
+            </span>
+          )}
+        </div>
       </CardHeader>
       <CardContent className="p-0 flex-1 min-h-0">
         <ScrollArea className="h-full px-4 pb-3" ref={scrollRef}>

@@ -53,7 +53,6 @@ interface SlotEditorProps {
 
 export function SlotEditor({
   slot,
-  teamId,
   nextPosition,
   onSave,
   onRemove,
@@ -79,7 +78,7 @@ export function SlotEditor({
 
   // Reset form when slot changes
   useEffect(() => {
-    setPokemonId(slot?.pokemonId ?? "")
+    setPokemonId(slot?.pokemonId ?? "") // eslint-disable-line react-hooks/set-state-in-effect -- sync form state from prop
     setNickname(slot?.nickname ?? "")
     setAbility(slot?.ability ?? "")
     setItem(slot?.item ?? "")
@@ -203,8 +202,6 @@ export function SlotEditor({
       </div>
     )
   }
-
-  const natureData = NATURE_DATA[nature]
 
   return (
     <ScrollArea className="h-full">

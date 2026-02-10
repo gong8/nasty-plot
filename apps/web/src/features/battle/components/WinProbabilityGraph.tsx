@@ -18,7 +18,6 @@ interface WinProbabilityGraphProps {
   frames: ReplayFrame[]
   currentTurn?: number
   p1Name?: string
-  p2Name?: string
   className?: string
 }
 
@@ -26,7 +25,6 @@ export function WinProbabilityGraph({
   frames,
   currentTurn,
   p1Name = "Player",
-  p2Name = "Opponent",
   className,
 }: WinProbabilityGraphProps) {
   const data = useMemo(

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { Sparkles, ChevronDown, ChevronUp, Loader2 } from "lucide-react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 import type { TeamSlotData } from "@nasty-plot/core"
 import { SimplifiedSetEditor } from "./simplified-set-editor"

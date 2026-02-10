@@ -11,7 +11,6 @@ import {
   type BattleState,
   type BattleFormat,
   type AIDifficulty,
-  type BattleLogEntry,
   type AIPlayer,
 } from "@nasty-plot/battle-engine"
 

@@ -3,6 +3,19 @@ import type { ChatSessionData, ApiResponse } from "@nasty-plot/core"
 
 const SESSIONS_KEY = ["chat-sessions"]
 
+export function useChatSession(id: string | null) {
+  return useQuery<ChatSessionData>({
+    queryKey: ["chat-session", id],
+    queryFn: async () => {
+      const res = await fetch(`/api/chat/sessions/${id}`)
+      if (!res.ok) throw new Error("Failed to fetch session")
+      const data: ApiResponse<ChatSessionData> = await res.json()
+      return data.data
+    },
+    enabled: !!id,
+  })
+}
+
 export function useChatSessions() {
   return useQuery<ChatSessionData[]>({
     queryKey: SESSIONS_KEY,

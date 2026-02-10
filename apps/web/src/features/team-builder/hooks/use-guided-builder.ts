@@ -111,7 +111,7 @@ export function useGuidedBuilder(teamId: string, formatId: string) {
       if (stored) {
         const draft: DraftState = JSON.parse(stored)
         if (draft.teamId === teamId) {
-          setStep(draft.step)
+          setStep(draft.step) // eslint-disable-line react-hooks/set-state-in-effect -- restore draft from localStorage
           setSlots(draft.slots)
           setCurrentBuildSlot(draft.currentBuildSlot)
           setStartedFromSample(draft.startedFromSample)

@@ -30,23 +30,25 @@ interface AskPecharuntButtonProps {
 
 export function AskPecharuntButton({ step, className }: AskPecharuntButtonProps) {
   const [showSuggestions, setShowSuggestions] = useState(false)
-  const { openSidebar } = useChatSidebar()
+  const { setPendingQuestion, openNewChatModal } = useChatSidebar()
 
   const questions = SUGGESTED_QUESTIONS[step]
 
   function handleMainClick() {
-    openSidebar()
+    openNewChatModal()
     setShowSuggestions((prev) => !prev)
   }
 
   function handleQuestionClick(question: string) {
-    openSidebar(question)
+    setPendingQuestion(question)
+    openNewChatModal()
     setShowSuggestions(false)
   }
 
   return (
     <div className={cn("flex flex-col gap-2", className)}>
       <Button variant="outline" size="sm" onClick={handleMainClick} className="gap-2">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/1025.png"
           alt="Pecharunt"

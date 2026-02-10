@@ -683,12 +683,36 @@ export function processLine(state: BattleState, line: string): BattleLogEntry | 
 
 /**
  * Process a multi-line protocol chunk (typically one full update).
+ *
+ * Handles `|split|<side>` markers from @pkmn/sim: after a split marker,
+ * the next line is the owner's view (exact HP) and the line after is the
+ * spectator view (percentage HP). We keep the owner's view and skip the
+ * spectator duplicate.
  */
 export function processChunk(state: BattleState, chunk: string): BattleLogEntry[] {
   const entries: BattleLogEntry[] = []
   const lines = chunk.split("\n").filter(Boolean)
 
-  for (const line of lines) {
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]
+
+    // |split|<side> means the next two lines are the same event from
+    // different perspectives. Process the first (owner, exact HP) and
+    // skip the second (spectator, percentage HP).
+    if (line.startsWith("|split|")) {
+      // Process the owner line (i+1), skip the spectator line (i+2)
+      if (i + 1 < lines.length) {
+        const entry = processLine(state, lines[i + 1])
+        if (entry) {
+          entries.push(entry)
+          state.log.push(entry)
+          state.fullLog.push(entry)
+        }
+      }
+      i += 2 // skip past both the owner and spectator lines
+      continue
+    }
+
     const entry = processLine(state, line)
     if (entry) {
       entries.push(entry)

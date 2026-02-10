@@ -62,6 +62,7 @@ export function BattleSprite({
       style={{ width: size, height: size }}
     >
       {loading && <Skeleton className="absolute inset-0 rounded-md" />}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={spriteData.url}
         alt={speciesId}

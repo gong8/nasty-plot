@@ -3,10 +3,8 @@
 import { useState, useCallback, useMemo } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { ChevronDown, ChevronUp, Info } from "lucide-react"
-import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Badge } from "@/components/ui/badge"
 import { Slider } from "@/components/ui/slider"
 import { Separator } from "@/components/ui/separator"
 import {
@@ -16,7 +14,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import {
   NATURE_DATA,
   TYPE_COLORS,
@@ -91,8 +88,14 @@ export function SimplifiedSetEditor({
     }))
   }, [speciesData])
 
-  const evs = (slot.evs ?? { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 }) as StatsTable
-  const ivs = (slot.ivs ?? { hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31 }) as StatsTable
+  const evs = useMemo(
+    () => (slot.evs ?? { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 }) as StatsTable,
+    [slot.evs],
+  )
+  const ivs = useMemo(
+    () => (slot.ivs ?? { hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31 }) as StatsTable,
+    [slot.ivs],
+  )
   const nature = slot.nature ?? "Hardy"
 
   const evTotal = getTotalEvs(evs)

@@ -17,6 +17,8 @@ interface BattleFieldProps {
   textMessage?: string | null
   textSpeed?: number
   damageNumbers?: { value: string; side: "p1" | "p2"; slot: number }[] | null
+  speed?: number
+  onSpeedChange?: (speed: number) => void
   className?: string
 }
 
@@ -31,18 +33,18 @@ const STATUS_BADGE: Record<string, { label: string; color: string }> = {
 
 /** Positioning configs for singles and doubles */
 const SINGLES_POSITIONS = {
-  player: [{ bottom: "8%", left: "10%" }],
-  opponent: [{ top: "10%", right: "10%" }],
+  player: [{ bottom: "14%", left: "10%" }],
+  opponent: [{ top: "6%", right: "10%" }],
 } as const
 
 const DOUBLES_POSITIONS = {
   player: [
-    { bottom: "12%", left: "5%" },
-    { bottom: "5%", left: "30%" },
+    { bottom: "10%", left: "5%" },
+    { bottom: "4%", left: "30%" },
   ],
   opponent: [
-    { top: "5%", right: "5%" },
-    { top: "12%", right: "30%" },
+    { top: "4%", right: "5%" },
+    { top: "10%", right: "30%" },
   ],
 } as const
 
@@ -73,7 +75,7 @@ function PokemonInfoPlate({ pokemon, isPlayer }: { pokemon: BattlePokemon; isPla
           </span>
         )}
       </div>
-      <HealthBar hp={pokemon.hp} maxHp={pokemon.maxHp} showText={true} />
+      <HealthBar hp={pokemon.hp} maxHp={pokemon.maxHp} showText={true} className="w-full" />
     </div>
   )
 }
@@ -127,6 +129,8 @@ export function BattleField({
   textMessage = null,
   textSpeed,
   damageNumbers = null,
+  speed,
+  onSpeedChange,
   className,
 }: BattleFieldProps) {
   const isDoubles = state.sides.p1.active.length > 1
@@ -134,7 +138,7 @@ export function BattleField({
   return (
     <div
       className={cn(
-        "relative aspect-[16/9] w-full overflow-hidden rounded-xl border",
+        "relative aspect-[2/1] w-full overflow-hidden rounded-xl border",
         "bg-gradient-to-b from-sky-200 via-sky-100 to-emerald-200",
         "dark:from-slate-900 dark:via-indigo-950 dark:to-emerald-950",
         className,
@@ -143,14 +147,14 @@ export function BattleField({
       {/* Weather/terrain overlay */}
       <WeatherOverlay field={state.field} />
 
-      {/* Opponent pokeball indicators (top-right) */}
-      <div className="absolute top-3 right-3 z-20">
-        <PokeballIndicator team={state.sides.p2.team} />
+      {/* Opponent pokeball indicators (right side, vertical) */}
+      <div className="absolute top-3 right-1 z-20">
+        <PokeballIndicator team={state.sides.p2.team} vertical />
       </div>
 
-      {/* Player pokeball indicators (bottom-left) */}
-      <div className="absolute bottom-3 left-3 z-20">
-        <PokeballIndicator team={state.sides.p1.team} />
+      {/* Player pokeball indicators (left side, vertical) */}
+      <div className="absolute bottom-[48px] left-1 z-20">
+        <PokeballIndicator team={state.sides.p1.team} vertical />
       </div>
 
       {/* Opponent side conditions (top-left area, near their side) */}
@@ -198,6 +202,26 @@ export function BattleField({
           />
         )
       })}
+
+      {/* Speed controls — faint overlay, bottom-right above text box */}
+      {onSpeedChange && (
+        <div className="absolute bottom-[48px] right-2 z-20 flex items-center gap-px opacity-40 hover:opacity-90 transition-opacity">
+          {[1, 2, 4].map((s) => (
+            <button
+              key={s}
+              onClick={() => onSpeedChange(s)}
+              className={cn(
+                "px-1.5 py-0.5 text-[10px] font-medium rounded transition-colors",
+                speed === s
+                  ? "bg-white/90 text-black"
+                  : "bg-black/30 text-white/80 hover:bg-black/50",
+              )}
+            >
+              {s}x
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Pokemon-style text box */}
       <BattleTextBox message={textMessage} speed={textSpeed} />

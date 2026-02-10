@@ -8,7 +8,6 @@ import { cn } from "@/lib/utils"
 interface RoleSuggestionBannerProps {
   analysis: TeamAnalysis | null
   filledSlotCount: number
-  slotNumber: number // which slot we're filling (2-6)
 }
 
 function getSuggestion(
@@ -88,11 +87,7 @@ const ICON_MAP = {
   info: Info,
 } as const
 
-export function RoleSuggestionBanner({
-  analysis,
-  filledSlotCount,
-  slotNumber,
-}: RoleSuggestionBannerProps) {
+export function RoleSuggestionBanner({ analysis, filledSlotCount }: RoleSuggestionBannerProps) {
   const { message, icon } = getSuggestion(analysis, filledSlotCount)
   const Icon = ICON_MAP[icon]
 

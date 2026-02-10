@@ -58,7 +58,7 @@ export function useReplayAnimations(
 
     timeoutRef.current = setTimeout(() => {
       isProcessingRef.current = false
-      processQueue()
+      processQueue() // eslint-disable-line react-hooks/immutability -- deferred self-reference via setTimeout
     }, event.duration)
   }, [])
 

@@ -37,7 +37,7 @@ export function MergeWizard({ open, onOpenChange, diff, onMerge, isLoading }: Me
   // Reset state when dialog opens/closes or diff changes
   useEffect(() => {
     if (open) {
-      setStep(0)
+      setStep(0) // eslint-disable-line react-hooks/set-state-in-effect -- reset state on dialog open
       setDecisions([])
       setName(`Merge of ${diff.teamAName} + ${diff.teamBName}`)
       setBranchName("")

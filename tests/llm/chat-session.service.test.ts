@@ -50,6 +50,9 @@ function makeDbSession(overrides?: Record<string, unknown>) {
   return {
     id: "session-1",
     teamId: null,
+    title: null,
+    contextMode: null,
+    contextData: null,
     createdAt: now,
     updatedAt: now,
     messages: [],
@@ -83,7 +86,7 @@ describe("createSession", () => {
     const result = await createSession()
 
     expect(mockSessionCreate).toHaveBeenCalledWith({
-      data: { teamId: null },
+      data: { contextMode: null, contextData: null },
       include: { messages: { orderBy: { createdAt: "asc" } } },
     })
     expect(result.id).toBe("session-1")
@@ -96,10 +99,28 @@ describe("createSession", () => {
     const result = await createSession("team-1")
 
     expect(mockSessionCreate).toHaveBeenCalledWith({
-      data: { teamId: "team-1" },
+      data: { team: { connect: { id: "team-1" } }, contextMode: null, contextData: null },
       include: { messages: { orderBy: { createdAt: "asc" } } },
     })
     expect(result.teamId).toBe("team-1")
+  })
+
+  it("creates a session with context mode", async () => {
+    mockSessionCreate.mockResolvedValue(
+      makeDbSession({ contextMode: "battle-live", contextData: '{"formatId":"gen9ou"}' }),
+    )
+
+    const result = await createSession({
+      contextMode: "battle-live",
+      contextData: '{"formatId":"gen9ou"}',
+    })
+
+    expect(mockSessionCreate).toHaveBeenCalledWith({
+      data: { contextMode: "battle-live", contextData: '{"formatId":"gen9ou"}' },
+      include: { messages: { orderBy: { createdAt: "asc" } } },
+    })
+    expect(result.contextMode).toBe("battle-live")
+    expect(result.contextData).toBe('{"formatId":"gen9ou"}')
   })
 
   it("maps messages correctly", async () => {

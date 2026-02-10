@@ -17,7 +17,7 @@ interface ChatPanelProps {
   mode?: "sidebar" | "fullpage"
 }
 
-export function ChatPanel({ sessionId, mode = "sidebar" }: ChatPanelProps) {
+export function ChatPanel({ sessionId }: ChatPanelProps) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
   const { activeSessionId, pendingInput, clearPendingInput } = useChatSidebar()
@@ -44,7 +44,7 @@ export function ChatPanel({ sessionId, mode = "sidebar" }: ChatPanelProps) {
     if (effectiveSessionId !== prevSessionRef.current) {
       prevSessionRef.current = effectiveSessionId
       resetForSession(effectiveSessionId ?? null)
-      setIsAtBottom(true)
+      setIsAtBottom(true) // eslint-disable-line react-hooks/set-state-in-effect -- reset scroll on session change
     }
   }, [effectiveSessionId, resetForSession])
 
@@ -86,6 +86,7 @@ export function ChatPanel({ sessionId, mode = "sidebar" }: ChatPanelProps) {
         <div className="space-y-4">
           {messages.length === 0 && (
             <div className="text-center py-12">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/1025.png"
                 alt="Pecharunt"

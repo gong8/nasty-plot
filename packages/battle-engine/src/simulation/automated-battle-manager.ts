@@ -73,16 +73,15 @@ export async function runAutomatedBattle(
   // Collect and process output
   const outputPromise = (async () => {
     for await (const chunk of stream) {
-      protocolLog += chunk + "\n"
-
       const lines = chunk.split("\n")
       let protoLines = ""
 
       for (const line of lines) {
         if (line.startsWith("|request|")) {
-          // Process accumulated protocol
+          // Process accumulated protocol (deduplicated — sim emits for both players)
           if (protoLines.trim() && protoLines.trim() !== lastProtocolChunk) {
             lastProtocolChunk = protoLines.trim()
+            protocolLog += protoLines
             processChunk(state, protoLines)
           }
           protoLines = ""
@@ -129,9 +128,10 @@ export async function runAutomatedBattle(
         protoLines += line + "\n"
       }
 
-      // Process remaining
+      // Process remaining (deduplicated)
       if (protoLines.trim() && protoLines.trim() !== lastProtocolChunk) {
         lastProtocolChunk = protoLines.trim()
+        protocolLog += protoLines
         processChunk(state, protoLines)
       }
     }

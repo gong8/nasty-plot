@@ -354,7 +354,7 @@ export function useBattleAnimations(
         })
       }
 
-      processQueue()
+      processQueue() // eslint-disable-line react-hooks/immutability -- deferred self-reference via setTimeout
     }, event.duration)
   }, [])
 
@@ -381,7 +381,10 @@ export function useBattleAnimations(
         }
       }
 
-      // Safety valve: force-clear isAnimating after 5s in case the queue gets stuck
+      // Safety valve: force-clear if queue gets stuck.
+      // Timeout scales with queue size so long turns don't get cut short.
+      const totalDuration = queueRef.current.reduce((sum, e) => sum + e.duration, 0)
+      const safetyMs = Math.max(10000, totalDuration + 3000)
       if (safetyTimeoutRef.current) clearTimeout(safetyTimeoutRef.current)
       safetyTimeoutRef.current = setTimeout(() => {
         if (isProcessingRef.current || queueRef.current.length > 0) {
@@ -389,7 +392,7 @@ export function useBattleAnimations(
           isProcessingRef.current = false
           setAnimState(INITIAL_ANIMATION_STATE)
         }
-      }, 5000)
+      }, safetyMs)
 
       // Start processing if not already
       if (!isProcessingRef.current) {

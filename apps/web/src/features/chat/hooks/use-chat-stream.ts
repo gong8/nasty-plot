@@ -39,7 +39,7 @@ export function useChatStream(sessionId?: string) {
   const [currentSessionId, setCurrentSessionId] = useState(sessionId)
   const abortRef = useRef<AbortController | null>(null)
   const pageContext = usePageContext()
-  const { switchSession } = useChatSidebar()
+  const { switchSession, pendingContext, clearPendingContext } = useChatSidebar()
   const queryClient = useQueryClient()
 
   // Load existing session messages
@@ -94,6 +94,16 @@ export function useChatStream(sessionId?: string) {
       abortRef.current = controller
 
       try {
+        // Include context mode for new sessions with pending context
+        const isNewSession = !currentSessionId
+        const contextPayload =
+          isNewSession && pendingContext
+            ? {
+                contextMode: pendingContext.contextMode,
+                contextData: pendingContext.contextData,
+              }
+            : {}
+
         const res = await fetch("/api/chat", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -109,6 +119,7 @@ export function useChatStream(sessionId?: string) {
               pokemonId: pageContext.pokemonId,
               formatId: pageContext.formatId,
             },
+            ...contextPayload,
             regenerate,
           }),
           signal: controller.signal,
@@ -119,6 +130,8 @@ export function useChatStream(sessionId?: string) {
         if (newSessionId && !currentSessionId) {
           setCurrentSessionId(newSessionId)
           switchSession(newSessionId)
+          // Clear pending context after session is created
+          if (pendingContext) clearPendingContext()
         }
 
         if (!res.ok || !res.body) {
@@ -322,7 +335,15 @@ export function useChatStream(sessionId?: string) {
         queryClient.invalidateQueries({ queryKey: ["chat-sessions"] })
       }
     },
-    [isStreaming, currentSessionId, pageContext, switchSession, queryClient],
+    [
+      isStreaming,
+      currentSessionId,
+      pageContext,
+      switchSession,
+      pendingContext,
+      clearPendingContext,
+      queryClient,
+    ],
   )
 
   const stopGeneration = useCallback(() => {

@@ -4,6 +4,7 @@ import { JetBrains_Mono } from "next/font/google"
 import { Providers } from "@/components/providers"
 import { ChatProvider } from "@/features/chat/context/chat-provider"
 import { PageContextProvider } from "@/features/chat/context/page-context-provider"
+import { BattleStateProvider } from "@/features/battle/context/battle-state-context"
 import { AppShell } from "@/components/app-shell"
 import "./globals.css"
 
@@ -36,9 +37,11 @@ export default function RootLayout({
       <body className={`${geistSans.variable} ${jetbrainsMono.variable} antialiased`}>
         <Providers>
           <ChatProvider>
-            <PageContextProvider>
-              <AppShell>{children}</AppShell>
-            </PageContextProvider>
+            <BattleStateProvider>
+              <PageContextProvider>
+                <AppShell>{children}</AppShell>
+              </PageContextProvider>
+            </BattleStateProvider>
           </ChatProvider>
         </Providers>
       </body>

@@ -37,7 +37,7 @@ export function ReplayControls({
   className,
 }: ReplayControlsProps) {
   return (
-    <div className={cn("space-y-3", className)}>
+    <div className={cn("space-y-2", className)}>
       {/* Turn slider */}
       <Slider
         value={[currentFrame]}

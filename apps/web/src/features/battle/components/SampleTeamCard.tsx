@@ -49,6 +49,7 @@ export function SampleTeamCard({
             return (
               <div key={id} className="flex flex-col items-center gap-0.5">
                 <div className="flex items-center justify-center" style={{ width: 48, height: 48 }}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={spriteData.url}
                     alt={id}

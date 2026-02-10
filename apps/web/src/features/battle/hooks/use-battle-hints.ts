@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect } from "react"
 import {
   generateHints,
   estimateWinProbability,
@@ -31,7 +31,7 @@ export function useBattleHints(
     } catch {
       // Evaluation may fail on incomplete states
     }
-  }, [state.turn, state.phase, state.winner])
+  }, [state.turn, state.phase, state.winner]) // eslint-disable-line react-hooks/exhaustive-deps -- intentionally depends on specific state fields, not the full state object
 
   // Compute hints when waiting for choice and hints are enabled
   useEffect(() => {
@@ -61,7 +61,7 @@ export function useBattleHints(
     })
 
     return () => cancelAnimationFrame(id)
-  }, [config.enabled, state.waitingForChoice, state.turn, state.availableActions])
+  }, [config.enabled, state.waitingForChoice, state.turn, state.availableActions]) // eslint-disable-line react-hooks/exhaustive-deps -- intentionally depends on specific state fields
 
   return { hints, winProb, isAnalyzing }
 }

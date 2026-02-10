@@ -4,7 +4,8 @@ import { createSession, listSessions } from "@nasty-plot/llm"
 export async function GET(req: NextRequest) {
   try {
     const teamId = req.nextUrl.searchParams.get("teamId") ?? undefined
-    const sessions = await listSessions(teamId)
+    const contextMode = req.nextUrl.searchParams.get("contextMode") ?? undefined
+    const sessions = await listSessions(teamId, contextMode)
     return Response.json({ data: sessions })
   } catch (error) {
     console.error("List sessions error:", error)
@@ -18,8 +19,12 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
-    const { teamId }: { teamId?: string } = body
-    const session = await createSession(teamId)
+    const {
+      teamId,
+      contextMode,
+      contextData,
+    }: { teamId?: string; contextMode?: string; contextData?: string } = body
+    const session = await createSession({ teamId, contextMode, contextData })
     return Response.json({ data: session }, { status: 201 })
   } catch (error) {
     console.error("Create session error:", error)

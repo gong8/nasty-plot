@@ -9,7 +9,10 @@ import { ReplayControls } from "@/features/battle/components/ReplayControls"
 import { WinProbabilityGraph } from "@/features/battle/components/WinProbabilityGraph"
 import { EvalBar } from "@/features/battle/components/EvalBar"
 import { CommentaryPanel } from "@/features/battle/components/CommentaryPanel"
-import { Loader2 } from "lucide-react"
+import { Loader2, MessageCircle } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { useChatSidebar } from "@/features/chat/context/chat-provider"
+import { useBattleStatePublisher } from "@/features/battle/context/battle-state-context"
 import type { BattleFormat } from "@nasty-plot/battle-engine"
 
 interface BattleData {
@@ -67,6 +70,7 @@ export default function ReplayPage({ params }: { params: Promise<{ battleId: str
 }
 
 function ReplayViewerContent({ battleData }: { battleData: BattleData }) {
+  const { openNewChatModal } = useChatSidebar()
   const replay = useReplay({
     protocolLog: battleData.protocolLog,
     format: battleData.gameType as BattleFormat,
@@ -75,6 +79,8 @@ function ReplayViewerContent({ battleData }: { battleData: BattleData }) {
   const animState = useReplayAnimations(replay.currentFrame?.entries ?? [], replay.currentIndex, {
     speed: replay.speed,
   })
+
+  useBattleStatePublisher(replay.currentFrame?.state ?? null)
 
   // Parse persisted commentary
   const [commentary, setCommentary] = useState<Record<number, string>>(() => {
@@ -123,7 +129,6 @@ function ReplayViewerContent({ battleData }: { battleData: BattleData }) {
             frames={allFrames}
             currentTurn={replay.currentFrame?.turnNumber ?? 0}
             p1Name={battleData.team1Name}
-            p2Name={battleData.team2Name}
             className="h-full"
           />
         ),
@@ -144,7 +149,7 @@ function ReplayViewerContent({ battleData }: { battleData: BattleData }) {
         ),
       },
     ],
-     
+
     [replay.currentFrame, allFrames, battleData, commentary, handleCommentaryGenerated],
   )
 
@@ -162,7 +167,7 @@ function ReplayViewerContent({ battleData }: { battleData: BattleData }) {
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="shrink-0 px-3 py-2 flex items-center gap-3">
+      <div className="shrink-0 px-3 py-1 flex items-center gap-3">
         <h1 className="text-lg font-bold shrink-0">Battle Replay</h1>
         {winProb != null && (
           <EvalBar
@@ -176,10 +181,19 @@ function ReplayViewerContent({ battleData }: { battleData: BattleData }) {
         <span className="text-sm text-muted-foreground shrink-0">
           {battleData.team1Name} vs {battleData.team2Name} &middot; {battleData.turnCount} turns
         </span>
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={openNewChatModal}
+          className="h-7 text-xs gap-1 shrink-0"
+        >
+          <MessageCircle className="h-3 w-3" />
+          Analyze
+        </Button>
       </div>
 
       {/* Middle: shared BattleScreen (field + tabbed sidebar) */}
-      <div className="flex-1 px-3 py-2 min-h-0">
+      <div className="flex-1 px-2 py-1 min-h-0">
         <BattleScreen
           state={replay.currentFrame.state}
           animState={animState}
@@ -190,7 +204,7 @@ function ReplayViewerContent({ battleData }: { battleData: BattleData }) {
       </div>
 
       {/* Replay controls */}
-      <div className="shrink-0 px-3 py-2">
+      <div className="shrink-0 px-2 pb-1.5">
         <ReplayControls
           currentFrame={replay.currentIndex}
           totalFrames={replay.totalFrames}

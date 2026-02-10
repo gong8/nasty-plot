@@ -3,6 +3,7 @@
 import { MessageCircle, Trash2 } from "lucide-react"
 import { useChatSidebar } from "@/features/chat/context/chat-provider"
 import { useChatSessions, useDeleteChatSession } from "@/features/chat/hooks/use-chat-sessions"
+import { ContextModeBadge } from "./context-mode-badge"
 import { cn } from "@/lib/utils"
 
 function relativeTime(dateStr: string): string {
@@ -79,7 +80,10 @@ export function ChatSessionList({ mode, onSelect }: ChatSessionListProps) {
               >
                 <MessageCircle className="h-3.5 w-3.5 mt-0.5 shrink-0 opacity-50" />
                 <div className="flex-1 min-w-0">
-                  <div className="truncate font-medium">{preview}</div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="truncate font-medium">{preview}</span>
+                    {session.contextMode && <ContextModeBadge mode={session.contextMode} />}
+                  </div>
                   <div className="text-xs text-muted-foreground">
                     {relativeTime(session.updatedAt)}
                   </div>

@@ -152,11 +152,13 @@ model DataSyncLog {
 }
 
 model ChatSession {
-  id        String   @id @default(uuid())
-  teamId    String?
-  title     String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          String   @id @default(uuid())
+  teamId      String?
+  title       String?
+  contextMode String?  // "guided-builder" | "team-editor" | "battle-live" | "battle-replay"
+  contextData String?  // JSON snapshot of context at session creation
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   team     Team?         @relation(fields: [teamId], references: [id], onDelete: SetNull)
   messages ChatMessage[]

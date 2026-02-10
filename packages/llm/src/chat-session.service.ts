@@ -1,9 +1,24 @@
 import { prisma } from "@nasty-plot/db"
 import type { ChatMessage, ChatRole, ChatSessionData } from "@nasty-plot/core"
 
-export async function createSession(teamId?: string): Promise<ChatSessionData> {
+export interface CreateSessionOptions {
+  teamId?: string
+  contextMode?: string
+  contextData?: string
+}
+
+export async function createSession(
+  teamIdOrOptions?: string | CreateSessionOptions,
+): Promise<ChatSessionData> {
+  const options: CreateSessionOptions =
+    typeof teamIdOrOptions === "string" ? { teamId: teamIdOrOptions } : (teamIdOrOptions ?? {})
+
   const session = await prisma.chatSession.create({
-    data: { teamId: teamId ?? null },
+    data: {
+      ...(options.teamId ? { team: { connect: { id: options.teamId } } } : {}),
+      contextMode: options.contextMode ?? null,
+      contextData: options.contextData ?? null,
+    },
     include: { messages: { orderBy: { createdAt: "asc" } } },
   })
 
@@ -20,8 +35,14 @@ export async function getSession(id: string): Promise<ChatSessionData | null> {
   return mapSession(session)
 }
 
-export async function listSessions(teamId?: string): Promise<ChatSessionData[]> {
-  const where = teamId ? { teamId } : {}
+export async function listSessions(
+  teamId?: string,
+  contextMode?: string,
+): Promise<ChatSessionData[]> {
+  const where: Record<string, unknown> = {}
+  if (teamId) where.teamId = teamId
+  if (contextMode) where.contextMode = contextMode
+
   const sessions = await prisma.chatSession.findMany({
     where,
     include: { messages: { orderBy: { createdAt: "asc" }, take: 1 } },
@@ -83,6 +104,8 @@ interface DbSession {
   id: string
   teamId: string | null
   title: string | null
+  contextMode: string | null
+  contextData: string | null
   createdAt: Date
   updatedAt: Date
   messages: {
@@ -99,6 +122,8 @@ function mapSession(session: DbSession): ChatSessionData {
     id: session.id,
     teamId: session.teamId ?? undefined,
     title: session.title ?? undefined,
+    contextMode: session.contextMode ?? undefined,
+    contextData: session.contextData ?? undefined,
     createdAt: session.createdAt.toISOString(),
     updatedAt: session.updatedAt.toISOString(),
     messages: session.messages.map((m) => ({

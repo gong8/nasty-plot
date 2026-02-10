@@ -4,7 +4,6 @@ import { useState } from "react"
 import Link from "next/link"
 import { ChevronDown, ChevronRight } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
-import { PokemonSprite } from "@nasty-plot/ui"
 import type { LineageNode } from "@nasty-plot/core"
 
 interface LineageTreeProps {

@@ -28,7 +28,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (isOpen !== prevIsOpen.current) {
       prevIsOpen.current = isOpen
-      setAnimating(true)
+      setAnimating(true) // eslint-disable-line react-hooks/set-state-in-effect -- animation trigger on prop change
       const timer = setTimeout(() => setAnimating(false), 200)
       return () => clearTimeout(timer)
     }

@@ -17,6 +17,8 @@ export async function POST(req: NextRequest) {
       teamId,
       formatId,
       context,
+      contextMode,
+      contextData,
       regenerate,
     }: {
       sessionId?: string
@@ -30,6 +32,8 @@ export async function POST(req: NextRequest) {
         pokemonId?: string
         formatId?: string
       }
+      contextMode?: string
+      contextData?: string
       regenerate?: boolean
     } = body
 
@@ -45,7 +49,11 @@ export async function POST(req: NextRequest) {
         return Response.json({ error: "Session not found", code: "NOT_FOUND" }, { status: 404 })
       }
     } else {
-      const session = await createSession(teamId)
+      const session = await createSession({
+        teamId,
+        contextMode: contextMode ?? undefined,
+        contextData: contextData ?? undefined,
+      })
       currentSessionId = session.id
     }
 
@@ -64,6 +72,10 @@ export async function POST(req: NextRequest) {
     // Use abort signal from request for stop generation
     const signal = req.signal
 
+    // Use session's context mode (persisted) — it overrides page-based filtering
+    const sessionContextMode = session?.contextMode ?? contextMode
+    const sessionContextData = session?.contextData ?? contextData
+
     // Stream response
     const stream = await streamChat({
       messages,
@@ -71,6 +83,8 @@ export async function POST(req: NextRequest) {
       formatId: formatId || context?.formatId,
       signal,
       context,
+      contextMode: sessionContextMode,
+      contextData: sessionContextData,
     })
 
     // Collect the full response for saving

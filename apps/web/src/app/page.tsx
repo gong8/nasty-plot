@@ -7,6 +7,7 @@ export default function Home() {
     <div className="flex flex-col">
       <main className="flex-1 container mx-auto px-4 py-12">
         <div className="max-w-3xl mx-auto text-center space-y-6">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/1025.png"
             alt="Pecharunt"

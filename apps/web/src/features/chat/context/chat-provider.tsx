@@ -9,6 +9,14 @@ import {
   useState,
   type ReactNode,
 } from "react"
+import type { ChatContextMode } from "@nasty-plot/core"
+
+// --- Pending Context ---
+
+export interface PendingChatContext {
+  contextMode: ChatContextMode
+  contextData: string // JSON string
+}
 
 // --- State ---
 
@@ -66,6 +74,9 @@ interface ChatContextValue {
   width: number
   activeSessionId: string | null
   pendingInput: string | null
+  pendingContext: PendingChatContext | null
+  pendingQuestion: string | null
+  showNewChatModal: boolean
   toggleSidebar: () => void
   openSidebar: (message?: string) => void
   closeSidebar: () => void
@@ -73,6 +84,12 @@ interface ChatContextValue {
   setWidth: (width: number) => void
   switchSession: (sessionId: string | null) => void
   newSession: () => void
+  openContextChat: (params: PendingChatContext) => void
+  clearPendingContext: () => void
+  setPendingQuestion: (question: string) => void
+  clearPendingQuestion: () => void
+  openNewChatModal: () => void
+  closeNewChatModal: () => void
 }
 
 const ChatContext = createContext<ChatContextValue | null>(null)
@@ -94,6 +111,9 @@ const SSR_INITIAL_STATE: ChatSidebarState = {
 export function ChatProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(chatReducer, SSR_INITIAL_STATE)
   const [pendingInput, setPendingInput] = useState<string | null>(null)
+  const [pendingContext, setPendingContext] = useState<PendingChatContext | null>(null)
+  const [pendingQuestion, setPendingQuestionState] = useState<string | null>(null)
+  const [showNewChatModal, setShowNewChatModal] = useState(false)
 
   // Hydrate from localStorage after mount (avoids SSR/client mismatch)
   useEffect(() => {
@@ -141,6 +161,22 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     [],
   )
   const newSession = useCallback(() => dispatch({ type: "NEW_SESSION" }), [])
+  const openContextChat = useCallback((params: PendingChatContext) => {
+    setPendingContext(params)
+    dispatch({ type: "NEW_SESSION" })
+    dispatch({ type: "OPEN_SIDEBAR" })
+  }, [])
+  const clearPendingContext = useCallback(() => setPendingContext(null), [])
+  const setPendingQuestion = useCallback(
+    (question: string) => setPendingQuestionState(question),
+    [],
+  )
+  const clearPendingQuestion = useCallback(() => setPendingQuestionState(null), [])
+  const openNewChatModal = useCallback(() => {
+    dispatch({ type: "OPEN_SIDEBAR" })
+    setShowNewChatModal(true)
+  }, [])
+  const closeNewChatModal = useCallback(() => setShowNewChatModal(false), [])
 
   return (
     <ChatContext.Provider
@@ -149,6 +185,9 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         width: state.width,
         activeSessionId: state.activeSessionId,
         pendingInput,
+        pendingContext,
+        pendingQuestion,
+        showNewChatModal,
         toggleSidebar,
         openSidebar,
         closeSidebar,
@@ -156,6 +195,12 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         setWidth,
         switchSession,
         newSession,
+        openContextChat,
+        clearPendingContext,
+        setPendingQuestion,
+        clearPendingQuestion,
+        openNewChatModal,
+        closeNewChatModal,
       }}
     >
       {children}

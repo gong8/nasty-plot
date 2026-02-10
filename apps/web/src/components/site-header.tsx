@@ -25,6 +25,7 @@ export function SiteHeader() {
           href="/"
           className="flex items-center gap-2 text-xl font-display font-bold text-primary dark:drop-shadow-[0_0_8px_var(--color-glow-primary)]"
         >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/1025.png"
             alt="Pecharunt"

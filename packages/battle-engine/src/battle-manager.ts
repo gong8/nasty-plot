@@ -277,9 +277,6 @@ export class BattleManager {
   }
 
   private processOutput(chunk: string) {
-    // Accumulate raw protocol for replay
-    this.protocolLog += chunk + "\n"
-
     const lines = chunk.split("\n")
     let protocolLines = ""
     const allEntries: BattleLogEntry[] = []
@@ -291,6 +288,7 @@ export class BattleManager {
         if (protocolLines.trim()) {
           if (protocolLines.trim() !== this.lastProtocolChunk) {
             this.lastProtocolChunk = protocolLines.trim()
+            this.protocolLog += protocolLines
             const entries = processChunk(this.state, protocolLines)
             allEntries.push(...entries)
           }
@@ -315,6 +313,7 @@ export class BattleManager {
     // Process remaining protocol lines (deduplicated)
     if (protocolLines.trim() && protocolLines.trim() !== this.lastProtocolChunk) {
       this.lastProtocolChunk = protocolLines.trim()
+      this.protocolLog += protocolLines
       const entries = processChunk(this.state, protocolLines)
       allEntries.push(...entries)
     }

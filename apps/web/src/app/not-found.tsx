@@ -7,6 +7,7 @@ export default function NotFound() {
     <div className="min-h-screen flex items-center justify-center p-4">
       <Card className="max-w-md w-full text-center">
         <CardHeader>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/1025.png"
             alt="Pecharunt"
@@ -18,7 +19,7 @@ export default function NotFound() {
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-muted-foreground">
-            Pecharunt led you astray. This route doesn't exist.
+            Pecharunt led you astray. This route doesn&apos;t exist.
           </p>
           <Link href="/">
             <Button>Return to Base</Button>

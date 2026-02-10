@@ -407,6 +407,8 @@ export interface ChatSessionData {
   id: string
   teamId?: string
   title?: string
+  contextMode?: string
+  contextData?: string
   messages: ChatMessage[]
   createdAt: string
   updatedAt: string

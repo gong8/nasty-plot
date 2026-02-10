@@ -2,10 +2,15 @@ import {
   buildTeamContext,
   buildMetaContext,
   buildPageContextPrompt,
+  buildContextModePrompt,
   buildPlanModePrompt,
   type PageContextData,
 } from "./context-builder"
-import { getDisallowedMcpTools, type PageType } from "./tool-context"
+import {
+  getDisallowedMcpTools,
+  getDisallowedMcpToolsForContextMode,
+  type PageType,
+} from "./tool-context"
 import { streamCliChat } from "./cli-chat"
 import type { ChatMessage, TeamData, UsageStatsEntry } from "@nasty-plot/core"
 
@@ -41,6 +46,8 @@ export interface StreamChatOptions {
   formatId?: string
   signal?: AbortSignal
   context?: PageContextData
+  contextMode?: string
+  contextData?: string
 }
 
 /**
@@ -81,11 +88,11 @@ async function buildContextParts(teamId?: string, formatId?: string): Promise<st
 }
 
 export async function streamChat(options: StreamChatOptions): Promise<ReadableStream<Uint8Array>> {
-  const { messages, teamId, formatId, signal, context } = options
+  const { messages, teamId, formatId, signal, context, contextMode, contextData } = options
 
   const tStreamChat = performance.now()
   console.log(
-    `${LOG_PREFIX} === streamChat START === teamId=${teamId ?? "none"} formatId=${formatId ?? "none"} messages=${messages.length}`,
+    `${LOG_PREFIX} === streamChat START === teamId=${teamId ?? "none"} formatId=${formatId ?? "none"} contextMode=${contextMode ?? "none"} messages=${messages.length}`,
   )
 
   // Build context parts
@@ -93,8 +100,16 @@ export async function streamChat(options: StreamChatOptions): Promise<ReadableSt
   const contextParts = await buildContextParts(teamId, formatId)
   logTiming("Context building", tCtx)
 
-  // Add page context if provided
-  if (context) {
+  // Add context mode prompt if session is context-locked
+  if (contextMode) {
+    const modePrompt = buildContextModePrompt(contextMode, contextData)
+    if (modePrompt) {
+      contextParts.push(modePrompt)
+    }
+  }
+
+  // Add page context if provided (and not already covered by context mode)
+  if (context && !contextMode) {
     const pageCtxStr = buildPageContextPrompt(context)
     if (pageCtxStr) {
       contextParts.push(pageCtxStr)
@@ -107,10 +122,12 @@ export async function streamChat(options: StreamChatOptions): Promise<ReadableSt
   const systemPrompt = [SYSTEM_PROMPT, ...contextParts].join("\n")
   console.log(`${LOG_PREFIX} CLI mode: system prompt ${systemPrompt.length} chars`)
 
-  // Calculate disallowed MCP tools based on page context
-  const disallowedMcpTools = context?.pageType
-    ? getDisallowedMcpTools(context.pageType as PageType)
-    : []
+  // Calculate disallowed MCP tools: context mode overrides page-based filtering
+  const disallowedMcpTools = contextMode
+    ? getDisallowedMcpToolsForContextMode(contextMode)
+    : context?.pageType
+      ? getDisallowedMcpTools(context.pageType as PageType)
+      : []
 
   const stream = streamCliChat({
     messages: messages.map((m) => ({

@@ -14,7 +14,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { TypeBadge, PokemonSprite } from "@nasty-plot/ui"
-import { cn } from "@/lib/utils"
 import type { TeamSlotData, TeamAnalysis, PokemonType, UsageStatsEntry } from "@nasty-plot/core"
 import { SimplifiedAnalysis } from "./simplified-analysis"
 
