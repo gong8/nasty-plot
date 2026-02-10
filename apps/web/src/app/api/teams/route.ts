@@ -6,7 +6,11 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const formatId = searchParams.get("formatId") || undefined;
-    const teams = await listTeams(formatId ? { formatId } : undefined);
+    const includeArchived = searchParams.get("includeArchived");
+    const teams = await listTeams({
+      formatId,
+      includeArchived: includeArchived === "true",
+    });
     return NextResponse.json(teams);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";

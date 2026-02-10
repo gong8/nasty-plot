@@ -10,6 +10,7 @@ import {
   Pencil,
   Check,
   X,
+  GitFork,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,6 +37,7 @@ interface TeamHeaderProps {
   onUpdateName: (name: string) => void;
   onDelete: () => void;
   onImport: (paste: string) => Promise<void>;
+  onFork?: (options: { name: string; branchName?: string; notes?: string }) => Promise<void>;
 }
 
 export function TeamHeader({
@@ -43,6 +45,7 @@ export function TeamHeader({
   onUpdateName,
   onDelete,
   onImport,
+  onFork,
 }: TeamHeaderProps) {
   const [editing, setEditing] = useState(false);
   const [editName, setEditName] = useState(team.name);
@@ -53,6 +56,11 @@ export function TeamHeader({
   const [importLoading, setImportLoading] = useState(false);
   const [exportPaste, setExportPaste] = useState("");
   const [exportLoading, setExportLoading] = useState(false);
+  const [forkOpen, setForkOpen] = useState(false);
+  const [forkName, setForkName] = useState(`${team.name} (fork)`);
+  const [forkBranch, setForkBranch] = useState("");
+  const [forkNotes, setForkNotes] = useState("");
+  const [forkLoading, setForkLoading] = useState(false);
 
   const validation = validateTeam(team);
 
@@ -170,6 +178,82 @@ export function TeamHeader({
 
       {/* Actions */}
       <div className="flex items-center gap-1">
+        {/* Fork */}
+        {onFork && (
+          <Dialog open={forkOpen} onOpenChange={(open) => {
+            setForkOpen(open);
+            if (open) {
+              setForkName(`${team.name} (fork)`);
+              setForkBranch("");
+              setForkNotes("");
+            }
+          }}>
+            <DialogTrigger asChild>
+              <Button variant="outline" size="sm">
+                <GitFork className="h-4 w-4 mr-1" /> Fork
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Fork Team</DialogTitle>
+                <DialogDescription>
+                  Create a copy of this team to experiment with changes.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-3">
+                <div>
+                  <label className="text-sm font-medium">Name</label>
+                  <Input
+                    value={forkName}
+                    onChange={(e) => setForkName(e.target.value)}
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Branch Label</label>
+                  <Input
+                    value={forkBranch}
+                    onChange={(e) => setForkBranch(e.target.value)}
+                    placeholder="e.g., anti-stall variant"
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Notes</label>
+                  <Textarea
+                    value={forkNotes}
+                    onChange={(e) => setForkNotes(e.target.value)}
+                    placeholder="Optional notes about this variant"
+                    rows={3}
+                    className="mt-1"
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button
+                  onClick={async () => {
+                    if (!forkName.trim()) return;
+                    setForkLoading(true);
+                    try {
+                      await onFork({
+                        name: forkName.trim(),
+                        branchName: forkBranch.trim() || undefined,
+                        notes: forkNotes.trim() || undefined,
+                      });
+                      setForkOpen(false);
+                    } finally {
+                      setForkLoading(false);
+                    }
+                  }}
+                  disabled={!forkName.trim() || forkLoading}
+                >
+                  {forkLoading ? "Forking..." : "Fork & Edit"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        )}
+
         {/* Import */}
         <Dialog open={importOpen} onOpenChange={setImportOpen}>
           <DialogTrigger asChild>
