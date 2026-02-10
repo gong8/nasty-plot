@@ -9,6 +9,7 @@ import {
   getAllItems,
   getLearnset,
   searchSpecies,
+  searchItems,
   getTypeChart,
   isMegaStone,
   getMegaStonesFor,
@@ -740,6 +741,47 @@ describe("getZCrystalType", () => {
 
   it("returns null for non-Z items", () => {
     expect(getZCrystalType("leftovers")).toBeNull();
+  });
+});
+
+// =============================================================================
+// searchItems
+// =============================================================================
+
+describe("searchItems", () => {
+  it("finds Leftovers by exact name", () => {
+    const results = searchItems("Leftovers");
+    expect(results.length).toBeGreaterThanOrEqual(1);
+    expect(results.some((i) => i.name === "Leftovers")).toBe(true);
+  });
+
+  it("is case-insensitive", () => {
+    const upper = searchItems("CHOICE");
+    const lower = searchItems("choice");
+    expect(upper.length).toBe(lower.length);
+    expect(upper.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("finds partial matches", () => {
+    const results = searchItems("choice");
+    const names = results.map((i) => i.name);
+    expect(names).toContain("Choice Band");
+    expect(names).toContain("Choice Scarf");
+    expect(names).toContain("Choice Specs");
+  });
+
+  it("returns empty array for nonsense query", () => {
+    const results = searchItems("xyznotanitem999");
+    expect(results).toEqual([]);
+  });
+
+  it("returned items have correct shape", () => {
+    const results = searchItems("Leftovers");
+    expect(results.length).toBeGreaterThanOrEqual(1);
+    const leftovers = results.find((i) => i.name === "Leftovers");
+    expect(leftovers).toBeDefined();
+    expect(leftovers!.id).toBe("leftovers");
+    expect(leftovers!.description).toBeTruthy();
   });
 });
 

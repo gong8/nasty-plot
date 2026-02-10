@@ -215,6 +215,24 @@ describe("getTeam", () => {
     expect(slot.evs.atk).toBe(252);
     expect(slot.ivs.hp).toBe(31);
   });
+
+  it("sorts slots by position", async () => {
+    mockTeamFindUnique.mockResolvedValue(
+      makeDbTeam({
+        slots: [
+          makeDbSlot({ id: 3, position: 3, pokemonId: "heatran" }),
+          makeDbSlot({ id: 1, position: 1, pokemonId: "garchomp" }),
+          makeDbSlot({ id: 2, position: 2, pokemonId: "landorus" }),
+        ],
+      })
+    );
+
+    const result = await getTeam("team-1");
+
+    expect(result!.slots[0].pokemonId).toBe("garchomp");
+    expect(result!.slots[1].pokemonId).toBe("landorus");
+    expect(result!.slots[2].pokemonId).toBe("heatran");
+  });
 });
 
 describe("listTeams", () => {
@@ -258,6 +276,43 @@ describe("updateTeam", () => {
     expect(mockTeamUpdate).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { id: "team-1" },
+      })
+    );
+  });
+
+  it("updates formatId, mode, and notes", async () => {
+    mockTeamUpdate.mockResolvedValue(
+      makeDbTeam({ formatId: "gen9uu", mode: "guided", notes: "test notes" })
+    );
+
+    const result = await updateTeam("team-1", {
+      name: "Test",
+      formatId: "gen9uu",
+      mode: "guided",
+      notes: "test notes",
+    });
+
+    expect(result.formatId).toBe("gen9uu");
+    expect(result.mode).toBe("guided");
+    expect(mockTeamUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          formatId: "gen9uu",
+          mode: "guided",
+          notes: "test notes",
+        }),
+      })
+    );
+  });
+
+  it("skips undefined fields in update data", async () => {
+    mockTeamUpdate.mockResolvedValue(makeDbTeam());
+
+    await updateTeam("team-1", {});
+
+    expect(mockTeamUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: {},
       })
     );
   });
@@ -306,6 +361,91 @@ describe("updateSlot", () => {
     const result = await updateSlot("team-1", 1, { pokemonId: "heatran" });
 
     expect(result.pokemonId).toBe("heatran");
+  });
+
+  it("updates all scalar fields", async () => {
+    mockSlotUpdate.mockResolvedValue(
+      makeDbSlot({
+        pokemonId: "heatran",
+        nickname: "Hotboy",
+        ability: "Flash Fire",
+        item: "Air Balloon",
+        nature: "Timid",
+        teraType: "Grass",
+        level: 50,
+      })
+    );
+
+    const result = await updateSlot("team-1", 1, {
+      pokemonId: "heatran",
+      nickname: "Hotboy",
+      ability: "Flash Fire",
+      item: "Air Balloon",
+      nature: "Timid",
+      teraType: "Grass",
+      level: 50,
+    });
+
+    expect(result.pokemonId).toBe("heatran");
+    expect(mockSlotUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          pokemonId: "heatran",
+          nickname: "Hotboy",
+          ability: "Flash Fire",
+          item: "Air Balloon",
+          nature: "Timid",
+          teraType: "Grass",
+          level: 50,
+        }),
+      })
+    );
+  });
+
+  it("updates moves, evs, and ivs", async () => {
+    const evs = { hp: 252, atk: 0, def: 0, spa: 252, spd: 4, spe: 0 };
+    const ivs = { hp: 31, atk: 0, def: 31, spa: 31, spd: 31, spe: 31 };
+    mockSlotUpdate.mockResolvedValue(
+      makeDbSlot({
+        move1: "Magma Storm",
+        move2: "Earth Power",
+        move3: "Taunt",
+        move4: "Stealth Rock",
+        evHp: 252, evAtk: 0, evDef: 0, evSpA: 252, evSpD: 4, evSpe: 0,
+        ivHp: 31, ivAtk: 0, ivDef: 31, ivSpA: 31, ivSpD: 31, ivSpe: 31,
+      })
+    );
+
+    await updateSlot("team-1", 1, {
+      moves: ["Magma Storm", "Earth Power", "Taunt", "Stealth Rock"],
+      evs,
+      ivs,
+    });
+
+    expect(mockSlotUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          move1: "Magma Storm",
+          move2: "Earth Power",
+          move3: "Taunt",
+          move4: "Stealth Rock",
+          evHp: 252,
+          ivAtk: 0,
+        }),
+      })
+    );
+  });
+
+  it("only includes defined fields in update data", async () => {
+    mockSlotUpdate.mockResolvedValue(makeDbSlot());
+
+    await updateSlot("team-1", 1, {});
+
+    expect(mockSlotUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: {},
+      })
+    );
   });
 });
 

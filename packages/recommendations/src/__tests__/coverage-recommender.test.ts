@@ -279,6 +279,98 @@ describe("getCoverageBasedRecommendations", () => {
     expect(Array.isArray(result)).toBe(true);
   });
 
+  it("fallback excludes species with isNonstandard set", async () => {
+    const team = [makeSlot("pikachu", ["Electric"])];
+
+    mockUsageFindMany.mockResolvedValue([]);
+    mockSpeciesAll.mockReturnValue([
+      { exists: true, id: "bulbasaur", num: 1, isNonstandard: null,
+        types: ["Grass", "Poison"], name: "Bulbasaur" },
+      { exists: true, id: "syclant", num: 100, isNonstandard: "CAP",
+        types: ["Ice", "Bug"], name: "Syclant" },
+    ]);
+
+    mockSpeciesGet.mockImplementation((id: string) => {
+      if (id === "bulbasaur") return mockSpecies("bulbasaur", ["Grass", "Poison"]);
+      if (id === "syclant") return mockSpecies("syclant", ["Ice", "Bug"]);
+      return { exists: false };
+    });
+
+    const result = await getCoverageBasedRecommendations(team, "gen9ou");
+    const ids = result.map((r) => r.pokemonId);
+    expect(ids).not.toContain("syclant");
+  });
+
+  it("fallback excludes species with num <= 0 or num > 1025", async () => {
+    const team = [makeSlot("pikachu", ["Electric"])];
+
+    mockUsageFindMany.mockResolvedValue([]);
+    mockSpeciesAll.mockReturnValue([
+      { exists: true, id: "bulbasaur", num: 1, isNonstandard: null,
+        types: ["Grass", "Poison"], name: "Bulbasaur" },
+      { exists: true, id: "missingno", num: 0, isNonstandard: null,
+        types: ["Normal"], name: "MissingNo" },
+      { exists: true, id: "futuremon", num: 1100, isNonstandard: null,
+        types: ["Psychic"], name: "FutureMon" },
+    ]);
+
+    mockSpeciesGet.mockImplementation((id: string) => {
+      if (id === "bulbasaur") return mockSpecies("bulbasaur", ["Grass", "Poison"]);
+      if (id === "missingno") return mockSpecies("missingno", ["Normal"]);
+      if (id === "futuremon") return mockSpecies("futuremon", ["Psychic"]);
+      return { exists: false };
+    });
+
+    const result = await getCoverageBasedRecommendations(team, "gen9ou");
+    const ids = result.map((r) => r.pokemonId);
+    expect(ids).not.toContain("missingno");
+    expect(ids).not.toContain("futuremon");
+  });
+
+  it("fallback excludes non-existent species entries", async () => {
+    const team = [makeSlot("pikachu", ["Electric"])];
+
+    mockUsageFindMany.mockResolvedValue([]);
+    mockSpeciesAll.mockReturnValue([
+      { exists: false, id: "ghost", num: 1, isNonstandard: null },
+      { exists: true, id: "bulbasaur", num: 1, isNonstandard: null,
+        types: ["Grass", "Poison"], name: "Bulbasaur" },
+    ]);
+
+    mockSpeciesGet.mockImplementation((id: string) => {
+      if (id === "bulbasaur") return mockSpecies("bulbasaur", ["Grass", "Poison"]);
+      return { exists: false };
+    });
+
+    const result = await getCoverageBasedRecommendations(team, "gen9ou");
+    const ids = result.map((r) => r.pokemonId);
+    expect(ids).not.toContain("ghost");
+  });
+
+  it("fallback caps at 200 species", async () => {
+    const team = [makeSlot("pikachu", ["Electric"])];
+
+    mockUsageFindMany.mockResolvedValue([]);
+    // Create 250 valid species entries
+    const allSpecies = Array.from({ length: 250 }, (_, i) => ({
+      exists: true,
+      id: `mon${i}`,
+      num: i + 1,
+      isNonstandard: null,
+      types: ["Fighting"],
+      name: `Mon${i}`,
+    }));
+    mockSpeciesAll.mockReturnValue(allSpecies);
+
+    mockSpeciesGet.mockImplementation((id: string) => {
+      return mockSpecies(id, ["Fighting"]);
+    });
+
+    const result = await getCoverageBasedRecommendations(team, "gen9ou");
+    // pikachu is on the team so excluded; at most 200 candidates minus pikachu
+    expect(result.length).toBeLessThanOrEqual(200);
+  });
+
   // -----------------------------------------------------------------------
   // Limit
   // -----------------------------------------------------------------------

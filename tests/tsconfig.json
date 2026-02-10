@@ -1,0 +1,24 @@
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "..",
+    "baseUrl": "..",
+    "paths": {
+      "#analysis/*": ["packages/analysis/src/*"],
+      "#battle-engine/*": ["packages/battle-engine/src/*"],
+      "#core/*": ["packages/core/src/*"],
+      "#damage-calc/*": ["packages/damage-calc/src/*"],
+      "#data-pipeline/*": ["packages/data-pipeline/src/*"],
+      "#formats/*": ["packages/formats/src/*"],
+      "#llm/*": ["packages/llm/src/*"],
+      "#pokemon-data/*": ["packages/pokemon-data/src/*"],
+      "#recommendations/*": ["packages/recommendations/src/*"],
+      "#smogon-data/*": ["packages/smogon-data/src/*"],
+      "#teams/*": ["packages/teams/src/*"],
+      "@nasty-plot/*": ["packages/*/src/index.ts"]
+    },
+    "types": ["vitest/globals"],
+    "noEmit": true
+  },
+  "include": ["./**/*.ts", "./**/*.tsx"]
+}

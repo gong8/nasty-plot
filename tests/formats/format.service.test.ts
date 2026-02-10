@@ -1,10 +1,10 @@
-import { getFormat, getAllFormats, getActiveFormats, getFormatPokemon, isLegalInFormat, getFormatItems, getFormatMoves, getFormatLearnset } from "../format.service";
+import { getFormat, getAllFormats, getActiveFormats, getFormatPokemon, isLegalInFormat, getFormatItems, getFormatMoves, getFormatLearnset } from "@nasty-plot/formats";
 
 // ---------------------------------------------------------------------------
 // Mocks
 // ---------------------------------------------------------------------------
 
-vi.mock("../data/format-definitions", () => ({
+vi.mock("#formats/data/format-definitions", () => ({
   FORMAT_DEFINITIONS: [
     {
       id: "gen9ou",

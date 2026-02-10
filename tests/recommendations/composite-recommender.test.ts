@@ -1,5 +1,5 @@
 import type { PokemonType } from "@nasty-plot/core";
-import { getRecommendations } from "../composite-recommender";
+import { getRecommendations } from "@nasty-plot/recommendations";
 
 // ---------------------------------------------------------------------------
 // Mocks
@@ -28,18 +28,18 @@ vi.mock("@pkmn/dex", () => ({
   },
 }));
 
-vi.mock("../usage-recommender", () => ({
+vi.mock("#recommendations/usage-recommender", () => ({
   getUsageBasedRecommendations: vi.fn(),
 }));
 
-vi.mock("../coverage-recommender", () => ({
+vi.mock("#recommendations/coverage-recommender", () => ({
   getCoverageBasedRecommendations: vi.fn(),
 }));
 
 import { prisma } from "@nasty-plot/db";
 import { Dex } from "@pkmn/dex";
-import { getUsageBasedRecommendations } from "../usage-recommender";
-import { getCoverageBasedRecommendations } from "../coverage-recommender";
+import { getUsageBasedRecommendations } from "#recommendations/usage-recommender";
+import { getCoverageBasedRecommendations } from "#recommendations/coverage-recommender";
 
 const mockTeamFindUnique = prisma.team.findUnique as ReturnType<typeof vi.fn>;
 const mockSpeciesGet = Dex.species.get as ReturnType<typeof vi.fn>;

@@ -1,4 +1,4 @@
-import { analyzeTeam } from "../analysis.service";
+import { analyzeTeam } from "@nasty-plot/analysis";
 
 // ---------------------------------------------------------------------------
 // Mocks
@@ -23,23 +23,23 @@ vi.mock("@pkmn/dex", () => ({
   },
 }));
 
-vi.mock("../coverage.service", () => ({
+vi.mock("#analysis/coverage.service", () => ({
   analyzeTypeCoverage: vi.fn(),
 }));
 
-vi.mock("../threat.service", () => ({
+vi.mock("#analysis/threat.service", () => ({
   identifyThreats: vi.fn(),
 }));
 
-vi.mock("../synergy.service", () => ({
+vi.mock("#analysis/synergy.service", () => ({
   calculateSynergy: vi.fn(),
 }));
 
 import { prisma } from "@nasty-plot/db";
 import { Dex } from "@pkmn/dex";
-import { analyzeTypeCoverage } from "../coverage.service";
-import { identifyThreats } from "../threat.service";
-import { calculateSynergy } from "../synergy.service";
+import { analyzeTypeCoverage } from "#analysis/coverage.service";
+import { identifyThreats } from "#analysis/threat.service";
+import { calculateSynergy } from "#analysis/synergy.service";
 
 const mockTeamFindUnique = prisma.team.findUnique as ReturnType<typeof vi.fn>;
 const mockSpeciesGet = Dex.species.get as ReturnType<typeof vi.fn>;

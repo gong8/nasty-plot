@@ -1,5 +1,5 @@
 import type { DamageCalcInput, StatsTable, TeamSlotData, PokemonType } from "@nasty-plot/core";
-import { calculateDamage, calculateMatchupMatrix } from "../calc.service";
+import { calculateDamage, calculateMatchupMatrix } from "../index";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -128,7 +128,7 @@ describe("calculateDamage", () => {
           ability: "Flash Fire",
           evs: { hp: 0, atk: 0, def: 0, spa: 252, spd: 4, spe: 252 },
         },
-        defender: { pokemonId: "ferrothorn", level: 100 },
+        defender: { pokemonId: "corviknight", level: 100 },
         move: "Flamethrower",
         field: { weather: "Sun" },
       })
@@ -161,13 +161,332 @@ describe("calculateDamage", () => {
     const result = calculateDamage(
       makeCalcInput({
         attacker: { pokemonId: "snorlax", level: 100 },
-        defender: { pokemonId: "ferrothorn", level: 100 },
+        defender: { pokemonId: "corviknight", level: 100 },
         move: "Body Slam",
       })
     );
 
     expect(result.maxPercent).toBeGreaterThan(0);
     expect(result.maxPercent).toBeLessThan(100);
+  });
+
+  it("applies Burned status to the attacker (reduces physical damage)", () => {
+    const unburnedResult = calculateDamage(
+      makeCalcInput({
+        attacker: {
+          pokemonId: "garchomp",
+          level: 100,
+          nature: "Jolly",
+          ability: "Rough Skin",
+          evs: { hp: 0, atk: 252, def: 0, spa: 0, spd: 4, spe: 252 },
+        },
+      })
+    );
+
+    const burnedResult = calculateDamage(
+      makeCalcInput({
+        attacker: {
+          pokemonId: "garchomp",
+          level: 100,
+          nature: "Jolly",
+          ability: "Rough Skin",
+          evs: { hp: 0, atk: 252, def: 0, spa: 0, spd: 4, spe: 252 },
+          status: "Burned",
+        },
+      })
+    );
+
+    // Burn halves physical attack damage
+    expect(burnedResult.maxDamage).toBeLessThan(unburnedResult.maxDamage);
+  });
+
+  it("applies Paralyzed status to the attacker", () => {
+    const result = calculateDamage(
+      makeCalcInput({
+        attacker: {
+          pokemonId: "garchomp",
+          level: 100,
+          nature: "Jolly",
+          ability: "Rough Skin",
+          evs: { hp: 0, atk: 252, def: 0, spa: 0, spd: 4, spe: 252 },
+          status: "Paralyzed",
+        },
+      })
+    );
+
+    expect(result.maxPercent).toBeGreaterThan(0);
+    expect(result.moveName).toBe("Earthquake");
+  });
+
+  it("applies Poisoned status to the defender", () => {
+    const result = calculateDamage(
+      makeCalcInput({
+        defender: {
+          pokemonId: "heatran",
+          level: 100,
+          status: "Poisoned",
+        },
+      })
+    );
+
+    expect(result.maxPercent).toBeGreaterThan(0);
+  });
+
+  it("applies Badly Poisoned status to the defender", () => {
+    const result = calculateDamage(
+      makeCalcInput({
+        defender: {
+          pokemonId: "heatran",
+          level: 100,
+          status: "Badly Poisoned",
+        },
+      })
+    );
+
+    expect(result.maxPercent).toBeGreaterThan(0);
+  });
+
+  it("applies Asleep status to the attacker", () => {
+    const result = calculateDamage(
+      makeCalcInput({
+        attacker: {
+          pokemonId: "garchomp",
+          level: 100,
+          nature: "Jolly",
+          ability: "Rough Skin",
+          evs: { hp: 0, atk: 252, def: 0, spa: 0, spd: 4, spe: 252 },
+          status: "Asleep",
+        },
+      })
+    );
+
+    expect(result.maxPercent).toBeGreaterThan(0);
+  });
+
+  it("applies Frozen status to the attacker", () => {
+    const result = calculateDamage(
+      makeCalcInput({
+        attacker: {
+          pokemonId: "garchomp",
+          level: 100,
+          nature: "Jolly",
+          ability: "Rough Skin",
+          evs: { hp: 0, atk: 252, def: 0, spa: 0, spd: 4, spe: 252 },
+          status: "Frozen",
+        },
+      })
+    );
+
+    expect(result.maxPercent).toBeGreaterThan(0);
+  });
+
+  it("treats None status as no status", () => {
+    const noStatusResult = calculateDamage(makeCalcInput());
+    const noneStatusResult = calculateDamage(
+      makeCalcInput({
+        attacker: {
+          pokemonId: "garchomp",
+          level: 100,
+          nature: "Jolly",
+          ability: "Rough Skin",
+          evs: { hp: 0, atk: 252, def: 0, spa: 0, spd: 4, spe: 252 },
+          status: "None",
+        },
+      })
+    );
+
+    expect(noneStatusResult.maxDamage).toBe(noStatusResult.maxDamage);
+  });
+
+  it("treats Healthy status as no status", () => {
+    const noStatusResult = calculateDamage(makeCalcInput());
+    const healthyStatusResult = calculateDamage(
+      makeCalcInput({
+        attacker: {
+          pokemonId: "garchomp",
+          level: 100,
+          nature: "Jolly",
+          ability: "Rough Skin",
+          evs: { hp: 0, atk: 252, def: 0, spa: 0, spd: 4, spe: 252 },
+          status: "Healthy",
+        },
+      })
+    );
+
+    expect(healthyStatusResult.maxDamage).toBe(noStatusResult.maxDamage);
+  });
+
+  it("handles fixed-damage moves like Seismic Toss", () => {
+    const result = calculateDamage(
+      makeCalcInput({
+        attacker: { pokemonId: "snorlax", level: 100, ability: "Thick Fat" },
+        defender: { pokemonId: "garchomp", level: 100 },
+        move: "Seismic Toss",
+      })
+    );
+
+    // Seismic Toss does exactly 100 HP at level 100
+    expect(result.minDamage).toBe(100);
+    expect(result.maxDamage).toBe(100);
+  });
+
+  it("handles tera type on attacker", () => {
+    const result = calculateDamage(
+      makeCalcInput({
+        attacker: {
+          pokemonId: "garchomp",
+          level: 100,
+          nature: "Jolly",
+          ability: "Rough Skin",
+          evs: { hp: 0, atk: 252, def: 0, spa: 0, spd: 4, spe: 252 },
+          teraType: "Ground",
+        },
+      })
+    );
+
+    // Tera Ground should boost Earthquake via STAB
+    expect(result.maxPercent).toBeGreaterThan(0);
+  });
+
+  it("falls back to naive name conversion for unknown Pokemon IDs", () => {
+    // Using a completely fake Pokemon ID that @pkmn/dex won't find,
+    // which forces the resolveSpeciesName fallback path (lines 78-80).
+    // The fallback converts camelCase to Title Case ("fakeMonster" -> "Fake Monster").
+    // @smogon/calc will throw for an unknown species.
+    expect(() =>
+      calculateDamage(
+        makeCalcInput({
+          attacker: { pokemonId: "fakeMonster", level: 100 },
+        })
+      )
+    ).toThrow();
+  });
+
+  it("handles isCritical field option", () => {
+    const normalResult = calculateDamage(makeCalcInput());
+    const critResult = calculateDamage(
+      makeCalcInput({
+        field: { isCritical: true },
+      })
+    );
+
+    // Critical hits deal more damage
+    expect(critResult.maxDamage).toBeGreaterThan(normalResult.maxDamage);
+  });
+
+  it("handles isReflect field option (reduces physical damage)", () => {
+    const normalResult = calculateDamage(makeCalcInput());
+    const reflectResult = calculateDamage(
+      makeCalcInput({
+        field: { isReflect: true },
+      })
+    );
+
+    // Reflect halves physical damage
+    expect(reflectResult.maxDamage).toBeLessThan(normalResult.maxDamage);
+  });
+
+  it("handles isLightScreen field option", () => {
+    const normalResult = calculateDamage(
+      makeCalcInput({
+        attacker: {
+          pokemonId: "heatran",
+          level: 100,
+          ability: "Flash Fire",
+          evs: { hp: 0, atk: 0, def: 0, spa: 252, spd: 4, spe: 252 },
+        },
+        defender: { pokemonId: "corviknight", level: 100 },
+        move: "Flamethrower",
+      })
+    );
+    const lsResult = calculateDamage(
+      makeCalcInput({
+        attacker: {
+          pokemonId: "heatran",
+          level: 100,
+          ability: "Flash Fire",
+          evs: { hp: 0, atk: 0, def: 0, spa: 252, spd: 4, spe: 252 },
+        },
+        defender: { pokemonId: "corviknight", level: 100 },
+        move: "Flamethrower",
+        field: { isLightScreen: true },
+      })
+    );
+
+    // Light Screen reduces special damage
+    expect(lsResult.maxDamage).toBeLessThan(normalResult.maxDamage);
+  });
+
+  it("handles isAuroraVeil field option", () => {
+    const normalResult = calculateDamage(makeCalcInput());
+    const veilResult = calculateDamage(
+      makeCalcInput({
+        field: { isAuroraVeil: true },
+      })
+    );
+
+    // Aurora Veil reduces damage
+    expect(veilResult.maxDamage).toBeLessThan(normalResult.maxDamage);
+  });
+
+  it("handles terrain field option", () => {
+    const resultWithTerrain = calculateDamage(
+      makeCalcInput({
+        field: { terrain: "Electric" },
+      })
+    );
+
+    expect(resultWithTerrain.maxPercent).toBeGreaterThan(0);
+  });
+
+  it("handles doubles game type", () => {
+    const result = calculateDamage(
+      makeCalcInput({
+        field: { isDoubles: true },
+      })
+    );
+
+    expect(result.maxPercent).toBeGreaterThan(0);
+  });
+
+  it("handles spread moves in doubles (nested damage array)", () => {
+    // Spread moves in doubles return number[][] from @smogon/calc
+    const result = calculateDamage(
+      makeCalcInput({
+        attacker: {
+          pokemonId: "garchomp",
+          level: 100,
+          nature: "Jolly",
+          ability: "Rough Skin",
+          evs: { hp: 0, atk: 252, def: 0, spa: 0, spd: 4, spe: 252 },
+        },
+        defender: { pokemonId: "heatran", level: 100 },
+        move: "Earthquake",
+        field: { isDoubles: true },
+      })
+    );
+
+    expect(result.maxPercent).toBeGreaterThan(0);
+    expect(Array.isArray(result.damage)).toBe(true);
+  });
+
+  it("reports weak moves as multi-hit KO or 5+ hits", () => {
+    // Low-power move against a bulky target: should require multiple hits
+    const result = calculateDamage(
+      makeCalcInput({
+        attacker: { pokemonId: "snorlax", level: 100 },
+        defender: {
+          pokemonId: "corviknight",
+          level: 100,
+          evs: { hp: 252, atk: 0, def: 252, spa: 0, spd: 4, spe: 0 },
+          nature: "Impish",
+        },
+        move: "Body Slam",
+      })
+    );
+
+    // Body Slam (NVE) vs max phys defense Corviknight should not OHKO
+    expect(result.koChance).not.toBe("guaranteed OHKO");
   });
 });
 
@@ -218,7 +537,7 @@ describe("calculateMatchupMatrix", () => {
         moves: ["Magma Storm", "Earth Power", undefined, undefined],
       }),
     ];
-    const threats = ["ferrothorn", "clefable"];
+    const threats = ["corviknight", "clefable"];
 
     const matrix = calculateMatchupMatrix(team, threats, "gen9ou");
 
@@ -239,5 +558,59 @@ describe("calculateMatchupMatrix", () => {
 
     expect(matrix.length).toBe(1);
     expect(matrix[0].length).toBe(1);
+  });
+
+  it("skips status moves that fail to calculate and picks best damaging move", () => {
+    const team = [
+      makeSlot("garchomp", ["Dragon", "Ground"], {
+        moves: ["Swords Dance", "Earthquake", undefined, undefined],
+      }),
+    ];
+    const threats = ["heatran"];
+
+    const matrix = calculateMatchupMatrix(team, threats, "gen9ou");
+    const entry = matrix[0][0];
+
+    // Swords Dance should fail to calc damage; Earthquake should be picked
+    expect(entry.bestMove).toBe("Earthquake");
+    expect(entry.maxPercent).toBeGreaterThan(0);
+  });
+
+  it("uses species.name when available on slot", () => {
+    const team = [
+      makeSlot("garchomp", ["Dragon", "Ground"], {
+        species: {
+          id: "garchomp",
+          name: "Garchomp",
+          num: 445,
+          types: ["Dragon", "Ground"],
+          baseStats: defaultStats,
+          abilities: { "0": "Rough Skin" },
+          weightkg: 95,
+        },
+      }),
+    ];
+    const threats = ["heatran"];
+
+    const matrix = calculateMatchupMatrix(team, threats, "gen9ou");
+    const entry = matrix[0][0];
+
+    expect(entry.attackerName).toBe("Garchomp");
+  });
+
+  it("falls back to resolveSpeciesName when slot has no species object", () => {
+    const team = [
+      makeSlot("garchomp", ["Dragon", "Ground"], {
+        species: undefined,
+      }),
+    ];
+    const threats = ["heatran"];
+
+    const matrix = calculateMatchupMatrix(team, threats, "gen9ou");
+    const entry = matrix[0][0];
+
+    // resolveSpeciesName should resolve "garchomp" to "Garchomp" via dex lookup
+    expect(entry.attackerName).toBe("Garchomp");
+    expect(entry.maxPercent).toBeGreaterThan(0);
   });
 });

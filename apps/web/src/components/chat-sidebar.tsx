@@ -33,7 +33,7 @@ export function ChatSidebar({ fullPage = false }: ChatSidebarProps) {
 
   return (
     <div
-      className="fixed top-16 right-0 bottom-0 z-40 flex flex-col border-l border-border bg-background dark:bg-card/95 dark:backdrop-blur-xl"
+      className="fixed top-0 right-0 bottom-0 z-[60] flex flex-col border-l border-border bg-background dark:bg-card/95 dark:backdrop-blur-xl"
       style={{ width }}
     >
       <ChatSidebarResizeHandle />

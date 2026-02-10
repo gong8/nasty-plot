@@ -766,4 +766,502 @@ describe("generateHints", () => {
     expect(sdHint!.score).toBeGreaterThan(0);
     expect(sdHint!.explanation).toMatch(/boost/i);
   });
+
+  it("Swords Dance gets low score when HP is low", () => {
+    const state = makeState();
+    state.sides.p1.active = [makePokemon({ hp: 30, maxHp: 357, hpPercent: 8 })];
+    const actions = makeActions();
+    const result = generateHints(state, actions);
+
+    const sdHint = result.rankedMoves.find((m) => m.name === "Swords Dance");
+    expect(sdHint).toBeDefined();
+    // Low HP means risky setup
+    expect(sdHint!.explanation).toMatch(/low HP/i);
+  });
+
+  it("Spikes gets scored based on current layer count", () => {
+    const state = makeState();
+    const actions = makeActions({
+      moves: [
+        {
+          name: "Spikes",
+          id: "spikes",
+          pp: 20,
+          maxPp: 20,
+          type: "Ground",
+          disabled: false,
+          target: "foeSide",
+          basePower: 0,
+          category: "Status",
+          accuracy: true,
+          description: "Sets Spikes.",
+        },
+      ],
+    });
+    const result = generateHints(state, actions);
+
+    const spikesHint = result.rankedMoves.find((m) => m.name === "Spikes");
+    expect(spikesHint).toBeDefined();
+    expect(spikesHint!.score).toBeGreaterThan(0);
+    expect(spikesHint!.explanation).toContain("Spikes");
+  });
+
+  it("Spikes gets 0 score when at max layers", () => {
+    const state = makeState();
+    state.sides.p2.sideConditions.spikes = 3;
+    const actions = makeActions({
+      moves: [
+        {
+          name: "Spikes",
+          id: "spikes",
+          pp: 20,
+          maxPp: 20,
+          type: "Ground",
+          disabled: false,
+          target: "foeSide",
+          basePower: 0,
+          category: "Status",
+          accuracy: true,
+          description: "Sets Spikes.",
+        },
+      ],
+    });
+    const result = generateHints(state, actions);
+
+    const spikesHint = result.rankedMoves.find((m) => m.name === "Spikes");
+    expect(spikesHint).toBeDefined();
+    expect(spikesHint!.score).toBe(0);
+  });
+
+  it("Toxic Spikes gets scored", () => {
+    const state = makeState();
+    const actions = makeActions({
+      moves: [
+        {
+          name: "Toxic Spikes",
+          id: "toxicspikes",
+          pp: 20,
+          maxPp: 20,
+          type: "Poison",
+          disabled: false,
+          target: "foeSide",
+          basePower: 0,
+          category: "Status",
+          accuracy: true,
+          description: "Sets Toxic Spikes.",
+        },
+      ],
+    });
+    const result = generateHints(state, actions);
+
+    const tsHint = result.rankedMoves.find((m) => m.name === "Toxic Spikes");
+    expect(tsHint).toBeDefined();
+    expect(tsHint!.score).toBeGreaterThan(0);
+  });
+
+  it("Toxic Spikes gets 0 score at max layers", () => {
+    const state = makeState();
+    state.sides.p2.sideConditions.toxicSpikes = 2;
+    const actions = makeActions({
+      moves: [
+        {
+          name: "Toxic Spikes",
+          id: "toxicspikes",
+          pp: 20,
+          maxPp: 20,
+          type: "Poison",
+          disabled: false,
+          target: "foeSide",
+          basePower: 0,
+          category: "Status",
+          accuracy: true,
+          description: "Sets Toxic Spikes.",
+        },
+      ],
+    });
+    const result = generateHints(state, actions);
+
+    const tsHint = result.rankedMoves.find((m) => m.name === "Toxic Spikes");
+    expect(tsHint).toBeDefined();
+    expect(tsHint!.score).toBe(0);
+  });
+
+  it("Sticky Web gets scored when not set", () => {
+    const state = makeState();
+    const actions = makeActions({
+      moves: [
+        {
+          name: "Sticky Web",
+          id: "stickyweb",
+          pp: 20,
+          maxPp: 20,
+          type: "Bug",
+          disabled: false,
+          target: "foeSide",
+          basePower: 0,
+          category: "Status",
+          accuracy: true,
+          description: "Sets Sticky Web.",
+        },
+      ],
+    });
+    const result = generateHints(state, actions);
+
+    const swHint = result.rankedMoves.find((m) => m.name === "Sticky Web");
+    expect(swHint).toBeDefined();
+    expect(swHint!.score).toBeGreaterThan(0);
+  });
+
+  it("Sticky Web gets 0 score when already set", () => {
+    const state = makeState();
+    state.sides.p2.sideConditions.stickyWeb = true;
+    const actions = makeActions({
+      moves: [
+        {
+          name: "Sticky Web",
+          id: "stickyweb",
+          pp: 20,
+          maxPp: 20,
+          type: "Bug",
+          disabled: false,
+          target: "foeSide",
+          basePower: 0,
+          category: "Status",
+          accuracy: true,
+          description: "Sets Sticky Web.",
+        },
+      ],
+    });
+    const result = generateHints(state, actions);
+
+    const swHint = result.rankedMoves.find((m) => m.name === "Sticky Web");
+    expect(swHint).toBeDefined();
+    expect(swHint!.score).toBe(0);
+  });
+
+  it("Defog gets low score when no hazards present", () => {
+    const state = makeState();
+    const actions = makeActions({
+      moves: [
+        {
+          name: "Defog",
+          id: "defog",
+          pp: 16,
+          maxPp: 16,
+          type: "Flying",
+          disabled: false,
+          target: "normal",
+          basePower: 0,
+          category: "Status",
+          accuracy: true,
+          description: "Removes hazards.",
+        },
+      ],
+    });
+    const result = generateHints(state, actions);
+
+    const defogHint = result.rankedMoves.find((m) => m.name === "Defog");
+    expect(defogHint).toBeDefined();
+    expect(defogHint!.score).toBeLessThanOrEqual(5);
+    expect(defogHint!.explanation).toContain("No hazards");
+  });
+
+  it("Defog gets good score when hazards are up on own side", () => {
+    const state = makeState();
+    state.sides.p1.sideConditions.stealthRock = true;
+    state.sides.p1.sideConditions.spikes = 2;
+    const actions = makeActions({
+      moves: [
+        {
+          name: "Defog",
+          id: "defog",
+          pp: 16,
+          maxPp: 16,
+          type: "Flying",
+          disabled: false,
+          target: "normal",
+          basePower: 0,
+          category: "Status",
+          accuracy: true,
+          description: "Removes hazards.",
+        },
+      ],
+    });
+    const result = generateHints(state, actions);
+
+    const defogHint = result.rankedMoves.find((m) => m.name === "Defog");
+    expect(defogHint).toBeDefined();
+    expect(defogHint!.score).toBeGreaterThan(20);
+  });
+
+  it("Toxic gets 0 score when opponent already has a status", () => {
+    const state = makeState();
+    state.sides.p2.active = [
+      makePokemon({
+        speciesId: "ironvaliant",
+        name: "Iron Valiant",
+        types: ["Fairy", "Fighting"],
+        status: "brn",
+      }),
+    ];
+    const actions = makeActions({
+      moves: [
+        {
+          name: "Toxic",
+          id: "toxic",
+          pp: 16,
+          maxPp: 16,
+          type: "Poison",
+          disabled: false,
+          target: "normal",
+          basePower: 0,
+          category: "Status",
+          accuracy: 90,
+          description: "Badly poisons.",
+        },
+      ],
+    });
+    const result = generateHints(state, actions);
+
+    const toxicHint = result.rankedMoves.find((m) => m.name === "Toxic");
+    expect(toxicHint).toBeDefined();
+    expect(toxicHint!.score).toBe(0);
+  });
+
+  it("Recover gets moderate score at moderate HP", () => {
+    const state = makeState();
+    state.sides.p1.active = [makePokemon({ hp: 250, maxHp: 357, hpPercent: 70 })];
+    const actions = makeActions({
+      moves: [
+        {
+          name: "Recover",
+          id: "recover",
+          pp: 16,
+          maxPp: 16,
+          type: "Normal",
+          disabled: false,
+          target: "self",
+          basePower: 0,
+          category: "Status",
+          accuracy: true,
+          description: "Restores 50% HP.",
+        },
+      ],
+    });
+    const result = generateHints(state, actions);
+
+    const recoverHint = result.rankedMoves.find((m) => m.name === "Recover");
+    expect(recoverHint).toBeDefined();
+    expect(recoverHint!.score).toBeGreaterThan(0);
+    expect(recoverHint!.explanation).toContain("moderate");
+  });
+
+  it("Recover gets low score at near-full HP", () => {
+    const state = makeState();
+    state.sides.p1.active = [makePokemon({ hp: 350, maxHp: 357, hpPercent: 98 })];
+    const actions = makeActions({
+      moves: [
+        {
+          name: "Recover",
+          id: "recover",
+          pp: 16,
+          maxPp: 16,
+          type: "Normal",
+          disabled: false,
+          target: "self",
+          basePower: 0,
+          category: "Status",
+          accuracy: true,
+          description: "Restores 50% HP.",
+        },
+      ],
+    });
+    const result = generateHints(state, actions);
+
+    const recoverHint = result.rankedMoves.find((m) => m.name === "Recover");
+    expect(recoverHint).toBeDefined();
+    expect(recoverHint!.explanation).toContain("full HP");
+  });
+
+  it("unknown status move gets default score", () => {
+    const state = makeState();
+    const actions = makeActions({
+      moves: [
+        {
+          name: "Trick Room",
+          id: "trickroom",
+          pp: 8,
+          maxPp: 8,
+          type: "Psychic",
+          disabled: false,
+          target: "all",
+          basePower: 0,
+          category: "Status",
+          accuracy: true,
+          description: "Sets Trick Room.",
+        },
+      ],
+    });
+    const result = generateHints(state, actions);
+
+    const trHint = result.rankedMoves.find((m) => m.name === "Trick Room");
+    expect(trHint).toBeDefined();
+    expect(trHint!.score).toBe(5);
+    expect(trHint!.explanation).toBe("Status move");
+  });
+
+  it("priority move gets bonus when opponent is at low HP", () => {
+    const state = makeState();
+    state.sides.p2.active = [
+      makePokemon({
+        speciesId: "ironvaliant",
+        name: "Iron Valiant",
+        types: ["Fairy", "Fighting"],
+        hp: 30,
+        maxHp: 357,
+        hpPercent: 8,
+      }),
+    ];
+    state.sides.p2.team = [state.sides.p2.active[0]!];
+    const actions = makeActions({
+      moves: [
+        {
+          name: "Aqua Jet",
+          id: "aquajet",
+          pp: 20,
+          maxPp: 20,
+          type: "Water",
+          disabled: false,
+          target: "normal",
+          basePower: 40,
+          category: "Physical",
+          accuracy: 100,
+          description: "Priority move.",
+        },
+      ],
+      switches: [],
+    });
+    const result = generateHints(state, actions);
+
+    const aqHint = result.rankedMoves.find((m) => m.name === "Aqua Jet");
+    expect(aqHint).toBeDefined();
+    expect(aqHint!.explanation).toContain("priority");
+  });
+
+  it("switch scoring includes hazard penalty", () => {
+    const state = makeState();
+    state.sides.p1.sideConditions.stealthRock = true;
+    state.sides.p1.sideConditions.spikes = 2;
+    state.sides.p1.sideConditions.stickyWeb = true;
+    const actions = makeActions();
+    const result = generateHints(state, actions);
+
+    const switchHints = result.rankedMoves.filter((m) => m.action.type === "switch");
+    // Switches should have reduced scores due to hazards
+    expect(switchHints.length).toBeGreaterThan(0);
+  });
+
+  it("handles empty move list", () => {
+    const state = makeState();
+    const actions = makeActions({ moves: [], switches: [] });
+    const result = generateHints(state, actions);
+
+    expect(result.rankedMoves).toHaveLength(0);
+    expect(result.bestAction).toEqual({ type: "move", moveIndex: 1 });
+  });
+
+  it("p2 perspective reverses sides", () => {
+    const state = makeState();
+    const actions = makeActions();
+    const result = generateHints(state, actions, "p2");
+
+    expect(result.currentEval).toBeDefined();
+    expect(result.rankedMoves.length).toBeGreaterThan(0);
+  });
+
+  it("switch scoring works for known team member", () => {
+    const state = makeState();
+    // Opponent is Dragon/Ground
+    state.sides.p2.active = [
+      makePokemon({
+        speciesId: "garchomp",
+        name: "Garchomp",
+        types: ["Dragon", "Ground"],
+      }),
+    ];
+    state.sides.p2.team = [state.sides.p2.active[0]!];
+    const actions = makeActions({
+      moves: [
+        {
+          name: "Tackle",
+          id: "tackle",
+          pp: 35,
+          maxPp: 35,
+          type: "Normal",
+          disabled: false,
+          target: "normal",
+          basePower: 40,
+          category: "Physical",
+          accuracy: 100,
+          description: "",
+        },
+      ],
+      switches: [
+        {
+          index: 2,
+          name: "Heatran",
+          speciesId: "heatran",
+          hp: 386,
+          maxHp: 386,
+          status: "",
+          fainted: false,
+        },
+      ],
+    });
+
+    const result = generateHints(state, actions);
+    const switchHint = result.rankedMoves.find((m) => m.action.type === "switch");
+    expect(switchHint).toBeDefined();
+    // Should produce a score (positive or negative based on matchup)
+    expect(typeof switchHint!.score).toBe("number");
+  });
+
+  it("handles unknown move gracefully", () => {
+    const state = makeState();
+    const actions = makeActions({
+      moves: [
+        {
+          name: "NotARealMove",
+          id: "notarealmove",
+          pp: 10,
+          maxPp: 10,
+          type: "Normal",
+          disabled: false,
+          target: "normal",
+          basePower: 100,
+          category: "Physical",
+          accuracy: 100,
+          description: "",
+        },
+      ],
+      switches: [],
+    });
+    const result = generateHints(state, actions);
+
+    const hint = result.rankedMoves.find((m) => m.name === "NotARealMove");
+    expect(hint).toBeDefined();
+    expect(hint!.score).toBe(0);
+    expect(hint!.explanation).toBe("Unknown move");
+  });
+
+  it("no active Pokemon means no move scores", () => {
+    const state = makeState();
+    state.sides.p1.active = [null as never];
+    const actions = makeActions();
+    const result = generateHints(state, actions);
+
+    // Should still have switch options but no move scores
+    const moveHints = result.rankedMoves.filter((m) => m.action.type === "move");
+    expect(moveHints).toHaveLength(0);
+  });
 });

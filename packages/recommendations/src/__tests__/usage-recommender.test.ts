@@ -277,6 +277,32 @@ describe("getUsageBasedRecommendations", () => {
     expect(ids).toContain("heatran");
   });
 
+  it("skips recommended Pokemon when species is null/undefined", async () => {
+    mockCorrFindMany.mockResolvedValue([
+      { pokemonAId: "garchomp", pokemonBId: "nullmon", correlationPercent: 40 },
+    ]);
+
+    mockSpeciesGet.mockImplementation((id: string) => {
+      if (id === "nullmon") return null;
+      return mockSpecies(id);
+    });
+
+    const result = await getUsageBasedRecommendations(["garchomp"], "gen9ou");
+    expect(result).toHaveLength(0);
+  });
+
+  it("returns empty array when all correlated species are non-existent", async () => {
+    mockCorrFindMany.mockResolvedValue([
+      { pokemonAId: "garchomp", pokemonBId: "fake1", correlationPercent: 50 },
+      { pokemonAId: "garchomp", pokemonBId: "fake2", correlationPercent: 40 },
+    ]);
+
+    mockSpeciesGet.mockImplementation(() => ({ exists: false }));
+
+    const result = await getUsageBasedRecommendations(["garchomp"], "gen9ou");
+    expect(result).toEqual([]);
+  });
+
   // -----------------------------------------------------------------------
   // Return shape
   // -----------------------------------------------------------------------

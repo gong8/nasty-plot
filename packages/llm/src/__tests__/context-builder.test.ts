@@ -1,5 +1,11 @@
-import type { TeamData, UsageStatsEntry, StatsTable, PokemonType } from "@nasty-plot/core";
-import { buildTeamContext, buildMetaContext } from "../context-builder";
+import type { TeamData, UsageStatsEntry, StatsTable, PokemonType, PokemonSpecies } from "@nasty-plot/core";
+import {
+  buildTeamContext,
+  buildMetaContext,
+  buildPokemonContext,
+  buildPageContextPrompt,
+  buildPlanModePrompt,
+} from "../context-builder";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -218,5 +224,92 @@ describe("buildMetaContext", () => {
 
     expect(result).toContain("gen9ou");
     expect(result).toContain("Top 0 Pokemon");
+  });
+});
+
+describe("buildPokemonContext", () => {
+  function makeSpecies(overrides?: Partial<PokemonSpecies>): PokemonSpecies {
+    return {
+      id: "garchomp",
+      name: "Garchomp",
+      num: 445,
+      types: ["Dragon", "Ground"],
+      baseStats: { hp: 108, atk: 130, def: 95, spa: 80, spd: 85, spe: 102 },
+      abilities: { "0": "Sand Veil", H: "Rough Skin" },
+      weightkg: 95,
+      ...overrides,
+    };
+  }
+
+  it("includes species name", () => {
+    const result = buildPokemonContext("garchomp", makeSpecies());
+    expect(result).toContain("Currently Viewing: Garchomp");
+  });
+
+  it("includes types", () => {
+    const result = buildPokemonContext("garchomp", makeSpecies());
+    expect(result).toContain("Types: Dragon/Ground");
+  });
+
+  it("includes base stats and BST", () => {
+    const result = buildPokemonContext("garchomp", makeSpecies());
+    expect(result).toContain("108/130/95/80/85/102");
+    expect(result).toContain("BST: 600");
+  });
+
+  it("includes abilities with Hidden marker", () => {
+    const result = buildPokemonContext("garchomp", makeSpecies());
+    expect(result).toContain("Sand Veil");
+    expect(result).toContain("Rough Skin (Hidden)");
+  });
+
+  it("includes tier when present", () => {
+    const result = buildPokemonContext(
+      "garchomp",
+      makeSpecies({ tier: "OU" } as Partial<PokemonSpecies>)
+    );
+    expect(result).toContain("Tier: OU");
+  });
+
+  it("omits tier line when tier is empty/absent", () => {
+    const result = buildPokemonContext("garchomp", makeSpecies({ tier: undefined } as Partial<PokemonSpecies>));
+    expect(result).not.toContain("Tier:");
+  });
+
+  it("handles single type", () => {
+    const result = buildPokemonContext(
+      "pikachu",
+      makeSpecies({ types: ["Electric"] })
+    );
+    expect(result).toContain("Types: Electric");
+  });
+});
+
+describe("buildPageContextPrompt", () => {
+  it("returns context with summary", () => {
+    const result = buildPageContextPrompt({
+      pageType: "team-editor",
+      contextSummary: "Editing team with 3 Pokemon",
+    });
+    expect(result).toContain("Current Page Context");
+    expect(result).toContain("Editing team with 3 Pokemon");
+  });
+
+  it("returns empty string when contextSummary is empty", () => {
+    const result = buildPageContextPrompt({
+      pageType: "other",
+      contextSummary: "",
+    });
+    expect(result).toBe("");
+  });
+});
+
+describe("buildPlanModePrompt", () => {
+  it("returns planning instructions", () => {
+    const result = buildPlanModePrompt();
+    expect(result).toContain("Planning");
+    expect(result).toContain("<plan>");
+    expect(result).toContain("<step>");
+    expect(result).toContain("step_update");
   });
 });

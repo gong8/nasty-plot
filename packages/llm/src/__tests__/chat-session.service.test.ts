@@ -1,4 +1,12 @@
-import { createSession, getSession, listSessions, addMessage } from "../chat-session.service";
+import {
+  createSession,
+  getSession,
+  listSessions,
+  addMessage,
+  updateSession,
+  deleteSession,
+  deleteLastAssistantMessage,
+} from "../chat-session.service";
 
 // ---------------------------------------------------------------------------
 // Mocks
@@ -11,9 +19,12 @@ vi.mock("@nasty-plot/db", () => ({
       findUnique: vi.fn(),
       findMany: vi.fn(),
       update: vi.fn(),
+      delete: vi.fn(),
     },
     chatMessage: {
       create: vi.fn(),
+      findFirst: vi.fn(),
+      delete: vi.fn(),
     },
   },
 }));
@@ -24,7 +35,10 @@ const mockSessionCreate = prisma.chatSession.create as ReturnType<typeof vi.fn>;
 const mockSessionFindUnique = prisma.chatSession.findUnique as ReturnType<typeof vi.fn>;
 const mockSessionFindMany = prisma.chatSession.findMany as ReturnType<typeof vi.fn>;
 const mockSessionUpdate = prisma.chatSession.update as ReturnType<typeof vi.fn>;
+const mockSessionDelete = (prisma.chatSession as any).delete as ReturnType<typeof vi.fn>;
 const mockMessageCreate = prisma.chatMessage.create as ReturnType<typeof vi.fn>;
+const mockMessageFindFirst = (prisma.chatMessage as any).findFirst as ReturnType<typeof vi.fn>;
+const mockMessageDelete = (prisma.chatMessage as any).delete as ReturnType<typeof vi.fn>;
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -198,5 +212,94 @@ describe("addMessage", () => {
         toolCalls: JSON.stringify(toolCalls),
       },
     });
+  });
+});
+
+describe("updateSession", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("updates session title and returns mapped session", async () => {
+    mockSessionUpdate.mockResolvedValue(
+      makeDbSession({ title: "New Title" })
+    );
+
+    const result = await updateSession("session-1", { title: "New Title" });
+
+    expect(mockSessionUpdate).toHaveBeenCalledWith({
+      where: { id: "session-1" },
+      data: { title: "New Title" },
+      include: { messages: { orderBy: { createdAt: "asc" } } },
+    });
+    expect(result).not.toBeNull();
+    expect(result!.id).toBe("session-1");
+  });
+
+  it("maps title to undefined when null in DB", async () => {
+    mockSessionUpdate.mockResolvedValue(makeDbSession({ title: null }));
+
+    const result = await updateSession("session-1", {});
+
+    expect(result!.title).toBeUndefined();
+  });
+
+  it("maps title when present", async () => {
+    mockSessionUpdate.mockResolvedValue(
+      makeDbSession({ title: "My Chat" })
+    );
+
+    const result = await updateSession("session-1", { title: "My Chat" });
+
+    expect(result!.title).toBe("My Chat");
+  });
+});
+
+describe("deleteSession", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("deletes session by id", async () => {
+    mockSessionDelete.mockResolvedValue({});
+
+    await deleteSession("session-1");
+
+    expect(mockSessionDelete).toHaveBeenCalledWith({
+      where: { id: "session-1" },
+    });
+  });
+});
+
+describe("deleteLastAssistantMessage", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("deletes the last assistant message when found", async () => {
+    mockMessageFindFirst.mockResolvedValue({ id: 42 });
+    mockMessageDelete.mockResolvedValue({});
+
+    await deleteLastAssistantMessage("session-1");
+
+    expect(mockMessageFindFirst).toHaveBeenCalledWith({
+      where: { sessionId: "session-1", role: "assistant" },
+      orderBy: { createdAt: "desc" },
+    });
+    expect(mockMessageDelete).toHaveBeenCalledWith({
+      where: { id: 42 },
+    });
+  });
+
+  it("does nothing when no assistant message exists", async () => {
+    mockMessageFindFirst.mockResolvedValue(null);
+
+    await deleteLastAssistantMessage("session-1");
+
+    expect(mockMessageFindFirst).toHaveBeenCalledWith({
+      where: { sessionId: "session-1", role: "assistant" },
+      orderBy: { createdAt: "desc" },
+    });
+    expect(mockMessageDelete).not.toHaveBeenCalled();
   });
 });

@@ -18,8 +18,6 @@ const NAV_LINKS = [
   { href: "/pokemon", label: "Pokemon" },
   { href: "/teams", label: "Teams" },
   { href: "/battle", label: "Battle" },
-  { href: "/damage-calc", label: "Damage Calc" },
-  { href: "/chat", label: "Chat" },
 ];
 
 export function SiteHeader() {
