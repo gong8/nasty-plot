@@ -2,7 +2,7 @@
 
 import { use } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Shuffle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useTeam } from "@/features/teams/hooks/use-teams";
@@ -19,7 +19,7 @@ export default function GuidedBuilderPage({
 
   if (teamQuery.isLoading) {
     return (
-      <div className="container mx-auto max-w-4xl py-8 px-4 space-y-6">
+      <div className="container mx-auto max-w-5xl py-8 px-4 space-y-6">
         <Skeleton className="h-8 w-48" />
         <Skeleton className="h-4 w-96" />
         <div className="grid grid-cols-5 gap-2">
@@ -33,7 +33,7 @@ export default function GuidedBuilderPage({
 
   if (teamQuery.error || !teamQuery.data) {
     return (
-      <div className="container mx-auto max-w-4xl py-8 px-4">
+      <div className="container mx-auto max-w-5xl py-8 px-4">
         <div className="text-center py-12">
           <h2 className="text-xl font-semibold">Team not found</h2>
           <p className="text-muted-foreground mt-2">
@@ -54,22 +54,33 @@ export default function GuidedBuilderPage({
   const team = teamQuery.data;
 
   return (
-    <div className="container mx-auto max-w-4xl py-8 px-4 space-y-6">
+    <div className="container mx-auto max-w-5xl py-8 px-4 space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-4">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => router.push(`/teams/${teamId}`)}
-        >
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
-        <div>
-          <h1 className="text-2xl font-bold">{team.name}</h1>
-          <p className="text-sm text-muted-foreground">
-            Guided Team Builder &middot; {team.formatId}
-          </p>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => router.push(`/teams/${teamId}`)}
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <div>
+            <h1 className="text-2xl font-bold">{team.name}</h1>
+            <p className="text-sm text-muted-foreground">
+              Guided Team Builder &middot; {team.formatId}
+            </p>
+          </div>
         </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => router.push(`/teams/${teamId}`)}
+          className="text-xs gap-1"
+        >
+          <Shuffle className="h-3 w-3" />
+          Switch to Freeform
+        </Button>
       </div>
 
       {/* Guided builder wizard */}

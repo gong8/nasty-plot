@@ -430,9 +430,35 @@ describe("protocol-parser", () => {
       expect(entry).toBeNull();
     });
 
-    it("returns null for |-activate| messages", () => {
+    it("parses |-activate| for generic ability", () => {
       const state = makeState();
-      expect(processLine(state, "|-activate|p1a: Garchomp|ability: Rough Skin")).toBeNull();
+      const entry = processLine(state, "|-activate|p1a: Garchomp|ability: Rough Skin");
+      expect(entry).not.toBeNull();
+      expect(entry!.type).toBe("info");
+      expect(entry!.message).toContain("Rough Skin");
+      expect(entry!.message).toContain("activated");
+    });
+
+    it("parses |-activate| for Air Balloon and clears item", () => {
+      const state = makeState();
+      processLine(state, "|switch|p1a: Garchomp|Garchomp, L100|319/319");
+      state.sides.p1.active[0]!.item = "Air Balloon";
+      const entry = processLine(state, "|-activate|p1a: Garchomp|item: Air Balloon");
+
+      expect(entry).not.toBeNull();
+      expect(entry!.type).toBe("item");
+      expect(entry!.message).toContain("Air Balloon popped");
+      expect(state.sides.p1.active[0]!.item).toBe("");
+    });
+
+    it("parses |-activate| for Disguise", () => {
+      const state = makeState();
+      processLine(state, "|switch|p1a: Mimikyu|Mimikyu, L100|252/252");
+      const entry = processLine(state, "|-activate|p1a: Mimikyu|ability: Disguise");
+
+      expect(entry).not.toBeNull();
+      expect(entry!.type).toBe("ability");
+      expect(entry!.message).toContain("Disguise was busted");
     });
 
     it("returns null for |-hint| messages", () => {
@@ -450,9 +476,12 @@ describe("protocol-parser", () => {
       expect(processLine(state, "|-waiting|p1a: Garchomp|p2a: Heatran")).toBeNull();
     });
 
-    it("returns null for |-prepare| messages", () => {
+    it("parses |-prepare| messages", () => {
       const state = makeState();
-      expect(processLine(state, "|-prepare|p1a: Garchomp|Solar Beam")).toBeNull();
+      const entry = processLine(state, "|-prepare|p1a: Garchomp|Solar Beam");
+      expect(entry).not.toBeNull();
+      expect(entry!.type).toBe("move");
+      expect(entry!.message).toContain("preparing Solar Beam");
     });
 
     it("returns null for |-mustrecharge| messages", () => {
@@ -833,6 +862,33 @@ describe("protocol-parser", () => {
 
       processLine(state, "|-fieldstart|move: Psychic Terrain");
       expect(state.field.terrain).toBe("Psychic");
+    });
+  });
+
+  describe("hasTerastallized tracking", () => {
+    it("sets hasTerastallized to true when a side terastallizes", () => {
+      const state = makeState();
+      expect(state.sides.p1.hasTerastallized).toBe(false);
+
+      processLine(state, "|switch|p1a: Garchomp|Garchomp, L100|319/319");
+      processLine(state, "|-terastallize|p1a: Garchomp|Ground");
+
+      expect(state.sides.p1.hasTerastallized).toBe(true);
+      expect(state.sides.p1.canTera).toBe(false);
+    });
+
+    it("tracks hasTerastallized independently per side", () => {
+      const state = makeState();
+      processLine(state, "|switch|p1a: Garchomp|Garchomp, L100|319/319");
+      processLine(state, "|switch|p2a: Heatran|Heatran, L100|311/311");
+
+      // Only p1 terastallizes
+      processLine(state, "|-terastallize|p1a: Garchomp|Ground");
+
+      expect(state.sides.p1.hasTerastallized).toBe(true);
+      expect(state.sides.p1.canTera).toBe(false);
+      expect(state.sides.p2.hasTerastallized).toBe(false);
+      expect(state.sides.p2.canTera).toBe(true);
     });
   });
 

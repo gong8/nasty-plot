@@ -1,0 +1,150 @@
+/* =============================================================
+ * Battle Animation Keyframes
+ * Pokemon Showdown-style animations for battle events
+ * ============================================================= */
+
+/* Damage shake — horizontal wobble */
+@keyframes battle-shake {
+  0%, 100% { transform: translateX(0); }
+  15% { transform: translateX(-6px); }
+  30% { transform: translateX(5px); }
+  45% { transform: translateX(-4px); }
+  60% { transform: translateX(3px); }
+  75% { transform: translateX(-2px); }
+  90% { transform: translateX(1px); }
+}
+
+/* Faint — slide down + fade + grayscale */
+@keyframes battle-faint {
+  0% { transform: translateY(0); opacity: 1; filter: grayscale(0); }
+  40% { transform: translateY(4px); opacity: 0.8; filter: grayscale(0.3); }
+  100% { transform: translateY(24px); opacity: 0; filter: grayscale(1); }
+}
+
+/* Switch out — slide out + fade */
+@keyframes battle-switch-out {
+  0% { transform: translateX(0) scale(1); opacity: 1; }
+  100% { transform: translateX(-40px) scale(0.6); opacity: 0; }
+}
+
+/* Switch in — slide in from offset */
+@keyframes battle-switch-in {
+  0% { transform: translateX(40px) scale(0.6); opacity: 0; }
+  60% { transform: translateX(-4px) scale(1.02); opacity: 1; }
+  100% { transform: translateX(0) scale(1); opacity: 1; }
+}
+
+/* Move name flash — fade in, hold, fade out */
+@keyframes battle-move-flash {
+  0% { opacity: 0; transform: translateY(4px); }
+  15% { opacity: 1; transform: translateY(0); }
+  70% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(-8px); }
+}
+
+/* Effectiveness text — scale pulse */
+@keyframes battle-effectiveness {
+  0% { opacity: 0; transform: scale(0.5); }
+  20% { opacity: 1; transform: scale(1.15); }
+  40% { opacity: 1; transform: scale(1); }
+  70% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(0.9); }
+}
+
+/* Tera sparkle — brightness + hue-rotate */
+@keyframes battle-tera {
+  0% { filter: brightness(1) hue-rotate(0deg); }
+  30% { filter: brightness(1.8) hue-rotate(30deg); }
+  60% { filter: brightness(1.4) hue-rotate(-15deg); }
+  100% { filter: brightness(1) hue-rotate(0deg); }
+}
+
+/* Status inflict — brief sepia overlay */
+@keyframes battle-status {
+  0%, 100% { filter: sepia(0); }
+  50% { filter: sepia(0.6); }
+}
+
+/* Stat boost — brightness pulse */
+@keyframes battle-boost {
+  0%, 100% { filter: brightness(1); }
+  50% { filter: brightness(1.5); }
+}
+
+/* Stat drop — dim */
+@keyframes battle-unboost {
+  0%, 100% { filter: brightness(1); }
+  50% { filter: brightness(0.6); }
+}
+
+/* Floating damage number — float up + fade */
+@keyframes battle-damage-number {
+  0% { opacity: 1; transform: translateY(0); }
+  70% { opacity: 1; transform: translateY(-24px); }
+  100% { opacity: 0; transform: translateY(-32px); }
+}
+
+/* Heal glow — green shadow pulse */
+@keyframes battle-heal-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+  50% { box-shadow: 0 0 8px 2px rgba(34, 197, 94, 0.4); }
+}
+
+/* Damage glow — red shadow pulse */
+@keyframes battle-damage-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+  50% { box-shadow: 0 0 8px 2px rgba(239, 68, 68, 0.4); }
+}
+
+/* Utility classes */
+.animate-battle-shake {
+  animation: battle-shake 0.4s ease-out;
+}
+
+.animate-battle-faint {
+  animation: battle-faint 0.8s ease-in forwards;
+}
+
+.animate-battle-switch-out {
+  animation: battle-switch-out 0.4s ease-in forwards;
+}
+
+.animate-battle-switch-in {
+  animation: battle-switch-in 0.4s ease-out forwards;
+}
+
+.animate-battle-move-flash {
+  animation: battle-move-flash 1.2s ease-out forwards;
+}
+
+.animate-battle-effectiveness {
+  animation: battle-effectiveness 1s ease-out forwards;
+}
+
+.animate-battle-tera {
+  animation: battle-tera 0.6s ease-in-out;
+}
+
+.animate-battle-status {
+  animation: battle-status 0.3s ease-in-out;
+}
+
+.animate-battle-boost {
+  animation: battle-boost 0.4s ease-in-out;
+}
+
+.animate-battle-unboost {
+  animation: battle-unboost 0.4s ease-in-out;
+}
+
+.animate-battle-damage-number {
+  animation: battle-damage-number 1s ease-out forwards;
+}
+
+.animate-battle-heal-glow {
+  animation: battle-heal-glow 0.6s ease-in-out;
+}
+
+.animate-battle-damage-glow {
+  animation: battle-damage-glow 0.6s ease-in-out;
+}

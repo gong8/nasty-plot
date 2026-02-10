@@ -1,41 +1,49 @@
 "use client";
 
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   DEFAULT_EVS, DEFAULT_IVS,
   type UsageStatsEntry, type PaginatedResponse, type SmogonSetData,
   type ApiResponse, type TeamSlotData, type NatureName,
-  type PokemonType, type StatsTable,
+  type PokemonType, type StatsTable, type TeamAnalysis,
+  type Recommendation,
 } from "@nasty-plot/core";
 
 // --- Types ---
 
-export type GuidedStep = 1 | 2 | 3 | 4;
+export type GuidedStep = "start" | "lead" | "build" | "sets" | "review";
 
-export interface RoleDefinition {
-  id: string;
-  label: string;
-  description: string;
-  icon: string;
-}
-
-export interface CorePokemon {
+export interface GuidedPokemonPick {
   pokemonId: string;
   pokemonName: string;
   types: PokemonType[];
-  usagePercent: number;
+  usagePercent?: number;
+  num?: number;
 }
 
-const ALL_ROLES: RoleDefinition[] = [
-  { id: "physical-wall", label: "Physical Wall", description: "A bulky Pokemon that takes physical hits", icon: "shield" },
-  { id: "special-wall", label: "Special Wall", description: "A bulky Pokemon that takes special hits", icon: "shield" },
-  { id: "physical-attacker", label: "Physical Attacker", description: "Hits hard on the physical side", icon: "swords" },
-  { id: "special-attacker", label: "Special Attacker", description: "Hits hard on the special side", icon: "zap" },
-  { id: "speed-control", label: "Speed Control", description: "A fast Pokemon or one with speed-boosting moves", icon: "gauge" },
-  { id: "hazard-setter", label: "Hazard Setter", description: "Sets entry hazards like Stealth Rock or Spikes", icon: "triangle-alert" },
-  { id: "hazard-removal", label: "Hazard Removal", description: "Removes entry hazards with Defog or Rapid Spin", icon: "eraser" },
-];
+export interface SampleTeamEntry {
+  id: string;
+  name: string;
+  formatId: string;
+  archetype?: string;
+  source?: string;
+  sourceUrl?: string;
+  paste: string;
+  pokemonIds: string[];
+}
+
+const STEP_ORDER: GuidedStep[] = ["start", "lead", "build", "sets", "review"];
+
+const DRAFT_STORAGE_KEY = "nasty-plot-guided-draft";
+
+interface DraftState {
+  teamId: string;
+  step: GuidedStep;
+  slots: Partial<TeamSlotData>[];
+  currentBuildSlot: number;
+  startedFromSample: boolean;
+}
 
 // --- Fetchers ---
 
@@ -53,101 +61,240 @@ async function fetchSets(pokemonId: string, format: string): Promise<SmogonSetDa
   return json.data;
 }
 
+async function fetchRecommendations(
+  teamId: string,
+  limit: number = 5,
+): Promise<Recommendation[]> {
+  const res = await fetch("/api/recommend", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ teamId, limit }),
+  });
+  if (!res.ok) return [];
+  const json: ApiResponse<Recommendation[]> = await res.json();
+  return json.data;
+}
+
+async function fetchAnalysis(teamId: string): Promise<TeamAnalysis | null> {
+  const res = await fetch(`/api/teams/${teamId}/analysis`);
+  if (!res.ok) return null;
+  const json: ApiResponse<TeamAnalysis> = await res.json();
+  return json.data;
+}
+
+async function fetchSampleTeams(formatId: string): Promise<SampleTeamEntry[]> {
+  const res = await fetch(`/api/sample-teams?formatId=${encodeURIComponent(formatId)}`);
+  if (!res.ok) return [];
+  return res.json();
+}
+
 // --- Hook ---
 
-export function useGuidedBuilder(formatId: string) {
-  const [step, setStep] = useState<GuidedStep>(1);
-  const [corePicks, setCorePicks] = useState<CorePokemon[]>([]);
-  const [rolePicks, setRolePicks] = useState<Record<string, CorePokemon | null>>({});
-  const [teamSlots, setTeamSlots] = useState<Partial<TeamSlotData>[]>([]);
+export function useGuidedBuilder(teamId: string, formatId: string) {
+  // --- Core state ---
+  const [step, setStep] = useState<GuidedStep>("start");
+  const [slots, setSlots] = useState<Partial<TeamSlotData>[]>([]);
+  const [currentBuildSlot, setCurrentBuildSlot] = useState(2); // 2-6 for build phase
+  const [startedFromSample, setStartedFromSample] = useState(false);
+  const [isRestoringDraft, setIsRestoringDraft] = useState(true);
 
-  // Fetch popular Pokemon for the format
+  // --- Draft persistence ---
+
+  // Restore draft on mount
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(DRAFT_STORAGE_KEY);
+      if (stored) {
+        const draft: DraftState = JSON.parse(stored);
+        if (draft.teamId === teamId) {
+          setStep(draft.step);
+          setSlots(draft.slots);
+          setCurrentBuildSlot(draft.currentBuildSlot);
+          setStartedFromSample(draft.startedFromSample);
+        }
+      }
+    } catch {
+      // Ignore parse errors
+    }
+    setIsRestoringDraft(false);
+  }, [teamId]);
+
+  // Save draft on state changes
+  const saveDraftRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  useEffect(() => {
+    if (isRestoringDraft) return;
+    clearTimeout(saveDraftRef.current);
+    saveDraftRef.current = setTimeout(() => {
+      const draft: DraftState = {
+        teamId,
+        step,
+        slots,
+        currentBuildSlot,
+        startedFromSample,
+      };
+      try {
+        localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(draft));
+      } catch {
+        // localStorage full or unavailable
+      }
+    }, 500);
+    return () => clearTimeout(saveDraftRef.current);
+  }, [teamId, step, slots, currentBuildSlot, startedFromSample, isRestoringDraft]);
+
+  const clearDraft = useCallback(() => {
+    localStorage.removeItem(DRAFT_STORAGE_KEY);
+  }, []);
+
+  // --- Data fetching ---
+
+  // Usage data for format (used by recommendation cards when API not available)
   const usageQuery = useQuery({
     queryKey: ["guided-usage", formatId],
-    queryFn: () => fetchUsage(formatId, 30),
+    queryFn: () => fetchUsage(formatId, 50),
     enabled: !!formatId,
+  });
+
+  // Sample teams for the format
+  const sampleTeamsQuery = useQuery({
+    queryKey: ["guided-sample-teams", formatId],
+    queryFn: () => fetchSampleTeams(formatId),
+    enabled: !!formatId && step === "start",
+  });
+
+  // Recommendations for the current team (updates as slots are added)
+  const filledSlotCount = slots.filter((s) => s.pokemonId).length;
+  const recommendationsQuery = useQuery({
+    queryKey: ["guided-recommendations", teamId, filledSlotCount],
+    queryFn: () => fetchRecommendations(teamId, 5),
+    enabled: !!teamId && filledSlotCount > 0 && (step === "build" || step === "lead"),
+  });
+
+  // Real-time analysis
+  const analysisQuery = useQuery({
+    queryKey: ["guided-analysis", teamId, filledSlotCount],
+    queryFn: () => fetchAnalysis(teamId),
+    enabled: !!teamId && filledSlotCount > 0,
   });
 
   // --- Navigation ---
 
+  const goToStep = useCallback((newStep: GuidedStep) => {
+    setStep(newStep);
+  }, []);
+
   const nextStep = useCallback(() => {
-    setStep((s) => Math.min(s + 1, 4) as GuidedStep);
+    setStep((current) => {
+      const idx = STEP_ORDER.indexOf(current);
+      if (idx < STEP_ORDER.length - 1) return STEP_ORDER[idx + 1];
+      return current;
+    });
   }, []);
 
   const prevStep = useCallback(() => {
-    setStep((s) => Math.max(s - 1, 1) as GuidedStep);
-  }, []);
-
-  const goToStep = useCallback((n: GuidedStep) => {
-    setStep(n);
-  }, []);
-
-  // --- Core picks ---
-
-  const toggleCorePick = useCallback((pokemon: CorePokemon) => {
-    setCorePicks((prev) => {
-      const exists = prev.find((p) => p.pokemonId === pokemon.pokemonId);
-      if (exists) return prev.filter((p) => p.pokemonId !== pokemon.pokemonId);
-      if (prev.length >= 3) return prev;
-      return [...prev, pokemon];
+    setStep((current) => {
+      const idx = STEP_ORDER.indexOf(current);
+      if (idx > 0) return STEP_ORDER[idx - 1];
+      return current;
     });
   }, []);
 
-  // --- Role picks ---
+  const stepIndex = STEP_ORDER.indexOf(step);
 
-  const setRolePick = useCallback((roleId: string, pokemon: CorePokemon | null) => {
-    setRolePicks((prev) => ({ ...prev, [roleId]: pokemon }));
+  // Build phase sub-navigation
+  const nextBuildSlot = useCallback(() => {
+    setCurrentBuildSlot((prev) => Math.min(prev + 1, 6));
   }, []);
 
-  // Determine which roles are suggested based on core
-  const suggestedRoles = useMemo((): RoleDefinition[] => {
-    if (corePicks.length === 0) return ALL_ROLES.slice(0, 5);
+  const prevBuildSlot = useCallback(() => {
+    setCurrentBuildSlot((prev) => Math.max(prev - 1, 2));
+  }, []);
 
-    const types = corePicks.flatMap((p) => p.types);
-    const roles: RoleDefinition[] = [];
+  // --- Slot management ---
 
-    // Always suggest hazard setter and removal
-    roles.push(ALL_ROLES.find((r) => r.id === "hazard-setter")!);
-    roles.push(ALL_ROLES.find((r) => r.id === "hazard-removal")!);
-
-    // Check offensive balance
-    const hasPhysical = types.some((t) => ["Fighting", "Ground", "Rock"].includes(t));
-    const hasSpecial = types.some((t) => ["Psychic", "Electric", "Fire"].includes(t));
-    if (!hasSpecial) roles.push(ALL_ROLES.find((r) => r.id === "special-attacker")!);
-    if (!hasPhysical) roles.push(ALL_ROLES.find((r) => r.id === "physical-attacker")!);
-
-    // Check defensive balance
-    roles.push(ALL_ROLES.find((r) => r.id === "physical-wall")!);
-    roles.push(ALL_ROLES.find((r) => r.id === "speed-control")!);
-
-    // Deduplicate and limit
-    const seen = new Set<string>();
-    return roles.filter((r) => {
-      if (seen.has(r.id)) return false;
-      seen.add(r.id);
-      return true;
-    }).slice(0, 5);
-  }, [corePicks]);
-
-  // --- Assemble team ---
-
-  const assembleTeam = useCallback(() => {
-    const all: CorePokemon[] = [
-      ...corePicks,
-      ...Object.values(rolePicks).filter(Boolean) as CorePokemon[],
-    ];
-
-    // Deduplicate
-    const seen = new Set<string>();
-    const unique = all.filter((p) => {
-      if (seen.has(p.pokemonId)) return false;
-      seen.add(p.pokemonId);
-      return true;
+  const addSlotPick = useCallback((
+    position: number,
+    pick: GuidedPokemonPick,
+  ) => {
+    setSlots((prev) => {
+      // Remove any existing slot at this position
+      const filtered = prev.filter((s) => s.position !== position);
+      const newSlot: Partial<TeamSlotData> = {
+        position,
+        pokemonId: pick.pokemonId,
+        ability: "",
+        item: "",
+        nature: "Adamant" as NatureName,
+        level: 100,
+        moves: [""] as TeamSlotData["moves"],
+        evs: { ...DEFAULT_EVS } as StatsTable,
+        ivs: { ...DEFAULT_IVS } as StatsTable,
+      };
+      return [...filtered, newSlot].sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
     });
+  }, []);
 
-    const slots: Partial<TeamSlotData>[] = unique.slice(0, 6).map((p, i) => ({
+  const removeSlot = useCallback((position: number) => {
+    setSlots((prev) => prev.filter((s) => s.position !== position));
+  }, []);
+
+  const updateSlot = useCallback((position: number, updates: Partial<TeamSlotData>) => {
+    setSlots((prev) =>
+      prev.map((slot) =>
+        slot.position === position ? { ...slot, ...updates } : slot
+      )
+    );
+  }, []);
+
+  // --- Set application ---
+
+  const applySet = useCallback(
+    async (position: number, pokemonId: string) => {
+      try {
+        const sets = await fetchSets(pokemonId, formatId);
+        if (sets.length === 0) return null;
+
+        const set = sets[0]; // Most popular set
+        const moves = set.moves.map((m) => (Array.isArray(m) ? m[0] : m));
+
+        const updates: Partial<TeamSlotData> = {
+          ability: set.ability,
+          item: set.item,
+          nature: set.nature,
+          teraType: set.teraType,
+          moves: [
+            moves[0] ?? "",
+            moves[1],
+            moves[2],
+            moves[3],
+          ] as TeamSlotData["moves"],
+          evs: { ...DEFAULT_EVS, ...set.evs } as StatsTable,
+          ivs: { ...DEFAULT_IVS, ...(set.ivs ?? {}) } as StatsTable,
+        };
+
+        updateSlot(position, updates);
+        return set;
+      } catch {
+        return null;
+      }
+    },
+    [formatId, updateSlot]
+  );
+
+  const applyAllSets = useCallback(async () => {
+    const promises = slots
+      .filter((s) => s.pokemonId && !s.ability) // Only apply if no ability set yet
+      .map((s) => applySet(s.position!, s.pokemonId!));
+    await Promise.allSettled(promises);
+  }, [slots, applySet]);
+
+  // --- Sample team import ---
+
+  const importSampleTeam = useCallback(async (sampleTeam: SampleTeamEntry) => {
+    // Parse the paste to extract Pokemon data
+    // For now, create slots from pokemonIds
+    const newSlots: Partial<TeamSlotData>[] = sampleTeam.pokemonIds.slice(0, 6).map((id, i) => ({
       position: i + 1,
-      pokemonId: p.pokemonId,
+      pokemonId: id,
       ability: "",
       item: "",
       nature: "Adamant" as NatureName,
@@ -156,92 +303,140 @@ export function useGuidedBuilder(formatId: string) {
       evs: { ...DEFAULT_EVS } as StatsTable,
       ivs: { ...DEFAULT_IVS } as StatsTable,
     }));
+    setSlots(newSlots);
+    setStartedFromSample(true);
+    setStep("sets"); // Jump directly to set customization
+  }, []);
 
-    setTeamSlots(slots);
-    return slots;
-  }, [corePicks, rolePicks]);
+  // --- Start paths ---
 
-  // Apply a Smogon set to a slot
-  const applySet = useCallback(
-    async (position: number, pokemonId: string) => {
-      try {
-        const sets = await fetchSets(pokemonId, formatId);
-        if (sets.length === 0) return;
+  const startFromScratch = useCallback(() => {
+    setSlots([]);
+    setStartedFromSample(false);
+    setStep("lead");
+  }, []);
 
-        const set = sets[0]; // Use first (most popular) set
-        setTeamSlots((prev) =>
-          prev.map((slot) => {
-            if (slot.position !== position) return slot;
-            const moves = set.moves.map((m) => (Array.isArray(m) ? m[0] : m));
-            return {
-              ...slot,
-              ability: set.ability,
-              item: set.item,
-              nature: set.nature,
-              teraType: set.teraType,
-              moves: [
-                moves[0] ?? "",
-                moves[1],
-                moves[2],
-                moves[3],
-              ] as TeamSlotData["moves"],
-              evs: { ...DEFAULT_EVS, ...set.evs } as StatsTable,
-              ivs: { ...DEFAULT_IVS, ...(set.ivs ?? {}) } as StatsTable,
-            };
-          })
-        );
-      } catch {
-        // Silently fail - sets are optional enhancement
-      }
-    },
-    [formatId]
+  // --- Derived state ---
+
+  const filledSlots = useMemo(
+    () => slots.filter((s) => s.pokemonId),
+    [slots]
   );
 
-  // All selected Pokemon IDs (for filtering)
-  const allSelectedIds = useMemo(() => {
-    const ids = new Set(corePicks.map((p) => p.pokemonId));
-    Object.values(rolePicks).forEach((p) => {
-      if (p) ids.add(p.pokemonId);
-    });
-    return ids;
-  }, [corePicks, rolePicks]);
+  const allSelectedIds = useMemo(
+    () => new Set(filledSlots.map((s) => s.pokemonId!)),
+    [filledSlots]
+  );
 
-  // Type coverage summary
   const typeCoverage = useMemo(() => {
-    const types = [
-      ...corePicks.flatMap((p) => p.types),
-      ...Object.values(rolePicks)
-        .filter(Boolean)
-        .flatMap((p) => (p as CorePokemon).types),
-    ];
-    const unique = [...new Set(types)];
-    return unique;
-  }, [corePicks, rolePicks]);
+    const types = filledSlots
+      .flatMap((s) => {
+        // Use types from usage data if available
+        const usage = usageQuery.data?.find((u) => u.pokemonId === s.pokemonId);
+        return usage?.types ?? [];
+      });
+    return [...new Set(types)];
+  }, [filledSlots, usageQuery.data]);
+
+  // --- Validation ---
+
+  const validationErrors = useMemo(() => {
+    const errors: string[] = [];
+    const warnings: string[] = [];
+
+    if (filledSlots.length === 0) {
+      errors.push("Your team has no Pokemon. Add at least one to save.");
+      return { errors, warnings, isValid: false };
+    }
+
+    // Check duplicates
+    const ids = filledSlots.map((s) => s.pokemonId);
+    const duplicates = ids.filter((id, i) => ids.indexOf(id) !== i);
+    if (duplicates.length > 0) {
+      errors.push(`Duplicate species: ${[...new Set(duplicates)].join(", ")}`);
+    }
+
+    // Check for empty moves
+    filledSlots.forEach((slot) => {
+      const hasMove = slot.moves?.some((m) => m && m.trim());
+      if (!hasMove) {
+        warnings.push(`No moves set for ${slot.pokemonId}`);
+      }
+    });
+
+    // Check for missing abilities
+    filledSlots.forEach((slot) => {
+      if (!slot.ability) {
+        warnings.push(`No ability set for ${slot.pokemonId}`);
+      }
+    });
+
+    if (filledSlots.length < 6) {
+      warnings.push(`Team has only ${filledSlots.length}/6 Pokemon`);
+    }
+
+    return { errors, warnings, isValid: errors.length === 0 };
+  }, [filledSlots]);
+
+  // --- Context for chat ---
+
+  const chatContext = useMemo(() => {
+    const slotSummaries = filledSlots.map((s) => {
+      const movesStr = s.moves?.filter(Boolean).join(", ") || "No moves";
+      return `${s.pokemonId} (${s.ability || "no ability"}, ${s.item || "no item"}) - ${movesStr}`;
+    });
+
+    return {
+      step,
+      teamSize: filledSlots.length,
+      currentBuildSlot,
+      slotSummaries,
+      formatId,
+    };
+  }, [step, filledSlots, currentBuildSlot, formatId]);
 
   return {
     // State
     step,
-    corePicks,
-    rolePicks,
-    teamSlots,
-    suggestedRoles,
+    stepIndex,
+    slots,
+    filledSlots,
+    currentBuildSlot,
     allSelectedIds,
     typeCoverage,
+    startedFromSample,
+    isRestoringDraft,
+    chatContext,
 
     // Data
     usageData: usageQuery.data ?? [],
     isLoadingUsage: usageQuery.isLoading,
+    sampleTeams: sampleTeamsQuery.data ?? [],
+    isLoadingSampleTeams: sampleTeamsQuery.isLoading,
+    recommendations: recommendationsQuery.data ?? [],
+    isLoadingRecommendations: recommendationsQuery.isPending,
+    analysis: analysisQuery.data ?? null,
+    isLoadingAnalysis: analysisQuery.isPending,
+
+    // Validation
+    validationErrors,
 
     // Navigation
     nextStep,
     prevStep,
     goToStep,
+    nextBuildSlot,
+    prevBuildSlot,
 
     // Actions
-    toggleCorePick,
-    setRolePick,
-    assembleTeam,
+    addSlotPick,
+    removeSlot,
+    updateSlot,
     applySet,
-    setTeamSlots,
+    applyAllSets,
+    setSlots,
+    importSampleTeam,
+    startFromScratch,
+    clearDraft,
   };
 }

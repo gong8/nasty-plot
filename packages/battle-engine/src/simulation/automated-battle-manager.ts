@@ -1,5 +1,5 @@
 import { BattleStreams, Teams } from "@pkmn/sim";
-import { processChunk, parseRequest, updateSideFromRequest } from "../protocol-parser";
+import { processChunk, parseRequest, parseRequestForSlot, updateSideFromRequest } from "../protocol-parser";
 import { createInitialState } from "../battle-manager";
 import type {
   BattleState,
@@ -54,9 +54,14 @@ export async function runAutomatedBattle(
 
   let pendingP1Actions: BattleActionSet | null = null;
   let pendingP2Actions: BattleActionSet | null = null;
+  let pendingP1Slot2Actions: BattleActionSet | null = null;
+  let pendingP2Slot2Actions: BattleActionSet | null = null;
   let p1TeamPreview = false;
   let p2TeamPreview = false;
   let lastProtocolChunk = "";
+  const isDoubles = config.gameType === "doubles";
+  let lastP1ReqJson = "";
+  let lastP2ReqJson = "";
 
   // Convert pastes to packed format
   const team1Packed = pasteToPackedTeam(config.team1Paste);
@@ -99,12 +104,22 @@ export async function runAutomatedBattle(
                 p1TeamPreview = true;
               } else if (!parsed.wait && parsed.actions) {
                 pendingP1Actions = parsed.actions;
+                if (isDoubles) {
+                  lastP1ReqJson = reqJson;
+                  const slot2 = parseRequestForSlot(reqJson, 1);
+                  pendingP1Slot2Actions = slot2.actions;
+                }
               }
             } else if (sideId === "p2") {
               if (parsed.teamPreview) {
                 p2TeamPreview = true;
               } else if (!parsed.wait && parsed.actions) {
                 pendingP2Actions = parsed.actions;
+                if (isDoubles) {
+                  lastP2ReqJson = reqJson;
+                  const slot2 = parseRequestForSlot(reqJson, 1);
+                  pendingP2Slot2Actions = slot2.actions;
+                }
               }
             }
           } catch {
@@ -153,11 +168,30 @@ export async function runAutomatedBattle(
 
     async function processActions() {
       if (pendingP1Actions && pendingP2Actions) {
-        const p1Action = await config.ai1.chooseAction(state, pendingP1Actions);
-        const p2Action = await config.ai2.chooseAction(state, pendingP2Actions);
+        if (isDoubles) {
+          // Doubles: get actions for both slots of each player
+          const p1a1 = await config.ai1.chooseAction(state, pendingP1Actions);
+          let p1Choice = actionToChoice(p1a1);
+          if (pendingP1Slot2Actions) {
+            const p1a2 = await config.ai1.chooseAction(state, pendingP1Slot2Actions);
+            p1Choice = `${p1Choice}, ${actionToChoice(p1a2)}`;
+          }
 
-        currentTurnP1 = actionToChoice(p1Action);
-        currentTurnP2 = actionToChoice(p2Action);
+          const p2a1 = await config.ai2.chooseAction(state, pendingP2Actions);
+          let p2Choice = actionToChoice(p2a1);
+          if (pendingP2Slot2Actions) {
+            const p2a2 = await config.ai2.chooseAction(state, pendingP2Slot2Actions);
+            p2Choice = `${p2Choice}, ${actionToChoice(p2a2)}`;
+          }
+
+          currentTurnP1 = p1Choice;
+          currentTurnP2 = p2Choice;
+        } else {
+          const p1Action = await config.ai1.chooseAction(state, pendingP1Actions);
+          const p2Action = await config.ai2.chooseAction(state, pendingP2Actions);
+          currentTurnP1 = actionToChoice(p1Action);
+          currentTurnP2 = actionToChoice(p2Action);
+        }
 
         stream.write(`>p1 ${currentTurnP1}`);
         stream.write(`>p2 ${currentTurnP2}`);
@@ -166,18 +200,34 @@ export async function runAutomatedBattle(
 
         pendingP1Actions = null;
         pendingP2Actions = null;
+        pendingP1Slot2Actions = null;
+        pendingP2Slot2Actions = null;
         turns++;
         return;
       }
       if (pendingP1Actions && pendingP1Actions.forceSwitch) {
-        const p1Action = await config.ai1.chooseAction(state, pendingP1Actions);
-        stream.write(`>p1 ${actionToChoice(p1Action)}`);
+        if (isDoubles && pendingP1Slot2Actions) {
+          const p1a1 = await config.ai1.chooseAction(state, pendingP1Actions);
+          const p1a2 = await config.ai1.chooseAction(state, pendingP1Slot2Actions);
+          stream.write(`>p1 ${actionToChoice(p1a1)}, ${actionToChoice(p1a2)}`);
+          pendingP1Slot2Actions = null;
+        } else {
+          const p1Action = await config.ai1.chooseAction(state, pendingP1Actions);
+          stream.write(`>p1 ${actionToChoice(p1Action)}`);
+        }
         pendingP1Actions = null;
         return;
       }
       if (pendingP2Actions && pendingP2Actions.forceSwitch) {
-        const p2Action = await config.ai2.chooseAction(state, pendingP2Actions);
-        stream.write(`>p2 ${actionToChoice(p2Action)}`);
+        if (isDoubles && pendingP2Slot2Actions) {
+          const p2a1 = await config.ai2.chooseAction(state, pendingP2Actions);
+          const p2a2 = await config.ai2.chooseAction(state, pendingP2Slot2Actions);
+          stream.write(`>p2 ${actionToChoice(p2a1)}, ${actionToChoice(p2a2)}`);
+          pendingP2Slot2Actions = null;
+        } else {
+          const p2Action = await config.ai2.chooseAction(state, pendingP2Actions);
+          stream.write(`>p2 ${actionToChoice(p2Action)}`);
+        }
         pendingP2Actions = null;
       }
     }
@@ -204,10 +254,12 @@ export async function runAutomatedBattle(
   };
 }
 
-function actionToChoice(action: { type: string; moveIndex?: number; pokemonIndex?: number; tera?: boolean }): string {
+function actionToChoice(action: { type: string; moveIndex?: number; pokemonIndex?: number; tera?: boolean; targetSlot?: number; mega?: boolean }): string {
   if (action.type === "move") {
     let choice = `move ${action.moveIndex}`;
     if (action.tera) choice += " terastallize";
+    if (action.mega) choice += " mega";
+    if (action.targetSlot != null) choice += ` ${action.targetSlot}`;
     return choice;
   }
   return `switch ${action.pokemonIndex}`;

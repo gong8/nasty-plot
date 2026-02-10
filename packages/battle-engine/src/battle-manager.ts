@@ -1,5 +1,5 @@
 import { BattleStreams, Teams } from "@pkmn/sim";
-import { processChunk, parseRequest, updateSideFromRequest } from "./protocol-parser";
+import { processChunk, parseRequest, parseRequestForSlot, updateSideFromRequest } from "./protocol-parser";
 import type { SetPredictor } from "./ai/set-predictor";
 import type {
   BattleState,
@@ -9,6 +9,7 @@ import type {
   BattleLogEntry,
   SideConditions,
   AIPlayer,
+  PredictedSet,
 } from "./types";
 
 function defaultSideConditions(): SideConditions {
@@ -32,6 +33,7 @@ export function createInitialState(id: string, format: BattleFormat): BattleStat
       name,
       sideConditions: defaultSideConditions(),
       canTera: true,
+      hasTerastallized: false,
     };
   }
 
@@ -86,6 +88,8 @@ export class BattleManager {
   private ai: AIPlayer | null = null;
   private eventHandler: BattleEventHandler | null = null;
   private pendingP2Actions: BattleActionSet | null = null;
+  private pendingP2Slot2Actions: BattleActionSet | null = null;
+  private pendingP1Slot2Actions: BattleActionSet | null = null;
   private started = false;
   private resolveReady: ((value: void) => void) | null = null;
   private destroyed = false;
@@ -313,6 +317,7 @@ export class BattleManager {
     // Update SetPredictor from opponent observations
     if (this.setPredictor) {
       this.updateSetPredictorFromLines(chunk);
+      this.populatePredictions();
     }
 
     if (allEntries.length > 0 && this.eventHandler) {
@@ -346,11 +351,38 @@ export class BattleManager {
     }
   }
 
+  /** Build opponentPredictions on state from the SetPredictor's current beliefs. */
+  private populatePredictions() {
+    if (!this.setPredictor) return;
+
+    const predictions: Record<string, PredictedSet> = {};
+    for (const pokemon of this.state.sides.p2.team) {
+      const preds = this.setPredictor.getPrediction(pokemon.speciesId);
+      if (preds.length === 0) continue;
+
+      // Use the most likely prediction
+      const top = preds[0];
+      const moves = Array.isArray(top.set.moves)
+        ? top.set.moves.flat().filter((m): m is string => typeof m === "string")
+        : [];
+
+      predictions[pokemon.speciesId] = {
+        pokemonId: pokemon.speciesId,
+        predictedMoves: moves,
+        predictedItem: top.set.item || undefined,
+        predictedAbility: top.set.ability || undefined,
+        confidence: top.probability,
+      };
+    }
+    this.state.opponentPredictions = predictions;
+  }
+
   private handleRequest(requestJson: string) {
     try {
       const parsed = parseRequest(requestJson);
       const rawReq = JSON.parse(requestJson);
       const sideId = rawReq.side?.id as "p1" | "p2" | undefined;
+      const isDoubles = this.state.format === "doubles";
 
       if (sideId === "p1") {
         if (parsed.side) {
@@ -364,6 +396,14 @@ export class BattleManager {
           this.state.waitingForChoice = false;
         } else {
           this.state.availableActions = parsed.actions;
+          if (this.state.availableActions && this.state.sides.p1.hasTerastallized) {
+            this.state.availableActions.canTera = false;
+          }
+          // In doubles, also parse slot 2 actions for p1
+          if (isDoubles) {
+            const slot2 = parseRequestForSlot(requestJson, 1);
+            this.pendingP1Slot2Actions = slot2.actions;
+          }
           this.state.waitingForChoice = true;
         }
 
@@ -387,15 +427,51 @@ export class BattleManager {
         } else if (!parsed.wait && parsed.actions) {
           if (parsed.actions.forceSwitch && this.ai && !this.state.waitingForChoice) {
             // Only p2 needs to switch (p1 is waiting) — AI responds immediately
-            this.handleAIForceSwitch(parsed.actions);
+            if (isDoubles) {
+              const slot2 = parseRequestForSlot(requestJson, 1);
+              this.handleAIForceSwitchDoubles(parsed.actions, slot2.actions);
+            } else {
+              this.handleAIForceSwitch(parsed.actions);
+            }
           } else {
             // Store for AI to use when player submits their action
             this.pendingP2Actions = parsed.actions;
+            if (this.pendingP2Actions && this.state.sides.p2.hasTerastallized) {
+              this.pendingP2Actions.canTera = false;
+            }
+            // In doubles, also store slot 2 actions
+            if (isDoubles) {
+              const slot2 = parseRequestForSlot(requestJson, 1);
+              this.pendingP2Slot2Actions = slot2.actions;
+            }
           }
         }
       }
     } catch (err) {
       console.error("[BattleManager] Failed to parse request:", err);
+    }
+  }
+
+  /**
+   * Submit two actions for both active slots in doubles.
+   */
+  async submitDoubleActions(action1: BattleAction, action2: BattleAction): Promise<void> {
+    if (this.submitting) return;
+    this.submitting = true;
+    this.state.waitingForChoice = false;
+
+    try {
+      const choice = `${actionToChoice(action1)}, ${actionToChoice(action2)}`;
+      this.stream.write(`>p1 ${choice}`);
+
+      // Let AI make its choice
+      if (this.ai && this.pendingP2Actions) {
+        await this.handleAITurn();
+      }
+
+      await this.waitForUpdate();
+    } finally {
+      this.submitting = false;
     }
   }
 
@@ -416,10 +492,20 @@ export class BattleManager {
       }
     }
 
-    const aiAction = await this.ai.chooseAction(this.state, this.pendingP2Actions);
-    const choice = actionToChoice(aiAction);
-    this.stream.write(`>p2 ${choice}`);
-    this.pendingP2Actions = null;
+    if (this.state.format === "doubles" && this.pendingP2Slot2Actions) {
+      // Doubles: get action for each slot, combine
+      const action1 = await this.ai.chooseAction(this.state, this.pendingP2Actions);
+      const action2 = await this.ai.chooseAction(this.state, this.pendingP2Slot2Actions);
+      const choice = `${actionToChoice(action1)}, ${actionToChoice(action2)}`;
+      this.stream.write(`>p2 ${choice}`);
+      this.pendingP2Actions = null;
+      this.pendingP2Slot2Actions = null;
+    } else {
+      const aiAction = await this.ai.chooseAction(this.state, this.pendingP2Actions);
+      const choice = actionToChoice(aiAction);
+      this.stream.write(`>p2 ${choice}`);
+      this.pendingP2Actions = null;
+    }
   }
 
   private async handleAIForceSwitch(actions: BattleActionSet) {
@@ -431,6 +517,22 @@ export class BattleManager {
     const aiAction = await this.ai.chooseAction(this.state, actions);
     const choice = actionToChoice(aiAction);
     this.stream.write(`>p2 ${choice}`);
+  }
+
+  private async handleAIForceSwitchDoubles(slot1Actions: BattleActionSet, slot2Actions: BattleActionSet | null) {
+    if (!this.ai) return;
+
+    await new Promise((resolve) => setTimeout(resolve, 200 + Math.random() * 300));
+
+    const action1 = await this.ai.chooseAction(this.state, slot1Actions);
+    if (slot2Actions) {
+      const action2 = await this.ai.chooseAction(this.state, slot2Actions);
+      const choice = `${actionToChoice(action1)}, ${actionToChoice(action2)}`;
+      this.stream.write(`>p2 ${choice}`);
+    } else {
+      const choice = actionToChoice(action1);
+      this.stream.write(`>p2 ${choice}`);
+    }
   }
 
   private async waitForUpdate(): Promise<void> {

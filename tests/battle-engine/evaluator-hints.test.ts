@@ -349,6 +349,34 @@ describe("evaluatePosition", () => {
 
     expect(screenResult.score).toBeGreaterThan(baseResult.score);
   });
+
+  it("inverts speed advantage under Trick Room", () => {
+    // p1 has a faster Pokemon (spe: 333), p2 has a slower one (spe: 100)
+    const normalState = makeState();
+    normalState.sides.p1.active = [makePokemon({ stats: { hp: 357, atk: 394, def: 226, spa: 196, spd: 206, spe: 333 } })];
+    normalState.sides.p2.active = [makePokemon({
+      speciesId: "ironvaliant",
+      name: "Iron Valiant",
+      types: ["Fairy", "Fighting"],
+      stats: { hp: 357, atk: 394, def: 226, spa: 196, spd: 206, spe: 100 },
+    })];
+    const normalResult = evaluatePosition(normalState, "p1");
+
+    const trState = makeState();
+    trState.field.trickRoom = 3;
+    trState.sides.p1.active = [makePokemon({ stats: { hp: 357, atk: 394, def: 226, spa: 196, spd: 206, spe: 333 } })];
+    trState.sides.p2.active = [makePokemon({
+      speciesId: "ironvaliant",
+      name: "Iron Valiant",
+      types: ["Fairy", "Fighting"],
+      stats: { hp: 357, atk: 394, def: 226, spa: 196, spd: 206, spe: 100 },
+    })];
+    const trResult = evaluatePosition(trState, "p1");
+
+    // Under normal conditions, p1 (faster) should have a speed advantage
+    // Under Trick Room, p2 (slower) should have the advantage, so p1's score should be lower
+    expect(trResult.score).toBeLessThan(normalResult.score);
+  });
 });
 
 // ---------------------------------------------------------------------------

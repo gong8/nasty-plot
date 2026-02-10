@@ -1,7 +1,8 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import type { BattleActionSet } from "@nasty-plot/battle-engine";
+import type { BattleActionSet, BattlePokemon } from "@nasty-plot/battle-engine";
+import { TypeBadge } from "@nasty-plot/ui";
 import { Button } from "@/components/ui/button";
 import { HealthBar } from "./HealthBar";
 import { BattleSprite } from "./PokemonSprite";
@@ -11,6 +12,8 @@ interface SwitchMenuProps {
   actions: BattleActionSet;
   onSwitch: (pokemonIndex: number) => void;
   onBack?: () => void;
+  /** Full team data for showing types and moves */
+  team?: BattlePokemon[];
   className?: string;
 }
 
@@ -32,7 +35,14 @@ const STATUS_COLORS: Record<string, string> = {
   tox: "text-purple-600 dark:text-purple-400 bg-purple-600/10 dark:bg-purple-400/15",
 };
 
-export function SwitchMenu({ actions, onSwitch, onBack, className }: SwitchMenuProps) {
+export function SwitchMenu({ actions, onSwitch, onBack, team, className }: SwitchMenuProps) {
+  /** Find team data for a switch option by species */
+  function getTeamPokemon(speciesId: string): BattlePokemon | undefined {
+    return team?.find(
+      (p) => p.speciesId === speciesId || p.name.toLowerCase().replace(/[^a-z0-9]/g, "") === speciesId
+    );
+  }
+
   return (
     <div className={cn("space-y-2", className)}>
       <div className="flex items-center justify-between">
@@ -47,33 +57,35 @@ export function SwitchMenu({ actions, onSwitch, onBack, className }: SwitchMenuP
         )}
       </div>
 
-      <div className="space-y-1.5">
-        {actions.switches.map((sw) => (
-          <button
-            key={sw.index}
-            onClick={() => onSwitch(sw.index)}
-            disabled={sw.fainted}
-            className={cn(
-              "w-full flex items-center gap-3 px-3 py-2 rounded-lg border",
-              "transition-colors hover:bg-accent",
-              "disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent",
-              sw.fainted && "line-through"
-            )}
-          >
-            <BattleSprite
-              speciesId={sw.speciesId}
-              side="front"
-              fainted={sw.fainted}
-              size={40}
-            />
+      <div className="grid grid-cols-2 gap-2">
+        {actions.switches.map((sw) => {
+          const pokemon = getTeamPokemon(sw.speciesId);
+          return (
+            <button
+              key={sw.index}
+              onClick={() => onSwitch(sw.index)}
+              disabled={sw.fainted}
+              className={cn(
+                "flex flex-col items-center gap-1 px-2 py-2.5 rounded-lg border",
+                "transition-colors hover:bg-accent text-center",
+                "disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent",
+                sw.fainted && "line-through"
+              )}
+            >
+              <BattleSprite
+                speciesId={sw.speciesId}
+                side="front"
+                fainted={sw.fainted}
+                size={48}
+              />
 
-            <div className="flex-1 min-w-0 text-left">
-              <div className="flex items-center gap-2">
-                <span className="font-medium text-sm">{sw.name}</span>
+              {/* Name + status */}
+              <div className="flex items-center gap-1">
+                <span className="font-medium text-xs truncate max-w-[80px]">{sw.name}</span>
                 {sw.status && (
                   <span
                     className={cn(
-                      "text-[10px] px-1 rounded font-semibold",
+                      "text-[9px] px-1 rounded font-semibold",
                       STATUS_COLORS[sw.status] || "text-muted-foreground"
                     )}
                   >
@@ -81,10 +93,35 @@ export function SwitchMenu({ actions, onSwitch, onBack, className }: SwitchMenuP
                   </span>
                 )}
               </div>
-              <HealthBar hp={sw.hp} maxHp={sw.maxHp} showText={true} className="mt-1" />
-            </div>
-          </button>
-        ))}
+
+              {/* Type badges */}
+              {pokemon?.types && pokemon.types.length > 0 && (
+                <div className="flex gap-0.5">
+                  {pokemon.types.map((t) => (
+                    <TypeBadge key={t} type={t} size="sm" className="min-w-0 px-1.5 text-[8px]" />
+                  ))}
+                </div>
+              )}
+
+              {/* HP bar */}
+              <HealthBar
+                hp={sw.hp}
+                maxHp={sw.maxHp}
+                showText={false}
+                className="w-full mt-0.5"
+              />
+
+              {/* Abbreviated moves */}
+              {pokemon?.moves && pokemon.moves.length > 0 && (
+                <div className="text-[9px] text-muted-foreground leading-tight space-y-0">
+                  {pokemon.moves.slice(0, 4).map((m) => (
+                    <div key={m.id} className="truncate max-w-[90px]">{m.name}</div>
+                  ))}
+                </div>
+              )}
+            </button>
+          );
+        })}
       </div>
     </div>
   );

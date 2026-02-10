@@ -13,6 +13,8 @@ interface BattleSpriteProps {
   className?: string;
   size?: number;
   shiny?: boolean;
+  /** Additional CSS class for battle animations (e.g. shake, flinch) */
+  animationClass?: string;
 }
 
 export function BattleSprite({
@@ -22,6 +24,7 @@ export function BattleSprite({
   className,
   size = 128,
   shiny = false,
+  animationClass,
 }: BattleSpriteProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -53,6 +56,7 @@ export function BattleSprite({
       className={cn(
         "relative flex items-center justify-center",
         fainted && "grayscale opacity-40",
+        animationClass,
         className
       )}
       style={{ width: size, height: size }}

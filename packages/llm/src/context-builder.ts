@@ -86,17 +86,49 @@ export function buildPokemonContext(pokemonId: string, species: PokemonSpecies):
     .join("\n");
 }
 
+export interface GuidedBuilderContext {
+  step: string;
+  teamSize: number;
+  currentBuildSlot: number;
+  slotSummaries: string[];
+  formatId: string;
+}
+
 export interface PageContextData {
   pageType: string;
   contextSummary: string;
   teamId?: string;
   pokemonId?: string;
   formatId?: string;
+  guidedBuilder?: GuidedBuilderContext;
 }
 
 export function buildPageContextPrompt(context: PageContextData): string {
-  if (!context.contextSummary) return "";
-  return `\n## Current Page Context\n${context.contextSummary}\n`;
+  if (!context.contextSummary && !context.guidedBuilder) return "";
+
+  const lines: string[] = [];
+
+  if (context.contextSummary) {
+    lines.push(`## Current Page Context\n${context.contextSummary}`);
+  }
+
+  if (context.guidedBuilder) {
+    const gb = context.guidedBuilder;
+    lines.push(`## Guided Team Builder`);
+    lines.push(`Step: ${gb.step} | Format: ${gb.formatId} | Team size: ${gb.teamSize}/6`);
+    if (gb.step === "build") {
+      lines.push(`Currently filling slot ${gb.currentBuildSlot}`);
+    }
+    if (gb.slotSummaries.length > 0) {
+      lines.push(`\nCurrent team:`);
+      gb.slotSummaries.forEach((s, i) => {
+        lines.push(`${i + 1}. ${s}`);
+      });
+    }
+    lines.push(`\nThe user is building a team step-by-step in the guided builder. Help them with their current decision.`);
+  }
+
+  return "\n" + lines.join("\n") + "\n";
 }
 
 export function buildPlanModePrompt(): string {

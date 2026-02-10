@@ -156,6 +156,11 @@ export default function NewTeamPage() {
                 </div>
               </button>
             </div>
+            {mode === "guided" && (
+              <p className="text-xs text-muted-foreground mt-1">
+                Start from scratch or from a sample team. Recommendations and analysis at every step.
+              </p>
+            )}
           </div>
 
           {createTeam.isError && (

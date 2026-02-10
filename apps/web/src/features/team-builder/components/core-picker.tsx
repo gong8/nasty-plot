@@ -5,12 +5,12 @@ import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { TypeBadge, PokemonSprite } from "@nasty-plot/ui";
 import type { PokemonType, UsageStatsEntry } from "@nasty-plot/core";
-import type { CorePokemon } from "../hooks/use-guided-builder";
+import type { GuidedPokemonPick } from "../hooks/use-guided-builder";
 
 interface CorePickerProps {
   pokemon: UsageStatsEntry[];
-  selected: CorePokemon[];
-  onToggle: (pokemon: CorePokemon) => void;
+  selected: GuidedPokemonPick[];
+  onToggle: (pokemon: GuidedPokemonPick) => void;
   maxPicks?: number;
 }
 

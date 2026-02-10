@@ -13,13 +13,20 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { TypeBadge, PokemonSprite } from "@nasty-plot/ui";
 import type { PokemonType, UsageStatsEntry } from "@nasty-plot/core";
-import type { CorePokemon, RoleDefinition } from "../hooks/use-guided-builder";
+import type { GuidedPokemonPick } from "../hooks/use-guided-builder";
+
+interface RoleDefinition {
+  id: string;
+  label: string;
+  description: string;
+  icon: string;
+}
 
 interface RoleSelectorProps {
   role: RoleDefinition;
   candidates: UsageStatsEntry[];
-  selected: CorePokemon | null;
-  onSelect: (pokemon: CorePokemon | null) => void;
+  selected: GuidedPokemonPick | null;
+  onSelect: (pokemon: GuidedPokemonPick | null) => void;
   disabledIds: Set<string>;
 }
 

@@ -65,11 +65,15 @@ export function MergeWizard({
 
   const hasConflicts = diff.changed.length > 0 || diff.added.length > 0 || diff.removed.length > 0;
 
+  const truncate = (s: string, max = 24) => s.length > max ? s.slice(0, max - 1) + "\u2026" : s;
+  const nameA = truncate(diff.teamAName);
+  const nameB = truncate(diff.teamBName);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-lg max-h-[80vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>
+          <DialogTitle className="truncate">
             Merge into {diff.teamAName}
           </DialogTitle>
           <DialogDescription>
@@ -104,20 +108,22 @@ export function MergeWizard({
                         </div>
                       ))}
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex flex-col gap-1.5">
                       <Button
                         variant={dec?.source === "teamA" ? "default" : "outline"}
                         size="sm"
+                        className="justify-start"
                         onClick={() => handleDecision(change.pokemonId, "teamA")}
                       >
-                        Keep from {diff.teamAName}
+                        Keep from {nameA}
                       </Button>
                       <Button
                         variant={dec?.source === "teamB" ? "default" : "outline"}
                         size="sm"
+                        className="justify-start"
                         onClick={() => handleDecision(change.pokemonId, "teamB")}
                       >
-                        Keep from {diff.teamBName}
+                        Keep from {nameB}
                       </Button>
                     </div>
                   </CardContent>
@@ -134,7 +140,7 @@ export function MergeWizard({
                     <div className="flex items-center gap-2">
                       <span className="font-medium">{slot.species?.name ?? slot.pokemonId}</span>
                       <Badge variant="outline" className="text-xs text-green-600">
-                        New in {diff.teamBName}
+                        New in {nameB}
                       </Badge>
                     </div>
                     <div className="flex gap-2">
@@ -171,7 +177,7 @@ export function MergeWizard({
                     <div className="flex items-center gap-2">
                       <span className="font-medium">{slot.species?.name ?? slot.pokemonId}</span>
                       <Badge variant="outline" className="text-xs text-red-600">
-                        Removed in {diff.teamBName}
+                        Removed in {nameB}
                       </Badge>
                     </div>
                     <div className="flex gap-2">

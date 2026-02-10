@@ -5,6 +5,7 @@ import type {
   BattleActionSet,
   BattleAction,
   BattleFormat,
+  PredictedSet,
 } from "../types";
 import { evaluatePosition } from "./evaluator";
 import {
@@ -38,6 +39,7 @@ export class MCTSAI implements AIPlayer {
   private battleState: unknown | null = null;
   private fallback = new HeuristicAI();
   private formatId = "gen9ou";
+  private predictions: Record<string, PredictedSet> = {};
 
   constructor(config?: Partial<MCTSConfig>) {
     this.config = { ...DEFAULT_MCTS_CONFIG, ...config };
@@ -56,6 +58,9 @@ export class MCTSAI implements AIPlayer {
     state: BattleState,
     actions: BattleActionSet,
   ): Promise<BattleAction> {
+    // Store predictions from state for use in rollouts
+    this.predictions = state.opponentPredictions ?? {};
+
     // If no battle state available, fall back to heuristic
     if (!this.battleState) {
       return this.fallback.chooseAction(state, actions);
@@ -265,7 +270,7 @@ export class MCTSAI implements AIPlayer {
       if (p1Choices.length === 0 || p2Choices.length === 0) break;
 
       const p1 = p1Choices[Math.floor(Math.random() * p1Choices.length)];
-      const p2 = p2Choices[Math.floor(Math.random() * p2Choices.length)];
+      const p2 = this.weightedRolloutChoice(p2Choices, battle);
 
       try {
         applyChoices(battle, p1, p2);
@@ -300,8 +305,13 @@ export class MCTSAI implements AIPlayer {
     _perspective: "p1" | "p2",
   ): BattleState | null {
     try {
-      const makeSide = (side: typeof battle.p1) => ({
-        active: side.active.map((p) => {
+      const gameType = battle.gameType === "doubles" ? "doubles" : "singles";
+      const makeSide = (side: typeof battle.p1) => {
+        const hasTerastallized = side.pokemon.some(
+          (p) => !!(p as unknown as { terastallized: string }).terastallized,
+        );
+        return {
+          active: side.active.map((p) => {
           if (!p) return null;
           return {
             speciesId: p.species.id,
@@ -367,12 +377,14 @@ export class MCTSAI implements AIPlayer {
           auroraVeil: side.sideConditions["auroraveil"]?.duration || 0,
           tailwind: side.sideConditions["tailwind"]?.duration || 0,
         },
-        canTera: true,
-      });
+        canTera: !hasTerastallized,
+        hasTerastallized,
+      };
+      };
 
       return {
         phase: "battle",
-        format: "singles",
+        format: gameType as "singles" | "doubles",
         turn: battle.turn,
         sides: {
           p1: makeSide(battle.p1),
@@ -399,14 +411,22 @@ export class MCTSAI implements AIPlayer {
 
   /**
    * Convert an MCTS choice string back to a BattleAction.
+   * Choice strings may contain target slots like "move 1 -1".
    */
   private convertChoiceToAction(
     choice: string,
     actions: BattleActionSet,
   ): BattleAction {
     if (choice.startsWith("move ")) {
-      const idx = parseInt(choice.split(" ")[1], 10);
-      return { type: "move", moveIndex: idx };
+      const parts = choice.split(" ");
+      const idx = parseInt(parts[1], 10);
+      // Parse optional target slot (e.g., "move 1 -1")
+      const targetSlot = parts.length > 2 ? parseInt(parts[2], 10) : undefined;
+      return {
+        type: "move",
+        moveIndex: idx,
+        targetSlot: targetSlot != null && !isNaN(targetSlot) ? targetSlot : undefined,
+      };
     }
     if (choice.startsWith("switch ")) {
       const idx = parseInt(choice.split(" ")[1], 10);
@@ -415,6 +435,46 @@ export class MCTSAI implements AIPlayer {
     // Default: first available move
     const firstEnabled = actions.moves.findIndex((m) => !m.disabled);
     return { type: "move", moveIndex: (firstEnabled >= 0 ? firstEnabled : 0) + 1 };
+  }
+
+  /**
+   * Pick a rollout choice for p2, weighting predicted moves 3x higher.
+   */
+  private weightedRolloutChoice(choices: string[], battle: Battle): string {
+    if (choices.length <= 1) return choices[0];
+
+    // Get the active p2 Pokemon's species ID from the battle
+    const active = battle.p2?.active?.[0];
+    if (!active) return choices[Math.floor(Math.random() * choices.length)];
+
+    const speciesId = active.species?.id;
+    const prediction = speciesId ? this.predictions[speciesId] : undefined;
+    if (!prediction || prediction.predictedMoves.length === 0) {
+      return choices[Math.floor(Math.random() * choices.length)];
+    }
+
+    // Build weights: 3x for moves matching predicted moves, 1x otherwise
+    const predictedSet = new Set(
+      prediction.predictedMoves.map((m) => m.toLowerCase().replace(/\s/g, ""))
+    );
+    const weights: number[] = choices.map((choice) => {
+      if (!choice.startsWith("move ")) return 1;
+      // Try to resolve the move index to a move name from the sim
+      const moveIdx = parseInt(choice.split(" ")[1], 10) - 1;
+      const moveSlot = active.moves?.[moveIdx];
+      if (moveSlot && predictedSet.has(moveSlot)) {
+        return 3;
+      }
+      return 1;
+    });
+
+    const totalWeight = weights.reduce((a, b) => a + b, 0);
+    let r = Math.random() * totalWeight;
+    for (let i = 0; i < choices.length; i++) {
+      r -= weights[i];
+      if (r <= 0) return choices[i];
+    }
+    return choices[choices.length - 1];
   }
 
   private createNode(): DUCTNode {

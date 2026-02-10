@@ -1,6 +1,6 @@
 export * from "./types";
 export * from "./battle-manager";
-export * from "./protocol-parser";
+export { processLine, processChunk, parseRequest, parseRequestForSlot, updateSideFromRequest } from "./protocol-parser";
 export * from "./team-packer";
 export { RandomAI } from "./ai/random-ai";
 export { GreedyAI } from "./ai/greedy-ai";
@@ -8,6 +8,7 @@ export { HeuristicAI } from "./ai/heuristic-ai";
 export { MCTSAI } from "./ai/mcts-ai";
 export { SetPredictor } from "./ai/set-predictor";
 export { evaluatePosition, type EvalResult, type EvalFeature } from "./ai/evaluator";
+export { getEffectiveSpeed } from "./ai/shared";
 export { estimateWinProbability, winProbabilityDelta, type WinProbability } from "./ai/win-probability";
 export { generateHints, type HintResult, type MoveHint, type MoveClassification } from "./ai/hint-engine";
 export { cloneBattle, getLegalChoices, isBattleOver, getBattleWinner } from "./ai/battle-cloner";

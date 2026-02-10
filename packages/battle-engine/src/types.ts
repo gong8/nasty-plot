@@ -1,5 +1,13 @@
 import type { PokemonType, StatsTable } from "@nasty-plot/core";
 
+export interface PredictedSet {
+  pokemonId: string;
+  predictedMoves: string[];
+  predictedItem?: string;
+  predictedAbility?: string;
+  confidence: number;
+}
+
 export type BattlePhase = "setup" | "preview" | "battle" | "ended";
 export type BattleFormat = "singles" | "doubles";
 export type AIDifficulty = "random" | "greedy" | "heuristic" | "expert";
@@ -90,6 +98,8 @@ export interface BattleSide {
   sideConditions: SideConditions;
   /** Whether this side can terastallize */
   canTera: boolean;
+  /** Whether this side has already terastallized (persistent, unlike canTera which resets from requests) */
+  hasTerastallized: boolean;
 }
 
 export interface BattleState {
@@ -113,6 +123,8 @@ export interface BattleState {
   availableActions: BattleActionSet | null;
   /** Unique battle ID */
   id: string;
+  /** Predicted opponent sets from SetPredictor */
+  opponentPredictions?: Record<string, PredictedSet>;
 }
 
 export interface MoveAction {

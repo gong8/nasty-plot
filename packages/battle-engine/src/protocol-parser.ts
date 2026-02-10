@@ -478,6 +478,7 @@ export function processLine(
         pokemon.isTerastallized = true;
       }
       state.sides[ident.side].canTera = false;
+      state.sides[ident.side].hasTerastallized = true;
       return logEntry("tera",
         `${ident.name} terastallized into ${teraType} type!`,
         state.turn, ident.side);
@@ -575,11 +576,38 @@ export function processLine(
       return null;
     }
 
-    case "-activate":
+    case "-activate": {
+      const ident = parsePokemonIdent(args[0] || "");
+      if (!ident) return null;
+      const effect = args[1] || "";
+
+      // Air Balloon pop
+      if (effect === "item: Air Balloon") {
+        const pokemon = findPokemon(state, ident.side, ident.name);
+        if (pokemon) pokemon.item = "";
+        return logEntry("item", `${ident.name}'s Air Balloon popped!`, state.turn, ident.side);
+      }
+
+      // Disguise
+      if (effect === "ability: Disguise" || effect === "Disguise") {
+        return logEntry("ability", `${ident.name}'s Disguise was busted!`, state.turn, ident.side);
+      }
+
+      // Generic activate
+      const cleanEffect = effect.replace(/^(ability|item|move): /, "");
+      return logEntry("info", `${ident.name}'s ${cleanEffect} activated!`, state.turn, ident.side);
+    }
+
+    case "-prepare": {
+      const ident = parsePokemonIdent(args[0] || "");
+      if (!ident) return null;
+      const moveName = args[1] || "a move";
+      return logEntry("move", `${ident.name} is preparing ${moveName}!`, state.turn, ident.side);
+    }
+
     case "-hint":
     case "-combine":
     case "-waiting":
-    case "-prepare":
     case "-mustrecharge":
     case "-nothing":
     case "-notarget":
@@ -631,16 +659,17 @@ export function parseRequest(requestJson: string): {
   actions: BattleActionSet | null;
   teamPreview: boolean;
   wait: boolean;
+  forceSwitch: boolean;
   side?: { name: string; id: string; pokemon: RequestPokemon[] };
 } {
   const req = JSON.parse(requestJson);
 
   if (req.wait) {
-    return { actions: null, teamPreview: false, wait: true };
+    return { actions: null, teamPreview: false, wait: true, forceSwitch: false };
   }
 
   if (req.teamPreview) {
-    return { actions: null, teamPreview: true, wait: false, side: req.side };
+    return { actions: null, teamPreview: true, wait: false, forceSwitch: false, side: req.side };
   }
 
   if (req.forceSwitch) {
@@ -652,16 +681,108 @@ export function parseRequest(requestJson: string): {
         canTera: false,
         switches,
         forceSwitch: true,
+        activeSlot: 0,
       },
       teamPreview: false,
       wait: false,
+      forceSwitch: true,
       side: req.side,
     };
   }
 
   // Normal turn: extract moves and switches
   const active = req.active?.[0];
-  const moves = (active?.moves || []).map((m: RequestMove) => {
+  const moves = extractMoves(active);
+
+  const canTera = active?.canTerastallize != null;
+  const switches = extractSwitches(req.side?.pokemon || []);
+
+  return {
+    actions: {
+      moves,
+      canTera,
+      switches,
+      forceSwitch: false,
+      activeSlot: 0,
+    },
+    teamPreview: false,
+    wait: false,
+    forceSwitch: false,
+    side: req.side,
+  };
+}
+
+/**
+ * Parse a |request| JSON to extract available actions for a specific active slot.
+ * Used for doubles where each active slot gets its own action set.
+ */
+export function parseRequestForSlot(requestJson: string, slotIndex: number): {
+  actions: BattleActionSet | null;
+  teamPreview: boolean;
+  wait: boolean;
+  forceSwitch: boolean;
+  side?: { name: string; id: string; pokemon: RequestPokemon[] };
+} {
+  const req = JSON.parse(requestJson);
+
+  if (req.wait) {
+    return { actions: null, teamPreview: false, wait: true, forceSwitch: false };
+  }
+
+  if (req.teamPreview) {
+    return { actions: null, teamPreview: true, wait: false, forceSwitch: false, side: req.side };
+  }
+
+  // Handle forceSwitch array in doubles
+  if (req.forceSwitch) {
+    const forceArr: boolean[] = Array.isArray(req.forceSwitch) ? req.forceSwitch : [req.forceSwitch];
+    if (!forceArr[slotIndex]) {
+      // This slot doesn't need to switch
+      return { actions: null, teamPreview: false, wait: false, forceSwitch: false };
+    }
+    const switches = extractSwitches(req.side?.pokemon || []);
+    return {
+      actions: {
+        moves: [],
+        canTera: false,
+        switches,
+        forceSwitch: true,
+        activeSlot: slotIndex,
+      },
+      teamPreview: false,
+      wait: false,
+      forceSwitch: true,
+      side: req.side,
+    };
+  }
+
+  const active = req.active?.[slotIndex];
+  if (!active) {
+    return { actions: null, teamPreview: false, wait: false, forceSwitch: false };
+  }
+
+  const moves = extractMoves(active);
+  const canTera = active?.canTerastallize != null;
+  const switches = extractSwitches(req.side?.pokemon || []);
+
+  return {
+    actions: {
+      moves,
+      canTera,
+      switches,
+      forceSwitch: false,
+      activeSlot: slotIndex,
+    },
+    teamPreview: false,
+    wait: false,
+    forceSwitch: false,
+    side: req.side,
+  };
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function extractMoves(active: any): BattleActionSet["moves"] {
+  return (active?.moves || []).map((m: RequestMove) => {
     const moveData = dex.moves.get(m.id);
     return {
       name: m.move,
@@ -677,21 +798,6 @@ export function parseRequest(requestJson: string): {
       description: moveData?.shortDesc || moveData?.desc || "",
     };
   });
-
-  const canTera = active?.canTerastallize != null;
-  const switches = extractSwitches(req.side?.pokemon || []);
-
-  return {
-    actions: {
-      moves,
-      canTera,
-      switches,
-      forceSwitch: false,
-    },
-    teamPreview: false,
-    wait: false,
-    side: req.side,
-  };
 }
 
 function extractSwitches(pokemon: RequestPokemon[]): BattleActionSet["switches"] {

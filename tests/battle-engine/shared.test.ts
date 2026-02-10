@@ -5,8 +5,9 @@ import {
   getTypeEffectiveness,
   fallbackMove,
   pickHealthiestSwitch,
+  getEffectiveSpeed,
 } from "#battle-engine/ai/shared";
-import type { BattleActionSet } from "@nasty-plot/battle-engine";
+import type { BattleActionSet, BattlePokemon, SideConditions } from "@nasty-plot/battle-engine";
 
 // ---------------------------------------------------------------------------
 // flattenDamage
@@ -224,5 +225,104 @@ describe("pickHealthiestSwitch", () => {
     const result = pickHealthiestSwitch(actions);
     // Both are at 100%, so the reduce picks the first one (a wins over b when equal)
     expect(result.type).toBe("switch");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// getEffectiveSpeed
+// ---------------------------------------------------------------------------
+
+function makeSideConditions(overrides: Partial<SideConditions> = {}): SideConditions {
+  return {
+    stealthRock: false,
+    spikes: 0,
+    toxicSpikes: 0,
+    stickyWeb: false,
+    reflect: 0,
+    lightScreen: 0,
+    auroraVeil: 0,
+    tailwind: 0,
+    ...overrides,
+  };
+}
+
+function makeSpeedPokemon(overrides: Partial<BattlePokemon> = {}): BattlePokemon {
+  return {
+    speciesId: "garchomp",
+    name: "Garchomp",
+    nickname: "Garchomp",
+    level: 100,
+    types: ["Dragon", "Ground"],
+    hp: 357,
+    maxHp: 357,
+    hpPercent: 100,
+    status: "",
+    fainted: false,
+    item: "",
+    ability: "",
+    isTerastallized: false,
+    moves: [],
+    stats: { hp: 357, atk: 394, def: 226, spa: 196, spd: 206, spe: 333 },
+    boosts: { atk: 0, def: 0, spa: 0, spd: 0, spe: 0, accuracy: 0, evasion: 0 },
+    volatiles: [],
+    ...overrides,
+  };
+}
+
+describe("getEffectiveSpeed", () => {
+  it("returns base speed with no modifiers", () => {
+    const pokemon = makeSpeedPokemon();
+    const sc = makeSideConditions();
+    expect(getEffectiveSpeed(pokemon, sc)).toBe(333);
+  });
+
+  it("applies +2 speed boost correctly", () => {
+    const pokemon = makeSpeedPokemon({
+      boosts: { atk: 0, def: 0, spa: 0, spd: 0, spe: 2, accuracy: 0, evasion: 0 },
+    });
+    const sc = makeSideConditions();
+    // floor(333 * (2+2)/2) = floor(333 * 2) = 666
+    expect(getEffectiveSpeed(pokemon, sc)).toBe(666);
+  });
+
+  it("applies -1 speed boost correctly", () => {
+    const pokemon = makeSpeedPokemon({
+      boosts: { atk: 0, def: 0, spa: 0, spd: 0, spe: -1, accuracy: 0, evasion: 0 },
+    });
+    const sc = makeSideConditions();
+    // floor(333 * 2 / (2+1)) = floor(666/3) = 222
+    expect(getEffectiveSpeed(pokemon, sc)).toBe(222);
+  });
+
+  it("applies paralysis speed reduction (50%)", () => {
+    const pokemon = makeSpeedPokemon({ status: "par" });
+    const sc = makeSideConditions();
+    // floor(333 * 0.5) = 166
+    expect(getEffectiveSpeed(pokemon, sc)).toBe(166);
+  });
+
+  it("applies Tailwind speed doubling", () => {
+    const pokemon = makeSpeedPokemon();
+    const sc = makeSideConditions({ tailwind: 3 });
+    // floor(333 * 2) = 666
+    expect(getEffectiveSpeed(pokemon, sc)).toBe(666);
+  });
+
+  it("applies paralysis + Tailwind combined", () => {
+    const pokemon = makeSpeedPokemon({ status: "par" });
+    const sc = makeSideConditions({ tailwind: 3 });
+    // floor(333 * 0.5) = 166, then floor(166 * 2) = 332
+    expect(getEffectiveSpeed(pokemon, sc)).toBe(332);
+  });
+
+  it("returns minimum of 1 for very low speed", () => {
+    const pokemon = makeSpeedPokemon({
+      stats: { hp: 357, atk: 394, def: 226, spa: 196, spd: 206, spe: 1 },
+      boosts: { atk: 0, def: 0, spa: 0, spd: 0, spe: -6, accuracy: 0, evasion: 0 },
+      status: "par",
+    });
+    const sc = makeSideConditions();
+    // floor(1 * 2/8) = 0, then floor(0 * 0.5) = 0, clamped to 1
+    expect(getEffectiveSpeed(pokemon, sc)).toBe(1);
   });
 });

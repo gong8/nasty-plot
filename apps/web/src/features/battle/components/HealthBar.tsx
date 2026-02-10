@@ -1,5 +1,6 @@
 "use client";
 
+import { useRef, useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 
 interface HealthBarProps {
@@ -18,10 +19,30 @@ function getHealthColor(percent: number): string {
 
 export function HealthBar({ hp, maxHp, className, showText = true, animate = true }: HealthBarProps) {
   const percent = maxHp > 0 ? Math.round((hp / maxHp) * 100) : 0;
+  const prevPercentRef = useRef(percent);
+  const [glowClass, setGlowClass] = useState("");
+
+  useEffect(() => {
+    const prev = prevPercentRef.current;
+    if (prev !== percent && animate) {
+      if (percent < prev) {
+        setGlowClass("animate-battle-damage-glow");
+      } else if (percent > prev) {
+        setGlowClass("animate-battle-heal-glow");
+      }
+      const timeout = setTimeout(() => setGlowClass(""), 600);
+      prevPercentRef.current = percent;
+      return () => clearTimeout(timeout);
+    }
+    prevPercentRef.current = percent;
+  }, [percent, animate]);
 
   return (
     <div className={cn("flex items-center gap-2", className)}>
-      <div className="flex-1 h-2.5 bg-muted rounded-full overflow-hidden border border-border">
+      <div className={cn(
+        "flex-1 h-2.5 bg-muted rounded-full overflow-hidden border border-border",
+        glowClass
+      )}>
         <div
           className={cn(
             "h-full rounded-full",

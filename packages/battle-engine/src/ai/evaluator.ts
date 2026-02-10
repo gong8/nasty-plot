@@ -1,7 +1,7 @@
 import { Dex } from "@pkmn/dex";
 import type { PokemonType } from "@nasty-plot/core";
 import type { BattleState, BattlePokemon, SideConditions, FieldState } from "../types";
-import { getSpeciesTypes, getTypeEffectiveness } from "./shared";
+import { getSpeciesTypes, getTypeEffectiveness, getEffectiveSpeed } from "./shared";
 
 /**
  * Position evaluator for competitive Pokemon battles.
@@ -117,6 +117,9 @@ function evalStatus(team: BattlePokemon[]): number {
 function evalActiveMatchup(
   myActive: BattlePokemon | null,
   oppActive: BattlePokemon | null,
+  field: FieldState,
+  mySideConditions: SideConditions,
+  oppSideConditions: SideConditions,
 ): number {
   if (!myActive || !oppActive || !isAlive(myActive) || !isAlive(oppActive)) return 0;
 
@@ -139,11 +142,19 @@ function evalActiveMatchup(
   }
   if (stabCount > 0) score += W.STAB_ADVANTAGE * (stabCount / myTypes.length);
 
-  // Speed advantage
-  const mySpe = myActive.stats.spe || 0;
-  const oppSpe = oppActive.stats.spe || 0;
-  if (mySpe > oppSpe) score += W.SPEED_ADVANTAGE;
-  else if (oppSpe > mySpe) score -= W.SPEED_ADVANTAGE;
+  // Speed advantage — account for boosts, paralysis, tailwind
+  const mySpe = getEffectiveSpeed(myActive, mySideConditions);
+  const oppSpe = getEffectiveSpeed(oppActive, oppSideConditions);
+
+  // Trick Room inverts speed advantage
+  const trickRoom = field.trickRoom > 0;
+  if (trickRoom) {
+    if (mySpe < oppSpe) score += W.SPEED_ADVANTAGE;
+    else if (oppSpe < mySpe) score -= W.SPEED_ADVANTAGE;
+  } else {
+    if (mySpe > oppSpe) score += W.SPEED_ADVANTAGE;
+    else if (oppSpe > mySpe) score -= W.SPEED_ADVANTAGE;
+  }
 
   // Stat boosts
   const myBoostTotal = Object.values(myActive.boosts).reduce((a, b) => a + b, 0);
@@ -215,8 +226,22 @@ export function evaluatePosition(
   features.push({ name: "Status conditions", rawValue: statusDiff, weight: 1, contribution: statusDiff });
   rawScore += statusDiff;
 
-  // Active matchup
-  const matchupScore = evalActiveMatchup(my.active[0], opp.active[0]);
+  // Active matchup — in doubles, evaluate all active-vs-active pairs
+  let matchupScore = 0;
+  if (state.format === "doubles") {
+    const myActives = my.active.filter((p): p is BattlePokemon => p != null && isAlive(p));
+    const oppActives = opp.active.filter((p): p is BattlePokemon => p != null && isAlive(p));
+    for (const myA of myActives) {
+      for (const oppA of oppActives) {
+        matchupScore += evalActiveMatchup(myA, oppA, state.field, my.sideConditions, opp.sideConditions);
+      }
+    }
+    // Normalize by number of matchup pairs to keep weight comparable to singles
+    const pairCount = myActives.length * oppActives.length;
+    if (pairCount > 1) matchupScore /= pairCount;
+  } else {
+    matchupScore = evalActiveMatchup(my.active[0], opp.active[0], state.field, my.sideConditions, opp.sideConditions);
+  }
   features.push({ name: "Active matchup", rawValue: matchupScore, weight: 1, contribution: matchupScore });
   rawScore += matchupScore;
 

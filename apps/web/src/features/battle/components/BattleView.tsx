@@ -12,9 +12,20 @@ import { EvalBar } from "./EvalBar";
 import { HintPanel } from "./HintPanel";
 import { CommentaryPanel } from "./CommentaryPanel";
 import { useBattleHints } from "../hooks/use-battle-hints";
+import { useBattleAnimations } from "../hooks/use-battle-animations";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Trophy, RotateCcw, ArrowLeft, Lightbulb, MessageSquare, Save, Loader2 } from "lucide-react";
+import {
+  Trophy,
+  RotateCcw,
+  ArrowLeft,
+  Lightbulb,
+  MessageSquare,
+  Save,
+  Loader2,
+  ChevronDown,
+  ChevronUp,
+} from "lucide-react";
 import Link from "next/link";
 
 interface BattleViewProps {
@@ -41,8 +52,10 @@ export function BattleView({
   const [commentaryEnabled, setCommentaryEnabled] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [savedId, setSavedId] = useState<string | null>(null);
+  const [expandedPanel, setExpandedPanel] = useState(false);
 
   const { hints, winProb } = useBattleHints(state, { enabled: hintsEnabled });
+  const animState = useBattleAnimations(state);
 
   const handleHintSelect = (hint: MoveHint) => {
     if (hint.action.type === "move" && hint.action.moveIndex != null) {
@@ -79,7 +92,13 @@ export function BattleView({
     const playerWon = state.winner === "p1";
     return (
       <div className={cn("space-y-4", className)}>
-        <BattleField state={state} />
+        <BattleField
+          state={state}
+          animationStates={animState.slotAnimations}
+          moveFlash={animState.moveFlash}
+          effectivenessFlash={animState.effectivenessFlash}
+          damageNumbers={animState.damageNumbers}
+        />
 
         <Card className="max-w-md mx-auto">
           <CardContent className="pt-6 text-center space-y-4">
@@ -120,7 +139,7 @@ export function BattleView({
           </CardContent>
         </Card>
 
-        <div className="max-w-md mx-auto h-[300px] border rounded-lg">
+        <div className="max-w-2xl mx-auto h-[300px] border rounded-lg">
           <BattleLog entries={state.fullLog} />
         </div>
       </div>
@@ -132,14 +151,17 @@ export function BattleView({
   const showSwitch = showSwitchMenu || isForceSwitch;
   const activePokemon = state.sides.p1.active[0];
 
+  // Gate controls on animation state
+  const controlsDisabled = animState.isAnimating;
+
   // Recent log entries for commentary (last turn's entries)
   const recentEntries = state.log.slice(-10);
 
   return (
-    <div className={cn("space-y-3", className)}>
-      {/* Turn indicator + toggles */}
-      <div className="flex items-center justify-between px-1">
-        <span className="text-sm font-semibold">Turn {state.turn}</span>
+    <div className={cn("flex flex-col h-[calc(100vh-80px)]", className)}>
+      {/* Top bar: turn indicator + toggles */}
+      <div className="flex items-center justify-between px-2 py-1.5 shrink-0">
+        <span className="text-sm font-semibold tabular-nums">Turn {state.turn}</span>
         <div className="flex items-center gap-2">
           <Button
             size="sm"
@@ -162,87 +184,115 @@ export function BattleView({
         </div>
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <span>{state.sides.p1.name}</span>
-          <span>vs</span>
+          <span className="text-xs">vs</span>
           <span>{state.sides.p2.name}</span>
         </div>
       </div>
 
       {/* Win probability bar */}
       {winProb && (
-        <EvalBar
-          p1WinProb={winProb.p1}
-          p2WinProb={winProb.p2}
-          p1Name={state.sides.p1.name}
-          p2Name={state.sides.p2.name}
-        />
+        <div className="px-2 shrink-0">
+          <EvalBar
+            p1WinProb={winProb.p1}
+            p2WinProb={winProb.p2}
+            p1Name={state.sides.p1.name}
+            p2Name={state.sides.p2.name}
+          />
+        </div>
       )}
 
-      {/* Battle field */}
-      <BattleField state={state} />
-
-      {/* Actions + sidebar */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-        {/* Controls */}
-        <div className="lg:col-span-2">
-          {state.waitingForChoice && state.availableActions && (
-            <Card>
-              <CardContent className="pt-4">
-                {showSwitch ? (
-                  <SwitchMenu
-                    actions={state.availableActions}
-                    onSwitch={(idx) => {
-                      onSwitch(idx);
-                      setShowSwitchMenu(false);
-                    }}
-                    onBack={isForceSwitch ? undefined : () => setShowSwitchMenu(false)}
-                  />
-                ) : (
-                  <MoveSelector
-                    actions={state.availableActions}
-                    onMoveSelect={onMove}
-                    onSwitchClick={() => setShowSwitchMenu(true)}
-                    canTera={state.availableActions.canTera && state.sides.p1.canTera}
-                    teraType={activePokemon?.teraType}
-                    format={state.format}
-                    activeSlot={state.availableActions.activeSlot}
-                  />
-                )}
-              </CardContent>
-            </Card>
-          )}
-
-          {!state.waitingForChoice && state.phase === "battle" && (
-            <Card>
-              <CardContent className="pt-4 text-center text-muted-foreground">
-                Waiting for opponent...
-              </CardContent>
-            </Card>
-          )}
+      {/* Middle: field (70%) + battle log (30%) side by side */}
+      <div className="flex-1 flex gap-2 px-2 py-1.5 min-h-0">
+        {/* Battle field */}
+        <div className="flex-[7] min-w-0">
+          <BattleField
+            state={state}
+            animationStates={animState.slotAnimations}
+            moveFlash={animState.moveFlash}
+            effectivenessFlash={animState.effectivenessFlash}
+            damageNumbers={animState.damageNumbers}
+          />
         </div>
 
-        {/* Right sidebar: log + hints + commentary */}
-        <div className="space-y-3">
-          <div className="h-[280px] border rounded-lg">
-            <BattleLog entries={state.fullLog} />
-          </div>
-
-          {hintsEnabled && hints && (
-            <HintPanel
-              hints={hints.rankedMoves}
-              onSelectHint={handleHintSelect}
-            />
-          )}
-
-          {commentaryEnabled && (
-            <CommentaryPanel
-              state={state}
-              recentEntries={recentEntries}
-              team1Name={state.sides.p1.name}
-              team2Name={state.sides.p2.name}
-            />
-          )}
+        {/* Battle log sidebar */}
+        <div className="flex-[3] min-w-0 border rounded-lg overflow-hidden">
+          <BattleLog entries={state.fullLog} />
         </div>
       </div>
+
+      {/* Bottom: full-width controls */}
+      <div className="shrink-0 px-2 pb-2">
+        {state.waitingForChoice && state.availableActions && (
+          <Card className={cn(controlsDisabled && "opacity-60 pointer-events-none")}>
+            <CardContent className="pt-3 pb-3">
+              {showSwitch ? (
+                <SwitchMenu
+                  actions={state.availableActions}
+                  onSwitch={(idx) => {
+                    onSwitch(idx);
+                    setShowSwitchMenu(false);
+                  }}
+                  onBack={isForceSwitch ? undefined : () => setShowSwitchMenu(false)}
+                  team={state.sides.p1.team}
+                />
+              ) : (
+                <MoveSelector
+                  actions={state.availableActions}
+                  onMoveSelect={onMove}
+                  onSwitchClick={() => setShowSwitchMenu(true)}
+                  canTera={state.availableActions.canTera && state.sides.p1.canTera}
+                  teraType={activePokemon?.teraType}
+                  format={state.format}
+                  activeSlot={state.availableActions.activeSlot}
+                />
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {!state.waitingForChoice && state.phase === "battle" && (
+          <Card>
+            <CardContent className="pt-3 pb-3 text-center text-muted-foreground text-sm">
+              Waiting for opponent...
+            </CardContent>
+          </Card>
+        )}
+      </div>
+
+      {/* Collapsible: hints + commentary */}
+      {(hintsEnabled || commentaryEnabled) && (
+        <div className="shrink-0 px-2 pb-2">
+          <button
+            onClick={() => setExpandedPanel((v) => !v)}
+            className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors mb-1"
+          >
+            {expandedPanel ? <ChevronDown className="h-3 w-3" /> : <ChevronUp className="h-3 w-3" />}
+            {hintsEnabled && "Hints"}
+            {hintsEnabled && commentaryEnabled && " & "}
+            {commentaryEnabled && "Commentary"}
+          </button>
+
+          {expandedPanel && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
+              {hintsEnabled && hints && (
+                <HintPanel
+                  hints={hints.rankedMoves}
+                  onSelectHint={handleHintSelect}
+                />
+              )}
+
+              {commentaryEnabled && (
+                <CommentaryPanel
+                  state={state}
+                  recentEntries={recentEntries}
+                  team1Name={state.sides.p1.name}
+                  team2Name={state.sides.p2.name}
+                />
+              )}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

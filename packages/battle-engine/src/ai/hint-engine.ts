@@ -233,30 +233,65 @@ function estimateSwitchScore(
 /**
  * Generate hints for all legal actions at the current battle state.
  * Ranks moves by estimated value and classifies them relative to the best option.
+ *
+ * In doubles, pass `activeSlot` (0 or 1) to evaluate against the correct opponent slot(s).
  */
 export function generateHints(
   state: BattleState,
   actions: BattleActionSet,
   perspective: "p1" | "p2" = "p1",
+  activeSlot = 0,
 ): HintResult {
   const currentEval = evaluatePosition(state, perspective);
   const scored: { action: BattleAction; name: string; score: number; explanation: string }[] = [];
 
-  const myActive = state.sides[perspective].active[0];
-  const oppActive = state.sides[perspective === "p1" ? "p2" : "p1"].active[0];
+  const myActive = state.sides[perspective].active[activeSlot];
+  const oppSide = perspective === "p1" ? "p2" : "p1";
+  const isDoubles = state.format === "doubles";
+
+  // Get opponent actives
+  const oppActives = isDoubles
+    ? state.sides[oppSide].active.filter((p): p is NonNullable<typeof p> => p != null && !p.fainted)
+    : [state.sides[oppSide].active[0]].filter((p): p is NonNullable<typeof p> => p != null);
+
+  const oppActive = oppActives[0] ?? null;
 
   // Score moves
   if (myActive && oppActive) {
     for (let i = 0; i < actions.moves.length; i++) {
       const move = actions.moves[i];
       if (move.disabled) continue;
-      const { score, explanation } = estimateMoveScore(move, myActive, oppActive, state);
-      scored.push({
-        action: { type: "move", moveIndex: i + 1 },
-        name: move.name,
-        score,
-        explanation,
-      });
+
+      if (isDoubles && oppActives.length > 1) {
+        // Evaluate against each target, pick best
+        let bestScore = -Infinity;
+        let bestExpl = "";
+        let bestTarget = -1;
+
+        for (let t = 0; t < oppActives.length; t++) {
+          const { score, explanation } = estimateMoveScore(move, myActive, oppActives[t], state);
+          if (score > bestScore) {
+            bestScore = score;
+            bestExpl = `${explanation} (→ ${oppActives[t].name})`;
+            bestTarget = -(t + 1);
+          }
+        }
+
+        scored.push({
+          action: { type: "move", moveIndex: i + 1, targetSlot: bestTarget },
+          name: move.name,
+          score: bestScore,
+          explanation: bestExpl,
+        });
+      } else {
+        const { score, explanation } = estimateMoveScore(move, myActive, oppActive, state);
+        scored.push({
+          action: { type: "move", moveIndex: i + 1 },
+          name: move.name,
+          score,
+          explanation,
+        });
+      }
     }
   }
 

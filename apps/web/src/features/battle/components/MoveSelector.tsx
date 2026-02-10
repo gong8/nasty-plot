@@ -11,10 +11,16 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { ArrowLeftRight, Sparkles, Target } from "lucide-react";
+import { ArrowLeftRight, Sparkles, Target, Swords, Wand2, Circle } from "lucide-react";
 
 /** Move targets that require the player to pick a specific target slot in doubles */
 const TARGETABLE_MOVE_TARGETS = new Set(["normal", "any", "adjacentFoe"]);
+
+const CATEGORY_ICONS = {
+  Physical: Swords,
+  Special: Wand2,
+  Status: Circle,
+} as const;
 
 interface MoveSelectorProps {
   actions: BattleActionSet;
@@ -43,6 +49,8 @@ export function MoveSelector({
   const [pendingMoveIndex, setPendingMoveIndex] = useState<number | null>(null);
   /** Whether the pending move should also terastallize */
   const [pendingTera, setPendingTera] = useState(false);
+  /** Per-move tera toggle state: which move index has tera enabled */
+  const [teraOnMove, setTeraOnMove] = useState<number | null>(null);
 
   const isDoubles = format === "doubles";
 
@@ -54,19 +62,21 @@ export function MoveSelector({
   );
 
   const handleMoveClick = useCallback(
-    (zeroIndex: number, tera: boolean = false) => {
+    (zeroIndex: number) => {
       const move = actions.moves[zeroIndex];
       if (!move || move.disabled) return;
 
+      const useTera = teraOnMove === zeroIndex;
+
       if (needsTargetSelection(move.target)) {
         setPendingMoveIndex(zeroIndex);
-        setPendingTera(tera);
+        setPendingTera(useTera);
       } else {
-        // No target selection needed -- fire immediately
-        onMoveSelect(zeroIndex + 1, tera);
+        onMoveSelect(zeroIndex + 1, useTera || undefined);
+        setTeraOnMove(null);
       }
     },
-    [actions.moves, needsTargetSelection, onMoveSelect],
+    [actions.moves, needsTargetSelection, onMoveSelect, teraOnMove],
   );
 
   const handleTargetSelect = useCallback(
@@ -75,6 +85,7 @@ export function MoveSelector({
       onMoveSelect(pendingMoveIndex + 1, pendingTera || undefined, targetSlot);
       setPendingMoveIndex(null);
       setPendingTera(false);
+      setTeraOnMove(null);
     },
     [pendingMoveIndex, pendingTera, onMoveSelect],
   );
@@ -82,6 +93,10 @@ export function MoveSelector({
   const cancelTargetSelection = useCallback(() => {
     setPendingMoveIndex(null);
     setPendingTera(false);
+  }, []);
+
+  const toggleTeraOnMove = useCallback((moveIndex: number) => {
+    setTeraOnMove((prev) => (prev === moveIndex ? null : moveIndex));
   }, []);
 
   if (actions.forceSwitch) {
@@ -94,14 +109,9 @@ export function MoveSelector({
     const move = actions.moves[pendingMoveIndex];
     if (move) {
       const target = move.target;
-
-      // Foe targets: always available for normal/any/adjacentFoe
       targetOptions.push({ label: "Left Foe", slot: -1 });
       targetOptions.push({ label: "Right Foe", slot: -2 });
-
-      // "any" can also target ally slots
       if (target === "any") {
-        // Ally slot: the other active position (not the one making the choice)
         const allySlot = activeSlot === 0 ? 2 : 1;
         targetOptions.push({ label: "Ally", slot: allySlot });
       }
@@ -116,6 +126,9 @@ export function MoveSelector({
             const color = TYPE_COLORS[move.type] || "#A8A878";
             const isDamaging = move.category !== "Status" && move.basePower > 0;
             const isPending = pendingMoveIndex === i;
+            const isTeraActive = teraOnMove === i;
+            const CategoryIcon = CATEGORY_ICONS[move.category] || Circle;
+
             return (
               <div key={move.id} className="relative">
                 <Tooltip>
@@ -124,46 +137,68 @@ export function MoveSelector({
                       onClick={() => handleMoveClick(i)}
                       disabled={move.disabled}
                       className={cn(
-                        "relative w-full px-3 py-2.5 rounded-lg text-white font-semibold text-sm",
+                        "relative w-full px-3 py-2 rounded-lg text-white font-semibold text-sm",
                         "transition-all hover:brightness-110 active:scale-[0.98]",
                         "disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:brightness-100",
                         "border border-white/20 shadow-sm",
                         isPending && "ring-2 ring-white ring-offset-2 ring-offset-background",
+                        isTeraActive && "ring-2 ring-pink-400 ring-offset-1 ring-offset-background",
                       )}
                       style={{
                         backgroundColor: move.disabled ? "#666" : color,
                       }}
                     >
+                      {/* Move name + PP */}
                       <div className="flex justify-between items-center">
-                        <span className="flex items-center gap-1">
+                        <span className="flex items-center gap-1 truncate">
                           {move.name}
                           {isDoubles && needsTargetSelection(move.target) && !move.disabled && (
-                            <Target className="h-3 w-3 opacity-50" />
+                            <Target className="h-3 w-3 opacity-50 shrink-0" />
                           )}
                         </span>
-                        <span className="text-xs opacity-75">
+                        <span className="text-[10px] opacity-70 font-mono shrink-0 ml-1">
                           {move.pp}/{move.maxPp}
                         </span>
                       </div>
-                      <div className="text-[10px] uppercase tracking-wider opacity-60 text-left mt-0.5">
-                        {move.type}
+
+                      {/* Stats row: Category icon, BP, Accuracy, Type */}
+                      <div className="flex items-center gap-1.5 mt-1 text-[10px] opacity-80">
+                        <CategoryIcon className="h-3 w-3 shrink-0" />
+                        {isDamaging && (
+                          <span className="font-mono">{move.basePower} BP</span>
+                        )}
+                        <span className="font-mono">
+                          {move.accuracy === true ? "—" : `${move.accuracy}%`}
+                        </span>
+                        <span className="uppercase tracking-wider ml-auto">{move.type}</span>
                       </div>
+
+                      {/* Per-move Tera toggle */}
+                      {canTera && teraType && !move.disabled && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleTeraOnMove(i);
+                          }}
+                          className={cn(
+                            "absolute top-1 right-1 p-0.5 rounded-sm transition-all",
+                            isTeraActive
+                              ? "bg-pink-500/80 text-white"
+                              : "bg-black/20 text-white/50 hover:text-white/80"
+                          )}
+                          title={`Tera ${teraType}`}
+                        >
+                          <Sparkles className="h-3 w-3" />
+                        </button>
+                      )}
                     </button>
                   </TooltipTrigger>
                   <TooltipContent side="top" sideOffset={6}>
                     <div className="space-y-1 py-0.5">
-                      <div className="flex items-center gap-2">
-                        <span className="font-semibold">{move.category}</span>
-                        {isDamaging && (
-                          <>
-                            <span className="text-muted-foreground">|</span>
-                            <span>BP: {move.basePower}</span>
-                          </>
-                        )}
-                        <span className="text-muted-foreground">|</span>
-                        <span>
-                          Acc: {move.accuracy === true ? "\u2014" : `${move.accuracy}%`}
-                        </span>
+                      <div className="flex items-center gap-2 text-sm">
+                        <span className="font-semibold">{move.name}</span>
+                        <span className="text-muted-foreground">·</span>
+                        <span>{move.category}</span>
                       </div>
                       {isDoubles && (
                         <div className="text-xs text-muted-foreground capitalize">
@@ -171,7 +206,7 @@ export function MoveSelector({
                         </div>
                       )}
                       {move.description && (
-                        <p className="text-muted-foreground max-w-[220px]">
+                        <p className="text-muted-foreground max-w-[220px] text-xs">
                           {move.description}
                         </p>
                       )}
@@ -179,35 +214,30 @@ export function MoveSelector({
                   </TooltipContent>
                 </Tooltip>
 
-                {/* Target selection overlay for this move */}
+                {/* Target selection: inline row below the move in doubles */}
                 {isPending && targetOptions.length > 0 && (
-                  <div className="absolute inset-x-0 -bottom-1 translate-y-full z-10">
-                    <div className="bg-popover border rounded-lg shadow-lg p-1.5 space-y-1">
-                      <div className="text-[10px] uppercase tracking-wider text-muted-foreground px-1 font-medium">
-                        Choose target
-                      </div>
-                      <div className="flex gap-1">
-                        {targetOptions.map((opt) => (
-                          <button
-                            key={opt.slot}
-                            onClick={() => handleTargetSelect(opt.slot)}
-                            className={cn(
-                              "flex-1 px-2 py-1.5 text-xs font-medium rounded-md",
-                              "transition-colors",
-                              opt.slot < 0
-                                ? "bg-red-500/15 text-red-600 hover:bg-red-500/25 dark:text-red-400"
-                                : "bg-blue-500/15 text-blue-600 hover:bg-blue-500/25 dark:text-blue-400",
-                            )}
-                          >
-                            {opt.label}
-                          </button>
-                        ))}
-                      </div>
+                  <div className="mt-1">
+                    <div className="flex gap-1">
+                      {targetOptions.map((opt) => (
+                        <button
+                          key={opt.slot}
+                          onClick={() => handleTargetSelect(opt.slot)}
+                          className={cn(
+                            "flex-1 px-2 py-1.5 text-xs font-medium rounded-md",
+                            "transition-colors border",
+                            opt.slot < 0
+                              ? "bg-red-500/15 text-red-600 border-red-500/30 hover:bg-red-500/25 dark:text-red-400"
+                              : "bg-blue-500/15 text-blue-600 border-blue-500/30 hover:bg-blue-500/25 dark:text-blue-400",
+                          )}
+                        >
+                          {opt.label}
+                        </button>
+                      ))}
                       <button
                         onClick={cancelTargetSelection}
-                        className="w-full text-[10px] text-muted-foreground hover:text-foreground transition-colors py-0.5"
+                        className="px-2 py-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors rounded-md border border-border"
                       >
-                        Cancel
+                        ✕
                       </button>
                     </div>
                   </div>
@@ -218,28 +248,18 @@ export function MoveSelector({
         </div>
       </TooltipProvider>
 
+      {/* Bottom row: switch button only (tera is now per-move) */}
       <div className="flex gap-2">
-        {canTera && teraType && (
-          <Button
-            variant="outline"
-            size="sm"
-            className="flex-1 gap-1.5"
-            onClick={() => {
-              const firstEnabled = actions.moves.findIndex((m) => !m.disabled);
-              if (firstEnabled >= 0) {
-                handleMoveClick(firstEnabled, true);
-              }
-            }}
-          >
-            <Sparkles className="h-3.5 w-3.5" />
-            Tera {teraType}
-          </Button>
+        {canTera && teraType && teraOnMove !== null && (
+          <div className="flex items-center gap-1 text-xs text-pink-500 dark:text-pink-400">
+            <Sparkles className="h-3 w-3" />
+            Tera {teraType} active
+          </div>
         )}
-
         <Button
           variant="outline"
           size="sm"
-          className="flex-1 gap-1.5"
+          className="flex-1 gap-1.5 ml-auto"
           onClick={onSwitchClick}
           disabled={actions.switches.length === 0}
         >

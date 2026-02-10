@@ -22,46 +22,60 @@ export class GreedyAI implements AIPlayer {
       return pickHealthiestSwitch(actions);
     }
 
-    const activePokemon = state.sides.p2.active[0];
-    const opponentPokemon = state.sides.p1.active[0];
+    const activeSlot = actions.activeSlot ?? 0;
+    const activePokemon = state.sides.p2.active[activeSlot];
+    const isDoubles = state.format === "doubles";
 
-    if (!activePokemon || !opponentPokemon) {
+    // In doubles, consider all opponent active slots as targets
+    const opponentActives = isDoubles
+      ? state.sides.p1.active.filter((p): p is NonNullable<typeof p> => p != null && !p.fainted)
+      : [state.sides.p1.active[0]].filter((p): p is NonNullable<typeof p> => p != null);
+
+    if (!activePokemon || opponentActives.length === 0) {
       return fallbackMove(actions);
     }
 
     let bestDamage = -1;
     let bestMoveIndex = -1;
+    let bestTargetSlot: number | undefined;
 
     for (let i = 0; i < actions.moves.length; i++) {
       const move = actions.moves[i];
       if (move.disabled) continue;
 
-      try {
-        const attacker = new Pokemon(gen, activePokemon.name, {
-          level: activePokemon.level,
-          ability: activePokemon.ability || undefined,
-          item: activePokemon.item || undefined,
-        });
+      // For each move, evaluate against each possible target
+      for (let t = 0; t < opponentActives.length; t++) {
+        const opponentPokemon = opponentActives[t];
 
-        const defender = new Pokemon(gen, opponentPokemon.name, {
-          level: opponentPokemon.level,
-          ability: opponentPokemon.ability || undefined,
-          item: opponentPokemon.item || undefined,
-          curHP: opponentPokemon.hp,
-        });
+        try {
+          const attacker = new Pokemon(gen, activePokemon.name, {
+            level: activePokemon.level,
+            ability: activePokemon.ability || undefined,
+            item: activePokemon.item || undefined,
+          });
 
-        const calcMove = new Move(gen, move.name);
-        const result = calculate(gen, attacker, defender, calcMove, new Field());
+          const defender = new Pokemon(gen, opponentPokemon.name, {
+            level: opponentPokemon.level,
+            ability: opponentPokemon.ability || undefined,
+            item: opponentPokemon.item || undefined,
+            curHP: opponentPokemon.hp,
+          });
 
-        const damage = flattenDamage(result.damage);
-        const avgDamage = damage.reduce((a, b) => a + b, 0) / damage.length;
+          const calcMove = new Move(gen, move.name);
+          const result = calculate(gen, attacker, defender, calcMove, new Field());
 
-        if (avgDamage > bestDamage) {
-          bestDamage = avgDamage;
-          bestMoveIndex = i;
+          const damage = flattenDamage(result.damage);
+          const avgDamage = damage.reduce((a, b) => a + b, 0) / damage.length;
+
+          if (avgDamage > bestDamage) {
+            bestDamage = avgDamage;
+            bestMoveIndex = i;
+            // In doubles, set target slot: -1 = left foe, -2 = right foe
+            bestTargetSlot = isDoubles ? -(t + 1) : undefined;
+          }
+        } catch {
+          // Move calc failed (status move etc.), treat as 0 damage
         }
-      } catch {
-        // Move calc failed (status move etc.), treat as 0 damage
       }
     }
 
@@ -74,7 +88,11 @@ export class GreedyAI implements AIPlayer {
     }
 
     if (bestMoveIndex >= 0) {
-      return { type: "move", moveIndex: bestMoveIndex + 1 };
+      return {
+        type: "move",
+        moveIndex: bestMoveIndex + 1,
+        targetSlot: bestTargetSlot,
+      };
     }
 
     return fallbackMove(actions);

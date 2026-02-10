@@ -8,6 +8,7 @@ import type {
   BattleAction,
   BattleFormat,
   BattlePokemon,
+  PredictedSet,
 } from "../types";
 import type { PokemonType } from "@nasty-plot/core";
 import {
@@ -35,30 +36,60 @@ export class HeuristicAI implements AIPlayer {
       return this.chooseBestSwitch(state, actions);
     }
 
-    const myActive = state.sides.p2.active[0];
-    const oppActive = state.sides.p1.active[0];
+    const activeSlot = actions.activeSlot ?? 0;
+    const myActive = state.sides.p2.active[activeSlot];
+    const isDoubles = state.format === "doubles";
 
-    if (!myActive || !oppActive) {
+    // Get opponent actives
+    const oppActives = isDoubles
+      ? state.sides.p1.active.filter((p): p is NonNullable<typeof p> => p != null && !p.fainted)
+      : [state.sides.p1.active[0]].filter((p): p is NonNullable<typeof p> => p != null);
+
+    if (!myActive || oppActives.length === 0) {
       return fallbackMove(actions);
     }
+
+    // Use first opponent active as primary target for matchup/switch evaluation
+    const oppActive = oppActives[0];
 
     // Score each possible action
     const scoredActions: { action: BattleAction; score: number }[] = [];
 
-    // Score moves
+    // Score moves — in doubles, evaluate each move against each target
     for (let i = 0; i < actions.moves.length; i++) {
       const move = actions.moves[i];
       if (move.disabled) continue;
 
-      const score = this.scoreMove(move, myActive, oppActive, state);
-      scoredActions.push({
-        action: { type: "move", moveIndex: i + 1 },
-        score,
-      });
+      if (isDoubles) {
+        // Evaluate move against each opponent active, pick best target
+        let bestScore = -Infinity;
+        let bestTarget = -1; // -1 = left foe
+
+        for (let t = 0; t < oppActives.length; t++) {
+          const score = this.scoreMove(move, myActive, oppActives[t], state);
+          const targetSlot = -(t + 1);
+          if (score > bestScore) {
+            bestScore = score;
+            bestTarget = targetSlot;
+          }
+        }
+
+        scoredActions.push({
+          action: { type: "move", moveIndex: i + 1, targetSlot: bestTarget },
+          score: bestScore,
+        });
+      } else {
+        const score = this.scoreMove(move, myActive, oppActive, state);
+        scoredActions.push({
+          action: { type: "move", moveIndex: i + 1 },
+          score,
+        });
+      }
     }
 
     // Score switches only if we have a bad matchup
     const matchupScore = this.evaluateMatchup(myActive, oppActive);
+    const oppPrediction = state.opponentPredictions?.[oppActive.speciesId];
     if (matchupScore < -0.3) {
       for (const sw of actions.switches) {
         if (sw.fainted) continue;
@@ -67,7 +98,7 @@ export class HeuristicAI implements AIPlayer {
         );
         if (!swPokemon) continue;
 
-        const switchScore = this.scoreSwitchTarget(swPokemon, oppActive, myActive);
+        const switchScore = this.scoreSwitchTarget(swPokemon, oppActive, myActive, oppPrediction);
         scoredActions.push({
           action: { type: "switch", pokemonIndex: sw.index },
           score: switchScore,
@@ -89,8 +120,14 @@ export class HeuristicAI implements AIPlayer {
     return topChoices[Math.floor(Math.random() * topChoices.length)].action;
   }
 
-  chooseLeads(teamSize: number, _gameType: BattleFormat): number[] {
-    return Array.from({ length: teamSize }, (_, i) => i + 1);
+  chooseLeads(teamSize: number, gameType: BattleFormat): number[] {
+    const order = Array.from({ length: teamSize }, (_, i) => i + 1);
+    if (gameType !== "doubles") return order;
+
+    // For doubles, prioritize Fake Out and speed control users as leads
+    // This is a simple heuristic — real VGC lead selection is much more nuanced
+    // For now, just return default order since we don't have team data here
+    return order;
   }
 
   private scoreMove(
@@ -281,7 +318,8 @@ export class HeuristicAI implements AIPlayer {
   private scoreSwitchTarget(
     switchTarget: BattlePokemon,
     opponent: BattlePokemon,
-    _current: BattlePokemon
+    _current: BattlePokemon,
+    prediction?: PredictedSet
   ): number {
     let score = 0;
 
@@ -306,11 +344,26 @@ export class HeuristicAI implements AIPlayer {
       if (eff === 0) score += 20;
     }
 
+    // Penalize switching into predicted coverage moves
+    if (prediction && prediction.predictedMoves.length > 0) {
+      for (const moveName of prediction.predictedMoves) {
+        const moveData = Dex.moves.get(moveName);
+        if (!moveData?.exists || moveData.category === "Status") continue;
+        const eff = getTypeEffectiveness(moveData.type, switchTypes as string[]);
+        if (eff > 1) {
+          score -= 15 * prediction.confidence;
+        }
+      }
+    }
+
     return score;
   }
 
   private chooseBestSwitch(state: BattleState, actions: BattleActionSet): BattleAction {
-    const oppActive = state.sides.p1.active[0];
+    const activeSlot = actions.activeSlot ?? 0;
+    // In doubles, pick the first non-fainted opponent active as reference
+    const oppActives = state.sides.p1.active.filter((p): p is NonNullable<typeof p> => p != null && !p.fainted);
+    const oppActive = oppActives[0] ?? null;
     const available = actions.switches.filter((s) => !s.fainted);
 
     if (available.length === 0) {
@@ -328,6 +381,7 @@ export class HeuristicAI implements AIPlayer {
     // Score each switch target
     let bestScore = -Infinity;
     let bestIndex = available[0].index;
+    const oppPrediction = state.opponentPredictions?.[oppActive.speciesId];
 
     for (const sw of available) {
       const pokemon = state.sides.p2.team.find(
@@ -335,8 +389,8 @@ export class HeuristicAI implements AIPlayer {
       );
       if (!pokemon) continue;
 
-      const myActive = state.sides.p2.active[0];
-      const score = this.scoreSwitchTarget(pokemon, oppActive, myActive || pokemon);
+      const myActive = state.sides.p2.active[activeSlot];
+      const score = this.scoreSwitchTarget(pokemon, oppActive, myActive || pokemon, oppPrediction);
 
       if (score > bestScore) {
         bestScore = score;
