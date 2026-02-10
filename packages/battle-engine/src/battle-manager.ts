@@ -93,6 +93,7 @@ export class BattleManager {
   private lastProtocolChunk = "";
   private protocolLog = "";
   private setPredictor: SetPredictor | null = null;
+  private submitting = false;
 
   constructor(config: BattleManagerConfig) {
     this.config = config;
@@ -173,37 +174,51 @@ export class BattleManager {
    * Submit team preview lead order.
    */
   async chooseLead(leadOrder: number[]): Promise<void> {
-    const choice = `team ${leadOrder.join("")}`;
-    this.stream.write(`>p1 ${choice}`);
+    if (this.submitting) return;
+    this.submitting = true;
 
-    // AI chooses leads
-    if (this.ai) {
-      const aiLeads = this.ai.chooseLeads(
-        this.state.sides.p2.team.length || 6,
-        this.state.format
-      );
-      const aiChoice = `team ${aiLeads.join("")}`;
-      this.stream.write(`>p2 ${aiChoice}`);
+    try {
+      const choice = `team ${leadOrder.join("")}`;
+      this.stream.write(`>p1 ${choice}`);
+
+      // AI chooses leads
+      if (this.ai) {
+        const aiLeads = this.ai.chooseLeads(
+          this.state.sides.p2.team.length || 6,
+          this.state.format
+        );
+        const aiChoice = `team ${aiLeads.join("")}`;
+        this.stream.write(`>p2 ${aiChoice}`);
+      }
+
+      this.state.phase = "battle";
+      await this.waitForUpdate();
+    } finally {
+      this.submitting = false;
     }
-
-    this.state.phase = "battle";
-    await this.waitForUpdate();
   }
 
   /**
    * Submit a player action (move or switch).
    */
   async submitAction(action: BattleAction): Promise<void> {
-    const choice = actionToChoice(action);
-    this.stream.write(`>p1 ${choice}`);
-
-    // Let AI make its choice
-    if (this.ai && this.pendingP2Actions) {
-      await this.handleAITurn();
-    }
-
+    if (this.submitting) return;
+    this.submitting = true;
     this.state.waitingForChoice = false;
-    await this.waitForUpdate();
+
+    try {
+      const choice = actionToChoice(action);
+      this.stream.write(`>p1 ${choice}`);
+
+      // Let AI make its choice
+      if (this.ai && this.pendingP2Actions) {
+        await this.handleAITurn();
+      }
+
+      await this.waitForUpdate();
+    } finally {
+      this.submitting = false;
+    }
   }
 
   /**

@@ -184,7 +184,7 @@ describe("pickHealthiestSwitch", () => {
     expect(result).toEqual({ type: "switch", pokemonIndex: 3 }); // Weavile at 100%
   });
 
-  it("falls back to move 1 when no switches available", () => {
+  it("falls back to switch when all switches are fainted", () => {
     const actions: BattleActionSet = {
       moves: [],
       canTera: false,
@@ -195,10 +195,10 @@ describe("pickHealthiestSwitch", () => {
     };
 
     const result = pickHealthiestSwitch(actions);
-    expect(result).toEqual({ type: "move", moveIndex: 1 });
+    expect(result).toEqual({ type: "switch", pokemonIndex: 2 });
   });
 
-  it("returns move 1 when switches array is empty (after filtering)", () => {
+  it("falls back to switch index 1 when switches array is empty", () => {
     const actions: BattleActionSet = {
       moves: [],
       canTera: false,
@@ -207,7 +207,7 @@ describe("pickHealthiestSwitch", () => {
     };
 
     const result = pickHealthiestSwitch(actions);
-    expect(result).toEqual({ type: "move", moveIndex: 1 });
+    expect(result).toEqual({ type: "switch", pokemonIndex: 1 });
   });
 
   it("picks between two equally healthy switches", () => {

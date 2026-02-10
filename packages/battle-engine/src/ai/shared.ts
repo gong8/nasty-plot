@@ -51,7 +51,10 @@ export function fallbackMove(actions: BattleActionSet): BattleAction {
 export function pickHealthiestSwitch(actions: BattleActionSet): BattleAction {
   const available = actions.switches.filter((s) => !s.fainted);
   if (available.length === 0) {
-    return { type: "move", moveIndex: 1 };
+    // Last resort: pick the first switch slot even if all are fainted.
+    // Returning a move during forceSwitch causes the sim to reject it.
+    const fallbackIndex = actions.switches[0]?.index ?? 1;
+    return { type: "switch", pokemonIndex: fallbackIndex };
   }
   const best = available.reduce((a, b) =>
     (a.hp / a.maxHp) > (b.hp / b.maxHp) ? a : b
