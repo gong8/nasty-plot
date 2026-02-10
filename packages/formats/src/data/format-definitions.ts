@@ -213,6 +213,7 @@ export const FORMAT_DEFINITIONS: FormatDefinition[] = [
       "Koraidon", "Miraidon", "Calyrex-Ice", "Calyrex-Shadow",
       "Terapagos", "Pecharunt",
     ],
+    smogonStatsId: "gen9vgc2025regj",
     isActive: true,
   },
 
@@ -236,6 +237,7 @@ export const FORMAT_DEFINITIONS: FormatDefinition[] = [
       "Rayquaza", "Dialga", "Palkia", "Giratina", "Arceus",
       "Zacian", "Zamazenta", "Eternatus", "Calyrex",
     ],
+    smogonStatsId: "gen9bssregj",
     isActive: true,
   },
   {
@@ -257,6 +259,8 @@ export const FORMAT_DEFINITIONS: FormatDefinition[] = [
       "Rayquaza", "Dialga", "Palkia", "Giratina", "Arceus",
       "Zacian", "Zamazenta", "Eternatus", "Calyrex",
     ],
+    smogonStatsId: "gen9doublesou",
+    pkmnSetsId: "gen9doublesou",
     isActive: true,
   },
 ];

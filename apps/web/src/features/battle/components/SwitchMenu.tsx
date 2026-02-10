@@ -57,7 +57,7 @@ export function SwitchMenu({ actions, onSwitch, onBack, team, className }: Switc
         )}
       </div>
 
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
         {actions.switches.map((sw) => {
           const pokemon = getTeamPokemon(sw.speciesId);
           return (
@@ -66,8 +66,8 @@ export function SwitchMenu({ actions, onSwitch, onBack, team, className }: Switc
               onClick={() => onSwitch(sw.index)}
               disabled={sw.fainted}
               className={cn(
-                "flex flex-col items-center gap-1 px-2 py-2.5 rounded-lg border",
-                "transition-colors hover:bg-accent text-center",
+                "flex items-center gap-2 px-2 py-1.5 rounded-lg border",
+                "transition-colors hover:bg-accent text-left",
                 "disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent",
                 sw.fainted && "line-through"
               )}
@@ -76,49 +76,42 @@ export function SwitchMenu({ actions, onSwitch, onBack, team, className }: Switc
                 speciesId={sw.speciesId}
                 side="front"
                 fainted={sw.fainted}
-                size={48}
+                size={36}
               />
 
-              {/* Name + status */}
-              <div className="flex items-center gap-1">
-                <span className="font-medium text-xs truncate max-w-[80px]">{sw.name}</span>
-                {sw.status && (
-                  <span
-                    className={cn(
-                      "text-[9px] px-1 rounded font-semibold",
-                      STATUS_COLORS[sw.status] || "text-muted-foreground"
-                    )}
-                  >
-                    {STATUS_LABELS[sw.status] || sw.status.toUpperCase()}
-                  </span>
+              <div className="flex-1 min-w-0 space-y-0.5">
+                {/* Name + status */}
+                <div className="flex items-center gap-1">
+                  <span className="font-medium text-xs truncate">{sw.name}</span>
+                  {sw.status && (
+                    <span
+                      className={cn(
+                        "text-[9px] px-1 rounded font-semibold shrink-0",
+                        STATUS_COLORS[sw.status] || "text-muted-foreground"
+                      )}
+                    >
+                      {STATUS_LABELS[sw.status] || sw.status.toUpperCase()}
+                    </span>
+                  )}
+                </div>
+
+                {/* Type badges */}
+                {pokemon?.types && pokemon.types.length > 0 && (
+                  <div className="flex gap-0.5">
+                    {pokemon.types.map((t) => (
+                      <TypeBadge key={t} type={t} size="sm" className="min-w-0 px-1.5 text-[8px]" />
+                    ))}
+                  </div>
                 )}
+
+                {/* HP bar */}
+                <HealthBar
+                  hp={sw.hp}
+                  maxHp={sw.maxHp}
+                  showText={false}
+                  className="w-full"
+                />
               </div>
-
-              {/* Type badges */}
-              {pokemon?.types && pokemon.types.length > 0 && (
-                <div className="flex gap-0.5">
-                  {pokemon.types.map((t) => (
-                    <TypeBadge key={t} type={t} size="sm" className="min-w-0 px-1.5 text-[8px]" />
-                  ))}
-                </div>
-              )}
-
-              {/* HP bar */}
-              <HealthBar
-                hp={sw.hp}
-                maxHp={sw.maxHp}
-                showText={false}
-                className="w-full mt-0.5"
-              />
-
-              {/* Abbreviated moves */}
-              {pokemon?.moves && pokemon.moves.length > 0 && (
-                <div className="text-[9px] text-muted-foreground leading-tight space-y-0">
-                  {pokemon.moves.slice(0, 4).map((m) => (
-                    <div key={m.id} className="truncate max-w-[90px]">{m.name}</div>
-                  ))}
-                </div>
-              )}
             </button>
           );
         })}

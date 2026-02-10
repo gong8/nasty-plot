@@ -190,6 +190,7 @@ model Battle {
   winnerId     String?  // "team1" | "team2" | "draw"
   turnCount    Int      @default(0)
   protocolLog  String   // raw @pkmn/sim protocol
+  commentary   String?  // JSON Record<number, string> — turn → commentary text
   batchId      String?
   createdAt    DateTime @default(now())
 

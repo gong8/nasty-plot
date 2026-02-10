@@ -419,9 +419,9 @@ export function useGuidedBuilder(teamId: string, formatId: string) {
     sampleTeams: sampleTeamsQuery.data ?? [],
     isLoadingSampleTeams: sampleTeamsQuery.isLoading,
     recommendations: recommendationsQuery.data ?? [],
-    isLoadingRecommendations: recommendationsQuery.isPending,
+    isLoadingRecommendations: recommendationsQuery.isLoading,
     analysis: analysisQuery.data ?? null,
-    isLoadingAnalysis: analysisQuery.isPending,
+    isLoadingAnalysis: analysisQuery.isLoading,
 
     // Validation
     validationErrors,

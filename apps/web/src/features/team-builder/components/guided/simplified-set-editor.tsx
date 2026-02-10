@@ -247,6 +247,7 @@ export function SimplifiedSetEditor({
               index={i}
               value={slot.moves?.[i] ?? ""}
               learnset={learnset}
+              selectedMoves={slot.moves ?? ["", undefined, undefined, undefined]}
               onChange={(val) => handleMoveChange(i, val)}
             />
           ))}
@@ -371,21 +372,39 @@ function MoveInput({
   index,
   value,
   learnset,
+  selectedMoves,
   onChange,
 }: {
   index: number;
   value: string;
   learnset: string[];
+  selectedMoves: [string, string?, string?, string?];
   onChange: (val: string) => void;
 }) {
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
 
+  // Moves already picked in other slots (exclude current slot's value)
+  const otherMoves = useMemo(() => {
+    const others = new Set<string>();
+    for (let i = 0; i < 4; i++) {
+      if (i !== index && selectedMoves[i]) {
+        others.add(selectedMoves[i]!.toLowerCase());
+      }
+    }
+    return others;
+  }, [selectedMoves, index]);
+
   const filtered = useMemo(() => {
-    if (!search) return learnset.slice(0, 20);
-    const lower = search.toLowerCase();
-    return learnset.filter((m) => m.toLowerCase().includes(lower)).slice(0, 20);
-  }, [search, learnset]);
+    let moves = learnset.filter((m) => !otherMoves.has(m.toLowerCase()));
+    if (search) {
+      const lower = search.toLowerCase();
+      moves = moves.filter((m) => m.toLowerCase().includes(lower));
+    }
+    return moves.slice(0, 20);
+  }, [search, learnset, otherMoves]);
+
+  const isDuplicate = value && otherMoves.has(value.toLowerCase());
 
   return (
     <div className="relative">
@@ -403,8 +422,11 @@ function MoveInput({
         onBlur={() => {
           setTimeout(() => setOpen(false), 150);
         }}
-        className="h-8 text-sm"
+        className={`h-8 text-sm ${isDuplicate ? "border-destructive" : ""}`}
       />
+      {isDuplicate && (
+        <p className="text-[10px] text-destructive mt-0.5">Duplicate move</p>
+      )}
       {open && filtered.length > 0 && (
         <div className="absolute z-50 mt-1 w-full rounded-md border bg-popover shadow-md max-h-[150px] overflow-y-auto">
           {filtered.map((move) => (

@@ -70,7 +70,20 @@ function ivsToDb(ivs: StatsTable) {
   };
 }
 
+function validateNoDuplicateMoves(moves: TeamSlotInput["moves"]) {
+  const seen = new Set<string>();
+  for (const move of moves) {
+    if (!move) continue;
+    const lower = move.toLowerCase();
+    if (seen.has(lower)) {
+      throw new Error(`Duplicate move: ${move}`);
+    }
+    seen.add(lower);
+  }
+}
+
 function movesToDb(moves: TeamSlotInput["moves"]) {
+  validateNoDuplicateMoves(moves);
   return {
     move1: moves[0] || "",
     move2: moves[1] ?? null,

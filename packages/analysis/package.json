@@ -9,6 +9,7 @@
   "dependencies": {
     "@nasty-plot/core": "workspace:*",
     "@nasty-plot/db": "workspace:*",
+    "@nasty-plot/formats": "workspace:*",
     "@pkmn/dex": "^0.10.6"
   }
 }

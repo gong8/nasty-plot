@@ -17,6 +17,7 @@ export async function GET(
       winnerId: true,
       turnCount: true,
       protocolLog: true,
+      commentary: true,
       createdAt: true,
       turns: { orderBy: { turnNumber: "asc" } },
     },

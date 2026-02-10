@@ -32,8 +32,8 @@ export async function GET(
       const species = getSpecies(entry.pokemonId);
       return {
         ...entry,
-        pokemonName: species?.name ?? entry.pokemonName,
-        types: species?.types,
+        pokemonName: species?.name ?? entry.pokemonId,
+        types: (species?.types as UsageStatsEntry["types"]) ?? [],
         num: species?.num,
       };
     });

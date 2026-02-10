@@ -20,7 +20,8 @@
     "dev:all": "concurrently -n next,mcp,proxy -c blue,green,magenta \"pnpm run dev\" \"pnpm run dev:mcp\" \"pnpm run dev:proxy\"",
     "db:generate": "prisma generate && echo '{\"type\":\"module\"}' > generated/prisma/package.json",
     "db:migrate": "prisma migrate dev",
-    "db:push": "prisma db push"
+    "db:push": "prisma db push",
+    "db:clean": "pnpm --filter @nasty-plot/data-pipeline run clean"
   },
   "dependencies": {
     "@prisma/client": "^7.3.0",

@@ -10,16 +10,20 @@ const FORMATS = FORMAT_DEFINITIONS.filter(f => f.isActive).map(f => ({
   name: f.name,
   generation: f.generation,
   gameType: f.gameType,
+  smogonStatsId: f.smogonStatsId,
+  pkmnSetsId: f.pkmnSetsId,
 }));
 
 interface CliArgs {
   formatId?: string;
   force: boolean;
+  statsOnly: boolean;
+  setsOnly: boolean;
 }
 
 function parseArgs(): CliArgs {
   const args = process.argv.slice(2);
-  const result: CliArgs = { force: false };
+  const result: CliArgs = { force: false, statsOnly: false, setsOnly: false };
 
   for (let i = 0; i < args.length; i++) {
     if (args[i] === "--format" && args[i + 1]) {
@@ -27,16 +31,33 @@ function parseArgs(): CliArgs {
       i++;
     } else if (args[i] === "--force") {
       result.force = true;
+    } else if (args[i] === "--stats-only") {
+      result.statsOnly = true;
+    } else if (args[i] === "--sets-only") {
+      result.setsOnly = true;
     }
+  }
+
+  if (result.statsOnly && result.setsOnly) {
+    console.error("[seed] Cannot use --stats-only and --sets-only together");
+    process.exit(1);
   }
 
   return result;
 }
 
+interface SeedResult {
+  format: string;
+  statsOk: boolean;
+  setsOk: boolean;
+  statsError?: string;
+  setsError?: string;
+}
+
 async function seedFormat(
-  format: { id: string; name: string; generation: number; gameType: string },
-  force: boolean
-): Promise<{ success: boolean; error?: string }> {
+  format: { id: string; name: string; generation: number; gameType: string; smogonStatsId?: string; pkmnSetsId?: string },
+  args: { force: boolean; statsOnly: boolean; setsOnly: boolean },
+): Promise<SeedResult> {
   console.log(`\n--- Seeding ${format.name} (${format.id}) ---`);
 
   // Upsert Format record
@@ -52,47 +73,55 @@ async function seedFormat(
     },
   });
 
+  const result: SeedResult = { format: format.id, statsOk: true, setsOk: true };
+
   // Fetch usage stats
-  const statsStale = force || (await isStale("smogon-stats", format.id));
-  if (statsStale) {
-    console.log(`[seed] Fetching usage stats for ${format.id}...`);
-    try {
-      await fetchUsageStats(format.id);
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      console.error(`[seed] Failed to fetch usage stats for ${format.id}: ${msg}`);
-      // Log error but continue to try sets
-      await prisma.dataSyncLog.upsert({
-        where: { source_formatId: { source: "smogon-stats", formatId: format.id } },
-        update: { lastSynced: new Date(), status: "error", message: msg },
-        create: { source: "smogon-stats", formatId: format.id, lastSynced: new Date(), status: "error", message: msg },
-      });
+  if (!args.setsOnly) {
+    const statsStale = args.force || (await isStale("smogon-stats", format.id));
+    if (statsStale) {
+      console.log(`[seed] Fetching usage stats for ${format.id}...`);
+      try {
+        await fetchUsageStats(format.id, { smogonStatsId: format.smogonStatsId });
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        console.error(`[seed] Failed to fetch usage stats for ${format.id}: ${msg}`);
+        result.statsOk = false;
+        result.statsError = msg;
+        await prisma.dataSyncLog.upsert({
+          where: { source_formatId: { source: "smogon-stats", formatId: format.id } },
+          update: { lastSynced: new Date(), status: "error", message: msg },
+          create: { source: "smogon-stats", formatId: format.id, lastSynced: new Date(), status: "error", message: msg },
+        });
+      }
+    } else {
+      console.log(`[seed] Usage stats for ${format.id} are fresh, skipping.`);
     }
-  } else {
-    console.log(`[seed] Usage stats for ${format.id} are fresh, skipping.`);
   }
 
-  // Fetch Smogon sets
-  const setsStale = force || (await isStale("smogon-sets", format.id));
-  if (setsStale) {
-    console.log(`[seed] Fetching Smogon sets for ${format.id}...`);
-    try {
-      await fetchSmogonSets(format.id);
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      console.error(`[seed] Failed to fetch sets for ${format.id}: ${msg}`);
-      await prisma.dataSyncLog.upsert({
-        where: { source_formatId: { source: "smogon-sets", formatId: format.id } },
-        update: { lastSynced: new Date(), status: "error", message: msg },
-        create: { source: "smogon-sets", formatId: format.id, lastSynced: new Date(), status: "error", message: msg },
-      });
-      return { success: false, error: msg };
+  // Fetch Smogon sets (independent of stats — always attempt even if stats failed)
+  if (!args.statsOnly) {
+    const setsStale = args.force || (await isStale("smogon-sets", format.id));
+    if (setsStale) {
+      console.log(`[seed] Fetching Smogon sets for ${format.id}...`);
+      try {
+        await fetchSmogonSets(format.id, { pkmnSetsId: format.pkmnSetsId });
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        console.error(`[seed] Failed to fetch sets for ${format.id}: ${msg}`);
+        result.setsOk = false;
+        result.setsError = msg;
+        await prisma.dataSyncLog.upsert({
+          where: { source_formatId: { source: "smogon-sets", formatId: format.id } },
+          update: { lastSynced: new Date(), status: "error", message: msg },
+          create: { source: "smogon-sets", formatId: format.id, lastSynced: new Date(), status: "error", message: msg },
+        });
+      }
+    } else {
+      console.log(`[seed] Smogon sets for ${format.id} are fresh, skipping.`);
     }
-  } else {
-    console.log(`[seed] Smogon sets for ${format.id} are fresh, skipping.`);
   }
 
-  return { success: true };
+  return result;
 }
 
 async function main(): Promise<void> {
@@ -100,6 +129,8 @@ async function main(): Promise<void> {
 
   console.log("=== Nasty Plot Data Seeder ===");
   if (args.force) console.log("Force mode: ignoring staleness checks");
+  if (args.statsOnly) console.log("Stats only mode");
+  if (args.setsOnly) console.log("Sets only mode");
   if (args.formatId) console.log(`Target format: ${args.formatId}`);
 
   let formatsToSeed = args.formatId
@@ -107,42 +138,60 @@ async function main(): Promise<void> {
     : FORMATS;
 
   if (formatsToSeed.length === 0 && args.formatId) {
-    formatsToSeed = [{
-      id: args.formatId,
-      name: args.formatId,
-      generation: parseInt(args.formatId.replace(/[^0-9]/g, "").charAt(0) || "9"),
-      gameType: "singles" as const,
-    }];
+    // Unknown format — look up from all definitions (including inactive)
+    const definition = FORMAT_DEFINITIONS.find(f => f.id === args.formatId);
+    if (definition) {
+      formatsToSeed = [{
+        id: definition.id,
+        name: definition.name,
+        generation: definition.generation,
+        gameType: definition.gameType,
+        smogonStatsId: definition.smogonStatsId,
+        pkmnSetsId: definition.pkmnSetsId,
+      }];
+      console.log(`[seed] Note: ${args.formatId} is inactive but seeding as requested`);
+    } else {
+      console.error(`[seed] Unknown format: ${args.formatId}. Available: ${FORMATS.map(f => f.id).join(", ")}`);
+      process.exit(1);
+    }
   }
 
-  const results: { format: string; success: boolean; error?: string }[] = [];
+  const results: SeedResult[] = [];
 
   for (const format of formatsToSeed) {
     try {
-      const result = await seedFormat(format, args.force);
-      results.push({ format: format.id, ...result });
+      const result = await seedFormat(format, args);
+      results.push(result);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       console.error(`[seed] Unexpected error for ${format.id}: ${msg}`);
-      results.push({ format: format.id, success: false, error: msg });
+      results.push({ format: format.id, statsOk: false, setsOk: false, statsError: msg, setsError: msg });
     }
   }
 
   // Summary
   console.log("\n=== Seed Summary ===");
-  const successes = results.filter((r) => r.success);
-  const failures = results.filter((r) => !r.success);
+  const fullSuccess = results.filter((r) => r.statsOk && r.setsOk);
+  const partialSuccess = results.filter((r) => (r.statsOk || r.setsOk) && !(r.statsOk && r.setsOk));
+  const fullFailure = results.filter((r) => !r.statsOk && !r.setsOk);
 
-  console.log(`Total: ${results.length} | Success: ${successes.length} | Failed: ${failures.length}`);
+  console.log(`Total: ${results.length} | OK: ${fullSuccess.length} | Partial: ${partialSuccess.length} | Failed: ${fullFailure.length}`);
 
   for (const r of results) {
-    const icon = r.success ? "[OK]" : "[FAIL]";
-    console.log(`  ${icon} ${r.format}${r.error ? ` - ${r.error}` : ""}`);
+    if (r.statsOk && r.setsOk) {
+      console.log(`  [OK]      ${r.format}`);
+    } else if (r.statsOk && !r.setsOk) {
+      console.log(`  [PARTIAL] ${r.format} — sets failed: ${r.setsError}`);
+    } else if (!r.statsOk && r.setsOk) {
+      console.log(`  [PARTIAL] ${r.format} — stats failed: ${r.statsError}`);
+    } else {
+      console.log(`  [FAIL]    ${r.format} — stats: ${r.statsError}; sets: ${r.setsError}`);
+    }
   }
 
   await prisma.$disconnect();
 
-  if (failures.length > 0) {
+  if (fullFailure.length > 0) {
     process.exit(1);
   }
 }

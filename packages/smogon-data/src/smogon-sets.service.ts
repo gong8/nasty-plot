@@ -1,9 +1,6 @@
 import { prisma } from "@nasty-plot/db";
+import { toId } from "@nasty-plot/core";
 import type { SmogonSetData, NatureName, PokemonType } from "@nasty-plot/core";
-
-function toId(name: string): string {
-  return name.toLowerCase().replace(/[^a-z0-9]/g, "");
-}
 
 function buildSetsUrl(formatId: string): string {
   return `https://data.pkmn.cc/sets/${formatId}.json`;
@@ -34,9 +31,15 @@ function firstRecord(val: Record<string, number> | Record<string, number>[]): Re
 
 /**
  * Fetch Smogon recommended sets from data.pkmn.cc and persist to DB.
+ * @param formatId - The app's format ID (used for DB storage)
+ * @param options.pkmnSetsId - Override format ID for the pkmn.cc URL (e.g. "gen9doublesou")
  */
-export async function fetchSmogonSets(formatId: string): Promise<void> {
-  const url = buildSetsUrl(formatId);
+export async function fetchSmogonSets(
+  formatId: string,
+  options?: { pkmnSetsId?: string },
+): Promise<void> {
+  const setsId = options?.pkmnSetsId ?? formatId;
+  const url = buildSetsUrl(setsId);
   console.log(`[smogon-sets] Fetching ${url}`);
 
   const res = await fetch(url);
@@ -48,13 +51,20 @@ export async function fetchSmogonSets(formatId: string): Promise<void> {
 
   const json: RawSetsJson = await res.json();
   let totalSets = 0;
+  let skipped = 0;
 
   for (const [pokemonName, sets] of Object.entries(json)) {
     const pokemonId = toId(pokemonName);
-    if (!pokemonId || !sets || typeof sets !== "object") continue;
+    if (!pokemonId || !sets || typeof sets !== "object") {
+      skipped++;
+      continue;
+    }
 
     for (const [setName, setData] of Object.entries(sets)) {
-      if (!setData || typeof setData !== "object") continue;
+      if (!setData || typeof setData !== "object") {
+        skipped++;
+        continue;
+      }
 
       const ability = firstOf(setData.ability ?? "");
       const item = firstOf(setData.item ?? "");
@@ -108,24 +118,25 @@ export async function fetchSmogonSets(formatId: string): Promise<void> {
     update: {
       lastSynced: new Date(),
       status: "success",
-      message: `Fetched ${totalSets} sets`,
+      message: `Fetched ${totalSets} sets${skipped > 0 ? ` (${skipped} entries skipped)` : ""}`,
     },
     create: {
       source: "smogon-sets",
       formatId,
       lastSynced: new Date(),
       status: "success",
-      message: `Fetched ${totalSets} sets`,
+      message: `Fetched ${totalSets} sets${skipped > 0 ? ` (${skipped} entries skipped)` : ""}`,
     },
   });
 
   console.log(
-    `[smogon-sets] Done: ${totalSets} sets saved for ${formatId}`
+    `[smogon-sets] Done: ${totalSets} sets saved for ${formatId}${skipped > 0 ? ` (${skipped} skipped)` : ""}`
   );
 }
 
 /**
  * Parse a DB SmogonSet row back into a SmogonSetData domain object.
+ * Handles malformed JSON gracefully by returning safe defaults.
  */
 function rowToSetData(row: {
   pokemonId: string;
@@ -138,6 +149,26 @@ function rowToSetData(row: {
   evs: string;
   ivs: string | null;
 }): SmogonSetData {
+  let moves: (string | string[])[];
+  let evs: Record<string, number>;
+  let ivs: Record<string, number> | undefined;
+
+  try {
+    moves = JSON.parse(row.moves);
+  } catch {
+    moves = [];
+  }
+  try {
+    evs = JSON.parse(row.evs);
+  } catch {
+    evs = {};
+  }
+  try {
+    ivs = row.ivs ? JSON.parse(row.ivs) : undefined;
+  } catch {
+    ivs = undefined;
+  }
+
   return {
     pokemonId: row.pokemonId,
     setName: row.setName,
@@ -145,9 +176,9 @@ function rowToSetData(row: {
     item: row.item,
     nature: row.nature as NatureName,
     teraType: (row.teraType as PokemonType) ?? undefined,
-    moves: JSON.parse(row.moves),
-    evs: JSON.parse(row.evs),
-    ivs: row.ivs ? JSON.parse(row.ivs) : undefined,
+    moves,
+    evs,
+    ivs,
   };
 }
 

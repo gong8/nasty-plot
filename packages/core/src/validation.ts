@@ -68,6 +68,21 @@ export function validateTeam(team: TeamData): {
       });
     }
 
+    // No duplicate moves
+    const seenMoves = new Set<string>();
+    for (let i = 0; i < slot.moves.length; i++) {
+      const move = slot.moves[i];
+      if (!move) continue;
+      const moveLower = move.toLowerCase();
+      if (seenMoves.has(moveLower)) {
+        errors.push({
+          field: `slot.${slot.position}.moves.${i}`,
+          message: `Duplicate move: ${move}`,
+        });
+      }
+      seenMoves.add(moveLower);
+    }
+
     // Must have a Pokemon selected
     if (!slot.pokemonId) {
       errors.push({

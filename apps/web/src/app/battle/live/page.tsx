@@ -67,7 +67,7 @@ function BattleLiveContent() {
       onSwitch={submitSwitch}
       onLeadSelect={chooseLead}
       onRematch={rematch}
-      onSave={saveBattle}
+      onSave={(commentary) => saveBattle(commentary)}
     />
   );
 }

@@ -160,7 +160,7 @@ export function useBattle() {
   /**
    * Save the completed battle to the database.
    */
-  const saveBattle = useCallback(async (): Promise<string | null> => {
+  const saveBattle = useCallback(async (commentary?: Record<number, string>): Promise<string | null> => {
     const manager = managerRef.current;
     const config = configRef.current;
     if (!manager || !config || state.phase !== "ended") return null;
@@ -184,6 +184,7 @@ export function useBattle() {
           winnerId,
           turnCount: state.turn,
           protocolLog,
+          commentary: commentary ?? null,
         }),
       });
 

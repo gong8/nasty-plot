@@ -207,7 +207,7 @@ describe("fetchUsageStats", () => {
     mockTeammateCorrUpsert.mockResolvedValue({});
     mockSyncLogUpsert.mockResolvedValue({});
 
-    await fetchUsageStats("gen9ou", 2024, 6);
+    await fetchUsageStats("gen9ou", { year: 2024, month: 6 });
 
     expect(mockUsageUpsert).toHaveBeenCalled();
     expect(mockSyncLogUpsert).toHaveBeenCalled();
@@ -221,7 +221,7 @@ describe("fetchUsageStats", () => {
     });
     vi.stubGlobal("fetch", mockFetch);
 
-    await expect(fetchUsageStats("gen9ou", 2024, 6)).rejects.toThrow(
+    await expect(fetchUsageStats("gen9ou", { year: 2024, month: 6 })).rejects.toThrow(
       "Failed to fetch usage stats"
     );
   });
@@ -252,7 +252,7 @@ describe("fetchUsageStats", () => {
     mockTeammateCorrUpsert.mockResolvedValue({});
     mockSyncLogUpsert.mockResolvedValue({});
 
-    await fetchUsageStats("gen9ou", 2024, 6);
+    await fetchUsageStats("gen9ou", { year: 2024, month: 6 });
 
     expect(mockTeammateCorrUpsert).toHaveBeenCalledTimes(2);
   });
@@ -285,7 +285,7 @@ describe("fetchUsageStats", () => {
     mockCheckCounterUpsert.mockResolvedValue({});
     mockSyncLogUpsert.mockResolvedValue({});
 
-    await fetchUsageStats("gen9ou", 2024, 6);
+    await fetchUsageStats("gen9ou", { year: 2024, month: 6 });
 
     expect(mockCheckCounterUpsert).toHaveBeenCalled();
   });
@@ -316,7 +316,7 @@ describe("fetchUsageStats", () => {
     mockTeammateCorrUpsert.mockResolvedValue({});
     mockSyncLogUpsert.mockResolvedValue({});
 
-    await fetchUsageStats("gen9ou", 2024, 6);
+    await fetchUsageStats("gen9ou", { year: 2024, month: 6 });
 
     // Only Landorus (0.1 > 0) should be saved
     expect(mockTeammateCorrUpsert).toHaveBeenCalledTimes(1);
@@ -356,7 +356,7 @@ describe("fetchUsageStats", () => {
     mockUsageUpsert.mockResolvedValue({});
     mockSyncLogUpsert.mockResolvedValue({});
 
-    await fetchUsageStats("gen9ou", 2024, 6);
+    await fetchUsageStats("gen9ou", { year: 2024, month: 6 });
 
     // Garchomp (0.25) should be rank 1, Heatran (0.10) rank 2
     expect(mockUsageUpsert).toHaveBeenCalledTimes(2);
@@ -395,7 +395,7 @@ describe("fetchUsageStats", () => {
     mockUsageUpsert.mockResolvedValue({});
     mockSyncLogUpsert.mockResolvedValue({});
 
-    await fetchUsageStats("gen9ou", 2024, 6);
+    await fetchUsageStats("gen9ou", { year: 2024, month: 6 });
 
     expect(mockUsageUpsert).toHaveBeenCalledTimes(1);
     expect(mockTeammateCorrUpsert).not.toHaveBeenCalled();
@@ -439,9 +439,9 @@ describe("fetchUsageStats auto-detection (resolveYearMonth)", () => {
     vi.restoreAllMocks();
   });
 
-  it("probes HEAD requests starting from previous month when year/month omitted", async () => {
+  it("probes HEAD requests starting from previous month at highest rating when year/month omitted", async () => {
     const mockFetch = vi.fn()
-      // HEAD for May 2024 (offset=1) -> ok
+      // HEAD for May 2024 at 1695 -> ok
       .mockResolvedValueOnce({ ok: true })
       // GET for the actual data
       .mockResolvedValueOnce({
@@ -452,7 +452,7 @@ describe("fetchUsageStats auto-detection (resolveYearMonth)", () => {
 
     await fetchUsageStats("gen9ou");
 
-    // First call should be a HEAD request for May 2024
+    // First call should be a HEAD request for May 2024 at 1695
     expect(mockFetch).toHaveBeenCalledWith(
       "https://www.smogon.com/stats/2024-05/chaos/gen9ou-1695.json",
       { method: "HEAD" }
@@ -463,13 +463,13 @@ describe("fetchUsageStats auto-detection (resolveYearMonth)", () => {
     );
   });
 
-  it("falls back to earlier months when HEAD returns non-ok", async () => {
+  it("falls back to lower rating when higher ratings return non-ok", async () => {
     const mockFetch = vi.fn()
-      // HEAD for May 2024 (offset=1) -> not ok
+      // HEAD for May 2024 at 1695 -> not ok
       .mockResolvedValueOnce({ ok: false })
-      // HEAD for April 2024 (offset=2) -> ok
+      // HEAD for May 2024 at 1630 -> ok
       .mockResolvedValueOnce({ ok: true })
-      // GET for the actual data (April 2024)
+      // GET for the actual data (May 2024 at 1630)
       .mockResolvedValueOnce({
         ok: true,
         json: () => Promise.resolve(mockChaosData),
@@ -478,7 +478,6 @@ describe("fetchUsageStats auto-detection (resolveYearMonth)", () => {
 
     await fetchUsageStats("gen9ou");
 
-    // Should have tried May first, then April
     expect(mockFetch).toHaveBeenNthCalledWith(
       1,
       "https://www.smogon.com/stats/2024-05/chaos/gen9ou-1695.json",
@@ -486,49 +485,35 @@ describe("fetchUsageStats auto-detection (resolveYearMonth)", () => {
     );
     expect(mockFetch).toHaveBeenNthCalledWith(
       2,
-      "https://www.smogon.com/stats/2024-04/chaos/gen9ou-1695.json",
+      "https://www.smogon.com/stats/2024-05/chaos/gen9ou-1630.json",
       { method: "HEAD" }
     );
-    // Third call is the actual GET for April
     expect(mockFetch).toHaveBeenNthCalledWith(
       3,
-      "https://www.smogon.com/stats/2024-04/chaos/gen9ou-1695.json"
+      "https://www.smogon.com/stats/2024-05/chaos/gen9ou-1630.json"
     );
   });
 
-  it("falls back to first candidate when all HEAD requests fail with non-ok", async () => {
-    const mockFetch = vi.fn()
-      // All 6 HEAD requests return non-ok
-      .mockResolvedValueOnce({ ok: false })
-      .mockResolvedValueOnce({ ok: false })
-      .mockResolvedValueOnce({ ok: false })
-      .mockResolvedValueOnce({ ok: false })
-      .mockResolvedValueOnce({ ok: false })
-      .mockResolvedValueOnce({ ok: false })
-      // GET for fallback (May 2024, the first candidate)
-      .mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve(mockChaosData),
-      });
+  it("throws when all HEAD requests fail with non-ok", async () => {
+    // 6 months × 4 ratings = 24 HEAD requests, all fail
+    const mockFetch = vi.fn().mockResolvedValue({ ok: false });
     vi.stubGlobal("fetch", mockFetch);
 
-    await fetchUsageStats("gen9ou");
-
-    // Should have tried all 6 offsets, then fell back to first candidate (May)
-    expect(mockFetch).toHaveBeenCalledTimes(7); // 6 HEAD + 1 GET
-    // The final GET should be for May 2024 (first candidate / fallback)
-    expect(mockFetch).toHaveBeenLastCalledWith(
-      "https://www.smogon.com/stats/2024-05/chaos/gen9ou-1695.json"
+    await expect(fetchUsageStats("gen9ou")).rejects.toThrow(
+      "No Smogon stats found for gen9ou"
     );
+
+    // Should have tried all 24 combinations
+    expect(mockFetch).toHaveBeenCalledTimes(24);
   });
 
-  it("handles network errors during HEAD requests and tries next month", async () => {
+  it("handles network errors during HEAD requests and tries next rating", async () => {
     const mockFetch = vi.fn()
-      // HEAD for May 2024 -> network error
+      // HEAD for May 2024 at 1695 -> network error
       .mockRejectedValueOnce(new Error("Network error"))
-      // HEAD for April 2024 -> ok
+      // HEAD for May 2024 at 1630 -> ok
       .mockResolvedValueOnce({ ok: true })
-      // GET for April 2024
+      // GET for May 2024 at 1630
       .mockResolvedValueOnce({
         ok: true,
         json: () => Promise.resolve(mockChaosData),
@@ -537,38 +522,27 @@ describe("fetchUsageStats auto-detection (resolveYearMonth)", () => {
 
     await fetchUsageStats("gen9ou");
 
-    // Should have caught the error and tried April
     expect(mockFetch).toHaveBeenCalledTimes(3);
     expect(mockFetch).toHaveBeenNthCalledWith(
       2,
-      "https://www.smogon.com/stats/2024-04/chaos/gen9ou-1695.json",
+      "https://www.smogon.com/stats/2024-05/chaos/gen9ou-1630.json",
       { method: "HEAD" }
     );
   });
 
-  it("falls back to first candidate when all HEAD requests throw network errors", async () => {
-    const mockFetch = vi.fn()
-      // All 6 HEAD requests throw errors
-      .mockRejectedValueOnce(new Error("Network error"))
-      .mockRejectedValueOnce(new Error("Network error"))
-      .mockRejectedValueOnce(new Error("Network error"))
-      .mockRejectedValueOnce(new Error("Network error"))
-      .mockRejectedValueOnce(new Error("Network error"))
-      .mockRejectedValueOnce(new Error("Network error"))
-      // GET fallback for May 2024
-      .mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve(mockChaosData),
-      });
+  it("throws when all HEAD requests throw network errors", async () => {
+    // 24 HEAD requests all throw
+    const mockFetch = vi.fn();
+    for (let i = 0; i < 24; i++) {
+      mockFetch.mockRejectedValueOnce(new Error("Network error"));
+    }
     vi.stubGlobal("fetch", mockFetch);
 
-    await fetchUsageStats("gen9ou");
-
-    expect(mockFetch).toHaveBeenCalledTimes(7);
-    // Fallback GET should be May 2024
-    expect(mockFetch).toHaveBeenLastCalledWith(
-      "https://www.smogon.com/stats/2024-05/chaos/gen9ou-1695.json"
+    await expect(fetchUsageStats("gen9ou")).rejects.toThrow(
+      "No Smogon stats found for gen9ou"
     );
+
+    expect(mockFetch).toHaveBeenCalledTimes(24);
   });
 
   it("correctly handles year boundary when current month is January", async () => {
@@ -576,7 +550,7 @@ describe("fetchUsageStats auto-detection (resolveYearMonth)", () => {
     vi.setSystemTime(new Date(2025, 0, 15));
 
     const mockFetch = vi.fn()
-      // HEAD for December 2024 (offset=1 from January) -> ok
+      // HEAD for December 2024 at 1695 -> ok
       .mockResolvedValueOnce({ ok: true })
       // GET for December 2024
       .mockResolvedValueOnce({
@@ -599,43 +573,32 @@ describe("fetchUsageStats auto-detection (resolveYearMonth)", () => {
     );
   });
 
-  it("tries up to 6 previous months", async () => {
+  it("tries all 6 months × 4 ratings before throwing", async () => {
     // Set time to July 15, 2024
     vi.setSystemTime(new Date(2024, 6, 15));
 
-    const mockFetch = vi.fn()
-      // All HEAD requests fail
-      .mockResolvedValue({ ok: false });
+    // All 24 HEAD requests fail
+    const mockFetch = vi.fn();
+    for (let i = 0; i < 24; i++) {
+      mockFetch.mockResolvedValueOnce({ ok: false });
+    }
     vi.stubGlobal("fetch", mockFetch);
 
-    // Override the last call to return actual data for the GET
-    mockFetch.mockResolvedValueOnce({ ok: false }) // Jun
-      .mockResolvedValueOnce({ ok: false })        // May
-      .mockResolvedValueOnce({ ok: false })        // Apr
-      .mockResolvedValueOnce({ ok: false })        // Mar
-      .mockResolvedValueOnce({ ok: false })        // Feb
-      .mockResolvedValueOnce({ ok: false })        // Jan
-      .mockResolvedValueOnce({                     // GET fallback
-        ok: true,
-        json: () => Promise.resolve(mockChaosData),
-      });
-    vi.stubGlobal("fetch", mockFetch);
+    await expect(fetchUsageStats("gen9ou")).rejects.toThrow(
+      "No Smogon stats found for gen9ou in the last 6 months"
+    );
 
-    await fetchUsageStats("gen9ou");
+    // 6 months × 4 ratings = 24 HEAD requests, no GET fallback
+    expect(mockFetch).toHaveBeenCalledTimes(24);
 
-    // 6 HEAD requests + 1 GET = 7 total
-    expect(mockFetch).toHaveBeenCalledTimes(7);
-
-    // Verify the 6 months tried (Jun, May, Apr, Mar, Feb, Jan 2024)
-    const headCalls = mockFetch.mock.calls.slice(0, 6);
-    const months = headCalls.map((call: [string, { method: string }]) => call[0]);
-    expect(months).toEqual([
+    // First 4 calls should be Jun 2024 at different ratings
+    const headCalls = mockFetch.mock.calls.slice(0, 4);
+    const urls = headCalls.map((call: [string, { method: string }]) => call[0]);
+    expect(urls).toEqual([
       "https://www.smogon.com/stats/2024-06/chaos/gen9ou-1695.json",
-      "https://www.smogon.com/stats/2024-05/chaos/gen9ou-1695.json",
-      "https://www.smogon.com/stats/2024-04/chaos/gen9ou-1695.json",
-      "https://www.smogon.com/stats/2024-03/chaos/gen9ou-1695.json",
-      "https://www.smogon.com/stats/2024-02/chaos/gen9ou-1695.json",
-      "https://www.smogon.com/stats/2024-01/chaos/gen9ou-1695.json",
+      "https://www.smogon.com/stats/2024-06/chaos/gen9ou-1630.json",
+      "https://www.smogon.com/stats/2024-06/chaos/gen9ou-1500.json",
+      "https://www.smogon.com/stats/2024-06/chaos/gen9ou-0.json",
     ]);
   });
 });

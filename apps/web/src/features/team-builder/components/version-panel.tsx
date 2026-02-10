@@ -2,12 +2,12 @@
 
 import type { LineageNode, TeamDiff } from "@nasty-plot/core";
 import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-} from "@/components/ui/sheet";
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
@@ -46,14 +46,14 @@ export function VersionPanel({
   mergeDisabled,
 }: VersionPanelProps) {
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right">
-        <SheetHeader>
-          <SheetTitle>Versions</SheetTitle>
-          <SheetDescription>Team history and comparisons</SheetDescription>
-        </SheetHeader>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-lg max-h-[80vh] flex flex-col">
+        <DialogHeader>
+          <DialogTitle>Versions</DialogTitle>
+          <DialogDescription>Team history and comparisons</DialogDescription>
+        </DialogHeader>
 
-        <ScrollArea className="flex-1 overflow-auto px-4 pb-4">
+        <ScrollArea className="flex-1 overflow-auto pr-4">
           {/* Section 1: History */}
           <div className="space-y-3">
             <h3 className="text-sm font-medium text-muted-foreground">
@@ -116,7 +116,7 @@ export function VersionPanel({
             </Button>
           </div>
         </ScrollArea>
-      </SheetContent>
-    </Sheet>
+      </DialogContent>
+    </Dialog>
   );
 }

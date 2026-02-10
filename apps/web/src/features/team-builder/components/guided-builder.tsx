@@ -41,7 +41,13 @@ const STEP_ORDER: GuidedStep[] = ["start", "lead", "build", "sets", "review"];
 
 // --- Step indicator ---
 
-function StepIndicator({ current }: { current: GuidedStep }) {
+function StepIndicator({
+  current,
+  onGoToStep,
+}: {
+  current: GuidedStep;
+  onGoToStep: (step: GuidedStep) => void;
+}) {
   const currentIdx = STEP_ORDER.indexOf(current);
   const progress = (currentIdx / (STEP_ORDER.length - 1)) * 100;
 
@@ -51,14 +57,24 @@ function StepIndicator({ current }: { current: GuidedStep }) {
         {STEP_ORDER.map((step, i) => {
           const isActive = step === current;
           const isComplete = i < currentIdx;
+          const canNavigate = isComplete;
 
           return (
-            <div key={step} className="flex flex-col items-center gap-1">
+            <button
+              key={step}
+              type="button"
+              disabled={!canNavigate}
+              onClick={() => canNavigate && onGoToStep(step)}
+              className={cn(
+                "flex flex-col items-center gap-1 group",
+                canNavigate && "cursor-pointer"
+              )}
+            >
               <div
                 className={cn(
                   "flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium transition-colors",
                   isActive && "bg-primary text-primary-foreground",
-                  isComplete && "bg-primary/20 text-primary",
+                  isComplete && "bg-primary/20 text-primary group-hover:bg-primary/40",
                   !isActive && !isComplete && "bg-muted text-muted-foreground"
                 )}
               >
@@ -67,12 +83,13 @@ function StepIndicator({ current }: { current: GuidedStep }) {
               <span
                 className={cn(
                   "text-xs hidden sm:block",
-                  isActive ? "font-medium text-foreground" : "text-muted-foreground"
+                  isActive ? "font-medium text-foreground" : "text-muted-foreground",
+                  canNavigate && "group-hover:text-foreground"
                 )}
               >
                 {STEP_LABELS[step]}
               </span>
-            </div>
+            </button>
           );
         })}
       </div>
@@ -282,7 +299,7 @@ export function GuidedBuilder({ teamId, formatId }: GuidedBuilderProps) {
   return (
     <div className="space-y-6">
       {/* Step indicator */}
-      <StepIndicator current={guided.step} />
+      <StepIndicator current={guided.step} onGoToStep={guided.goToStep} />
 
       {/* Step content */}
       <div className="min-h-[400px]">

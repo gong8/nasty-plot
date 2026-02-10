@@ -1,10 +1,6 @@
 import { prisma } from "@nasty-plot/db";
+import { toId } from "@nasty-plot/core";
 import type { UsageStatsEntry, TeammateCorrelation } from "@nasty-plot/core";
-
-// Convert display name to Showdown-style ID
-function toId(name: string): string {
-  return name.toLowerCase().replace(/[^a-z0-9]/g, "");
-}
 
 // Build Smogon stats URL for a given format/year/month
 function buildStatsUrl(
@@ -34,19 +30,23 @@ interface SmogonChaosData {
   >;
 }
 
+// Rating thresholds to try, in order of preference.
+// OU uses 1695; most other tiers only publish at 1630 or lower.
+const RATING_THRESHOLDS = [1695, 1630, 1500, 0];
+
 /**
- * Try to determine the latest available stats month.
+ * Try to determine the latest available stats month and rating.
  * Smogon stats are typically published a month behind.
- * Start with current month - 1, then try month - 2.
+ * Tries multiple rating thresholds per month since only OU has 1695.
  */
 async function resolveYearMonth(
   formatId: string,
   year?: number,
   month?: number
-): Promise<{ year: number; month: number; url: string }> {
+): Promise<{ year: number; month: number; rating: number; url: string }> {
   if (year !== undefined && month !== undefined) {
     const url = buildStatsUrl(formatId, year, month);
-    return { year, month, url };
+    return { year, month, rating: 1695, url };
   }
 
   const now = new Date();
@@ -58,36 +58,42 @@ async function resolveYearMonth(
     candidates.push({ y: d.getFullYear(), m: d.getMonth() + 1 });
   }
 
+  // Try each month × rating combination
   for (const { y, m } of candidates) {
-    const url = buildStatsUrl(formatId, y, m);
-    try {
-      const res = await fetch(url, { method: "HEAD" });
-      if (res.ok) {
-        return { year: y, month: m, url };
+    for (const rating of RATING_THRESHOLDS) {
+      const url = buildStatsUrl(formatId, y, m, rating);
+      try {
+        const res = await fetch(url, { method: "HEAD" });
+        if (res.ok) {
+          return { year: y, month: m, rating, url };
+        }
+      } catch {
+        // network error, try next
       }
-    } catch {
-      // network error, try next
     }
   }
 
-  // Fall back to the first candidate regardless
-  const fallback = candidates[0];
-  return {
-    year: fallback.y,
-    month: fallback.m,
-    url: buildStatsUrl(formatId, fallback.y, fallback.m),
-  };
+  // No stats found for any month/rating combination.
+  // Throw so the caller knows data is unavailable for this format.
+  throw new Error(
+    `No Smogon stats found for ${formatId} in the last 6 months at any rating threshold (${RATING_THRESHOLDS.join(", ")})`
+  );
 }
 
 /**
  * Fetch usage statistics from Smogon and persist to DB.
+ * @param formatId - The app's format ID (used for DB storage)
+ * @param options.smogonStatsId - Override format ID for the Smogon URL (e.g. "gen9vgc2025regj")
+ * @param options.year - Specific year to fetch
+ * @param options.month - Specific month to fetch
  */
 export async function fetchUsageStats(
   formatId: string,
-  year?: number,
-  month?: number
+  options?: { smogonStatsId?: string; year?: number; month?: number },
 ): Promise<void> {
-  const { url, year: statYear, month: statMonth } = await resolveYearMonth(formatId, year, month);
+  const { smogonStatsId, year, month } = options ?? {};
+  const smogonId = smogonStatsId ?? formatId;
+  const { url, year: statYear, month: statMonth } = await resolveYearMonth(smogonId, year, month);
 
   console.log(`[usage-stats] Fetching ${url}`);
 

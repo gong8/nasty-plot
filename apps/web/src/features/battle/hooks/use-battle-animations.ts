@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import type { BattleLogEntry, BattleState } from "@nasty-plot/battle-engine";
 
-interface AnimationEvent {
+export interface AnimationEvent {
   type: string;
   slotKey?: string; // e.g. "p1-0", "p2-1"
   side?: "p1" | "p2";
@@ -27,7 +27,7 @@ export interface AnimationState {
   isAnimating: boolean;
 }
 
-const INITIAL_ANIMATION_STATE: AnimationState = {
+export const INITIAL_ANIMATION_STATE: AnimationState = {
   slotAnimations: {},
   moveFlash: null,
   effectivenessFlash: null,
@@ -36,7 +36,7 @@ const INITIAL_ANIMATION_STATE: AnimationState = {
 };
 
 /** Map a log entry to an animation event (or null if no animation). */
-function logEntryToAnimation(entry: BattleLogEntry): AnimationEvent | null {
+export function logEntryToAnimation(entry: BattleLogEntry): AnimationEvent | null {
   const side = entry.side;
   const slotKey = side ? `${side}-0` : undefined; // Default to slot 0 for singles
 

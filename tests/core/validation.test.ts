@@ -352,6 +352,54 @@ describe("validateTeam", () => {
       );
       expect(moveErrors).toHaveLength(0);
     });
+
+    it("flags duplicate moves on the same slot", () => {
+      const team = makeTeam([
+        makeSlot({
+          position: 1,
+          moves: ["Earthquake", "Swords Dance", "Earthquake", "Rock Slide"],
+        }),
+      ]);
+      const result = validateTeam(team);
+      expect(result.valid).toBe(false);
+      const dupError = result.errors.find((e) => e.message.includes("Duplicate move"));
+      expect(dupError).toBeDefined();
+      expect(dupError!.field).toBe("slot.1.moves.2");
+      expect(dupError!.message).toContain("Earthquake");
+    });
+
+    it("flags duplicate moves case-insensitively", () => {
+      const team = makeTeam([
+        makeSlot({
+          position: 1,
+          moves: ["Earthquake", "earthquake", undefined, undefined],
+        }),
+      ]);
+      const result = validateTeam(team);
+      const dupErrors = result.errors.filter((e) => e.message.includes("Duplicate move"));
+      expect(dupErrors).toHaveLength(1);
+    });
+
+    it("allows all unique moves", () => {
+      const team = makeTeam([makeSlot()]);
+      const dupErrors = validateTeam(team).errors.filter((e) =>
+        e.message.includes("Duplicate move")
+      );
+      expect(dupErrors).toHaveLength(0);
+    });
+
+    it("skips undefined moves when checking duplicates", () => {
+      const team = makeTeam([
+        makeSlot({
+          position: 1,
+          moves: ["Earthquake", undefined, undefined, undefined],
+        }),
+      ]);
+      const dupErrors = validateTeam(team).errors.filter((e) =>
+        e.message.includes("Duplicate move")
+      );
+      expect(dupErrors).toHaveLength(0);
+    });
   });
 
   // -------------------------------------------------------------------------

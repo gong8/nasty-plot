@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
     const {
       formatId, gameType, mode = "play", aiDifficulty,
       team1Paste, team1Name, team2Paste, team2Name,
-      team1Id, team2Id, winnerId, turnCount, protocolLog, turns,
+      team1Id, team2Id, winnerId, turnCount, protocolLog, commentary, turns,
     } = body;
 
     if (!formatId || !team1Paste || !team2Paste || !protocolLog) {
@@ -59,6 +59,7 @@ export async function POST(req: NextRequest) {
         winnerId: winnerId || null,
         turnCount: turnCount || 0,
         protocolLog,
+        commentary: commentary ? JSON.stringify(commentary) : null,
         turns: turns?.length ? {
           create: turns.map((t: { turnNumber: number; team1Action: string; team2Action: string; stateSnapshot: string; winProbTeam1?: number }) => ({
             turnNumber: t.turnNumber,

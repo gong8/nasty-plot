@@ -2,13 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@nasty-plot/db";
 import { fetchUsageStats, fetchSmogonSets } from "@nasty-plot/smogon-data";
 import { isStale } from "@nasty-plot/data-pipeline";
+import { FORMAT_DEFINITIONS } from "@nasty-plot/formats";
 
-const DEFAULT_FORMATS = [
-  { id: "gen9ou", name: "OU", generation: 9, gameType: "singles" },
-  { id: "gen9uu", name: "UU", generation: 9, gameType: "singles" },
-  { id: "gen9vgc2024", name: "VGC 2024", generation: 9, gameType: "doubles" },
-  { id: "gen9vgc2025", name: "VGC 2025", generation: 9, gameType: "doubles" },
-];
+const DEFAULT_FORMATS = FORMAT_DEFINITIONS.filter(f => f.isActive).slice(0, 6).map(f => ({
+  id: f.id,
+  name: f.name,
+  generation: f.generation,
+  gameType: f.gameType,
+  smogonStatsId: f.smogonStatsId,
+  pkmnSetsId: f.pkmnSetsId,
+}));
 
 export async function POST(request: NextRequest) {
   let body: { formatId?: string; force?: boolean } = {};
@@ -21,10 +24,20 @@ export async function POST(request: NextRequest) {
   const { formatId, force = false } = body;
 
   const formats = formatId
-    ? [{ id: formatId, name: formatId, generation: 9, gameType: "singles" }]
+    ? (() => {
+        const def = FORMAT_DEFINITIONS.find(f => f.id === formatId);
+        return [{
+          id: formatId,
+          name: def?.name ?? formatId,
+          generation: def?.generation ?? 9,
+          gameType: def?.gameType ?? "singles",
+          smogonStatsId: def?.smogonStatsId,
+          pkmnSetsId: def?.pkmnSetsId,
+        }];
+      })()
     : DEFAULT_FORMATS;
 
-  const results: { format: string; success: boolean; error?: string }[] = [];
+  const results: { format: string; statsOk: boolean; setsOk: boolean; errors: string[] }[] = [];
 
   for (const format of formats) {
     // Upsert format
@@ -45,39 +58,47 @@ export async function POST(request: NextRequest) {
     }
 
     const errors: string[] = [];
+    let statsOk = true;
+    let setsOk = true;
 
     // Usage stats
     try {
       const statsNeedRefresh = force || (await isStale("smogon-stats", format.id));
       if (statsNeedRefresh) {
-        await fetchUsageStats(format.id);
+        await fetchUsageStats(format.id, { smogonStatsId: format.smogonStatsId });
       }
     } catch (err) {
-      errors.push(err instanceof Error ? err.message : String(err));
+      statsOk = false;
+      errors.push(`stats: ${err instanceof Error ? err.message : String(err)}`);
     }
 
-    // Smogon sets
+    // Smogon sets (independent of stats)
     try {
       const setsNeedRefresh = force || (await isStale("smogon-sets", format.id));
       if (setsNeedRefresh) {
-        await fetchSmogonSets(format.id);
+        await fetchSmogonSets(format.id, { pkmnSetsId: format.pkmnSetsId });
       }
     } catch (err) {
-      errors.push(err instanceof Error ? err.message : String(err));
+      setsOk = false;
+      errors.push(`sets: ${err instanceof Error ? err.message : String(err)}`);
     }
 
-    const error = errors.length > 0 ? errors.join("; ") : undefined;
-    results.push({ format: format.id, success: errors.length === 0, error });
+    results.push({ format: format.id, statsOk, setsOk, errors });
   }
 
-  const allSuccess = results.every((r) => r.success);
+  const allSuccess = results.every((r) => r.statsOk && r.setsOk);
   return NextResponse.json(
     {
-      data: results,
+      data: results.map(r => ({
+        format: r.format,
+        success: r.statsOk && r.setsOk,
+        error: r.errors.length > 0 ? r.errors.join("; ") : undefined,
+      })),
       meta: {
         total: results.length,
-        successes: results.filter((r) => r.success).length,
-        failures: results.filter((r) => !r.success).length,
+        successes: results.filter((r) => r.statsOk && r.setsOk).length,
+        partial: results.filter((r) => (r.statsOk || r.setsOk) && !(r.statsOk && r.setsOk)).length,
+        failures: results.filter((r) => !r.statsOk && !r.setsOk).length,
       },
     },
     { status: allSuccess ? 200 : 207 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { cn } from "@/lib/utils";
 import type { BattleState, MoveHint } from "@nasty-plot/battle-engine";
 import { BattleField } from "./BattleField";
@@ -34,7 +34,7 @@ interface BattleViewProps {
   onSwitch: (pokemonIndex: number) => void;
   onLeadSelect: (leadOrder: number[]) => void;
   onRematch?: () => void;
-  onSave?: () => Promise<string | null>;
+  onSave?: (commentary?: Record<number, string>) => Promise<string | null>;
   className?: string;
 }
 
@@ -50,9 +50,12 @@ export function BattleView({
   const [showSwitchMenu, setShowSwitchMenu] = useState(false);
   const [hintsEnabled, setHintsEnabled] = useState(false);
   const [commentaryEnabled, setCommentaryEnabled] = useState(false);
+  const [commentaryAutoMode, setCommentaryAutoMode] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [savedId, setSavedId] = useState<string | null>(null);
   const [expandedPanel, setExpandedPanel] = useState(false);
+
+  const commentaryRef = useRef<Record<number, string>>({});
 
   const { hints, winProb } = useBattleHints(state, { enabled: hintsEnabled });
   const animState = useBattleAnimations(state);
@@ -65,10 +68,26 @@ export function BattleView({
     }
   };
 
+  const handleCommentaryGenerated = (turn: number, text: string) => {
+    commentaryRef.current[turn] = text;
+
+    // If battle is already saved, persist commentary incrementally
+    if (savedId) {
+      fetch(`/api/battles/${savedId}/commentary`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ turn, text }),
+      }).catch((err) => console.error("[Commentary persist]", err));
+    }
+  };
+
   const handleSave = async () => {
     if (!onSave || isSaving) return;
     setIsSaving(true);
-    const id = await onSave();
+    const commentary = Object.keys(commentaryRef.current).length > 0
+      ? commentaryRef.current
+      : undefined;
+    const id = await onSave(commentary);
     setSavedId(id);
     setIsSaving(false);
   };
@@ -175,12 +194,28 @@ export function BattleView({
           <Button
             size="sm"
             variant={commentaryEnabled ? "default" : "ghost"}
-            onClick={() => setCommentaryEnabled((v) => !v)}
+            onClick={() => {
+              setCommentaryEnabled((v) => !v);
+              if (!commentaryEnabled) {
+                // Opening commentary panel — expand it
+                setExpandedPanel(true);
+              }
+            }}
             className="h-7 text-xs gap-1"
           >
             <MessageSquare className="h-3 w-3" />
             Commentary
           </Button>
+          {commentaryEnabled && (
+            <Button
+              size="sm"
+              variant={commentaryAutoMode ? "default" : "outline"}
+              onClick={() => setCommentaryAutoMode((v) => !v)}
+              className="h-7 text-xs gap-1"
+            >
+              {commentaryAutoMode ? "Live" : "Live"}
+            </Button>
+          )}
         </div>
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <span>{state.sides.p1.name}</span>
@@ -204,7 +239,7 @@ export function BattleView({
       {/* Middle: field (70%) + battle log (30%) side by side */}
       <div className="flex-1 flex gap-2 px-2 py-1.5 min-h-0">
         {/* Battle field */}
-        <div className="flex-[7] min-w-0">
+        <div className="flex-[7] min-w-0 min-h-[200px]">
           <BattleField
             state={state}
             animationStates={animState.slotAnimations}
@@ -221,7 +256,7 @@ export function BattleView({
       </div>
 
       {/* Bottom: full-width controls */}
-      <div className="shrink-0 px-2 pb-2">
+      <div className="shrink-0 px-2 pb-2 max-h-[40vh] overflow-y-auto">
         {state.waitingForChoice && state.availableActions && (
           <Card className={cn(controlsDisabled && "opacity-60 pointer-events-none")}>
             <CardContent className="pt-3 pb-3">
@@ -261,7 +296,7 @@ export function BattleView({
 
       {/* Collapsible: hints + commentary */}
       {(hintsEnabled || commentaryEnabled) && (
-        <div className="shrink-0 px-2 pb-2">
+        <div className="shrink-0 px-2 pb-2 max-h-[25vh] overflow-y-auto">
           <button
             onClick={() => setExpandedPanel((v) => !v)}
             className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors mb-1"
@@ -287,6 +322,8 @@ export function BattleView({
                   recentEntries={recentEntries}
                   team1Name={state.sides.p1.name}
                   team2Name={state.sides.p2.name}
+                  autoMode={commentaryAutoMode}
+                  onCommentaryGenerated={handleCommentaryGenerated}
                 />
               )}
             </div>

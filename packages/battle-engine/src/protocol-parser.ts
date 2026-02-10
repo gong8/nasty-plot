@@ -39,7 +39,7 @@ function parseHp(hpStr: string): { hp: number; maxHp: number } {
   if (hpStr === "0 fnt") return { hp: 0, maxHp: 0 };
   const parts = hpStr.split(" ")[0]; // Strip conditions like "100/319 par"
   const [hp, maxHp] = parts.split("/").map(Number);
-  return { hp: hp || 0, maxHp: maxHp || 100 };
+  return { hp: hp || 0, maxHp: maxHp || 0 };
 }
 
 /** Parse status from HP string like "100/319 par" */
@@ -175,8 +175,11 @@ export function processLine(
       }
 
       pokemon.hp = hpData.hp;
-      pokemon.maxHp = hpData.maxHp;
-      pokemon.hpPercent = hpData.maxHp > 0 ? Math.round((hpData.hp / hpData.maxHp) * 100) : 0;
+      // Only increase maxHp — the sim outputs percentage HP (X/100) for the
+      // opponent's perspective, so a second chunk can corrupt absolute values.
+      // The authoritative source is updateSideFromRequest (|request| data).
+      if (hpData.maxHp > pokemon.maxHp) pokemon.maxHp = hpData.maxHp;
+      pokemon.hpPercent = pokemon.maxHp > 0 ? Math.round((pokemon.hp / pokemon.maxHp) * 100) : 0;
       pokemon.status = status;
       pokemon.fainted = hpData.hp === 0;
       pokemon.boosts = defaultBoosts();
@@ -215,7 +218,9 @@ export function processLine(
 
       if (pokemon) {
         pokemon.hp = hpData.hp;
-        if (hpData.maxHp > 0) pokemon.maxHp = hpData.maxHp;
+        // Only increase maxHp — percentage-format HP from the opponent's
+        // perspective (X/100) must not overwrite the real absolute value.
+        if (hpData.maxHp > pokemon.maxHp) pokemon.maxHp = hpData.maxHp;
         pokemon.hpPercent = pokemon.maxHp > 0 ? Math.round((pokemon.hp / pokemon.maxHp) * 100) : 0;
         if (status) pokemon.status = status;
         pokemon.fainted = pokemon.hp === 0;
@@ -848,8 +853,11 @@ export function updateSideFromRequest(
     }
 
     pokemon.hp = hpData.hp;
-    pokemon.maxHp = hpData.maxHp;
-    pokemon.hpPercent = hpData.maxHp > 0 ? Math.round((hpData.hp / hpData.maxHp) * 100) : 0;
+    // Request data is authoritative (absolute HP), but "0 fnt" returns
+    // maxHp=0 — preserve the existing maxHp so fainted Pokemon show 0/maxHp
+    // instead of 0/0.
+    if (hpData.maxHp > 0) pokemon.maxHp = hpData.maxHp;
+    pokemon.hpPercent = pokemon.maxHp > 0 ? Math.round((pokemon.hp / pokemon.maxHp) * 100) : 0;
     pokemon.status = status;
     pokemon.fainted = hpData.hp === 0;
     pokemon.item = reqPoke.item || "";
@@ -859,7 +867,7 @@ export function updateSideFromRequest(
     // Parse stats
     if (reqPoke.stats) {
       pokemon.stats = {
-        hp: hpData.maxHp,
+        hp: hpData.maxHp || pokemon.maxHp,
         atk: reqPoke.stats.atk || 0,
         def: reqPoke.stats.def || 0,
         spa: reqPoke.stats.spa || 0,

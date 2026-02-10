@@ -408,6 +408,18 @@ Gigantamax: Yes
     expect(result[0].moves?.[0]).toBe("Earthquake");
   });
 
+  it("deduplicates moves in paste", () => {
+    const paste = `Garchomp @ Rocky Helmet
+Ability: Rough Skin
+- Earthquake
+- Earthquake
+- Swords Dance
+- Earthquake`;
+
+    const result = parseShowdownPaste(paste);
+    expect(result[0].moves).toEqual(["Earthquake", "Swords Dance", undefined, undefined]);
+  });
+
   it("handles malformed EV string gracefully (non-matching parts ignored)", () => {
     // "badformat" doesn't match /^(\d+)\s+(HP|Atk|Def|SpA|SpD|Spe)$/
     const paste = `Garchomp @ Rocky Helmet

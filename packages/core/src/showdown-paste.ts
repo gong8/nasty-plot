@@ -80,11 +80,22 @@ function parseOneSlot(block: string, position: number): Partial<TeamSlotData> | 
     }
   }
 
+  // Deduplicate moves (case-insensitive)
+  const seen = new Set<string>();
+  const uniqueMoves: string[] = [];
+  for (const move of moves) {
+    const lower = move.toLowerCase();
+    if (!seen.has(lower)) {
+      seen.add(lower);
+      uniqueMoves.push(move);
+    }
+  }
+
   slot.moves = [
-    moves[0] || "",
-    moves[1] || undefined,
-    moves[2] || undefined,
-    moves[3] || undefined,
+    uniqueMoves[0] || "",
+    uniqueMoves[1] || undefined,
+    uniqueMoves[2] || undefined,
+    uniqueMoves[3] || undefined,
   ];
 
   return slot;

@@ -13,7 +13,7 @@ export async function POST(
     return NextResponse.json(slot, { status: 201 });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
-    const status = message === "Team already has 6 slots" ? 400 : 500;
+    const status = message === "Team already has 6 slots" || message.startsWith("Duplicate move") ? 400 : 500;
     return NextResponse.json({ error: message }, { status });
   }
 }
