@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -14,18 +14,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import type {
-  TeamData,
-  TeamDiff,
-  MergeDecision,
-} from "@nasty-plot/core";
+import type { TeamDiff, MergeDecision } from "@nasty-plot/core";
 
 interface MergeWizardProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  teams: TeamData[];
-  diff: TeamDiff | null;
-  onSelectTeams: (teamAId: string, teamBId: string) => void;
+  diff: TeamDiff;
   onMerge: (decisions: MergeDecision[], options: { name: string; branchName?: string; notes?: string }) => Promise<void>;
   isLoading?: boolean;
 }
@@ -33,38 +27,26 @@ interface MergeWizardProps {
 export function MergeWizard({
   open,
   onOpenChange,
-  teams,
   diff,
-  onSelectTeams,
   onMerge,
   isLoading,
 }: MergeWizardProps) {
   const [step, setStep] = useState(0);
-  const [teamAId, setTeamAId] = useState("");
-  const [teamBId, setTeamBId] = useState("");
   const [decisions, setDecisions] = useState<MergeDecision[]>([]);
   const [name, setName] = useState("");
   const [branchName, setBranchName] = useState("");
   const [notes, setNotes] = useState("");
 
-  const handleReset = () => {
-    setStep(0);
-    setTeamAId("");
-    setTeamBId("");
-    setDecisions([]);
-    setName("");
-    setBranchName("");
-    setNotes("");
-  };
-
-  const handleSelectTeams = () => {
-    if (!teamAId || !teamBId) return;
-    onSelectTeams(teamAId, teamBId);
-    const teamA = teams.find((t) => t.id === teamAId);
-    const teamB = teams.find((t) => t.id === teamBId);
-    setName(`Merge of ${teamA?.name ?? "A"} + ${teamB?.name ?? "B"}`);
-    setStep(1);
-  };
+  // Reset state when dialog opens/closes or diff changes
+  useEffect(() => {
+    if (open) {
+      setStep(0);
+      setDecisions([]);
+      setName(`Merge of ${diff.teamAName} + ${diff.teamBName}`);
+      setBranchName("");
+      setNotes("");
+    }
+  }, [open, diff.teamAName, diff.teamBName]);
 
   const handleDecision = (pokemonId: string, source: "teamA" | "teamB") => {
     setDecisions((prev) => {
@@ -79,70 +61,28 @@ export function MergeWizard({
       branchName: branchName.trim() || undefined,
       notes: notes.trim() || undefined,
     });
-    handleReset();
   };
 
+  const hasConflicts = diff.changed.length > 0 || diff.added.length > 0 || diff.removed.length > 0;
+
   return (
-    <Dialog
-      open={open}
-      onOpenChange={(o) => {
-        onOpenChange(o);
-        if (!o) handleReset();
-      }}
-    >
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Merge Teams</DialogTitle>
+          <DialogTitle>
+            Merge into {diff.teamAName}
+          </DialogTitle>
           <DialogDescription>
-            {step === 0 && "Select two teams to merge."}
-            {step === 1 && "Choose which version to keep for each differing Pokemon."}
-            {step === 2 && "Name and finalize the merged team."}
+            {step === 0 && (hasConflicts
+              ? `Pulling changes from ${diff.teamBName}. Choose which version to keep for each difference.`
+              : `No conflicts between ${diff.teamAName} and ${diff.teamBName}. The teams are identical.`
+            )}
+            {step === 1 && "Name and finalize the merged team."}
           </DialogDescription>
         </DialogHeader>
 
-        {/* Step 0: Select Teams */}
+        {/* Step 0: Review Diff & Choose */}
         {step === 0 && (
-          <div className="space-y-3">
-            <div>
-              <label className="text-sm font-medium">Team A (base)</label>
-              <select
-                value={teamAId}
-                onChange={(e) => setTeamAId(e.target.value)}
-                className="mt-1 w-full rounded-md border bg-background px-3 py-2 text-sm"
-              >
-                <option value="">Select team...</option>
-                {teams.map((t) => (
-                  <option key={t.id} value={t.id} disabled={t.id === teamBId}>
-                    {t.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="text-sm font-medium">Team B (merge from)</label>
-              <select
-                value={teamBId}
-                onChange={(e) => setTeamBId(e.target.value)}
-                className="mt-1 w-full rounded-md border bg-background px-3 py-2 text-sm"
-              >
-                <option value="">Select team...</option>
-                {teams.map((t) => (
-                  <option key={t.id} value={t.id} disabled={t.id === teamAId}>
-                    {t.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <DialogFooter>
-              <Button onClick={handleSelectTeams} disabled={!teamAId || !teamBId}>
-                Compare
-              </Button>
-            </DialogFooter>
-          </div>
-        )}
-
-        {/* Step 1: Review Diff & Choose */}
-        {step === 1 && diff && (
           <div className="space-y-3">
             {/* Changed Pokemon */}
             {diff.changed.map((change) => {
@@ -155,6 +95,14 @@ export function MergeWizard({
                       <Badge variant="outline" className="text-xs text-yellow-600">
                         {change.changes.length} change{change.changes.length !== 1 ? "s" : ""}
                       </Badge>
+                    </div>
+                    <div className="text-xs text-muted-foreground space-y-0.5">
+                      {change.changes.map((fc) => (
+                        <div key={fc.field}>
+                          {fc.label}: <span className="text-red-500 line-through">{fc.before ?? "none"}</span>{" "}
+                          &rarr; <span className="text-green-500">{fc.after ?? "none"}</span>
+                        </div>
+                      ))}
                     </div>
                     <div className="flex gap-2">
                       <Button
@@ -258,18 +206,15 @@ export function MergeWizard({
             )}
 
             <DialogFooter>
-              <Button variant="outline" onClick={() => setStep(0)}>
-                Back
-              </Button>
-              <Button onClick={() => setStep(2)}>
+              <Button onClick={() => setStep(1)} disabled={!hasConflicts}>
                 Next
               </Button>
             </DialogFooter>
           </div>
         )}
 
-        {/* Step 2: Name & Confirm */}
-        {step === 2 && (
+        {/* Step 1: Name & Confirm */}
+        {step === 1 && (
           <div className="space-y-3">
             <div>
               <label className="text-sm font-medium">Merged Team Name</label>
@@ -299,7 +244,7 @@ export function MergeWizard({
               />
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setStep(1)}>
+              <Button variant="outline" onClick={() => setStep(0)}>
                 Back
               </Button>
               <Button onClick={handleMerge} disabled={!name.trim() || isLoading}>

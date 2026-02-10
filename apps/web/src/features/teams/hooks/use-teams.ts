@@ -113,6 +113,7 @@ export function useAddSlot() {
       }),
     onSuccess: (_, vars) => {
       qc.invalidateQueries({ queryKey: ["team", vars.teamId] });
+      qc.invalidateQueries({ queryKey: ["team-compare"] });
     },
   });
 }
@@ -136,6 +137,7 @@ export function useUpdateSlot() {
       }),
     onSuccess: (_, vars) => {
       qc.invalidateQueries({ queryKey: ["team", vars.teamId] });
+      qc.invalidateQueries({ queryKey: ["team-compare"] });
     },
   });
 }
@@ -155,6 +157,7 @@ export function useRemoveSlot() {
       }),
     onSuccess: (_, vars) => {
       qc.invalidateQueries({ queryKey: ["team", vars.teamId] });
+      qc.invalidateQueries({ queryKey: ["team-compare"] });
     },
   });
 }
@@ -181,6 +184,8 @@ export function useCompareTeams(teamAId?: string, teamBId?: string) {
     queryKey: ["team-compare", teamAId, teamBId],
     queryFn: () => fetchJson(`/api/teams/compare?a=${teamAId}&b=${teamBId}`),
     enabled: !!teamAId && !!teamBId,
+    gcTime: 0,
+    staleTime: 0,
   });
 }
 
