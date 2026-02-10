@@ -166,7 +166,7 @@ Ability: Rough Skin
 Jolly Nature
 - Earthquake`;
 
-    it("extracts the species pokemonId from parentheses, ignoring the nickname", async () => {
+    it("extracts the species pokemonId and nickname from parentheses", async () => {
       mockCreateTeam.mockResolvedValue(makeTeamData());
       mockAddSlot.mockResolvedValue(makeSlot());
       mockGetTeam.mockResolvedValue(makeTeamData());
@@ -175,7 +175,7 @@ Jolly Nature
 
       expect(mockAddSlot).toHaveBeenCalledWith(
         "team-123",
-        expect.objectContaining({ pokemonId: "garchomp" })
+        expect.objectContaining({ pokemonId: "garchomp", nickname: "Chomper" })
       );
     });
   });

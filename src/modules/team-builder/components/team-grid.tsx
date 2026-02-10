@@ -4,6 +4,7 @@ import { Plus } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { TYPE_COLORS } from "@/shared/constants";
+import { PokemonSprite } from "@/shared/components/pokemon-sprite";
 import type { PokemonType, TeamData } from "@/shared/types";
 
 interface TeamGridProps {
@@ -35,11 +36,15 @@ export function TeamGrid({
           onClick={() => onSelectSlot(slot.position)}
         >
           <CardContent className="flex flex-col items-center gap-2 p-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted text-xs font-bold uppercase">
-              {slot.pokemonId.slice(0, 3)}
-            </div>
+            {slot.species?.num ? (
+              <PokemonSprite pokemonId={slot.pokemonId} num={slot.species.num} size={48} />
+            ) : (
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted text-xs font-bold uppercase">
+                {slot.pokemonId.slice(0, 3)}
+              </div>
+            )}
             <span className="text-sm font-medium truncate w-full text-center">
-              {slot.pokemonId}
+              {slot.nickname || slot.species?.name || slot.pokemonId}
             </span>
             <div className="flex gap-1">
               {slot.species?.types?.map((t: PokemonType) => (

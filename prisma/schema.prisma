@@ -103,6 +103,7 @@ model TeamSlot {
   teamId    String
   position  Int // 1-6
   pokemonId String
+  nickname  String?
   ability   String
   item      String
   nature    String

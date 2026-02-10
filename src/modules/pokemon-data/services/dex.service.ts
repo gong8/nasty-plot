@@ -135,6 +135,25 @@ export function searchSpecies(query: string): PokemonSpecies[] {
   return getAllSpecies().filter((s) => s.name.toLowerCase().includes(lower));
 }
 
+export function getAllItems(): ItemData[] {
+  const all: ItemData[] = [];
+  for (const item of dex.items.all()) {
+    if (item.exists && !item.isNonstandard) {
+      all.push({
+        id: item.id,
+        name: item.name,
+        description: item.shortDesc || item.desc,
+      });
+    }
+  }
+  return all;
+}
+
+export function searchItems(query: string): ItemData[] {
+  const lower = query.toLowerCase();
+  return getAllItems().filter((i) => i.name.toLowerCase().includes(lower));
+}
+
 export function getTypeChart(): Record<PokemonType, Partial<Record<PokemonType, number>>> {
   const chart = {} as Record<PokemonType, Partial<Record<PokemonType, number>>>;
   const types: PokemonType[] = [

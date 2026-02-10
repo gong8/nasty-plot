@@ -86,6 +86,7 @@ Jolly Nature
 
     const slot = result[0];
     expect(slot.pokemonId).toBe("garchomp");
+    expect(slot.nickname).toBeUndefined();
     expect(slot.item).toBe("Rocky Helmet");
     expect(slot.ability).toBe("Rough Skin");
     expect(slot.level).toBe(100);
@@ -106,6 +107,7 @@ Adamant Nature
 
     const result = parseShowdownPaste(paste);
     expect(result[0].pokemonId).toBe("garchomp");
+    expect(result[0].nickname).toBe("Chompy");
     expect(result[0].item).toBe("Choice Scarf");
   });
 
@@ -116,22 +118,38 @@ Ability: Rough Skin
 
     const result = parseShowdownPaste(paste);
     expect(result[0].pokemonId).toBe("garchomp");
+    expect(result[0].nickname).toBe("Chompy");
     expect(result[0].item).toBe("Life Orb");
   });
 
-  it("parses a Pokemon with gender but no nickname (gender treated as paren match)", () => {
-    // The parser's regex matches "(F)" as a species in parentheses, not as gender.
-    // "Garchomp (F)" => parenMatch captures "F" => pokemonId = toId("F") = "f"
-    // This is a known quirk of the parser: gender-only parens on a bare name
-    // are ambiguous with nickname format "Nickname (Species)".
+  it("parses a Pokemon with gender but no nickname", () => {
     const paste = `Garchomp (F) @ Leftovers
 Ability: Rough Skin
 - Earthquake`;
 
     const result = parseShowdownPaste(paste);
-    // The regex matches (F) as species name, so pokemonId becomes "f"
-    expect(result[0].pokemonId).toBe("f");
+    expect(result[0].pokemonId).toBe("garchomp");
+    expect(result[0].nickname).toBeUndefined();
     expect(result[0].item).toBe("Leftovers");
+  });
+
+  it("parses a Pokemon with nickname (e.g. asol (Miraidon))", () => {
+    const paste = `asol (Miraidon) @ Life Orb
+Ability: Hadron Engine
+Tera Type: Electric
+EVs: 252 SpA / 4 SpD / 252 Spe
+Timid Nature
+- Electro Drift
+- Draco Meteor
+- Volt Switch
+- Protect`;
+
+    const result = parseShowdownPaste(paste);
+    expect(result[0].pokemonId).toBe("miraidon");
+    expect(result[0].nickname).toBe("asol");
+    expect(result[0].item).toBe("Life Orb");
+    expect(result[0].ability).toBe("Hadron Engine");
+    expect(result[0].teraType).toBe("Electric");
   });
 
   it("parses a Pokemon with no item", () => {
@@ -508,6 +526,20 @@ describe("serializeShowdownPaste", () => {
     const firstLine = output.split("\n")[0];
     expect(firstLine).toBe("Garchomp");
     expect(firstLine).not.toContain("@");
+  });
+
+  it("serializes nickname with species in parentheses", () => {
+    const slot = makeSlot({ nickname: "Chompy" });
+    const output = serializeShowdownPaste([slot]);
+    const firstLine = output.split("\n")[0];
+    expect(firstLine).toBe("Chompy (Garchomp) @ Rocky Helmet");
+  });
+
+  it("serializes nickname without item", () => {
+    const slot = makeSlot({ nickname: "Chompy", item: "" });
+    const output = serializeShowdownPaste([slot]);
+    const firstLine = output.split("\n")[0];
+    expect(firstLine).toBe("Chompy (Garchomp)");
   });
 
   it("uses species name when available", () => {

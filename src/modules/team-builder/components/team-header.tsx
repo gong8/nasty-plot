@@ -183,11 +183,9 @@ export function TeamHeader({
               rows={10}
               className="font-mono text-sm"
             />
-            <DialogFooter>
-              <Button onClick={handleImportSubmit} disabled={!importPaste.trim()}>
-                Import
-              </Button>
-            </DialogFooter>
+            <Button onClick={handleImportSubmit} disabled={!importPaste.trim()}>
+              Import
+            </Button>
           </DialogContent>
         </Dialog>
 

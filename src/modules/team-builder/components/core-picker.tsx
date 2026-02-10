@@ -5,79 +5,14 @@ import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { TypeBadge } from "@/shared/components/type-badge";
 import { PokemonSprite } from "@/shared/components/pokemon-sprite";
-import type { PokemonType } from "@/shared/types";
+import type { PokemonType, UsageStatsEntry } from "@/shared/types";
 import type { CorePokemon } from "../hooks/use-guided-builder";
 
 interface CorePickerProps {
-  pokemon: {
-    pokemonId: string;
-    pokemonName?: string;
-    usagePercent: number;
-    rank: number;
-  }[];
+  pokemon: UsageStatsEntry[];
   selected: CorePokemon[];
   onToggle: (pokemon: CorePokemon) => void;
   maxPicks?: number;
-}
-
-// Map pokemonId to approximate national dex number for sprite lookup.
-// This is a best-effort mapping for common Pokemon; unknown ones get 0.
-function estimateDexNum(pokemonId: string): number {
-  // Common gen 9 OU Pokemon dex numbers
-  const DEX_MAP: Record<string, number> = {
-    greatTusk: 984, ironValiant: 1006, gholdengo: 1000, dragapult: 887,
-    kingambit: 983, landorusTherian: 645, heatran: 485, ironMoth: 994,
-    ironTreads: 990, garganacl: 968, clodsire: 980, toxapex: 748,
-    gliscor: 472, slowking: 199, roaringMoon: 1005, ironBundle: 991,
-    volcarona: 637, rotomWash: 479, zamazenta: 889, dragonite: 149,
-    tyranitar: 248, ferrothorn: 598, clefable: 36, garchomp: 445,
-    samurott: 503, skeledirge: 911, annihilape: 979, ironJugulis: 993,
-    chiYu: 1004, tingLu: 1003, chienPao: 1002, woChien: 1001,
-    palafin: 964, espathra: 956, flamigo: 973, dondozo: 977,
-    tatsugiri: 978, ceruledge: 937, armarouge: 936, corviknight: 823,
-    grimmsnarl: 861, tornadusTherian: 641, pelipper: 279,
-    barraskewda: 847, weavile: 461, breloom: 286, manaphy: 490,
-    serperior: 497, rillaboom: 812, amoonguss: 591, ursaluna: 901,
-    scizor: 212, zapdos: 145, moltres: 146, suicune: 245,
-    azumarill: 184, magnezone: 462, excadrill: 530, hawlucha: 701,
-    cinderace: 815, urshifuRapidStrike: 892, urshifu: 892,
-    ogerponWellspring: 1017, ogerponHearthflame: 1017,
-    ogerponCornerstone: 1017, ogerpon: 1017,
-  };
-  return DEX_MAP[pokemonId] ?? 0;
-}
-
-// Simple heuristic for types based on common Pokemon
-function estimateTypes(pokemonId: string): PokemonType[] {
-  const TYPE_MAP: Record<string, PokemonType[]> = {
-    greatTusk: ["Ground", "Fighting"], ironValiant: ["Fairy", "Fighting"],
-    gholdengo: ["Steel", "Ghost"], dragapult: ["Dragon", "Ghost"],
-    kingambit: ["Dark", "Steel"], landorusTherian: ["Ground", "Flying"],
-    heatran: ["Fire", "Steel"], ironMoth: ["Fire", "Poison"],
-    ironTreads: ["Ground", "Steel"], garganacl: ["Rock"],
-    clodsire: ["Poison", "Ground"], toxapex: ["Poison", "Water"],
-    gliscor: ["Ground", "Flying"], roaringMoon: ["Dragon", "Dark"],
-    ironBundle: ["Ice", "Water"], volcarona: ["Bug", "Fire"],
-    dragonite: ["Dragon", "Flying"], tyranitar: ["Rock", "Dark"],
-    ferrothorn: ["Grass", "Steel"], clefable: ["Fairy"],
-    garchomp: ["Dragon", "Ground"], skeledirge: ["Fire", "Ghost"],
-    annihilape: ["Fighting", "Ghost"], corviknight: ["Flying", "Steel"],
-    grimmsnarl: ["Dark", "Fairy"], pelipper: ["Water", "Flying"],
-    weavile: ["Dark", "Ice"], breloom: ["Grass", "Fighting"],
-    scizor: ["Bug", "Steel"], zapdos: ["Electric", "Flying"],
-    excadrill: ["Ground", "Steel"], azumarill: ["Water", "Fairy"],
-    magnezone: ["Electric", "Steel"], hawlucha: ["Fighting", "Flying"],
-    slowking: ["Water", "Psychic"], rotomWash: ["Electric", "Water"],
-  };
-  return (TYPE_MAP[pokemonId] as PokemonType[]) ?? ["Normal"];
-}
-
-function formatPokemonName(id: string): string {
-  // Convert camelCase to Title Case with spaces
-  return id
-    .replace(/([A-Z])/g, " $1")
-    .replace(/^./, (s) => s.toUpperCase())
-    .trim();
 }
 
 export function CorePicker({ pokemon, selected, onToggle, maxPicks = 3 }: CorePickerProps) {
@@ -110,9 +45,9 @@ export function CorePicker({ pokemon, selected, onToggle, maxPicks = 3 }: CorePi
         {pokemon.map((p) => {
           const isSelected = selectedIds.has(p.pokemonId);
           const disabled = !isSelected && atMax;
-          const displayName = p.pokemonName || formatPokemonName(p.pokemonId);
-          const types = estimateTypes(p.pokemonId);
-          const dexNum = estimateDexNum(p.pokemonId);
+          const displayName = p.pokemonName || p.pokemonId;
+          const types: PokemonType[] = p.types ?? ["Normal"];
+          const dexNum = p.num ?? 0;
 
           return (
             <Card

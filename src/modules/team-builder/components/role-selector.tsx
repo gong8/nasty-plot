@@ -12,17 +12,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { TypeBadge } from "@/shared/components/type-badge";
-import type { PokemonType } from "@/shared/types";
+import type { PokemonType, UsageStatsEntry } from "@/shared/types";
 import type { CorePokemon, RoleDefinition } from "../hooks/use-guided-builder";
 
 interface RoleSelectorProps {
   role: RoleDefinition;
-  candidates: {
-    pokemonId: string;
-    pokemonName?: string;
-    usagePercent: number;
-    rank: number;
-  }[];
+  candidates: UsageStatsEntry[];
   selected: CorePokemon | null;
   onSelect: (pokemon: CorePokemon | null) => void;
   disabledIds: Set<string>;
@@ -37,48 +32,14 @@ const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   eraser: Eraser,
 };
 
-// Heuristic type mapping for common Pokemon (shared with core-picker)
-function estimateTypes(pokemonId: string): PokemonType[] {
-  const TYPE_MAP: Record<string, PokemonType[]> = {
-    greatTusk: ["Ground", "Fighting"], ironValiant: ["Fairy", "Fighting"],
-    gholdengo: ["Steel", "Ghost"], dragapult: ["Dragon", "Ghost"],
-    kingambit: ["Dark", "Steel"], landorusTherian: ["Ground", "Flying"],
-    heatran: ["Fire", "Steel"], ironMoth: ["Fire", "Poison"],
-    ironTreads: ["Ground", "Steel"], garganacl: ["Rock"],
-    clodsire: ["Poison", "Ground"], toxapex: ["Poison", "Water"],
-    gliscor: ["Ground", "Flying"], roaringMoon: ["Dragon", "Dark"],
-    ironBundle: ["Ice", "Water"], volcarona: ["Bug", "Fire"],
-    dragonite: ["Dragon", "Flying"], tyranitar: ["Rock", "Dark"],
-    ferrothorn: ["Grass", "Steel"], clefable: ["Fairy"],
-    garchomp: ["Dragon", "Ground"], skeledirge: ["Fire", "Ghost"],
-    annihilape: ["Fighting", "Ghost"], corviknight: ["Flying", "Steel"],
-    grimmsnarl: ["Dark", "Fairy"], pelipper: ["Water", "Flying"],
-    weavile: ["Dark", "Ice"], breloom: ["Grass", "Fighting"],
-    scizor: ["Bug", "Steel"], zapdos: ["Electric", "Flying"],
-    excadrill: ["Ground", "Steel"], azumarill: ["Water", "Fairy"],
-    magnezone: ["Electric", "Steel"], hawlucha: ["Fighting", "Flying"],
-    slowking: ["Water", "Psychic"], rotomWash: ["Electric", "Water"],
-  };
-  return (TYPE_MAP[pokemonId] as PokemonType[]) ?? ["Normal"];
-}
-
-function formatPokemonName(id: string): string {
-  return id
-    .replace(/([A-Z])/g, " $1")
-    .replace(/^./, (s) => s.toUpperCase())
-    .trim();
-}
-
 // Role-specific filtering: pick candidates that match the role
 function filterForRole(
-  candidates: RoleSelectorProps["candidates"],
+  candidates: UsageStatsEntry[],
   roleId: string,
   disabledIds: Set<string>
-): RoleSelectorProps["candidates"] {
+): UsageStatsEntry[] {
   const available = candidates.filter((c) => !disabledIds.has(c.pokemonId));
 
-  // For role-based filtering, we use type heuristics
-  // In production this would use actual base stats and movepools
   const roleTypeAffinity: Record<string, PokemonType[]> = {
     "physical-wall": ["Steel", "Ground", "Rock"],
     "special-wall": ["Fairy", "Water", "Psychic"],
@@ -91,9 +52,8 @@ function filterForRole(
 
   const preferred = roleTypeAffinity[roleId] ?? [];
 
-  // Sort: preferred types first, then by usage
   const scored = available.map((c) => {
-    const types = estimateTypes(c.pokemonId);
+    const types: PokemonType[] = c.types ?? [];
     const typeBonus = types.some((t) => preferred.includes(t)) ? 10 : 0;
     return { ...c, score: typeBonus + c.usagePercent };
   });
@@ -129,8 +89,8 @@ export function RoleSelector({
       <CardContent className="pt-0">
         <div className="flex flex-wrap gap-2">
           {filtered.map((c) => {
-            const name = c.pokemonName || formatPokemonName(c.pokemonId);
-            const types = estimateTypes(c.pokemonId);
+            const name = c.pokemonName || c.pokemonId;
+            const types: PokemonType[] = c.types ?? ["Normal"];
             const isSelected = selected?.pokemonId === c.pokemonId;
 
             return (

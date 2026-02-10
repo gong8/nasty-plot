@@ -26,6 +26,7 @@ export async function importShowdownPaste(
     const slotInput: TeamSlotInput = {
       position: i + 1,
       pokemonId: p.pokemonId || "",
+      nickname: p.nickname,
       ability: p.ability || "",
       item: p.item || "",
       nature: (p.nature || "Hardy") as NatureName,

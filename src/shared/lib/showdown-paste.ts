@@ -30,18 +30,24 @@ function parseOneSlot(block: string, position: number): Partial<TeamSlotData> | 
   if (atSplit.length === 2) item = atSplit[1].trim();
 
   const namePart = atSplit[0].trim();
-  // Check for "(Pokemon)" pattern
+  let nickname: string | undefined;
+  // Check for "(Pokemon)" pattern, optionally followed by "(M)" or "(F)"
   const parenMatch = namePart.match(/\(([^)]+)\)\s*(\([MF]\))?$/);
-  if (parenMatch) {
+  if (parenMatch && !/^[MF]$/.test(parenMatch[1].trim())) {
+    // Parenthesized content is a species name (not just a gender marker)
     pokemonId = toId(parenMatch[1]);
+    // Everything before the first "(" is the nickname
+    const nicknameRaw = namePart.slice(0, namePart.indexOf("(")).trim();
+    if (nicknameRaw) nickname = nicknameRaw;
   } else {
-    // Remove gender marker
+    // No species in parens — strip any trailing gender marker
     pokemonId = toId(namePart.replace(/\s*\([MF]\)\s*$/, ""));
   }
 
   const slot: Partial<TeamSlotData> = {
     position,
     pokemonId,
+    nickname,
     item,
     ability: "",
     nature: "Hardy" as NatureName,
@@ -109,12 +115,15 @@ export function serializeShowdownPaste(slots: TeamSlotData[]): string {
 function serializeOneSlot(slot: TeamSlotData): string {
   const lines: string[] = [];
 
-  // First line: Pokemon @ Item
-  const name = slot.species?.name || slot.pokemonId;
+  // First line: Nickname (Pokemon) @ Item  or  Pokemon @ Item
+  const speciesName = slot.species?.name || slot.pokemonId;
+  const displayName = slot.nickname
+    ? `${slot.nickname} (${speciesName})`
+    : speciesName;
   if (slot.item) {
-    lines.push(`${name} @ ${slot.item}`);
+    lines.push(`${displayName} @ ${slot.item}`);
   } else {
-    lines.push(name);
+    lines.push(displayName);
   }
 
   if (slot.ability) lines.push(`Ability: ${slot.ability}`);

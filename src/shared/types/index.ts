@@ -98,6 +98,7 @@ export interface FormatDefinition {
 export interface TeamSlotData {
   position: number;     // 1-6
   pokemonId: string;
+  nickname?: string;
   species?: PokemonSpecies; // Hydrated from dex
   ability: string;
   item: string;
@@ -136,6 +137,8 @@ export type TeamSlotInput = Omit<TeamSlotData, "species" | "calculatedStats">;
 export interface UsageStatsEntry {
   pokemonId: string;
   pokemonName?: string;
+  types?: PokemonType[];
+  num?: number;
   usagePercent: number;
   rank: number;
 }

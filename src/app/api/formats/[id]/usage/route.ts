@@ -3,6 +3,7 @@ import {
   getUsageStats,
   getUsageStatsCount,
 } from "@/modules/smogon-data/services/usage-stats.service";
+import { getSpecies } from "@/modules/pokemon-data/services/dex.service";
 import type { PaginatedResponse, UsageStatsEntry } from "@/shared/types";
 
 export async function GET(
@@ -26,8 +27,19 @@ export async function GET(
       getUsageStatsCount(formatId),
     ]);
 
+    // Enrich each entry with species data from the dex
+    const enriched: UsageStatsEntry[] = data.map((entry) => {
+      const species = getSpecies(entry.pokemonId);
+      return {
+        ...entry,
+        pokemonName: species?.name ?? entry.pokemonName,
+        types: species?.types,
+        num: species?.num,
+      };
+    });
+
     const response: PaginatedResponse<UsageStatsEntry> = {
-      data,
+      data: enriched,
       total,
       page,
       pageSize: limit,

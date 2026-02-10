@@ -3,10 +3,17 @@
 import { use, useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { MessageCircle } from "lucide-react";
+import { MessageCircle, Plus } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Sheet,
   SheetContent,
@@ -159,8 +166,8 @@ export default function TeamEditorPage({
     [selectSlot]
   );
 
-  const sheetOpen = selectedSlot !== null || addingNew;
-  const handleSheetClose = useCallback(
+  const dialogOpen = selectedSlot !== null || addingNew;
+  const handleDialogClose = useCallback(
     (open: boolean) => {
       if (!open) {
         selectSlot(null);
@@ -217,6 +224,19 @@ export default function TeamEditorPage({
         onAddSlot={handleAddSlot}
       />
 
+      {/* Add Pokemon Button */}
+      {team.slots.length < 6 && (
+        <Button
+          onClick={handleAddSlot}
+          variant="outline"
+          className="w-full border-dashed"
+          size="lg"
+        >
+          <Plus className="mr-2 h-5 w-5" />
+          Add Pokemon ({team.slots.length}/6)
+        </Button>
+      )}
+
       {/* Recommendations */}
       {team.slots.length >= 1 && team.slots.length <= 5 && (
         <RecommendationPanel
@@ -265,29 +285,31 @@ export default function TeamEditorPage({
         </TabsContent>
       </Tabs>
 
-      {/* Slot Editor Sheet */}
-      <Sheet open={sheetOpen} onOpenChange={handleSheetClose}>
-        <SheetContent side="right" className="w-full sm:max-w-md p-0">
-          <SheetHeader className="p-4 pb-0">
-            <SheetTitle>
+      {/* Slot Editor Dialog (full-screen) */}
+      <Dialog open={dialogOpen} onOpenChange={handleDialogClose}>
+        <DialogContent className="sm:max-w-[90vw] sm:h-[90vh] flex flex-col overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
               {addingNew ? "Add Pokemon" : "Edit Pokemon"}
-            </SheetTitle>
-            <SheetDescription>
+            </DialogTitle>
+            <DialogDescription>
               {addingNew
                 ? "Search and add a Pokemon to your team"
                 : "Edit this Pokemon's set"}
-            </SheetDescription>
-          </SheetHeader>
-          <SlotEditor
-            slot={addingNew ? null : selectedSlotData}
-            teamId={teamId}
-            nextPosition={nextPosition}
-            onSave={handleSaveSlot}
-            onRemove={handleRemoveSlot}
-            isNew={addingNew}
-          />
-        </SheetContent>
-      </Sheet>
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex-1 overflow-hidden">
+            <SlotEditor
+              slot={addingNew ? null : selectedSlotData}
+              teamId={teamId}
+              nextPosition={nextPosition}
+              onSave={handleSaveSlot}
+              onRemove={handleRemoveSlot}
+              isNew={addingNew}
+            />
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Chat Sidebar */}
       <Sheet open={chatOpen} onOpenChange={setChatOpen}>

@@ -16,6 +16,7 @@ function dbSlotToDomain(
     teamId: string;
     position: number;
     pokemonId: string;
+    nickname: string | null;
     ability: string;
     item: string;
     nature: string;
@@ -42,6 +43,7 @@ function dbSlotToDomain(
   return {
     position: dbSlot.position,
     pokemonId: dbSlot.pokemonId,
+    nickname: dbSlot.nickname ?? undefined,
     ability: dbSlot.ability,
     item: dbSlot.item,
     nature: dbSlot.nature as NatureName,
@@ -76,6 +78,7 @@ function domainSlotToDb(slot: TeamSlotInput) {
   return {
     position: slot.position,
     pokemonId: slot.pokemonId,
+    nickname: slot.nickname ?? null,
     ability: slot.ability,
     item: slot.item,
     nature: slot.nature,
@@ -114,6 +117,7 @@ function dbTeamToDomain(
       teamId: string;
       position: number;
       pokemonId: string;
+      nickname: string | null;
       ability: string;
       item: string;
       nature: string;
@@ -245,6 +249,7 @@ export async function updateSlot(
   const updateData: Record<string, unknown> = {};
 
   if (data.pokemonId !== undefined) updateData.pokemonId = data.pokemonId;
+  if (data.nickname !== undefined) updateData.nickname = data.nickname ?? null;
   if (data.ability !== undefined) updateData.ability = data.ability;
   if (data.item !== undefined) updateData.item = data.item;
   if (data.nature !== undefined) updateData.nature = data.nature;

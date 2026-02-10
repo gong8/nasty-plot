@@ -36,7 +36,9 @@ import type {
   TeamSlotInput,
 } from "@/shared/types";
 import { POKEMON_TYPES, NATURES, STATS } from "@/shared/types";
+import { PokemonSprite } from "@/shared/components/pokemon-sprite";
 import { PokemonSearchPanel } from "./pokemon-search-panel";
+import { ItemCombobox } from "./item-combobox";
 
 interface SlotEditorProps {
   slot: TeamSlotData | null;
@@ -56,6 +58,7 @@ export function SlotEditor({
   isNew = false,
 }: SlotEditorProps) {
   const [pokemonId, setPokemonId] = useState(slot?.pokemonId ?? "");
+  const [nickname, setNickname] = useState(slot?.nickname ?? "");
   const [ability, setAbility] = useState(slot?.ability ?? "");
   const [item, setItem] = useState(slot?.item ?? "");
   const [nature, setNature] = useState<NatureName>(slot?.nature ?? "Hardy");
@@ -76,6 +79,7 @@ export function SlotEditor({
   // Reset form when slot changes
   useEffect(() => {
     setPokemonId(slot?.pokemonId ?? "");
+    setNickname(slot?.nickname ?? "");
     setAbility(slot?.ability ?? "");
     setItem(slot?.item ?? "");
     setNature(slot?.nature ?? "Hardy");
@@ -159,6 +163,7 @@ export function SlotEditor({
 
   const handlePokemonSelect = useCallback((pokemon: PokemonSpecies) => {
     setPokemonId(pokemon.id);
+    setNickname("");
     // Reset slot-specific data when changing Pokemon
     const firstAbility = Object.values(pokemon.abilities)[0] ?? "";
     setAbility(firstAbility);
@@ -170,6 +175,7 @@ export function SlotEditor({
     onSave({
       position: slot?.position ?? nextPosition,
       pokemonId,
+      nickname: nickname || undefined,
       ability,
       item,
       nature,
@@ -199,9 +205,13 @@ export function SlotEditor({
         {/* Pokemon Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted text-xs font-bold uppercase">
-              {pokemonId.slice(0, 3)}
-            </div>
+            {speciesData?.num ? (
+              <PokemonSprite pokemonId={pokemonId} num={speciesData.num} size={40} />
+            ) : (
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted text-xs font-bold uppercase">
+                {pokemonId.slice(0, 3)}
+              </div>
+            )}
             <div>
               <div className="font-semibold">
                 {speciesData?.name ?? pokemonId}
@@ -232,206 +242,219 @@ export function SlotEditor({
 
         <Separator />
 
-        {/* Ability */}
-        <div className="space-y-1.5">
-          <Label>Ability</Label>
-          <Select value={ability} onValueChange={setAbility}>
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Select ability" />
-            </SelectTrigger>
-            <SelectContent>
-              {abilities.map((a) => (
-                <SelectItem key={a} value={a}>
-                  {a}
-                </SelectItem>
-              ))}
-              {abilities.length === 0 && (
-                <SelectItem value={ability || "none"} disabled>
-                  No abilities loaded
-                </SelectItem>
-              )}
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* Item */}
-        <div className="space-y-1.5">
-          <Label>Item</Label>
-          <Input
-            placeholder="e.g. Leftovers"
-            value={item}
-            onChange={(e) => setItem(e.target.value)}
-          />
-        </div>
-
-        {/* Nature */}
-        <div className="space-y-1.5">
-          <Label>Nature</Label>
-          <Select value={nature} onValueChange={(v) => setNature(v as NatureName)}>
-            <SelectTrigger className="w-full">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {NATURES.map((n) => {
-                const nd = NATURE_DATA[n];
-                const label = nd.plus
-                  ? `${n} (+${STAT_LABELS[nd.plus]}/-${STAT_LABELS[nd.minus!]})`
-                  : `${n} (Neutral)`;
-                return (
-                  <SelectItem key={n} value={n}>
-                    {label}
-                  </SelectItem>
-                );
-              })}
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* Tera Type */}
-        <div className="space-y-1.5">
-          <Label>Tera Type</Label>
-          <div className="grid grid-cols-6 gap-1">
-            {POKEMON_TYPES.map((t) => (
-              <button
-                key={t}
-                onClick={() => setTeraType(t)}
-                className={`rounded px-1 py-0.5 text-[10px] text-white font-medium transition-all ${
-                  teraType === t
-                    ? "ring-2 ring-offset-1 ring-primary scale-105"
-                    : "opacity-70 hover:opacity-100"
-                }`}
-                style={{ backgroundColor: TYPE_COLORS[t] }}
-              >
-                {t}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <Separator />
-
-        {/* Moves */}
-        <div className="space-y-1.5">
-          <Label>Moves</Label>
-          <div className="flex flex-col gap-2">
-            {[0, 1, 2, 3].map((i) => (
-              <MoveInput
-                key={i}
-                index={i}
-                value={moves[i] ?? ""}
-                learnset={learnset}
-                onChange={(val) => handleMoveChange(i, val)}
-              />
-            ))}
-          </div>
-        </div>
-
-        <Separator />
-
-        {/* EVs */}
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <Label>EVs</Label>
-            <span
-              className={`text-xs ${
-                evRemaining < 0
-                  ? "text-destructive font-medium"
-                  : "text-muted-foreground"
-              }`}
-            >
-              {evTotal} / {MAX_TOTAL_EVS} ({evRemaining} remaining)
-            </span>
-          </div>
-          {STATS.map((stat) => (
-            <div key={stat} className="space-y-1">
-              <div className="flex items-center justify-between">
-                <span
-                  className="text-xs font-medium"
-                  style={{ color: STAT_COLORS[stat] }}
-                >
-                  {STAT_LABELS[stat]}
-                </span>
-                <span className="text-xs tabular-nums">{evs[stat]}</span>
-              </div>
-              <Slider
-                min={0}
-                max={MAX_SINGLE_EV}
-                step={4}
-                value={[evs[stat]]}
-                onValueChange={([v]) => handleEvChange(stat, v)}
+        {/* Two-column responsive layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Left Column: Core set details */}
+          <div className="flex flex-col gap-5">
+            {/* Nickname */}
+            <div className="space-y-1.5">
+              <Label>Nickname</Label>
+              <Input
+                placeholder="Optional nickname"
+                value={nickname}
+                onChange={(e) => setNickname(e.target.value)}
               />
             </div>
-          ))}
-        </div>
 
-        <Separator />
+            {/* Ability */}
+            <div className="space-y-1.5">
+              <Label>Ability</Label>
+              <Select value={ability} onValueChange={setAbility}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select ability" />
+                </SelectTrigger>
+                <SelectContent>
+                  {abilities.map((a) => (
+                    <SelectItem key={a} value={a}>
+                      {a}
+                    </SelectItem>
+                  ))}
+                  {abilities.length === 0 && (
+                    <SelectItem value={ability || "none"} disabled>
+                      No abilities loaded
+                    </SelectItem>
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
 
-        {/* IVs */}
-        <div className="space-y-3">
-          <Label>IVs</Label>
-          <div className="grid grid-cols-3 gap-2">
-            {STATS.map((stat) => (
-              <div key={stat} className="space-y-1">
-                <span
-                  className="text-xs font-medium"
-                  style={{ color: STAT_COLORS[stat] }}
-                >
-                  {STAT_LABELS[stat]}
-                </span>
-                <Input
-                  type="number"
-                  min={0}
-                  max={31}
-                  value={ivs[stat]}
-                  onChange={(e) =>
-                    handleIvChange(stat, parseInt(e.target.value, 10) || 0)
-                  }
-                  className="h-8 text-center"
-                />
-              </div>
-            ))}
-          </div>
-        </div>
+            {/* Item */}
+            <div className="space-y-1.5">
+              <Label>Item</Label>
+              <ItemCombobox value={item} onChange={setItem} />
+            </div>
 
-        <Separator />
+            {/* Nature */}
+            <div className="space-y-1.5">
+              <Label>Nature</Label>
+              <Select value={nature} onValueChange={(v) => setNature(v as NatureName)}>
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {NATURES.map((n) => {
+                    const nd = NATURE_DATA[n];
+                    const label = nd.plus
+                      ? `${n} (+${STAT_LABELS[nd.plus]}/-${STAT_LABELS[nd.minus!]})`
+                      : `${n} (Neutral)`;
+                    return (
+                      <SelectItem key={n} value={n}>
+                        {label}
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+            </div>
 
-        {/* Calculated Stats */}
-        {calculatedStats && (
-          <div className="space-y-2">
-            <Label>Calculated Stats</Label>
-            <div className="grid grid-cols-3 gap-2">
-              {STATS.map((stat) => (
-                <div
-                  key={stat}
-                  className="rounded-md border p-2 text-center"
-                >
-                  <div
-                    className="text-xs font-medium"
-                    style={{ color: STAT_COLORS[stat] }}
+            {/* Tera Type */}
+            <div className="space-y-1.5">
+              <Label>Tera Type</Label>
+              <div className="grid grid-cols-6 gap-1">
+                {POKEMON_TYPES.map((t) => (
+                  <button
+                    key={t}
+                    onClick={() => setTeraType(t)}
+                    className={`rounded px-1 py-0.5 text-[10px] text-white font-medium transition-all ${
+                      teraType === t
+                        ? "ring-2 ring-offset-1 ring-primary scale-105"
+                        : "opacity-70 hover:opacity-100"
+                    }`}
+                    style={{ backgroundColor: TYPE_COLORS[t] }}
                   >
-                    {STAT_LABELS[stat]}
+                    {t}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* Moves */}
+            <div className="space-y-1.5">
+              <Label>Moves</Label>
+              <div className="flex flex-col gap-2">
+                {[0, 1, 2, 3].map((i) => (
+                  <MoveInput
+                    key={i}
+                    index={i}
+                    value={moves[i] ?? ""}
+                    learnset={learnset}
+                    onChange={(val) => handleMoveChange(i, val)}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Right Column: Stats & actions */}
+          <div className="flex flex-col gap-5">
+            {/* EVs */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label>EVs</Label>
+                <span
+                  className={`text-xs ${
+                    evRemaining < 0
+                      ? "text-destructive font-medium"
+                      : "text-muted-foreground"
+                  }`}
+                >
+                  {evTotal} / {MAX_TOTAL_EVS} ({evRemaining} remaining)
+                </span>
+              </div>
+              {STATS.map((stat) => (
+                <div key={stat} className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span
+                      className="text-xs font-medium"
+                      style={{ color: STAT_COLORS[stat] }}
+                    >
+                      {STAT_LABELS[stat]}
+                    </span>
+                    <span className="text-xs tabular-nums">{evs[stat]}</span>
                   </div>
-                  <div className="text-lg font-bold tabular-nums">
-                    {calculatedStats[stat]}
-                  </div>
+                  <Slider
+                    min={0}
+                    max={MAX_SINGLE_EV}
+                    step={4}
+                    value={[evs[stat]]}
+                    onValueChange={([v]) => handleEvChange(stat, v)}
+                  />
                 </div>
               ))}
             </div>
+
+            <Separator />
+
+            {/* IVs */}
+            <div className="space-y-3">
+              <Label>IVs</Label>
+              <div className="grid grid-cols-3 gap-2">
+                {STATS.map((stat) => (
+                  <div key={stat} className="space-y-1">
+                    <span
+                      className="text-xs font-medium"
+                      style={{ color: STAT_COLORS[stat] }}
+                    >
+                      {STAT_LABELS[stat]}
+                    </span>
+                    <Input
+                      type="number"
+                      min={0}
+                      max={31}
+                      value={ivs[stat]}
+                      onChange={(e) =>
+                        handleIvChange(stat, parseInt(e.target.value, 10) || 0)
+                      }
+                      className="h-8 text-center"
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* Calculated Stats */}
+            {calculatedStats && (
+              <div className="space-y-2">
+                <Label>Calculated Stats</Label>
+                <div className="grid grid-cols-3 gap-2">
+                  {STATS.map((stat) => (
+                    <div
+                      key={stat}
+                      className="rounded-md border p-2 text-center"
+                    >
+                      <div
+                        className="text-xs font-medium"
+                        style={{ color: STAT_COLORS[stat] }}
+                      >
+                        {STAT_LABELS[stat]}
+                      </div>
+                      <div className="text-lg font-bold tabular-nums">
+                        {calculatedStats[stat]}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <Separator />
+
+            {/* Actions */}
+            <div className="flex gap-2">
+              <Button className="flex-1" onClick={handleSave}>
+                {isNew ? "Add to Team" : "Save Changes"}
+              </Button>
+              {!isNew && (
+                <Button variant="destructive" size="icon" onClick={onRemove}>
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
           </div>
-        )}
-
-        <Separator />
-
-        {/* Actions */}
-        <div className="flex gap-2">
-          <Button className="flex-1" onClick={handleSave}>
-            {isNew ? "Add to Team" : "Save Changes"}
-          </Button>
-          {!isNew && (
-            <Button variant="destructive" size="icon" onClick={onRemove}>
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          )}
         </div>
       </div>
     </ScrollArea>

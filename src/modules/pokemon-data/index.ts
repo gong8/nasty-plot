@@ -6,6 +6,8 @@ export {
   getAllMoves,
   getAbility,
   getItem,
+  getAllItems,
+  searchItems,
   getLearnset,
   searchSpecies,
   getTypeChart,

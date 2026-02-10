@@ -51,6 +51,7 @@ function makeDbSlot(overrides: Record<string, unknown> = {}) {
     teamId: "team-1",
     position: 1,
     pokemonId: "garchomp",
+    nickname: null as string | null,
     ability: "Rough Skin",
     item: "Leftovers",
     nature: "Jolly",
