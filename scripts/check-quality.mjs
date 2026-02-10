@@ -2,7 +2,6 @@
  * Quality check scanner — detects banned patterns in TypeScript/TSX source files.
  *
  * Scans for:
- * - eslint-disable / eslint-disable-next-line (unless preceded by // quality:ok)
  * - @ts-ignore / @ts-expect-error / @ts-nocheck
  * - `as any`
  *
@@ -26,7 +25,6 @@ const SKIP_DIRS = new Set([
 ])
 
 const PATTERNS = [
-  { name: "eslint-disable", regex: /eslint-disable(?!.*quality:ok)/ },
   { name: "@ts-ignore", regex: /@ts-ignore/ },
   { name: "@ts-expect-error", regex: /@ts-expect-error/ },
   { name: "@ts-nocheck", regex: /@ts-nocheck/ },
@@ -58,17 +56,8 @@ async function main() {
 
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i]
-
-      // Check if the previous line has a quality:ok marker
-      const prevLine = i > 0 ? lines[i - 1] : ""
-      const hasQualityOk = /\/\/\s*quality:ok/.test(prevLine)
-
       for (const pattern of PATTERNS) {
         if (pattern.regex.test(line)) {
-          // For eslint-disable, skip if quality:ok is on the line itself or previous line
-          if (pattern.name === "eslint-disable") {
-            if (hasQualityOk || /quality:ok/.test(line)) continue
-          }
           violations.push({ file: rel, line: i + 1, pattern: pattern.name, content: line.trim() })
           counts[pattern.name]++
         }

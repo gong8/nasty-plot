@@ -505,7 +505,7 @@ describe("forkTeam", () => {
 
     const options: ForkOptions = {
       name: "Modified Fork",
-      modifySlots: [{ position: 1, pokemonId: "garchomp", item: "Choice Band" } as any],
+      modifySlots: [{ position: 1, pokemonId: "garchomp", item: "Choice Band" }],
     }
 
     await forkTeam("source-1", options)

@@ -30,15 +30,16 @@ vi.mock("@nasty-plot/db", () => ({
 }))
 
 import { prisma } from "@nasty-plot/db"
+const mockedPrisma = vi.mocked(prisma, true)
 
-const mockSessionCreate = prisma.chatSession.create as ReturnType<typeof vi.fn>
-const mockSessionFindUnique = prisma.chatSession.findUnique as ReturnType<typeof vi.fn>
-const mockSessionFindMany = prisma.chatSession.findMany as ReturnType<typeof vi.fn>
-const mockSessionUpdate = prisma.chatSession.update as ReturnType<typeof vi.fn>
-const mockSessionDelete = (prisma.chatSession as any).delete as ReturnType<typeof vi.fn>
-const mockMessageCreate = prisma.chatMessage.create as ReturnType<typeof vi.fn>
-const mockMessageFindFirst = (prisma.chatMessage as any).findFirst as ReturnType<typeof vi.fn>
-const mockMessageDelete = (prisma.chatMessage as any).delete as ReturnType<typeof vi.fn>
+const mockSessionCreate = mockedPrisma.chatSession.create
+const mockSessionFindUnique = mockedPrisma.chatSession.findUnique
+const mockSessionFindMany = mockedPrisma.chatSession.findMany
+const mockSessionUpdate = mockedPrisma.chatSession.update
+const mockSessionDelete = mockedPrisma.chatSession.delete
+const mockMessageCreate = mockedPrisma.chatMessage.create
+const mockMessageFindFirst = mockedPrisma.chatMessage.findFirst
+const mockMessageDelete = mockedPrisma.chatMessage.delete
 
 // ---------------------------------------------------------------------------
 // Helpers
