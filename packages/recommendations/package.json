@@ -12,10 +12,10 @@
     "@nasty-plot/core": "*",
     "@nasty-plot/db": "*",
     "@nasty-plot/analysis": "*",
-    "@pkmn/dex": "^0.8.0"
+    "@pkmn/dex": "^0.10.6"
   },
   "devDependencies": {
-    "typescript": "^5.0.0",
-    "vitest": "^3.0.0"
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.18"
   }
 }

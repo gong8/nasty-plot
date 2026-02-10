@@ -11,10 +11,10 @@
   "dependencies": {
     "@nasty-plot/core": "*",
     "@nasty-plot/db": "*",
-    "openai": "^4.0.0"
+    "openai": "^6.19.0"
   },
   "devDependencies": {
-    "typescript": "^5.0.0",
-    "vitest": "^3.0.0"
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.18"
   }
 }
