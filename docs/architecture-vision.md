@@ -8,7 +8,7 @@ How the Nasty Plot codebase evolves: package structure, growth patterns, perform
 
 ### Package Map
 
-14 packages across 4 dependency layers. Data flows downward; no package ever imports from a higher layer.
+14 packages across 5 dependency layers (Foundation, Data, Domain, Feature, Presentation). Data flows downward; no package ever imports from a higher layer.
 
 ```
                          +-----------+
@@ -60,7 +60,7 @@ How the Nasty Plot codebase evolves: package structure, growth patterns, perform
 | `llm` | `core`, `db`, `battle-engine` | `openai`, `@modelcontextprotocol/sdk` |
 | `mcp-server` | *(none -- calls web API)* | `@modelcontextprotocol/sdk`, `express`, `zod` |
 | `ui` | `core` | `react`, `clsx`, `tailwind-merge`, `class-variance-authority` |
-| `web` | *all 12 workspace packages* | `next`, `react`, `radix-ui`, `recharts`, etc. |
+| `web` | *all 13 workspace packages* | `next`, `react`, `radix-ui`, `recharts`, etc. |
 
 Key observations:
 
@@ -80,9 +80,9 @@ packages/<name>/
   src/
     index.ts            # barrel exports
     <name>.service.ts   # primary service (pure functions)
-    __tests__/          # or co-located .test.ts files
-  vitest.config.ts      # per-package test config
 ```
+
+Tests live in the top-level `tests/` directory, mirroring package structure (e.g. `tests/core/`, `tests/battle-engine/`). A single root `vitest.config.ts` covers all packages.
 
 - **ESM everywhere.** `"type": "module"` in every `package.json`.
 - **Source exports.** Packages export raw TypeScript (`"./src/index.ts"`). No build step per package -- Turbopack and Vitest handle transpilation.
@@ -184,7 +184,7 @@ Three triggers, any one sufficient:
 
 ### `battle-engine`: The Splitting Case Study
 
-`battle-engine` is the largest package today with 23 source files (including tests):
+`battle-engine` is the largest package today with 19 source files:
 
 ```
 src/
@@ -196,10 +196,10 @@ src/
 
   ai/
     shared.ts              # type effectiveness helpers
-    random-ai.ts           # random action selection
-    greedy-ai.ts           # best immediate move
-    heuristic-ai.ts        # weighted feature evaluation
-    mcts-ai.ts             # Monte Carlo tree search (Decoupled UCT)
+    random-ai.ts           # random action selection (Random tier)
+    greedy-ai.ts           # best immediate move (Greedy tier)
+    heuristic-ai.ts        # weighted feature evaluation (Heuristic tier)
+    mcts-ai.ts             # Monte Carlo tree search, Decoupled UCT (MCTS Expert tier)
     mcts-types.ts          # MCTS configuration and node types
     evaluator.ts           # position evaluation [-1, +1] scoring
     win-probability.ts     # eval score -> win% conversion
@@ -213,20 +213,16 @@ src/
 
   replay/
     replay-engine.ts       # protocol log playback
-
-  __tests__/
-    ai.test.ts
-    evaluator-hints.test.ts
-    protocol-parser.test.ts
-    team-packer.test.ts
 ```
+
+Tests are in the top-level `tests/battle-engine/` directory (11 test files).
 
 Three distinct concerns are visible:
 
 | Concern | Files | Purpose |
 |---------|-------|---------|
 | **Core simulation** | `battle-manager.ts`, `protocol-parser.ts`, `team-packer.ts`, `types.ts`, `replay/` | Running and observing battles |
-| **AI players** | `ai/*` (11 files) | Choosing actions: random, greedy, heuristic, MCTS, plus evaluator, hints, prediction |
+| **AI players** | `ai/*` (11 files) | 4 AI tiers (Random, Greedy, Heuristic, MCTS Expert), plus evaluator, win-probability, hints, set-predictor, battle-cloner |
 | **Batch simulation** | `simulation/*` (2 files) | Running many battles and computing analytics |
 
 **Planned split at Milestone 3:**
@@ -374,10 +370,10 @@ interface MCTSWorkerResult {
 
 ## 5. API Route Evolution
 
-### Current Routes (33 endpoints)
+### Current Routes (35 route files)
 
 ```
-Teams
+Teams (12 routes)
   GET    /api/teams                           list teams
   POST   /api/teams                           create team
   GET    /api/teams/[teamId]                  get team
@@ -386,42 +382,49 @@ Teams
   GET    /api/teams/[teamId]/analysis         full team analysis
   GET    /api/teams/[teamId]/export           Showdown paste export
   POST   /api/teams/[teamId]/import           Showdown paste import
-  GET    /api/teams/[teamId]/slots            list slots
   POST   /api/teams/[teamId]/slots            add slot
   PUT    /api/teams/[teamId]/slots/[position] update slot
   DELETE /api/teams/[teamId]/slots/[position] remove slot
 
-Pokemon
+Pokemon (5 routes)
   GET    /api/pokemon                         search/list
   GET    /api/pokemon/[id]                    species details
   GET    /api/pokemon/[id]/learnset           full learnset
   GET    /api/pokemon/[id]/sets               Smogon sets
   GET    /api/pokemon/[id]/mega-form          mega evolution data
 
-Formats & Usage
+Formats & Usage (3 routes)
   GET    /api/formats                         all formats
   GET    /api/formats/[id]/pokemon            legal Pokemon for format
   GET    /api/formats/[id]/usage              usage statistics
 
-Battles
+Battles (6 routes)
+  GET    /api/battles                         list battles
   POST   /api/battles                         create battle
   GET    /api/battles/[battleId]              get battle
+  DELETE /api/battles/[battleId]              delete battle
   GET    /api/battles/[battleId]/replay       replay data
   POST   /api/battles/batch                   start batch simulation
   GET    /api/battles/batch/[batchId]         batch status/results
+  DELETE /api/battles/batch/[batchId]         cancel batch
   POST   /api/battles/commentary              AI commentary
 
-Sample Teams
+Sample Teams (4 routes)
   GET    /api/sample-teams                    list sample teams
+  POST   /api/sample-teams                    create sample team
   GET    /api/sample-teams/[id]               get sample team
+  DELETE /api/sample-teams/[id]               delete sample team
   POST   /api/sample-teams/import             import sample team
 
-Other
+Chat (5 routes)
   POST   /api/chat                            streaming chat
   GET    /api/chat/sessions                   list sessions
   POST   /api/chat/sessions                   create session
   GET    /api/chat/sessions/[id]              get session
+  PUT    /api/chat/sessions/[id]              update session
   DELETE /api/chat/sessions/[id]              delete session
+
+Other (5 routes)
   GET    /api/items                           list items
   POST   /api/recommend                       Pokemon recommendations
   POST   /api/data/seed                       trigger seeding
@@ -676,18 +679,7 @@ model SharedTeam {
 | `@testing-library/react` | Component interaction testing |
 | `@vitest/coverage-v8` | V8-based code coverage |
 
-Tests are either co-located (`src/foo.test.ts`) or in `src/__tests__/` directories. Each package has its own `vitest.config.ts`.
-
-```typescript
-// packages/battle-engine/vitest.config.ts (typical)
-import { defineConfig } from "vitest/config";
-
-export default defineConfig({
-  test: {
-    globals: true,
-  },
-});
-```
+43 test files live in the top-level `tests/` directory, organized into 11 subdirectories mirroring package structure (e.g. `tests/core/`, `tests/battle-engine/`, `tests/llm/`). A single root `vitest.config.ts` covers all packages.
 
 ### Testing by Package Type
 
@@ -701,7 +693,7 @@ Unit tests for service functions. Mock `@pkmn/dex` data where needed. Formats pa
 The most heavily tested layer. Each service function gets unit tests with edge cases. `battle-engine` AI tests validate action selection against known positions.
 
 ```typescript
-// packages/battle-engine/src/__tests__/ai.test.ts (pattern)
+// tests/battle-engine/ai.test.ts (pattern)
 describe("HeuristicAI", () => {
   it("prefers super-effective moves", async () => {
     const ai = new HeuristicAI();
@@ -734,7 +726,7 @@ Component tests with `@testing-library/react`. Test user interactions, not imple
 Integration tests live in the consuming package and test the contract between packages:
 
 ```typescript
-// packages/version/src/__tests__/integration.test.ts
+// tests/version/integration.test.ts
 import { createTeam, addSlotToTeam } from "@nasty-plot/teams";
 import { forkTeam, compareTeams, mergeTeams } from "../version.service";
 
@@ -795,13 +787,13 @@ export class AnalysisService {
 }
 ```
 
-**Exception:** AI players in `battle-engine` (`RandomAI`, `GreedyAI`, `HeuristicAI`, `MCTSAI`) use classes because they carry state across turns (accumulated observations, MCTS tree). They implement the `AIPlayer` interface.
+**Exception:** AI players in `battle-engine` use classes because they carry state across turns (accumulated observations, MCTS tree). The 4 AI tiers -- `RandomAI`, `GreedyAI`, `HeuristicAI`, `MCTSAI` (Expert) -- all implement the `AIPlayer` interface.
 
 ### 5. Packages Are Independently Testable
 
 Every package can run `vitest run` in isolation. Tests must not depend on external services (database seeding, running dev server, network access). Use mocks for database access and HTTP calls.
 
-**Verification:** `cd packages/<name> && pnpm test` should pass without any other process running.
+**Verification:** `pnpm test` from the repo root should pass without any other process running.
 
 ### 6. ESM Everywhere
 

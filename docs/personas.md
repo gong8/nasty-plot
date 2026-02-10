@@ -269,29 +269,33 @@ Every simplification has a path to the full version. The simplified analysis has
 
 This table maps features to personas and their experience layers. "Primary" means the feature is central to that persona's workflow. "Available" means visible and usable but not emphasized. "API" means accessible programmatically rather than through the web UI.
 
-| Feature | Casey (L0) | Jordan (L1) | Alex (L2) | Sam (L3) |
-|---|---|---|---|---|
-| Guided builder | Primary | Available | Available | -- |
-| Freeform builder | Available | Primary | Primary | -- |
-| Paste import/export | -- | Primary | Primary | API |
-| Sample teams | Primary | Available | Available | API |
-| Basic analysis | Simplified | Full | Full | API |
-| Threat identification | Simplified | Full | Full | API |
-| Damage calculator | -- | Standard | Full (field conditions) | API |
-| Recommendations | Auto-suggested | On demand | On demand | API |
-| Battle vs AI | Greedy default | All tiers | All tiers | Programmatic |
-| Hints | Always on | Toggleable | Toggleable | -- |
-| Win probability | -- | Post-game | Live + post-game | API |
-| Post-game review | -- | Basic (graph) | Full (classification) | -- |
-| Team versioning | -- | -- | Primary | API |
-| Batch simulation | -- | -- | Primary | API |
-| Meta profiles | -- | -- | Primary | API |
-| Replay analysis | -- | Basic | Full | API |
-| Set predictor | -- | -- | Available | API |
-| EV optimization | -- | -- | Available | API |
-| MCP server | -- | -- | -- | Primary |
-| Package APIs | -- | -- | -- | Primary |
-| REST API | -- | -- | -- | Primary |
+| Feature | Casey (L0) | Jordan (L1) | Alex (L2) | Sam (L3) | Implemented? |
+|---|---|---|---|---|---|
+| Guided builder | Primary | Available | Available | -- | Yes |
+| Freeform builder | Available | Primary | Primary | -- | Yes |
+| Paste import/export | -- | Primary | Primary | API | Yes |
+| Sample teams browser | Primary | Available | Available | API | Yes |
+| Type coverage analysis | Simplified | Full | Full | API | Yes |
+| Threat identification | Simplified | Full | Full | API | Yes |
+| Synergy scoring | -- | Available | Full | API | Yes |
+| Damage calculator | -- | Standard | Full (field conditions) | API | Yes |
+| Matchup matrix | -- | Available | Primary | API | Yes |
+| Recommendations | Auto-suggested | On demand | On demand | API | Yes |
+| Battle vs AI (4 tiers) | Greedy default | All tiers | All tiers | Programmatic | Yes |
+| Move hints/classification | Always on | Toggleable | Toggleable | -- | Yes |
+| Win probability | -- | Post-game | Live + post-game | API | Yes |
+| Set predictor (Bayesian) | -- | -- | Available | API | Yes |
+| Battle replay viewer | -- | Available | Primary | API | Yes |
+| Batch simulation | -- | -- | Primary | API | Yes |
+| Battle commentary (LLM) | Available | Available | Available | -- | Yes |
+| Post-game review | -- | Basic (graph) | Full (classification) | -- | Partial |
+| Team versioning | -- | -- | Primary | API | Not yet |
+| Meta profiles | -- | -- | Primary | API | Not yet |
+| Replay move classification | -- | Basic | Full | API | Not yet |
+| EV optimization | -- | -- | Available | API | Not yet |
+| MCP server (24 tools) | -- | -- | -- | Primary | Yes |
+| Package APIs (14 packages) | -- | -- | -- | Primary | Yes |
+| REST API | -- | -- | -- | Primary | Yes |
 
 "--" means the feature is not the primary audience for that persona, but access is never blocked.
 

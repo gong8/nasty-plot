@@ -4,7 +4,7 @@
 
 Nasty Plot is a Pokemon competitive team building, analysis, and training platform. This roadmap defines five milestones that take the project from a functional prototype to a community-ready platform.
 
-**Current State:** 14 packages, 30+ API routes, 10 Prisma models, 4 AI tiers, 24 MCP tools, LLM chat with streaming, battle engine with replay/simulation, team CRUD with guided and freeform modes.
+**Current State:** 14 packages, 83 source files, 43 test files across 11 test subdirectories, 35 API routes, 14 Prisma models (including Battle, BattleTurn, BatchSimulation, SampleTeam), 14 app pages, 4 AI tiers (Random, Greedy, Heuristic, MCTS Expert), 24 MCP tools, 5 resources, LLM integration with MCP client/battle context builder/CLI chat/stream parser, battle engine with replay/batch simulation/hint engine/set predictor/evaluator, sample teams with archetype tags, team CRUD with guided and freeform modes.
 
 ---
 
@@ -13,8 +13,8 @@ Nasty Plot is a Pokemon competitive team building, analysis, and training platfo
 | Milestone | Name | Theme | Status | Dependencies |
 |-----------|------|-------|--------|--------------|
 | M1 | Solid Foundation | Make everything that exists robust and complete | In Progress | None |
-| M2 | The Feedback Loop | Team versioning + batch simulation + meta profiles | Not Started | M1 |
-| M3 | Battle Training | Learn from battles, not just play them | Not Started | M1, M2 |
+| M2 | The Feedback Loop | Team versioning + batch simulation + meta profiles | Partially Complete | M1 |
+| M3 | Battle Training | Learn from battles, not just play them | Partially Complete | M1, M2 |
 | M4 | The Intelligent Assistant | Pecharunt becomes a real coach | Not Started | M2, M3 |
 | M5 | Community & Scale | From personal tool to platform | Not Started | M1-M4 |
 
@@ -111,7 +111,7 @@ The platform has broad feature coverage but gaps in format support, validation, 
 | `llm` | ~35% | 80% | Medium |
 
 #### Error Handling Audit
-- Standardize API error responses across all 30+ routes
+- Standardize API error responses across all 35 routes
 - Define error response schema: `{ error: string, code?: string, details?: unknown }`
 - Add error boundaries in React for all page-level components
 - Graceful degradation when data is missing (unseeded formats, network failures)
@@ -153,7 +153,7 @@ None. This milestone is purely foundational and can begin immediately.
 ## Milestone 2: The Feedback Loop
 
 **Theme:** Team versioning + batch simulation + meta profiles = the core product loop.
-**Status:** Not Started
+**Status:** Partially Complete (batch simulation infrastructure and UI implemented; team versioning and meta profiles not started)
 
 This is the milestone that transforms Nasty Plot from a team editor into a team optimization tool. The core loop becomes: **Build a team -> Test it against the meta -> Analyze results -> Tweak and repeat.** Team versioning makes the iteration trackable, batch simulation provides data, and meta profiles define what "the meta" means.
 
@@ -196,22 +196,16 @@ A lightweight version control system for teams that lets users fork, compare, an
 
 #### Batch Simulation Integration
 
-The batch simulator exists in `packages/battle-engine/src/simulation/batch-simulator.ts` but has no web UI.
+**Status: Core infrastructure implemented.** The batch simulator (`packages/battle-engine/src/simulation/batch-simulator.ts`), web UI (`/battle/simulate`), API routes (`/api/battles/batch`, `/api/battles/batch/[batchId]`), and Prisma models (`Battle`, `BattleTurn`, `BatchSimulation`) are all implemented. Sample teams with archetype tags (`SampleTeam` model, `/battle/sample-teams` page, `/api/sample-teams` routes) provide opponent selection.
 
-**Web UI (`/battle/simulate`):**
-- Format and team selection
-- Opponent configuration: select a specific team, AI opponent, or meta profile
-- Number of games slider (10 / 50 / 100 / 250 / 500 / 1000)
-- AI tier selection for both sides
-- Start/cancel controls
+**Remaining work:**
 
 **Progress tracking:**
 - SSE (Server-Sent Events) stream from `POST /api/battles/batch`
 - Real-time progress bar (games completed / total)
 - Estimated time remaining
 
-**Results dashboard:**
-- Overall win rate with confidence interval
+**Results dashboard enhancements:**
 - Per-Pokemon performance table:
 
 | Pokemon | Games | KOs | Deaths | Avg Turns Alive | Win Contribution |
@@ -271,6 +265,19 @@ LLM-powered and algorithmic suggestions based on simulation results.
 
 ### Key New Files/Packages
 
+**Already implemented:**
+
+| File/Path | Purpose | Status |
+|-----------|---------|--------|
+| `packages/battle-engine/src/simulation/batch-simulator.ts` | Batch simulation engine | Implemented |
+| `packages/battle-engine/src/simulation/automated-battle-manager.ts` | Automated battle management | Implemented |
+| `apps/web/src/app/battle/simulate/page.tsx` | Batch simulation UI page | Implemented |
+| `apps/web/src/app/battle/sample-teams/page.tsx` | Sample teams browser page | Implemented |
+| `prisma` models: `Battle`, `BattleTurn`, `BatchSimulation`, `SampleTeam` | Battle and simulation data | Implemented |
+| API routes: `/api/battles/*`, `/api/sample-teams/*` | Battle and sample team endpoints | Implemented |
+
+**New files needed:**
+
 | File/Path | Purpose |
 |-----------|---------|
 | `packages/teams/src/version.service.ts` | Fork, compare, merge, lineage operations |
@@ -290,7 +297,7 @@ LLM-powered and algorithmic suggestions based on simulation results.
 ## Milestone 3: Battle Training
 
 **Theme:** Learn from battles, not just play them.
-**Status:** Not Started
+**Status:** Partially Complete (replay engine, hint engine with move classification, win probability, set predictor, and evaluator implemented; puzzles, drills, and MCTS web worker not started)
 
 Playing battles is fun but not efficient for improvement. This milestone adds structured learning tools: post-game review that tells you what you did wrong, puzzles that test specific skills, and pattern drilling that builds intuition through repetition.
 
@@ -300,27 +307,30 @@ Playing battles is fun but not efficient for improvement. This milestone adds st
 
 A replay analysis system that grades every move and highlights critical decisions.
 
-**Replay viewer enhancements:**
-- Turn-by-turn navigation with forward/back controls (replay engine exists at `packages/battle-engine/src/replay/replay-engine.ts`)
+**Status: Core components implemented.** The replay engine (`packages/battle-engine/src/replay/replay-engine.ts`) provides frame-by-frame navigation. The replay viewer page (`/battle/replay/[battleId]`) is implemented. The hint engine (`packages/battle-engine/src/ai/hint-engine.ts`) classifies moves as best/good/neutral/inaccuracy/mistake/blunder. Win probability estimation (`packages/battle-engine/src/ai/win-probability.ts`) and the evaluator with position scoring (`packages/battle-engine/src/ai/evaluator.ts`) are implemented. The set predictor (`packages/battle-engine/src/ai/set-predictor.ts`) uses Bayesian filtering.
+
+**Remaining replay viewer enhancements:**
 - Full battle state visible at each turn (HP bars, status conditions, field conditions, stat boosts)
 - Player's move highlighted with the engine's recommended move shown alongside
 
-**Win probability overlay:**
+**Win probability overlay remaining work:**
 - Win probability graph rendered above the replay (component exists at `apps/web/src/features/battle/components/WinProbabilityGraph.tsx`)
 - Synchronized with turn navigation — current turn highlighted on graph
 - Critical turn markers: turns where win probability swung by more than 20% in either direction
 
-**Move grading system:**
+**Move grading system (implemented in hint engine):**
 - Each player move is classified by comparing it to the engine's evaluation:
 
-| Grade | Definition | Win Prob Impact |
-|-------|-----------|-----------------|
-| Best | Matches engine's top choice | +/- 0% |
-| Good | Within 5% of optimal | -0% to -5% |
-| Inaccuracy | Suboptimal but not losing | -5% to -15% |
-| Mistake | Significantly hurts position | -15% to -30% |
-| Blunder | Potentially game-losing | > -30% |
+| Grade | Definition | Score Gap |
+|-------|-----------|-----------|
+| Best | Matches engine's top choice | 0 |
+| Good | Within 5 points of optimal | 1-5 |
+| Neutral | Minor suboptimality | 6-15 |
+| Inaccuracy | Suboptimal but not losing | 16-30 |
+| Mistake | Significantly hurts position | 31-60 |
+| Blunder | Potentially game-losing | > 60 |
 
+**Remaining move grading work:**
 - Summary statistics: accuracy percentage, blunder count, average centipawn-equivalent loss
 - "What would the engine have done?" — show the engine's preferred move and its reasoning at any turn
 
@@ -383,9 +393,9 @@ Repetitive practice of specific battle scenarios to build intuition.
 
 #### MCTS Web Worker
 
-Move the computationally expensive MCTS search out of the main thread.
+The MCTS Expert AI is fully implemented (`packages/battle-engine/src/ai/mcts-ai.ts`) using the DUCT variant for simultaneous moves (10K iterations, 5s time limit, 0.7 exploration constant, depth-4 rollouts). This deliverable is about moving it to a Web Worker.
 
-- Create a Web Worker that runs the MCTS search (`packages/battle-engine/src/ai/mcts-ai.ts`)
+- Create a Web Worker that runs the MCTS search
 - Communication protocol: main thread sends battle state, worker returns best move + evaluation
 - Configurable search parameters: time limit (1s, 3s, 5s, 10s), simulation count
 - Progress indicator in battle UI ("Engine thinking... 1,247 / 5,000 simulations")
@@ -409,10 +419,22 @@ Move the computationally expensive MCTS search out of the main thread.
 
 ### Key New Files/Packages
 
+**Already implemented:**
+
+| File/Path | Purpose | Status |
+|-----------|---------|--------|
+| `packages/battle-engine/src/ai/hint-engine.ts` | Move classification (best/good/neutral/inaccuracy/mistake/blunder) | Implemented |
+| `packages/battle-engine/src/ai/evaluator.ts` | Position scoring and evaluation | Implemented |
+| `packages/battle-engine/src/ai/win-probability.ts` | Win probability estimation | Implemented |
+| `packages/battle-engine/src/ai/set-predictor.ts` | Bayesian set prediction | Implemented |
+| `packages/battle-engine/src/replay/replay-engine.ts` | Frame-by-frame replay navigation | Implemented |
+| `apps/web/src/app/battle/replay/[battleId]/page.tsx` | Replay viewer page | Implemented |
+
+**New files needed:**
+
 | File/Path | Purpose |
 |-----------|---------|
 | `packages/battle-engine/src/review/` | Post-game review engine directory |
-| `packages/battle-engine/src/review/move-grader.ts` | Move classification (best/good/inaccuracy/mistake/blunder) |
 | `packages/battle-engine/src/review/critical-turns.ts` | Detect high-swing turns from win probability data |
 | `packages/battle-engine/src/review/game-summary.ts` | Generate post-game summary statistics |
 | `packages/battle-engine/src/puzzles/` | Puzzle engine directory |
@@ -422,7 +444,6 @@ Move the computationally expensive MCTS search out of the main thread.
 | `packages/battle-engine/src/drills/` | Pattern drilling engine |
 | `packages/battle-engine/src/drills/drill.service.ts` | Scenario setup and performance tracking |
 | `apps/web/src/workers/mcts.worker.ts` | MCTS Web Worker |
-| `apps/web/src/app/battle/review/[battleId]/page.tsx` | Post-game review page |
 | `apps/web/src/app/battle/puzzles/page.tsx` | Puzzle browser |
 | `apps/web/src/app/battle/puzzles/[puzzleId]/page.tsx` | Individual puzzle page |
 | `apps/web/src/app/battle/drills/page.tsx` | Pattern drilling page |
@@ -730,13 +751,14 @@ These concerns span multiple milestones and should be addressed incrementally.
 
 ### Data Model Evolution
 
-| Migration | Milestone | Changes |
-|-----------|-----------|---------|
-| Team versioning | M2 | `parentId` on Team, meta profile tables |
-| Puzzles and drills | M3 | Puzzle, PuzzleAttempt, DrillSession tables |
-| Coaching | M4 | ChatSession.type field, CoachingProgress table |
-| Sharing | M5 | Team.shareId, Team.isPublic, Team.description |
-| Multiplayer | M5 | Tournament, TournamentParticipant, TournamentMatch tables |
+| Migration | Milestone | Changes | Status |
+|-----------|-----------|---------|--------|
+| Battle infrastructure | M2 | `Battle`, `BattleTurn`, `BatchSimulation`, `SampleTeam` tables | Implemented |
+| Team versioning | M2 | `parentId` on Team, meta profile tables | Not started |
+| Puzzles and drills | M3 | Puzzle, PuzzleAttempt, DrillSession tables | Not started |
+| Coaching | M4 | ChatSession.type field, CoachingProgress table | Not started |
+| Sharing | M5 | Team.shareId, Team.isPublic, Team.description | Not started |
+| Multiplayer | M5 | Tournament, TournamentParticipant, TournamentMatch tables | Not started |
 
 ### Testing Strategy
 
@@ -770,7 +792,7 @@ These concerns span multiple milestones and should be addressed incrementally.
 | `core` | Types cleanup | Version types | Puzzle types | Coaching types | Tournament types |
 | `teams` | Validation | version.service | — | — | Sharing |
 | `formats` | Clause system | — | — | — | Multi-gen |
-| `battle-engine` | Doubles | Batch sim UI | Review, puzzles, drills | Commentary hooks | Multiplayer |
+| `battle-engine` | Doubles | ~~Batch sim UI~~ (done) | ~~Replay, hint engine, evaluator, set predictor, MCTS~~ (done), puzzles, drills, Web Worker | Commentary hooks | Multiplayer |
 | `llm` | — | Optimization suggestions | — | Coaching, meta briefings | — |
 | `mcp-server` | — | — | — | +11 tools | — |
 | `ui` | Error boundaries | Diff views | Grade badges | Coaching panel | Bracket view |

@@ -668,7 +668,7 @@ CREATE INDEX idx_team_parentId ON Team(parentId);
 
 ### Test Fixtures
 
-Reuse the existing test patterns from `packages/teams/src/__tests__/team.service.test.ts`. Create two fixed team fixtures with known differences for deterministic diff testing.
+Reuse the existing test patterns from `tests/teams/team.service.test.ts`. Create two fixed team fixtures with known differences for deterministic diff testing.
 
 ## Open Questions
 

@@ -22,12 +22,12 @@ packages/
   formats/                Format definitions (OU, UU, VGC...) and legality checking
   smogon-data/            Fetch/cache usage stats, Smogon sets, teammate correlations from @pkmn/smogon
   data-pipeline/          Data seeding CLI (seed.ts) and staleness detection
-  teams/                  Team CRUD, slot management, Showdown import/export, validation
+  teams/                  Team CRUD, slot management, Showdown import/export, validation, sample teams
   analysis/               Type coverage analysis, threat identification, synergy scoring
   damage-calc/            @smogon/calc wrapper — damage calculation, matchup matrices
   recommendations/        Pokemon recommendations (coverage-based, usage-based, composite)
-  llm/                    OpenAI chat service, session management, context builder
-  battle-engine/          @pkmn/sim battle simulator, protocol parser, AI players (Random, Greedy, Heuristic)
+  llm/                    OpenAI/Claude chat service, MCP client, session management, context/battle context builders, CLI chat, stream parser
+  battle-engine/          @pkmn/sim battle simulator, protocol parser, AI players (Random, Greedy, Heuristic, MCTS Expert), evaluator, hints, replay, batch sim
   ui/                     Shared React components (PokemonSprite, TypeBadge, StatBar, cn utility)
   mcp-server/             MCP server (24 tools, 5 resources) — Claude integration via express on port 3001
 ```
@@ -64,20 +64,24 @@ Presentation: ui, web
 - **`@pkmn/dex` damageTaken encoding:** `0` = neutral, `1` = super effective, `2` = resist, `3` = immune (counterintuitive!)
 - **`@smogon/calc`** needs display names (`"Great Tusk"`), not IDs (`"greatTusk"`)
 - **`@pkmn/sim` BattleStream protocol:** `|move|`, `|-damage|`, `|switch|`, `|turn|`, `|win|` — parsed in `packages/battle-engine/src/protocol-parser.ts`
+- **`AIDifficulty`** — `"random"` | `"greedy"` | `"heuristic"` | `"expert"` — maps to AI player classes `RandomAI`, `GreedyAI`, `HeuristicAI`, `MCTSAI`
+- **`BattleState`** — central battle type with `sides` (p1/p2), `field`, `turn`, `phase` ("setup"/"preview"/"battle"/"ended"), `winner`
+- **`SampleTeam`** — example teams with archetype tags (HO, Balance, Stall, etc.), stored in DB, browsable in UI
 
 ## Development Commands
 
 ```bash
 pnpm dev              # Next.js + MCP server + dev proxy (all concurrently)
 pnpm dev:mcp          # MCP server only (port 3001)
-pnpm dev:proxy        # Dev proxy only
+pnpm dev:proxy        # Dev proxy only (claude-max-api-proxy on port 3456)
 pnpm test             # Vitest run (CI mode)
 pnpm test:watch       # Vitest watch mode
 pnpm test:coverage    # Vitest with V8 coverage
 pnpm build            # Next.js build
 pnpm seed             # Seed DB with Smogon usage data
-pnpm exec prisma generate   # Regenerate Prisma client (run from repo root)
-pnpm exec prisma migrate dev # Run pending migrations
+pnpm db:generate      # Regenerate Prisma client + fix ESM package.json
+pnpm db:migrate       # Run pending migrations (prisma migrate dev)
+pnpm db:push          # Push schema changes without migration (prisma db push)
 ```
 
 **Gotcha:** After `prisma generate`, restart the dev server. Turbopack caches the stale Prisma client and won't pick up schema changes until restarted.
@@ -85,22 +89,27 @@ pnpm exec prisma migrate dev # Run pending migrations
 ## Database
 
 **Prisma + SQLite** — schema at `prisma/schema.prisma`, database at `prisma/dev.db`
+**Client output:** `generated/prisma` (ESM-compatible via `db:generate` script)
 **Client:** singleton from `@nasty-plot/db` (`import { prisma } from "@nasty-plot/db"`)
 
-**Models (10):**
+**Models (14):**
 
 | Model | Purpose | Key Fields |
 |-------|---------|------------|
 | `Format` | Competitive format definitions | `id` (string PK), `name`, `generation`, `gameType`, `isActive` |
 | `UsageStats` | Monthly usage percentages | `formatId`, `pokemonId`, `usagePercent`, `rank`, `year`, `month` |
-| `SmogonSet` | Recommended movesets | `formatId`, `pokemonId`, `setName`, `moves` (JSON), `evs` (JSON) |
+| `SmogonSet` | Recommended movesets | `formatId`, `pokemonId`, `setName`, `moves` (JSON), `evs` (JSON), `ivs` (JSON) |
 | `TeammateCorr` | Pokemon pair synergy data | `formatId`, `pokemonAId`, `pokemonBId`, `correlationPercent` |
 | `CheckCounter` | What beats what | `formatId`, `targetId`, `counterId`, `koPercent`, `switchPercent` |
-| `Team` | User teams | `id` (uuid), `name`, `formatId`, `mode` ("freeform"/"guided") |
+| `Team` | User teams | `id` (uuid), `name`, `formatId`, `mode` ("freeform"/"guided"), `notes` |
 | `TeamSlot` | Pokemon on a team (1-6) | `pokemonId`, `position`, `ability`, `item`, `nature`, `move1-4`, `evHp/Atk/Def/SpA/SpD/Spe`, `ivHp/Atk/Def/SpA/SpD/Spe` |
-| `DataSyncLog` | Seed job tracking | `source`, `formatId`, `lastSynced`, `status` |
-| `ChatSession` | LLM chat sessions | `id` (uuid), `teamId` |
+| `DataSyncLog` | Seed job tracking | `source`, `formatId`, `lastSynced`, `status`, `message` |
+| `ChatSession` | LLM chat sessions | `id` (uuid), `teamId`, `title` |
 | `ChatMessage` | Chat messages | `sessionId`, `role`, `content`, `toolCalls` (JSON) |
+| `Battle` | Simulated/played battles | `id` (uuid), `formatId`, `gameType`, `mode`, `aiDifficulty`, `team1Paste`, `team2Paste`, `winnerId`, `turnCount`, `protocolLog`, `batchId` |
+| `BattleTurn` | Individual turn data | `battleId`, `turnNumber`, `team1Action` (JSON), `team2Action` (JSON), `stateSnapshot` (JSON), `winProbTeam1` |
+| `BatchSimulation` | Bulk battle runner | `id` (uuid), `formatId`, `totalGames`, `completedGames`, `team1Wins`, `team2Wins`, `draws`, `status`, `analytics` (JSON) |
+| `SampleTeam` | Example teams for UI | `id` (uuid), `name`, `formatId`, `archetype`, `source`, `sourceUrl`, `paste`, `pokemonIds`, `isActive` |
 
 **Note:** `TeamSlot` stores EVs/IVs as individual columns (`evHp`, `evAtk`, etc.) and moves as `move1`-`move4` (not arrays).
 
@@ -122,6 +131,7 @@ All routes in `apps/web/src/app/api/`. Convention: routes import service functio
 - `GET /api/pokemon/[id]` — species details
 - `GET /api/pokemon/[id]/learnset` — full learnset
 - `GET /api/pokemon/[id]/sets` — Smogon sets
+- `GET /api/pokemon/[id]/mega-form` — mega form data
 
 **Formats & Usage**
 - `GET /api/formats` — all formats
@@ -132,10 +142,23 @@ All routes in `apps/web/src/app/api/`. Convention: routes import service functio
 - `POST /api/damage-calc` — single calculation
 - `POST /api/damage-calc/matchup-matrix` — team vs team matrix
 
+**Battles**
+- `GET/POST /api/battles` — list / create battles
+- `GET/DELETE /api/battles/[battleId]` — get / delete battle
+- `GET /api/battles/[battleId]/replay` — replay data
+- `POST /api/battles/batch` — batch simulation
+- `GET/DELETE /api/battles/batch/[batchId]` — get / delete batch
+- `POST /api/battles/commentary` — battle commentary stream
+
+**Sample Teams**
+- `GET/POST /api/sample-teams` — list / create sample teams
+- `GET/DELETE /api/sample-teams/[id]` — get / delete sample team
+- `POST /api/sample-teams/import` — import sample team
+
 **Chat**
 - `POST /api/chat` — streaming chat response
 - `GET/POST /api/chat/sessions` — list / create sessions
-- `GET/DELETE /api/chat/sessions/[id]` — get / delete session
+- `GET/PUT/DELETE /api/chat/sessions/[id]` — get / update / delete session
 
 **Other**
 - `GET /api/items` — list items
@@ -159,6 +182,9 @@ All routes in `apps/web/src/app/api/`. Convention: routes import service functio
 | `/battle` | Battle hub |
 | `/battle/new` | Battle setup |
 | `/battle/live` | Active battle (live sim) |
+| `/battle/simulate` | Battle simulator |
+| `/battle/sample-teams` | Sample teams browser |
+| `/battle/replay/[battleId]` | Battle replay viewer |
 
 ## Coding Conventions
 
@@ -242,7 +268,7 @@ When you discover bugs, TODOs, or follow-up work while working on something else
 When the user asks what to work on, follow this decision tree:
 
 1. **Check Linear** — query Todo + In Progress issues (`mcp__plugin_linear_linear__list_issues` with `team: "nasty-plot"`). Present high-priority items first.
-2. **Check plans/** — read plan files (`plans/pokemon-game-solver.md`, `plans/mcp-chat-agent-integration.md`) for roadmap phases and incomplete work.
+2. **Check plans/** — read plan files in `plans/` (active plans) and `plans/archived/` (completed plans) for roadmap phases and incomplete work.
 3. **Check sessions/** — read recent session summaries in `sessions/` for "Known issues & next steps" sections.
 4. **Synthesize** — present a prioritized list combining all sources. Recommend the most impactful next step, considering:
    - Urgency (bugs > features > improvements)

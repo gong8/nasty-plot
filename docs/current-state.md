@@ -12,16 +12,16 @@ Nasty Plot is a Pokemon competitive team building and analysis platform built as
 | Metric | Count |
 |--------|-------|
 | Packages | 14 |
-| Prisma models | 13 (Format, UsageStats, SmogonSet, TeammateCorr, CheckCounter, Team, TeamSlot, DataSyncLog, ChatSession, ChatMessage, Battle, BattleTurn, BatchSimulation, SampleTeam) |
+| Prisma models | 14 (Format, UsageStats, SmogonSet, TeammateCorr, CheckCounter, Team, TeamSlot, DataSyncLog, ChatSession, ChatMessage, Battle, BattleTurn, BatchSimulation, SampleTeam) |
 | Format definitions | 12 (OU, UU, RU, NU, Ubers, LC, Monotype, National Dex, National Dex UU, VGC 2024, VGC 2025, BSS, BSD) |
-| API routes | 33 |
-| App pages | 15 |
+| API routes | 35 |
+| App pages | 14 |
 | MCP tools | 24 (4 modules) |
 | MCP resources | 5 |
 | AI difficulty tiers | 4 (Random, Greedy, Heuristic, Expert/MCTS) |
-| Test files | 29 |
-| Feature modules (frontend) | 5 (battle, chat, team-builder, analysis, damage-calc, recommendations) |
-| Shared UI components | 3 (PokemonSprite, TypeBadge, StatBar) + 25 shadcn/ui primitives |
+| Test files | 43 |
+| Feature modules (frontend) | 6 (battle, chat, team-builder, analysis, damage-calc, recommendations) |
+| Shared UI components | 3 (PokemonSprite, TypeBadge, StatBar) + 22 shadcn/ui primitives |
 
 **Stack:** Turborepo + pnpm, Next.js 16 (App Router + Turbopack), TypeScript 5, React 19, Prisma + SQLite, Vitest, Tailwind CSS, Radix UI
 
@@ -44,8 +44,8 @@ Nasty Plot is a Pokemon competitive team building and analysis platform built as
 | `packages/core/src/constants.ts` | Shared constants |
 | `packages/core/src/validation.ts` | Input validation utilities |
 
-**Tests:** 3 test files [Exists]
-- `type-chart.test.ts`, `stat-calc.test.ts`, `showdown-paste.test.ts`
+**Tests:** 4 test files [Exists]
+- `type-chart.test.ts`, `stat-calc.test.ts`, `showdown-paste.test.ts`, `validation.test.ts`
 
 **Known issues:** None significant. This package is stable and well-tested.
 
@@ -61,7 +61,7 @@ Nasty Plot is a Pokemon competitive team building and analysis platform built as
 |------|---------|
 | `packages/db/src/client.ts` | Prisma client singleton |
 | `packages/db/src/index.ts` | Barrel export |
-| `prisma/schema.prisma` | Schema definition (13 models, 252 lines) |
+| `prisma/schema.prisma` | Schema definition (14 models) |
 | `prisma/dev.db` | SQLite database file |
 
 **Tests:** None [Missing] -- singleton client, not much to test independently.
@@ -184,10 +184,10 @@ Nasty Plot is a Pokemon competitive team building and analysis platform built as
 
 **Exports:** 16 functions + 1 type
 
-**Tests:** 3 test files [Exists]
-- `team.service.test.ts`, `import-export.service.test.ts`, `validation.service.test.ts`
+**Tests:** 4 test files [Exists]
+- `team.service.test.ts`, `import-export.service.test.ts`, `validation.service.test.ts`, `sample-team.service.test.ts`
 
-**Known issues:** No sample-team.service test file [Missing]. No team versioning or forking.
+**Known issues:** No team versioning or forking.
 
 ---
 
@@ -281,8 +281,8 @@ Nasty Plot is a Pokemon competitive team building and analysis platform built as
 
 **Exports:** 18 named exports + types
 
-**Tests:** 4 test files [Exists]
-- `protocol-parser.test.ts`, `team-packer.test.ts`, `ai.test.ts`, `evaluator-hints.test.ts`
+**Tests:** 12 test files [Exists]
+- `protocol-parser.test.ts`, `team-packer.test.ts`, `ai.test.ts`, `evaluator-hints.test.ts`, `battle-manager.test.ts`, `battle-cloner.test.ts`, `mcts-ai.test.ts`, `set-predictor.test.ts`, `automated-battle-manager.test.ts`, `batch-simulator.test.ts`, `replay-engine.test.ts`, `shared.test.ts`
 
 **Known issues:**
 - MCTS runs on the main thread -- no Web Worker offloading [Missing]
@@ -314,8 +314,8 @@ Nasty Plot is a Pokemon competitive team building and analysis platform built as
 
 **Exports:** 17 functions + 5 types
 
-**Tests:** 4 test files [Exists]
-- `chat.service.test.ts`, `chat-session.service.test.ts`, `context-builder.test.ts`, `mcp-client.test.ts`, `openai-client.test.ts`
+**Tests:** 9 test files [Exists]
+- `chat.service.test.ts`, `chat-session.service.test.ts`, `context-builder.test.ts`, `mcp-client.test.ts`, `openai-client.test.ts`, `battle-context-builder.test.ts`, `stream-parser.test.ts`, `tool-context.test.ts`, `tool-labels.test.ts`
 
 **Known issues:** No conversation branching or message editing. No multi-model support (hardcoded to one OpenAI model).
 
@@ -384,7 +384,7 @@ Nasty Plot is a Pokemon competitive team building and analysis platform built as
 
 ## 3. API Surface
 
-33 API routes in `apps/web/src/app/api/`:
+35 API routes in `apps/web/src/app/api/`:
 
 ### Teams (8 routes)
 
@@ -424,24 +424,24 @@ Nasty Plot is a Pokemon competitive team building and analysis platform built as
 | `GET` | `/api/formats/[id]/pokemon` | Legal Pokemon for format |
 | `GET` | `/api/formats/[id]/usage` | Usage statistics |
 
-### Battles (5 routes)
+### Battles (7 routes)
 
 | Method | Route | Description |
 |--------|-------|-------------|
-| `POST` | `/api/battles` | Start a new battle |
-| `GET` | `/api/battles/[battleId]` | Get battle details |
+| `GET/POST` | `/api/battles` | List / start a new battle |
+| `GET/DELETE` | `/api/battles/[battleId]` | Get / delete battle |
 | `GET` | `/api/battles/[battleId]/replay` | Get replay data |
 | `POST` | `/api/battles/batch` | Start batch simulation |
-| `GET` | `/api/battles/batch/[batchId]` | Get batch simulation results |
+| `GET/DELETE` | `/api/battles/batch/[batchId]` | Get / delete batch simulation results |
+| `POST` | `/api/battles/commentary` | Battle turn commentary |
 
-### Chat (4 routes)
+### Chat (3 routes)
 
 | Method | Route | Description |
 |--------|-------|-------------|
 | `POST` | `/api/chat` | Streaming chat response (SSE) |
 | `GET/POST` | `/api/chat/sessions` | List / create sessions |
-| `GET/DELETE` | `/api/chat/sessions/[id]` | Get / delete session |
-| `POST` | `/api/battles/commentary` | Battle turn commentary |
+| `GET/PUT/DELETE` | `/api/chat/sessions/[id]` | Get / update / delete session |
 
 ### Sample Teams (3 routes)
 
@@ -466,7 +466,7 @@ Nasty Plot is a Pokemon competitive team building and analysis platform built as
 
 ## 4. App Pages
 
-15 pages in `apps/web/src/app/`:
+14 pages in `apps/web/src/app/`:
 
 | Route | Page | Status |
 |-------|------|--------|
@@ -477,7 +477,6 @@ Nasty Plot is a Pokemon competitive team building and analysis platform built as
 | `/teams/[teamId]/guided` | Guided team builder | [Exists] |
 | `/pokemon` | Pokemon browser | [Exists] |
 | `/pokemon/[id]` | Pokemon detail | [Exists] |
-| `/damage-calc` | Damage calculator | [Exists] |
 | `/chat` | LLM chat interface | [Exists] |
 | `/battle` | Battle hub | [Exists] |
 | `/battle/new` | Battle setup | [Exists] |
@@ -490,12 +489,13 @@ Nasty Plot is a Pokemon competitive team building and analysis platform built as
 
 | Module | Components | Hooks |
 |--------|-----------|-------|
-| `battle` | BattleView, BattleSetup, BattleField, BattleLog, MoveSelector, SwitchMenu, TeamPreview, FieldStatus, PokemonSprite, HealthBar, CommentaryPanel, EvalBar, HintPanel, ReplayControls, SampleTeamCard, WinProbabilityGraph | `use-battle`, `use-battle-hints`, `use-replay` |
-| `chat` | chat-panel, chat-message, chat-input, chat-tool-call, chat-action-notify, chat-plan-display, chat-session-list | `use-chat-stream`, `use-chat-sessions` |
-| `team-builder` | team-grid, team-header, slot-editor, pokemon-search-panel, item-combobox, guided-builder, core-picker, role-selector | `use-team-builder`, `use-guided-builder` |
-| `analysis` | coverage-chart, weakness-heatmap, threat-list, speed-tiers | -- |
-| `damage-calc` | damage-calculator, matchup-matrix | `use-damage-calc` |
-| `recommendations` | recommendation-panel | -- |
+| `battle` | 16 components (BattleView, BattleSetup, BattleField, BattleLog, MoveSelector, SwitchMenu, TeamPreview, FieldStatus, PokemonSprite, HealthBar, CommentaryPanel, EvalBar, HintPanel, ReplayControls, SampleTeamCard, WinProbabilityGraph) | 3 hooks (`use-battle`, `use-battle-hints`, `use-replay`) |
+| `chat` | 8 components + 2 contexts | 2 hooks (`use-chat-stream`, `use-chat-sessions`) |
+| `team-builder` | 8 components (team-grid, team-header, slot-editor, pokemon-search-panel, item-combobox, guided-builder, core-picker, role-selector) | 2 hooks (`use-team-builder`, `use-guided-builder`) |
+| `analysis` | 4 components (coverage-chart, weakness-heatmap, threat-list, speed-tiers) | -- |
+| `damage-calc` | 2 components (damage-calculator, matchup-matrix) | 1 hook (`use-damage-calc`) |
+| `recommendations` | 1 component (recommendation-panel) | -- |
+| `teams` | -- | 1 hook |
 
 ### App Shell Components
 
@@ -563,7 +563,7 @@ These are user-facing workflows that function today:
 
 ## 6. Database Schema
 
-13 Prisma models in `prisma/schema.prisma`:
+14 Prisma models in `prisma/schema.prisma`:
 
 | Model | Row Estimate | Purpose |
 |-------|-------------|---------|
@@ -586,21 +586,21 @@ These are user-facing workflows that function today:
 
 ## 7. Test Coverage
 
-29 test files across 10 packages:
+43 test files across 11 subdirectories:
 
 | Package | Test Files | Files |
 |---------|-----------|-------|
-| `core` | 3 | type-chart, stat-calc, showdown-paste |
+| `core` | 4 | type-chart, stat-calc, showdown-paste, validation |
 | `pokemon-data` | 1 | dex.service |
 | `formats` | 2 | format-definitions, format.service |
 | `smogon-data` | 2 | usage-stats.service, smogon-sets.service |
 | `data-pipeline` | 1 | staleness.service |
-| `teams` | 3 | team.service, import-export.service, validation.service |
+| `teams` | 4 | team.service, import-export.service, validation.service, sample-team.service |
 | `analysis` | 4 | coverage.service, threat.service, synergy.service, analysis.service |
 | `damage-calc` | 1 | calc.service |
 | `recommendations` | 3 | coverage-recommender, usage-recommender, composite-recommender |
-| `battle-engine` | 4 | protocol-parser, team-packer, ai, evaluator-hints |
-| `llm` | 5 | chat.service, chat-session.service, context-builder, mcp-client, openai-client |
+| `battle-engine` | 12 | protocol-parser, team-packer, ai, evaluator-hints, battle-manager, battle-cloner, mcts-ai, set-predictor, automated-battle-manager, batch-simulator, replay-engine, shared |
+| `llm` | 9 | chat.service, chat-session.service, context-builder, mcp-client, openai-client, battle-context-builder, stream-parser, tool-context, tool-labels |
 | `db` | 0 | -- |
 | `mcp-server` | 0 | -- |
 | `ui` | 0 | -- |
@@ -627,7 +627,6 @@ These are user-facing workflows that function today:
 | Team versioning/forking | No version history or ability to fork a team | `packages/teams/` |
 | Post-game review UI | Battle data is stored but no dedicated review/analysis page | `apps/web/src/app/battle/` |
 | MCP server tests | 24 tools with zero test coverage | `packages/mcp-server/` |
-| Sample team tests | `sample-team.service.ts` has no tests | `packages/teams/src/sample-team.service.ts` |
 | Role-based recommendations | Recommendations don't consider team roles (wall, sweeper, pivot) | `packages/recommendations/` |
 | Multi-model LLM support | Hardcoded to a single OpenAI model | `packages/llm/src/openai-client.ts` |
 

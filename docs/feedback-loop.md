@@ -182,7 +182,7 @@ interface AIPlayer {
 - Runs UCB1 selection independently for each player (DUCT handles simultaneous moves).
 - Random rollouts up to configurable depth, then static evaluation via `evaluatePosition()`.
 - Falls back to `HeuristicAI` if no battle state is available for cloning.
-- Default config: 2000 iterations, 1000ms time limit, exploration constant 1.41.
+- Default config: 10000 iterations, 5000ms time limit, exploration constant 0.7, rollout depth 4.
 
 **Battle Flow:**
 1. `BattleManager.start()` -- writes format, player teams to `BattleStream`.

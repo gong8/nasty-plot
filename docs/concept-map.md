@@ -128,7 +128,7 @@ The data pipeline (`packages/smogon-data/`) seeds the database with Smogon usage
 | KO chance strings | "guaranteed OHKO", "possible 2HKO", "5+ hits to KO" from min/max damage rolls | `packages/damage-calc/src/calc.service.ts:deriveKoChance()` | Exists |
 | Damage description | Full calc string: "252 Atk Great Tusk Headlong Rush vs 0/4 Iron Valiant: 85.2-100.3%" | `packages/damage-calc/src/calc.service.ts` (via `result.desc()`) | Exists |
 | Matchup matrix | Team-vs-threats grid: best move + max damage % + KO chance for every pair | `packages/damage-calc/src/calc.service.ts:calculateMatchupMatrix()` | Exists |
-| Damage calc page | Interactive UI for running calcs with EV/move/field selectors | `apps/web/src/app/damage-calc/page.tsx` | Exists |
+| Damage calc page | Interactive UI for running calcs with EV/move/field selectors | `apps/web/src/app/damage-calc/page.tsx` | Planned |
 | Win probability estimation | Evaluator score mapped to win % through S-curve (not pure expected value) | `packages/battle-engine/src/ai/win-probability.ts:scoreToProbability()` | Exists |
 | Hint engine KO bonuses | Guaranteed KO: +80 score, partial KO: +40 + (chance * 40) | `packages/battle-engine/src/ai/hint-engine.ts` (lines 88-98) | Exists |
 | Priority move bonus | +20 score when opponent <30% HP and move has positive priority | `packages/battle-engine/src/ai/hint-engine.ts` (lines 101-104) | Exists |
@@ -388,12 +388,12 @@ The five pillars converge in the build-test-analyze loop. Here is how a team flo
 
 | Pillar | Exists | Partial | Planned | Future |
 |--------|--------|---------|---------|--------|
-| 1. Long-term Planning | 13 features | 0 | 0 | 3 |
-| 2. Simultaneous Action | 12 features | 0 | 0 | 3 |
+| 1. Long-term Planning | 14 features | 0 | 0 | 3 |
+| 2. Simultaneous Action | 13 features | 0 | 0 | 3 |
 | 3. Imperfect Information | 11 features | 0 | 1 | 2 |
-| 4. Probability Management | 14 features | 0 | 0 | 3 |
-| 5. Team Building (Meta) | 22 features | 0 | 1 | 2 |
-| Cross-Cutting (LLM) | 18 features | 0 | 1 | 1 |
-| **Total** | **90** | **0** | **3** | **14** |
+| 4. Probability Management | 13 features | 0 | 1 | 3 |
+| 5. Team Building (Meta) | 25 features | 0 | 1 | 2 |
+| Cross-Cutting (LLM) | 19 features | 0 | 1 | 1 |
+| **Total** | **95** | **0** | **4** | **14** |
 
 The codebase has substantial coverage across all five pillars. The strongest areas are team building infrastructure (Pillar 5) and probability management tools (Pillar 4). The primary gaps are in teaching and explanation: the system can evaluate and recommend, but does not yet explain the underlying competitive concepts to the user in a structured educational format. The planned coaching sessions and the future game theory / deduction teaching features would close this gap.
