@@ -121,6 +121,9 @@ export interface TeamData {
   format?: FormatDefinition;
   mode: "freeform" | "guided";
   notes?: string;
+  parentId?: string;
+  branchName?: string;
+  isArchived?: boolean;
   slots: TeamSlotData[];
   createdAt: string;
   updatedAt: string;
@@ -134,6 +137,71 @@ export type TeamCreateInput = {
 };
 
 export type TeamSlotInput = Omit<TeamSlotData, "species" | "calculatedStats">;
+
+// --- Team Versioning ---
+
+export interface TeamDiff {
+  teamAId: string;
+  teamBId: string;
+  teamAName: string;
+  teamBName: string;
+  added: TeamSlotData[];
+  removed: TeamSlotData[];
+  changed: SlotChange[];
+  unchanged: string[];
+  summary: DiffSummary;
+}
+
+export interface SlotChange {
+  pokemonId: string;
+  name: string;
+  changes: FieldChange[];
+}
+
+export interface FieldChange {
+  field: string;
+  label: string;
+  before: string | number | undefined;
+  after: string | number | undefined;
+}
+
+export interface DiffSummary {
+  totalChanges: number;
+  slotsAdded: number;
+  slotsRemoved: number;
+  slotsChanged: number;
+  slotsUnchanged: number;
+}
+
+export interface MergeDecision {
+  pokemonId: string;
+  source: "teamA" | "teamB";
+}
+
+export interface MergeOptions {
+  name?: string;
+  branchName?: string;
+  notes?: string;
+}
+
+export interface ForkOptions {
+  name?: string;
+  branchName?: string;
+  notes?: string;
+  modifySlots?: Partial<TeamSlotInput>[];
+}
+
+export interface LineageNode {
+  teamId: string;
+  name: string;
+  branchName?: string;
+  parentId: string | null;
+  children: LineageNode[];
+  createdAt: string;
+  isArchived: boolean;
+  slotCount: number;
+  pokemonIds: string[];
+}
 
 // --- Competitive Data ---
 

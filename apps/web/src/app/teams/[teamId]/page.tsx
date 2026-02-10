@@ -21,6 +21,9 @@ import {
   useAddSlot,
   useUpdateSlot,
   useRemoveSlot,
+  useForkTeam,
+  useCompareTeams,
+  useLineageTree,
 } from "@/features/teams/hooks/use-teams";
 import { TeamHeader } from "@/features/team-builder/components/team-header";
 import { TeamGrid } from "@/features/team-builder/components/team-grid";
@@ -31,7 +34,13 @@ import { ThreatList } from "@/features/analysis/components/threat-list";
 import { SpeedTiers } from "@/features/analysis/components/speed-tiers";
 import { MatchupMatrix } from "@/features/damage-calc/components/matchup-matrix";
 import { RecommendationPanel } from "@/features/recommendations/components/recommendation-panel";
-import type { TeamSlotInput, TeamAnalysis, MatchupMatrixEntry } from "@nasty-plot/core";
+import { TeamDiffView } from "@/features/team-builder/components/team-diff-view";
+import { LineageTree } from "@/features/team-builder/components/lineage-tree";
+import type { TeamSlotInput, TeamAnalysis, MatchupMatrixEntry, LineageNode } from "@nasty-plot/core";
+
+function collectNodes(node: LineageNode): LineageNode[] {
+  return [node, ...node.children.flatMap(collectNodes)];
+}
 
 export default function TeamEditorPage({
   params,
@@ -52,12 +61,19 @@ export default function TeamEditorPage({
 
   const [addingNew, setAddingNew] = useState(false);
   const [activeTab, setActiveTab] = useState("overview");
+  const [compareTargetId, setCompareTargetId] = useState<string | undefined>();
 
   const updateTeamMut = useUpdateTeam();
   const deleteTeamMut = useDeleteTeam();
   const addSlotMut = useAddSlot();
   const updateSlotMut = useUpdateSlot();
   const removeSlotMut = useRemoveSlot();
+  const forkTeamMut = useForkTeam();
+  const lineageQuery = useLineageTree(teamId);
+  const compareQuery = useCompareTeams(
+    compareTargetId ? teamId : undefined,
+    compareTargetId,
+  );
 
   // Fetch analysis data when analysis tab is selected and team has slots
   const analysisQuery = useQuery<{ data: TeamAnalysis }>({
@@ -87,6 +103,17 @@ export default function TeamEditorPage({
       }),
     enabled: activeTab === "matchups" && !!team && team.slots.length > 0,
   });
+
+  const handleFork = useCallback(
+    async (options: { name: string; branchName?: string; notes?: string }) => {
+      const forked = await forkTeamMut.mutateAsync({
+        teamId,
+        options,
+      });
+      router.push(`/teams/${forked.id}`);
+    },
+    [teamId, forkTeamMut, router],
+  );
 
   const handleUpdateName = useCallback(
     (name: string) => {
@@ -210,6 +237,7 @@ export default function TeamEditorPage({
             onUpdateName={handleUpdateName}
             onDelete={handleDelete}
             onImport={handleImport}
+            onFork={handleFork}
           />
         </div>
       </div>
@@ -250,6 +278,8 @@ export default function TeamEditorPage({
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="matchups">Matchups</TabsTrigger>
           <TabsTrigger value="analysis">Analysis</TabsTrigger>
+          <TabsTrigger value="lineage">Lineage</TabsTrigger>
+          <TabsTrigger value="compare">Compare</TabsTrigger>
         </TabsList>
         <TabsContent value="overview" className="py-4">
           <div className="text-center text-muted-foreground py-8">
@@ -278,6 +308,52 @@ export default function TeamEditorPage({
                 isLoading={analysisQuery.isLoading}
               />
               <SpeedTiers tiers={analysis?.speedTiers} />
+            </div>
+          )}
+        </TabsContent>
+        <TabsContent value="lineage" className="py-4">
+          {lineageQuery.data ? (
+            <LineageTree tree={lineageQuery.data} currentTeamId={teamId} />
+          ) : lineageQuery.isLoading ? (
+            <div className="text-center text-muted-foreground py-8">
+              Loading lineage...
+            </div>
+          ) : (
+            <div className="text-center text-muted-foreground py-8">
+              No lineage data. Fork this team to start tracking variants.
+            </div>
+          )}
+        </TabsContent>
+        <TabsContent value="compare" className="py-4 space-y-4">
+          {lineageQuery.data && (
+            <div className="flex items-center gap-3">
+              <label className="text-sm font-medium">Compare with:</label>
+              <select
+                value={compareTargetId ?? ""}
+                onChange={(e) => setCompareTargetId(e.target.value || undefined)}
+                className="rounded-md border bg-background px-3 py-1.5 text-sm"
+              >
+                <option value="">Select a team...</option>
+                {collectNodes(lineageQuery.data)
+                  .filter((n) => n.teamId !== teamId)
+                  .map((n) => (
+                    <option key={n.teamId} value={n.teamId}>
+                      {n.name}
+                      {n.branchName ? ` (${n.branchName})` : ""}
+                    </option>
+                  ))}
+              </select>
+            </div>
+          )}
+          {compareQuery.data && <TeamDiffView diff={compareQuery.data} />}
+          {compareQuery.isLoading && (
+            <div className="text-center text-muted-foreground py-8">
+              Comparing teams...
+            </div>
+          )}
+          {!compareTargetId && (
+            <div className="text-center text-muted-foreground py-8">
+              Select a team from the lineage to compare changes.
             </div>
           )}
         </TabsContent>

@@ -9,6 +9,7 @@ export {
   removeSlot,
   clearSlots,
   reorderSlots,
+  domainSlotToDb,
 } from "./team.service";
 export { validateTeam } from "./validation.service";
 export {
@@ -25,3 +26,22 @@ export {
   extractPokemonIds,
 } from "./sample-team.service";
 export type { SampleTeamData } from "./sample-team.service";
+export {
+  forkTeam,
+  compareTeams,
+  mergeTeams,
+  getLineageTree,
+  getTeamHistory,
+  archiveTeam,
+  restoreTeam,
+} from "./version.service";
+export type {
+  TeamDiff,
+  SlotChange,
+  FieldChange,
+  DiffSummary,
+  MergeDecision,
+  MergeOptions,
+  ForkOptions,
+  LineageNode,
+} from "@nasty-plot/core";

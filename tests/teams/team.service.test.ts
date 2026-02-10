@@ -24,6 +24,7 @@ vi.mock("@nasty-plot/db", () => ({
       findUnique: vi.fn(),
       findMany: vi.fn(),
       update: vi.fn(),
+      updateMany: vi.fn(),
       delete: vi.fn(),
     },
     teamSlot: {
@@ -71,6 +72,9 @@ function makeDbTeam(overrides?: Record<string, unknown>) {
     formatId: "gen9ou",
     mode: "freeform",
     notes: null,
+    parentId: null,
+    branchName: null,
+    isArchived: false,
     createdAt: now,
     updatedAt: now,
     slots: [],
@@ -246,7 +250,7 @@ describe("listTeams", () => {
     expect(result).toHaveLength(1);
     expect(mockTeamFindMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: undefined,
+        where: { isArchived: false },
       })
     );
   });
@@ -258,7 +262,7 @@ describe("listTeams", () => {
 
     expect(mockTeamFindMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { formatId: "gen9ou" },
+        where: { formatId: "gen9ou", isArchived: false },
       })
     );
   });
@@ -322,6 +326,8 @@ describe("deleteTeam", () => {
   beforeEach(() => vi.clearAllMocks());
 
   it("deletes team by id", async () => {
+    mockTeamFindUnique.mockResolvedValue({ parentId: null });
+    (prisma.team.updateMany as ReturnType<typeof vi.fn>).mockResolvedValue({ count: 0 });
     mockTeamDelete.mockResolvedValue({});
 
     await deleteTeam("team-1");

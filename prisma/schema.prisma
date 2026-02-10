@@ -85,19 +85,26 @@ model CheckCounter {
 }
 
 model Team {
-  id        String   @id @default(uuid())
-  name      String
-  formatId  String
-  mode      String   @default("freeform") // "freeform" | "guided"
-  notes     String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id         String   @id @default(uuid())
+  name       String
+  formatId   String
+  mode       String   @default("freeform") // "freeform" | "guided"
+  notes      String?
+  parentId   String?
+  branchName String?
+  isArchived Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   format         Format        @relation(fields: [formatId], references: [id])
   slots          TeamSlot[]
   chatSessions   ChatSession[]
   battlesAsTeam1 Battle[]      @relation("BattleTeam1")
   battlesAsTeam2 Battle[]      @relation("BattleTeam2")
+  parent         Team?         @relation("TeamLineage", fields: [parentId], references: [id], onDelete: SetNull)
+  children       Team[]        @relation("TeamLineage")
+
+  @@index([parentId])
 }
 
 model TeamSlot {

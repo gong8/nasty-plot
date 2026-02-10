@@ -46,6 +46,9 @@ type DbTeamRow = {
   formatId: string;
   mode: string;
   notes: string | null;
+  parentId: string | null;
+  branchName: string | null;
+  isArchived: boolean;
   createdAt: Date;
   updatedAt: Date;
   slots: DbSlotRow[];
@@ -113,7 +116,7 @@ function dbSlotToDomain(dbSlot: DbSlotRow): TeamSlotData {
   };
 }
 
-function domainSlotToDb(slot: TeamSlotInput) {
+export function domainSlotToDb(slot: TeamSlotInput) {
   return {
     position: slot.position,
     pokemonId: slot.pokemonId,
@@ -136,6 +139,9 @@ function dbTeamToDomain(dbTeam: DbTeamRow): TeamData {
     formatId: dbTeam.formatId,
     mode: dbTeam.mode as "freeform" | "guided",
     notes: dbTeam.notes ?? undefined,
+    parentId: dbTeam.parentId ?? undefined,
+    branchName: dbTeam.branchName ?? undefined,
+    isArchived: dbTeam.isArchived,
     slots: dbTeam.slots
       .sort((a, b) => a.position - b.position)
       .map(dbSlotToDomain),
@@ -194,9 +200,14 @@ export async function getTeam(id: string): Promise<TeamData | null> {
 
 export async function listTeams(filters?: {
   formatId?: string;
+  includeArchived?: boolean;
 }): Promise<TeamData[]> {
+  const where: Record<string, unknown> = {};
+  if (filters?.formatId) where.formatId = filters.formatId;
+  if (!filters?.includeArchived) where.isArchived = false;
+
   const teams = await prisma.team.findMany({
-    where: filters?.formatId ? { formatId: filters.formatId } : undefined,
+    where,
     include: { slots: { orderBy: { position: "asc" } } },
     orderBy: { updatedAt: "desc" },
   });
@@ -221,6 +232,13 @@ export async function updateTeam(
 }
 
 export async function deleteTeam(id: string): Promise<void> {
+  const team = await prisma.team.findUnique({ where: { id }, select: { parentId: true } });
+  if (team) {
+    await prisma.team.updateMany({
+      where: { parentId: id },
+      data: { parentId: team.parentId },
+    });
+  }
   await prisma.team.delete({ where: { id } });
 }
 
