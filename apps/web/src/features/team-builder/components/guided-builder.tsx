@@ -151,7 +151,6 @@ export function GuidedBuilder({ teamId, formatId }: GuidedBuilderProps) {
     if (guided.isRestoringDraft || hasSyncedDraft.current) return
     hasSyncedDraft.current = true
     if (guided.filledSlots.length === 0) return
-
     ;(async () => {
       for (const slot of guided.filledSlots) {
         if (slot.pokemonId && slot.position) {

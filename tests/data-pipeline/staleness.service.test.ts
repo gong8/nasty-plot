@@ -254,9 +254,7 @@ describe("getDataStatus", () => {
 
   it("includes logs with error status", async () => {
     const now = new Date()
-    const fakeRows = [
-      mockSyncLog({ lastSynced: now, status: "error", message: "Network timeout" }),
-    ]
+    const fakeRows = [mockSyncLog({ lastSynced: now, status: "error", message: "Network timeout" })]
 
     mockedPrisma.dataSyncLog.findMany.mockResolvedValueOnce(fakeRows)
 

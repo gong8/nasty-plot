@@ -23,7 +23,7 @@ interface ChatSessionListProps {
 }
 
 export function ChatSessionList({ mode, onSelect }: ChatSessionListProps) {
-  const { activeSessionId, switchSession } = useChatSidebar()
+  const { activeSessionId, switchSession, newSession } = useChatSidebar()
   const { data: sessions, isLoading } = useChatSessions()
   const deleteMut = useDeleteChatSession()
 

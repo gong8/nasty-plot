@@ -1,15 +1,14 @@
 "use client"
 
-import { use, useEffect, useState, useCallback } from "react"
+import { use, useEffect, useState, useCallback, useMemo } from "react"
 import { useReplay } from "@/features/battle/hooks/use-replay"
 import { useReplayAnimations } from "@/features/battle/hooks/use-replay-animations"
-import { BattleField } from "@/features/battle/components/BattleField"
 import { BattleLog } from "@/features/battle/components/BattleLog"
+import { BattleScreen, type SidebarTab } from "@/features/battle/components/BattleScreen"
 import { ReplayControls } from "@/features/battle/components/ReplayControls"
 import { WinProbabilityGraph } from "@/features/battle/components/WinProbabilityGraph"
 import { EvalBar } from "@/features/battle/components/EvalBar"
 import { CommentaryPanel } from "@/features/battle/components/CommentaryPanel"
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { Loader2 } from "lucide-react"
 import type { BattleFormat } from "@nasty-plot/battle-engine"
 
@@ -102,6 +101,53 @@ function ReplayViewerContent({ battleData }: { battleData: BattleData }) {
     [battleData.id],
   )
 
+  const allFrames = replay.getAllFrames()
+
+  // Build sidebar tabs for replay — must be above early return to satisfy rules-of-hooks
+  const sidebarTabs: SidebarTab[] = useMemo(
+    () => [
+      {
+        value: "log",
+        label: "Log",
+        content: (
+          <div className="border rounded-lg overflow-hidden h-full">
+            <BattleLog entries={replay.currentFrame?.entries ?? []} />
+          </div>
+        ),
+      },
+      {
+        value: "graph",
+        label: "Graph",
+        content: (
+          <WinProbabilityGraph
+            frames={allFrames}
+            currentTurn={replay.currentFrame?.turnNumber ?? 0}
+            p1Name={battleData.team1Name}
+            p2Name={battleData.team2Name}
+            className="h-full"
+          />
+        ),
+      },
+      {
+        value: "commentary",
+        label: "Commentary",
+        content: (
+          <CommentaryPanel
+            state={replay.currentFrame?.state ?? ({} as never)}
+            recentEntries={replay.currentFrame?.entries ?? []}
+            team1Name={battleData.team1Name}
+            team2Name={battleData.team2Name}
+            initialCommentary={commentary}
+            onCommentaryGenerated={handleCommentaryGenerated}
+            className="h-full gap-0 py-0"
+          />
+        ),
+      },
+    ],
+     
+    [replay.currentFrame, allFrames, battleData, commentary, handleCommentaryGenerated],
+  )
+
   if (!replay.isReady || !replay.currentFrame) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -111,7 +157,6 @@ function ReplayViewerContent({ battleData }: { battleData: BattleData }) {
     )
   }
 
-  const allFrames = replay.getAllFrames()
   const winProb = replay.currentFrame.winProbTeam1
 
   return (
@@ -133,62 +178,15 @@ function ReplayViewerContent({ battleData }: { battleData: BattleData }) {
         </span>
       </div>
 
-      {/* Middle: field + tabbed sidebar */}
-      <div className="flex-1 flex flex-col lg:flex-row gap-2 px-3 py-2 min-h-0">
-        {/* Battle field */}
-        <div className="lg:flex-[7] h-[35vh] lg:h-auto min-w-0">
-          <BattleField
-            state={replay.currentFrame.state}
-            animationStates={animState.slotAnimations}
-            textMessage={animState.textMessage}
-            damageNumbers={animState.damageNumbers}
-            textSpeed={replay.speed}
-            className="max-h-full"
-          />
-        </div>
-
-        {/* Tabbed sidebar */}
-        <Tabs defaultValue="log" className="lg:flex-[3] flex-1 min-w-0 min-h-0">
-          <TabsList className="w-full">
-            <TabsTrigger value="log" className="text-xs">
-              Log
-            </TabsTrigger>
-            <TabsTrigger value="graph" className="text-xs">
-              Graph
-            </TabsTrigger>
-            <TabsTrigger value="commentary" className="text-xs">
-              Commentary
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="log" className="flex-1 min-h-0">
-            <div className="border rounded-lg overflow-hidden h-full">
-              <BattleLog entries={replay.currentFrame.entries} />
-            </div>
-          </TabsContent>
-
-          <TabsContent value="graph" className="flex-1 min-h-0">
-            <WinProbabilityGraph
-              frames={allFrames}
-              currentTurn={replay.currentFrame.turnNumber}
-              p1Name={battleData.team1Name}
-              p2Name={battleData.team2Name}
-              className="h-full"
-            />
-          </TabsContent>
-
-          <TabsContent value="commentary" className="flex-1 min-h-0">
-            <CommentaryPanel
-              state={replay.currentFrame.state}
-              recentEntries={replay.currentFrame.entries}
-              team1Name={battleData.team1Name}
-              team2Name={battleData.team2Name}
-              initialCommentary={commentary}
-              onCommentaryGenerated={handleCommentaryGenerated}
-              className="h-full gap-0 py-0"
-            />
-          </TabsContent>
-        </Tabs>
+      {/* Middle: shared BattleScreen (field + tabbed sidebar) */}
+      <div className="flex-1 px-3 py-2 min-h-0">
+        <BattleScreen
+          state={replay.currentFrame.state}
+          animState={animState}
+          textSpeed={replay.speed}
+          sidebarTabs={sidebarTabs}
+          className="h-full"
+        />
       </div>
 
       {/* Replay controls */}

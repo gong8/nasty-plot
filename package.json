@@ -27,7 +27,8 @@
     "check:format": "prettier --check .",
     "check:lint": "turbo lint",
     "check:quality": "node scripts/check-quality.mjs",
-    "check:types": "turbo typecheck"
+    "check:types": "turbo typecheck",
+    "prepare": "husky"
   },
   "dependencies": {
     "@prisma/client": "^7.3.0",
@@ -41,11 +42,22 @@
     "@vitest/coverage-v8": "^4.0.18",
     "concurrently": "^9.2.1",
     "eslint": "^10.0.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.7",
     "prettier": "^3.8.1",
     "turbo": "^2.0.0",
     "typescript": "^5",
     "typescript-eslint": "^8.55.0",
     "vitest": "^4.0.18"
+  },
+  "lint-staged": {
+    "*.{ts,tsx}": [
+      "prettier --write",
+      "eslint --fix"
+    ],
+    "*.{js,mjs,cjs,json,md,css,yaml,yml}": [
+      "prettier --write"
+    ]
   },
   "pnpm": {
     "onlyBuiltDependencies": [

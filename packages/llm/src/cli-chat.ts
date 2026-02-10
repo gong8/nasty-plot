@@ -7,7 +7,6 @@ import { StreamParser } from "./stream-parser"
 import type { SSEEvent } from "./sse-events"
 import type { PageContextData } from "./context-builder"
 
-
 const MCP_URL = process.env.MCP_URL || "http://localhost:3001/mcp"
 const CLI_MODEL = process.env.LLM_MODEL || "opus"
 const LOG_PREFIX = "[cli-chat]"
