@@ -9,8 +9,8 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@nasty-plot/core": "*",
-    "@nasty-plot/db": "*",
+    "@nasty-plot/core": "workspace:*",
+    "@nasty-plot/db": "workspace:*",
     "openai": "^6.19.0"
   },
   "devDependencies": {

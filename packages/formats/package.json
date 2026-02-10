@@ -5,8 +5,8 @@
   "type": "module",
   "exports": { ".": "./src/index.ts" },
   "dependencies": {
-    "@nasty-plot/core": "*",
-    "@nasty-plot/pokemon-data": "*"
+    "@nasty-plot/core": "workspace:*",
+    "@nasty-plot/pokemon-data": "workspace:*"
   },
   "devDependencies": { "vitest": "^4.0.18" }
 }

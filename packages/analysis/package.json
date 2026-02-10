@@ -5,8 +5,9 @@
   "type": "module",
   "exports": { ".": "./src/index.ts" },
   "dependencies": {
-    "@nasty-plot/core": "*",
-    "@nasty-plot/db": "*"
+    "@nasty-plot/core": "workspace:*",
+    "@nasty-plot/db": "workspace:*",
+    "@pkmn/dex": "^0.10.6"
   },
   "devDependencies": { "vitest": "^4.0.18" }
 }

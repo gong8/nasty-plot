@@ -10,8 +10,8 @@
     "seed": "tsx src/cli/seed.ts"
   },
   "dependencies": {
-    "@nasty-plot/db": "*",
-    "@nasty-plot/smogon-data": "*"
+    "@nasty-plot/db": "workspace:*",
+    "@nasty-plot/smogon-data": "workspace:*"
   },
   "devDependencies": {
     "typescript": "^5.9.3",

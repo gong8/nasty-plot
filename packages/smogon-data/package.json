@@ -6,8 +6,8 @@
   "exports": { ".": "./src/index.ts" },
   "dependencies": {
     "@pkmn/smogon": "^0.5.28",
-    "@nasty-plot/core": "*",
-    "@nasty-plot/db": "*"
+    "@nasty-plot/core": "workspace:*",
+    "@nasty-plot/db": "workspace:*"
   },
   "devDependencies": { "vitest": "^4.0.18" }
 }

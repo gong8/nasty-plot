@@ -4,7 +4,7 @@
 
 Pokemon team building simplifier and competitive analysis teaching playground. Dual purpose: a usable tool for building and analyzing teams, and a learning platform for competitive Pokemon concepts.
 
-**Stack:** Turborepo monorepo, Next.js 16 (App Router + Turbopack), TypeScript 5, React 19, Prisma/SQLite, Vitest
+**Stack:** Turborepo + pnpm monorepo, Next.js 16 (App Router + Turbopack), TypeScript 5, React 19, Prisma/SQLite, Vitest
 **Scope:** Gen 9 (Scarlet/Violet), Smogon singles formats (OU, UU, etc.) + VGC doubles
 
 ## Architecture
@@ -66,16 +66,16 @@ Presentation: ui, web
 ## Development Commands
 
 ```bash
-npm run dev           # Next.js dev server (Turbopack)
-npm run dev:mcp       # MCP server on port 3001
-npm run dev:all       # Both concurrently
-npm run test          # Vitest run (CI mode)
-npm run test:watch    # Vitest watch mode
-npm run test:coverage # Vitest with V8 coverage
-npm run build         # Next.js build
-npm run seed          # Seed DB with Smogon usage data
-npx prisma generate   # Regenerate Prisma client (run from repo root)
-npx prisma migrate dev # Run pending migrations
+pnpm dev              # Next.js dev server (Turbopack)
+pnpm dev:mcp          # MCP server on port 3001
+pnpm dev:all          # Both concurrently
+pnpm test             # Vitest run (CI mode)
+pnpm test:watch       # Vitest watch mode
+pnpm test:coverage    # Vitest with V8 coverage
+pnpm build            # Next.js build
+pnpm seed             # Seed DB with Smogon usage data
+pnpm exec prisma generate   # Regenerate Prisma client (run from repo root)
+pnpm exec prisma migrate dev # Run pending migrations
 ```
 
 **Gotcha:** After `prisma generate`, restart the dev server. Turbopack caches the stale Prisma client and won't pick up schema changes until restarted.

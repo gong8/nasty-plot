@@ -2,7 +2,7 @@
   "name": "nasty-plot",
   "version": "0.1.0",
   "private": true,
-  "packageManager": "npm@11.8.0",
+  "packageManager": "pnpm@10.29.2",
   "workspaces": [
     "packages/*",
     "apps/*"
@@ -13,19 +13,30 @@
     "lint": "turbo lint",
     "test": "turbo test",
     "test:coverage": "turbo test -- --coverage",
-    "seed": "npm -w @nasty-plot/data-pipeline run seed",
-    "dev:mcp": "npm -w @nasty-plot/mcp-server run dev",
-    "dev:all": "concurrently \"npm run dev\" \"npm run dev:mcp\"",
+    "seed": "pnpm --filter @nasty-plot/data-pipeline run seed",
+    "dev:mcp": "pnpm --filter @nasty-plot/mcp-server run dev",
+    "dev:all": "concurrently \"pnpm run dev\" \"pnpm run dev:mcp\"",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:push": "prisma db push"
   },
   "dependencies": {
+    "@prisma/client": "^7.3.0",
     "prisma": "^7.3.0"
   },
   "devDependencies": {
     "concurrently": "^9.2.1",
     "turbo": "^2.0.0",
     "typescript": "^5"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@prisma/engines",
+      "better-sqlite3",
+      "esbuild",
+      "prisma",
+      "sharp",
+      "unrs-resolver"
+    ]
   }
 }

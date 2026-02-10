@@ -9,9 +9,9 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@nasty-plot/core": "*",
-    "@nasty-plot/db": "*",
-    "@nasty-plot/analysis": "*",
+    "@nasty-plot/core": "workspace:*",
+    "@nasty-plot/db": "workspace:*",
+    "@nasty-plot/analysis": "workspace:*",
     "@pkmn/dex": "^0.10.6"
   },
   "devDependencies": {
