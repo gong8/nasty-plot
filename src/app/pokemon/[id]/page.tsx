@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -70,8 +71,11 @@ export default async function PokemonDetailPage({ params }: Props) {
       <SiteHeader />
 
       <main className="flex-1 container mx-auto px-4 py-6">
-        <Link href="/pokemon" className="text-sm text-muted-foreground hover:underline mb-4 inline-block">
-          &larr; Back to browser
+        <Link href="/pokemon">
+          <Button variant="ghost" size="sm" className="gap-1 mb-4">
+            <ArrowLeft className="h-4 w-4" />
+            Back to Pokemon
+          </Button>
         </Link>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

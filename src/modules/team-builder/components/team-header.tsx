@@ -36,7 +36,7 @@ interface TeamHeaderProps {
   team: TeamData;
   onUpdateName: (name: string) => void;
   onDelete: () => void;
-  onImport: (paste: string) => void;
+  onImport: (paste: string) => Promise<void>;
 }
 
 export function TeamHeader({
@@ -50,6 +50,8 @@ export function TeamHeader({
   const [importOpen, setImportOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
   const [importPaste, setImportPaste] = useState("");
+  const [importError, setImportError] = useState("");
+  const [importLoading, setImportLoading] = useState(false);
   const [exportPaste, setExportPaste] = useState("");
   const [exportLoading, setExportLoading] = useState(false);
 
@@ -77,11 +79,18 @@ export function TeamHeader({
     setExportOpen(true);
   };
 
-  const handleImportSubmit = () => {
-    if (importPaste.trim()) {
-      onImport(importPaste.trim());
+  const handleImportSubmit = async () => {
+    if (!importPaste.trim()) return;
+    setImportError("");
+    setImportLoading(true);
+    try {
+      await onImport(importPaste.trim());
       setImportPaste("");
       setImportOpen(false);
+    } catch (err) {
+      setImportError(err instanceof Error ? err.message : "Import failed");
+    } finally {
+      setImportLoading(false);
     }
   };
 
@@ -173,19 +182,36 @@ export function TeamHeader({
             <DialogHeader>
               <DialogTitle>Import Showdown Paste</DialogTitle>
               <DialogDescription>
-                Paste your Pokemon Showdown team export below.
+                Paste your Pokemon Showdown team export below. This will replace the current team&apos;s Pokemon.
               </DialogDescription>
             </DialogHeader>
             <Textarea
               placeholder={"Garganacl @ Leftovers\nAbility: Purifying Salt\n..."}
               value={importPaste}
-              onChange={(e) => setImportPaste(e.target.value)}
+              onChange={(e) => {
+                setImportPaste(e.target.value);
+                if (importError) setImportError("");
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+                  e.preventDefault();
+                  handleImportSubmit();
+                }
+              }}
               rows={10}
               className="font-mono text-sm"
             />
-            <Button onClick={handleImportSubmit} disabled={!importPaste.trim()}>
-              Import
-            </Button>
+            {importError && (
+              <p className="text-sm text-destructive">{importError}</p>
+            )}
+            <DialogFooter>
+              <p className="text-xs text-muted-foreground mr-auto self-center">
+                Press Ctrl+Enter to import
+              </p>
+              <Button onClick={handleImportSubmit} disabled={!importPaste.trim() || importLoading}>
+                {importLoading ? "Importing..." : "Import"}
+              </Button>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
 

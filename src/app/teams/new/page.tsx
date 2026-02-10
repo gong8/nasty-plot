@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Sparkles, Wrench } from "lucide-react";
+import { ArrowLeft, Sparkles, Wrench } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -67,7 +67,16 @@ export default function NewTeamPage() {
   };
 
   return (
-    <div className="container mx-auto max-w-md py-8 px-4">
+    <div className="container mx-auto max-w-md py-8 px-4 space-y-4">
+      <Button
+        variant="ghost"
+        size="sm"
+        className="gap-1"
+        onClick={() => router.push("/teams")}
+      >
+        <ArrowLeft className="h-4 w-4" />
+        Back to Teams
+      </Button>
       <Card>
         <CardHeader>
           <CardTitle>Create New Team</CardTitle>

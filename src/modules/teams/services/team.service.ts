@@ -1,4 +1,5 @@
 import { prisma } from "@/shared/services/prisma";
+import { getSpecies } from "@/modules/pokemon-data";
 import type {
   NatureName,
   StatsTable,
@@ -40,10 +41,12 @@ function dbSlotToDomain(
     ivSpe: number;
   }
 ): TeamSlotData {
+  const species = getSpecies(dbSlot.pokemonId);
   return {
     position: dbSlot.position,
     pokemonId: dbSlot.pokemonId,
     nickname: dbSlot.nickname ?? undefined,
+    species: species ?? undefined,
     ability: dbSlot.ability,
     item: dbSlot.item,
     nature: dbSlot.nature as NatureName,
@@ -311,6 +314,10 @@ export async function removeSlot(
       });
     }
   }
+}
+
+export async function clearSlots(teamId: string): Promise<void> {
+  await prisma.teamSlot.deleteMany({ where: { teamId } });
 }
 
 export async function reorderSlots(

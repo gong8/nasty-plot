@@ -13,6 +13,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SiteHeader } from "@/shared/components/site-header";
+import { PokemonSprite } from "@/shared/components/pokemon-sprite";
 import { useTeams } from "@/modules/teams/hooks/use-teams";
 
 export default function TeamsPage() {
@@ -96,12 +97,14 @@ export default function TeamsPage() {
                 {team.slots.length > 0 && (
                   <div className="flex gap-1 mt-3">
                     {team.slots.map((slot) => (
-                      <div
-                        key={slot.position}
-                        className="flex h-8 w-8 items-center justify-center rounded-full bg-muted text-[8px] font-bold uppercase"
-                        title={slot.pokemonId}
-                      >
-                        {slot.pokemonId.slice(0, 2)}
+                      <div key={slot.position} title={slot.species?.name || slot.pokemonId}>
+                        {slot.species?.num ? (
+                          <PokemonSprite pokemonId={slot.pokemonId} num={slot.species.num} size={32} />
+                        ) : (
+                          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted text-[8px] font-bold uppercase">
+                            {slot.pokemonId.slice(0, 2)}
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>

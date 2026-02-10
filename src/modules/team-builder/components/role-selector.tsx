@@ -12,6 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { TypeBadge } from "@/shared/components/type-badge";
+import { PokemonSprite } from "@/shared/components/pokemon-sprite";
 import type { PokemonType, UsageStatsEntry } from "@/shared/types";
 import type { CorePokemon, RoleDefinition } from "../hooks/use-guided-builder";
 
@@ -109,9 +110,13 @@ export function RoleSelector({
                   usagePercent: c.usagePercent,
                 })}
               >
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted text-xs font-bold uppercase">
-                  {c.pokemonId.slice(0, 2)}
-                </div>
+                {c.num ? (
+                  <PokemonSprite pokemonId={c.pokemonId} num={c.num} size={32} />
+                ) : (
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted text-xs font-bold uppercase">
+                    {c.pokemonId.slice(0, 2)}
+                  </div>
+                )}
                 <div className="flex flex-col">
                   <span className="text-sm font-medium">{name}</span>
                   <div className="flex gap-0.5">

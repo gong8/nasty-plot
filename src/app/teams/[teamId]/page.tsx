@@ -3,7 +3,7 @@
 import { use, useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { MessageCircle, Plus } from "lucide-react";
+import { ArrowLeft, MessageCircle, Plus } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -55,6 +55,7 @@ export default function TeamEditorPage({
     selectedSlot,
     selectedSlotData,
     selectSlot,
+    refetch,
   } = useTeamBuilder(teamId);
 
   const [addingNew, setAddingNew] = useState(false);
@@ -111,24 +112,18 @@ export default function TeamEditorPage({
   const handleImport = useCallback(
     async (paste: string) => {
       if (!team) return;
-      try {
-        const res = await fetch(`/api/teams/${teamId}/import`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            paste,
-            formatId: team.formatId,
-          }),
-        });
-        if (res.ok) {
-          const newTeam = await res.json();
-          router.push(`/teams/${newTeam.id}`);
-        }
-      } catch {
-        // Silently fail
+      const res = await fetch(`/api/teams/${teamId}/import`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ paste }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || "Import failed");
       }
+      await refetch();
     },
-    [team, teamId, router]
+    [team, teamId, refetch]
   );
 
   const handleAddSlot = useCallback(() => {
@@ -208,13 +203,25 @@ export default function TeamEditorPage({
 
   return (
     <div className="container mx-auto max-w-6xl py-8 px-4 space-y-6">
-      {/* Header */}
-      <TeamHeader
-        team={team}
-        onUpdateName={handleUpdateName}
-        onDelete={handleDelete}
-        onImport={handleImport}
-      />
+      {/* Back + Header */}
+      <div className="flex items-center gap-3">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 shrink-0"
+          onClick={() => router.push("/teams")}
+        >
+          <ArrowLeft className="h-4 w-4" />
+        </Button>
+        <div className="flex-1 min-w-0">
+          <TeamHeader
+            team={team}
+            onUpdateName={handleUpdateName}
+            onDelete={handleDelete}
+            onImport={handleImport}
+          />
+        </div>
+      </div>
 
       {/* Team Grid */}
       <TeamGrid

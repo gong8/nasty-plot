@@ -45,10 +45,31 @@ export function getSpecies(id: string): PokemonSpecies | null {
   };
 }
 
+/**
+ * Returns true if a forme is purely cosmetic (same stats/abilities/types as its base form).
+ * Examples: Pikachu caps, Vivillon patterns, Alcremie flavors, Deerling seasons.
+ */
+function isCosmeticForme(species: ReturnType<typeof dex.species.get>): boolean {
+  if (!species.forme || species.changesFrom || species.battleOnly) return false;
+  const base = dex.species.get(species.baseSpecies);
+  if (!base || !base.exists) return false;
+  return (
+    JSON.stringify(species.baseStats) === JSON.stringify(base.baseStats) &&
+    JSON.stringify(species.abilities) === JSON.stringify(base.abilities) &&
+    JSON.stringify(species.types) === JSON.stringify(base.types)
+  );
+}
+
 export function getAllSpecies(): PokemonSpecies[] {
   const all: PokemonSpecies[] = [];
   for (const species of dex.species.all()) {
-    if (species.exists && species.num > 0 && !species.isNonstandard) {
+    if (
+      species.exists &&
+      species.num > 0 &&
+      !species.isNonstandard &&
+      !species.battleOnly &&
+      !isCosmeticForme(species)
+    ) {
       all.push({
         id: species.id,
         name: species.name,
