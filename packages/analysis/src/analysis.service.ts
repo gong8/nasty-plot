@@ -2,12 +2,14 @@ import {
   DEFAULT_IVS,
   DEFAULT_EVS,
   calculateAllStats,
+  calculateStat,
   type TeamSlotData,
   type TeamAnalysis,
   type SpeedTierEntry,
   type PokemonType,
 } from "@nasty-plot/core";
 import { prisma } from "@nasty-plot/db";
+import { getFormat } from "@nasty-plot/formats";
 import { analyzeTypeCoverage } from "./coverage.service";
 import { identifyThreats } from "./threat.service";
 import { calculateSynergy } from "./synergy.service";
@@ -75,7 +77,7 @@ export async function analyzeTeam(teamId: string): Promise<TeamAnalysis> {
   const coverage = analyzeTypeCoverage(slots);
   const threats = await identifyThreats(slots, team.formatId);
   const synergyScore = calculateSynergy(slots);
-  const speedTiers = calculateSpeedTiers(slots);
+  const speedTiers = await calculateSpeedTiers(slots, team.formatId);
   const suggestions = generateSuggestions(coverage, threats, synergyScore, slots);
 
   return {
@@ -87,9 +89,11 @@ export async function analyzeTeam(teamId: string): Promise<TeamAnalysis> {
   };
 }
 
-function calculateSpeedTiers(slots: TeamSlotData[]): SpeedTierEntry[] {
+async function calculateSpeedTiers(slots: TeamSlotData[], formatId: string): Promise<SpeedTierEntry[]> {
+  const { Dex } = await import("@pkmn/dex");
   const entries: SpeedTierEntry[] = [];
 
+  // Team entries
   for (const slot of slots) {
     if (!slot.species) continue;
 
@@ -104,10 +108,45 @@ function calculateSpeedTiers(slots: TeamSlotData[]): SpeedTierEntry[] {
     entries.push({
       pokemonId: slot.pokemonId,
       pokemonName: slot.species.name,
+      pokemonNum: slot.species.num,
       speed: stats.spe,
       nature: slot.nature,
       evs: slot.evs.spe,
     });
+  }
+
+  // Dynamic benchmarks from format usage data
+  const format = getFormat(formatId);
+  const level = format?.defaultLevel ?? 100;
+  const teamPokemonIds = new Set(slots.map((s) => s.pokemonId));
+
+  const usageEntries = await prisma.usageStats.findMany({
+    where: { formatId },
+    orderBy: { rank: "asc" },
+    take: 20,
+  });
+
+  let benchmarkCount = 0;
+  for (const entry of usageEntries) {
+    if (benchmarkCount >= 10) break;
+    if (teamPokemonIds.has(entry.pokemonId)) continue;
+
+    const species = Dex.species.get(entry.pokemonId);
+    if (!species?.exists) continue;
+
+    // Max speed: 252 EVs, 31 IVs, +Spe nature (Jolly)
+    const maxSpeed = calculateStat("spe", species.baseStats.spe, 31, 252, level, "Jolly");
+
+    entries.push({
+      pokemonId: entry.pokemonId,
+      pokemonName: species.name,
+      pokemonNum: species.num,
+      speed: maxSpeed,
+      nature: "Jolly",
+      evs: 252,
+      isBenchmark: true,
+    });
+    benchmarkCount++;
   }
 
   entries.sort((a, b) => b.speed - a.speed);

@@ -211,4 +211,94 @@ describe("MCTSAI", () => {
     // Verify the custom config is used by running the AI
     // (the default maxTimeMs should still be 5000)
   });
+
+  it("can handle doubles battles", async () => {
+    const doublesState: BattleState = {
+      phase: "battle",
+      format: "doubles",
+      turn: 1,
+      sides: {
+        p1: {
+          active: [
+            makePokemon(),
+            makePokemon({ speciesId: "heatran", name: "Heatran", types: ["Fire", "Steel"] }),
+          ],
+          team: [
+            makePokemon(),
+            makePokemon({ speciesId: "heatran", name: "Heatran", types: ["Fire", "Steel"] }),
+            makePokemon({ speciesId: "clefable", name: "Clefable", types: ["Fairy"] }),
+          ],
+          name: "Player",
+          sideConditions: {
+            stealthRock: false,
+            spikes: 0,
+            toxicSpikes: 0,
+            stickyWeb: false,
+            reflect: 0,
+            lightScreen: 0,
+            auroraVeil: 0,
+            tailwind: 0,
+          },
+          canTera: true,
+        },
+        p2: {
+          active: [
+            makePokemon({
+              speciesId: "ironvaliant",
+              name: "Iron Valiant",
+              types: ["Fairy", "Fighting"],
+            }),
+            makePokemon({
+              speciesId: "greattusk",
+              name: "Great Tusk",
+              types: ["Ground", "Fighting"],
+            }),
+          ],
+          team: [
+            makePokemon({
+              speciesId: "ironvaliant",
+              name: "Iron Valiant",
+              types: ["Fairy", "Fighting"],
+            }),
+            makePokemon({
+              speciesId: "greattusk",
+              name: "Great Tusk",
+              types: ["Ground", "Fighting"],
+            }),
+          ],
+          name: "Opponent",
+          sideConditions: {
+            stealthRock: false,
+            spikes: 0,
+            toxicSpikes: 0,
+            stickyWeb: false,
+            reflect: 0,
+            lightScreen: 0,
+            auroraVeil: 0,
+            tailwind: 0,
+          },
+          canTera: true,
+        },
+      },
+      field: {
+        weather: "",
+        weatherTurns: 0,
+        terrain: "",
+        terrainTurns: 0,
+        trickRoom: 0,
+      },
+      winner: null,
+      log: [],
+      fullLog: [],
+      waitingForChoice: true,
+      availableActions: null,
+      id: "test-doubles",
+    };
+
+    const doublesActions = makeActions();
+
+    const result = await ai.chooseAction(doublesState, doublesActions);
+    // Should return a valid action (will fall back to heuristic since no battle state)
+    expect(result.type).toMatch(/^(move|switch)$/);
+  });
 });

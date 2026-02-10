@@ -2,25 +2,13 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { PokemonSprite } from "@nasty-plot/ui";
 import { STAT_COLORS, type SpeedTierEntry } from "@nasty-plot/core";
 import { cn } from "@/lib/utils";
 
 interface SpeedTiersProps {
   tiers: SpeedTierEntry[] | undefined;
 }
-
-// Common speed benchmarks (base speed stat values)
-const BENCHMARKS = [
-  { speed: 252, label: "Regieleki (200 base)" },
-  { speed: 207, label: "Dragapult (142 base)" },
-  { speed: 178, label: "Iron Bundle (136 base)" },
-  { speed: 165, label: "Meowscarada (123 base)" },
-  { speed: 150, label: "Cinderace (119 base)" },
-  { speed: 130, label: "Garchomp (102 base)" },
-  { speed: 115, label: "Lando-T (91 base)" },
-  { speed: 97,  label: "Tyranitar (61 base)" },
-  { speed: 65,  label: "Slowbro (30 base)" },
-];
 
 export function SpeedTiers({ tiers }: SpeedTiersProps) {
   if (!tiers || tiers.length === 0) {
@@ -38,27 +26,7 @@ export function SpeedTiers({ tiers }: SpeedTiersProps) {
     );
   }
 
-  const maxSpeed = Math.max(
-    ...tiers.map((t) => t.speed),
-    ...BENCHMARKS.map((b) => b.speed)
-  );
-
-  type TeamEntry = SpeedTierEntry & { isTeam: true; label: string };
-  type BenchmarkEntry = { speed: number; label: string; isTeam: false };
-  type CombinedEntry = TeamEntry | BenchmarkEntry;
-
-  const combined: CombinedEntry[] = [
-    ...tiers.map((t): TeamEntry => ({
-      ...t,
-      isTeam: true,
-      label: t.pokemonName,
-    })),
-    ...BENCHMARKS.map((b): BenchmarkEntry => ({
-      speed: b.speed,
-      label: b.label,
-      isTeam: false,
-    })),
-  ].sort((a, b) => b.speed - a.speed);
+  const maxSpeed = Math.max(...tiers.map((t) => t.speed));
 
   return (
     <Card>
@@ -67,27 +35,41 @@ export function SpeedTiers({ tiers }: SpeedTiersProps) {
       </CardHeader>
       <CardContent>
         <div className="space-y-1">
-          {combined.map((entry, idx) => {
+          {tiers.map((entry, idx) => {
             const widthPercent = (entry.speed / maxSpeed) * 100;
-            const isTeam = entry.isTeam;
+            const isTeam = !entry.isBenchmark;
 
             return (
-              <Tooltip key={`${entry.label}-${idx}`}>
+              <Tooltip key={`${entry.pokemonId}-${idx}`}>
                 <TooltipTrigger asChild>
                   <div
                     className={cn(
-                      "flex items-center gap-2 py-1 cursor-default",
-                      !isTeam && "opacity-40"
+                      "flex items-center gap-2 py-0.5 cursor-default",
+                      !isTeam && "opacity-50"
                     )}
                   >
-                    <span
-                      className={cn(
-                        "text-[11px] w-28 truncate text-right",
-                        isTeam ? "font-medium" : "text-muted-foreground"
+                    {/* Sprite + Name */}
+                    <div className="flex items-center gap-1.5 w-36 shrink-0">
+                      {entry.pokemonNum ? (
+                        <PokemonSprite
+                          pokemonId={entry.pokemonId}
+                          num={entry.pokemonNum}
+                          size={20}
+                        />
+                      ) : (
+                        <div className="w-5 h-5" />
                       )}
-                    >
-                      {entry.label}
-                    </span>
+                      <span
+                        className={cn(
+                          "text-[11px] truncate",
+                          isTeam ? "font-medium" : "text-muted-foreground"
+                        )}
+                      >
+                        {entry.pokemonName}
+                      </span>
+                    </div>
+
+                    {/* Speed Bar */}
                     <div className="flex-1 h-5 bg-muted/30 rounded-sm overflow-hidden relative">
                       <div
                         className={cn(
@@ -112,7 +94,7 @@ export function SpeedTiers({ tiers }: SpeedTiersProps) {
                 </TooltipTrigger>
                 <TooltipContent>
                   <div className="text-xs">
-                    {entry.isTeam ? (
+                    {isTeam ? (
                       <>
                         <p className="font-medium">{entry.pokemonName}</p>
                         <p>Speed: {entry.speed}</p>
@@ -120,7 +102,11 @@ export function SpeedTiers({ tiers }: SpeedTiersProps) {
                         <p>Speed EVs: {entry.evs}</p>
                       </>
                     ) : (
-                      <p>{entry.label} - {entry.speed} Spe</p>
+                      <>
+                        <p className="font-medium">{entry.pokemonName}</p>
+                        <p>Speed: {entry.speed}</p>
+                        <p>Max invest +Spe nature</p>
+                      </>
                     )}
                   </div>
                 </TooltipContent>

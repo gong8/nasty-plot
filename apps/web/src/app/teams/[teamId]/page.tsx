@@ -36,15 +36,10 @@ import { ThreatList } from "@/features/analysis/components/threat-list";
 import { SpeedTiers } from "@/features/analysis/components/speed-tiers";
 import { MatchupMatrix } from "@/features/damage-calc/components/matchup-matrix";
 import { RecommendationPanel } from "@/features/recommendations/components/recommendation-panel";
-import { TeamDiffView } from "@/features/team-builder/components/team-diff-view";
-import { LineageTree } from "@/features/team-builder/components/lineage-tree";
 import { MergeWizard } from "@/features/team-builder/components/merge-wizard";
-import type { TeamSlotInput, TeamAnalysis, MatchupMatrixEntry, LineageNode, MergeDecision } from "@nasty-plot/core";
-
-
-function collectNodes(node: LineageNode): LineageNode[] {
-  return [node, ...node.children.flatMap(collectNodes)];
-}
+import { VersionPanel } from "@/features/team-builder/components/version-panel";
+import { OpponentSelector } from "@/features/damage-calc/components/opponent-selector";
+import type { TeamSlotInput, TeamAnalysis, MatchupMatrixEntry, MergeDecision } from "@nasty-plot/core";
 
 export default function TeamEditorPage({
   params,
@@ -67,6 +62,8 @@ export default function TeamEditorPage({
   const [activeTab, setActiveTab] = useState("overview");
   const [compareTargetId, setCompareTargetId] = useState<string | undefined>();
   const [mergeOpen, setMergeOpen] = useState(false);
+  const [versionsOpen, setVersionsOpen] = useState(false);
+  const [customThreatIds, setCustomThreatIds] = useState<string[]>([]);
 
   const updateTeamMut = useUpdateTeam();
   const deleteTeamMut = useDeleteTeam();
@@ -95,7 +92,7 @@ export default function TeamEditorPage({
 
   // Fetch matchup matrix when matchups tab is selected
   const matchupQuery = useQuery<{ data: MatchupMatrixEntry[][] }>({
-    queryKey: ["matchup-matrix", teamId, team?.formatId],
+    queryKey: ["matchup-matrix", teamId, team?.formatId, customThreatIds],
     queryFn: () =>
       fetch("/api/damage-calc/matchup-matrix", {
         method: "POST",
@@ -103,6 +100,7 @@ export default function TeamEditorPage({
         body: JSON.stringify({
           teamId,
           formatId: team?.formatId,
+          ...(customThreatIds.length > 0 && { threatIds: customThreatIds }),
         }),
       }).then((r) => {
         if (!r.ok) throw new Error("Failed to fetch matchup matrix");
@@ -269,6 +267,7 @@ export default function TeamEditorPage({
             onImport={handleImport}
             onFork={handleFork}
             onArchive={handleArchive}
+            onShowVersions={() => setVersionsOpen(true)}
           />
         </div>
       </div>
@@ -309,8 +308,6 @@ export default function TeamEditorPage({
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="matchups">Matchups</TabsTrigger>
           <TabsTrigger value="analysis">Analysis</TabsTrigger>
-          <TabsTrigger value="lineage">Lineage</TabsTrigger>
-          <TabsTrigger value="compare">Compare</TabsTrigger>
         </TabsList>
         <TabsContent value="overview" className="py-4">
           <div className="text-center text-muted-foreground py-8">
@@ -319,7 +316,12 @@ export default function TeamEditorPage({
               : `${team.slots.length}/6 Pokemon selected`}
           </div>
         </TabsContent>
-        <TabsContent value="matchups" className="py-4">
+        <TabsContent value="matchups" className="py-4 space-y-4">
+          <OpponentSelector
+            selectedIds={customThreatIds}
+            onSelectionChange={setCustomThreatIds}
+            formatId={team.formatId}
+          />
           <MatchupMatrix
             matrix={matchupQuery.data?.data}
             isLoading={matchupQuery.isLoading}
@@ -337,69 +339,28 @@ export default function TeamEditorPage({
               <ThreatList
                 threats={analysis?.threats}
                 isLoading={analysisQuery.isLoading}
+                slots={team.slots}
               />
               <SpeedTiers tiers={analysis?.speedTiers} />
             </div>
           )}
         </TabsContent>
-        <TabsContent value="lineage" className="py-4">
-          {lineageQuery.data ? (
-            <LineageTree tree={lineageQuery.data} currentTeamId={teamId} />
-          ) : lineageQuery.isLoading ? (
-            <div className="text-center text-muted-foreground py-8">
-              Loading lineage...
-            </div>
-          ) : (
-            <div className="text-center text-muted-foreground py-8">
-              No lineage data. Fork this team to start tracking variants.
-            </div>
-          )}
-        </TabsContent>
-        <TabsContent value="compare" className="py-4 space-y-4">
-          <div className="flex items-center gap-3 flex-wrap">
-            {lineageQuery.data && (
-              <>
-                <label className="text-sm font-medium">Compare with:</label>
-                <select
-                  value={compareTargetId ?? ""}
-                  onChange={(e) => setCompareTargetId(e.target.value || undefined)}
-                  className="rounded-md border bg-background px-3 py-1.5 text-sm"
-                >
-                  <option value="">Select a team...</option>
-                  {collectNodes(lineageQuery.data)
-                    .filter((n) => n.teamId !== teamId)
-                    .map((n) => (
-                      <option key={n.teamId} value={n.teamId}>
-                        {n.name}
-                        {n.branchName ? ` (${n.branchName})` : ""}
-                      </option>
-                    ))}
-                </select>
-              </>
-            )}
-            <div className="flex-1" />
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={!compareTargetId || !compareQuery.data}
-              onClick={() => setMergeOpen(true)}
-            >
-              Merge
-            </Button>
-          </div>
-          {compareQuery.data && <TeamDiffView diff={compareQuery.data} />}
-          {compareQuery.isLoading && (
-            <div className="text-center text-muted-foreground py-8">
-              Comparing teams...
-            </div>
-          )}
-          {!compareTargetId && (
-            <div className="text-center text-muted-foreground py-8">
-              Select a team from the lineage to compare changes.
-            </div>
-          )}
-        </TabsContent>
       </Tabs>
+
+      {/* Version Panel (Sheet) */}
+      <VersionPanel
+        open={versionsOpen}
+        onOpenChange={setVersionsOpen}
+        teamId={teamId}
+        lineageData={lineageQuery.data}
+        lineageLoading={lineageQuery.isLoading}
+        compareTargetId={compareTargetId}
+        onCompareTargetChange={setCompareTargetId}
+        compareData={compareQuery.data}
+        compareLoading={compareQuery.isLoading}
+        onMerge={() => setMergeOpen(true)}
+        mergeDisabled={!compareTargetId || !compareQuery.data}
+      />
 
       {/* Slot Editor Dialog (full-screen) */}
       <Dialog open={dialogOpen} onOpenChange={handleDialogClose}>

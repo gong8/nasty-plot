@@ -6,6 +6,7 @@ import {
   useReducer,
   useCallback,
   useEffect,
+  useState,
   type ReactNode,
 } from "react";
 
@@ -67,9 +68,11 @@ interface ChatContextValue {
   isOpen: boolean;
   width: number;
   activeSessionId: string | null;
+  pendingInput: string | null;
   toggleSidebar: () => void;
-  openSidebar: () => void;
+  openSidebar: (message?: string) => void;
   closeSidebar: () => void;
+  clearPendingInput: () => void;
   setWidth: (width: number) => void;
   switchSession: (sessionId: string | null) => void;
   newSession: () => void;
@@ -93,6 +96,7 @@ const SSR_INITIAL_STATE: ChatSidebarState = {
 
 export function ChatProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(chatReducer, SSR_INITIAL_STATE);
+  const [pendingInput, setPendingInput] = useState<string | null>(null);
 
   // Hydrate from localStorage after mount (avoids SSR/client mismatch)
   useEffect(() => {
@@ -128,8 +132,12 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   }, [state.activeSessionId]);
 
   const toggleSidebar = useCallback(() => dispatch({ type: "TOGGLE_SIDEBAR" }), []);
-  const openSidebar = useCallback(() => dispatch({ type: "OPEN_SIDEBAR" }), []);
+  const openSidebar = useCallback((message?: string) => {
+    dispatch({ type: "OPEN_SIDEBAR" });
+    if (message) setPendingInput(message);
+  }, []);
   const closeSidebar = useCallback(() => dispatch({ type: "CLOSE_SIDEBAR" }), []);
+  const clearPendingInput = useCallback(() => setPendingInput(null), []);
   const setWidth = useCallback(
     (width: number) => dispatch({ type: "SET_WIDTH", width }),
     []
@@ -147,9 +155,11 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         isOpen: state.isOpen,
         width: state.width,
         activeSessionId: state.activeSessionId,
+        pendingInput,
         toggleSidebar,
         openSidebar,
         closeSidebar,
+        clearPendingInput,
         setWidth,
         switchSession,
         newSession,

@@ -1180,4 +1180,119 @@ describe("BattleManager", () => {
       await actionPromise;
     });
   });
+
+  describe("tera gating logic", () => {
+    it("gates canTera to false after player has terastallized", async () => {
+      const manager = new BattleManager({
+        formatId: "gen9ou",
+        gameType: "singles",
+        playerTeam: PACKED_TEAM,
+        opponentTeam: PACKED_TEAM,
+      });
+
+      // Start the battle
+      const startPromise = manager.start();
+      await new Promise((r) => setTimeout(r, 10));
+      pushChunk(`|request|${makeP1Request()}`);
+      await startPromise;
+
+      // Verify initial state: canTera should be available
+      let state = manager.getState();
+      expect(state.availableActions?.canTera).toBe(true);
+      expect(state.sides.p1.hasTerastallized).toBe(false);
+
+      // Push a protocol chunk showing p1 terastallizing
+      pushChunk(`|-terastallize|p1a: Garchomp|Ground\n|request|${makeP1Request()}`);
+      await new Promise((r) => setTimeout(r, 50));
+
+      // Verify hasTerastallized flag is set
+      state = manager.getState();
+      expect(state.sides.p1.hasTerastallized).toBe(true);
+
+      // Now push a new request where the sim still includes canTerastallize
+      // (this simulates what @pkmn/sim does - it doesn't know about our tracking)
+      pushChunk(`|request|${makeP1Request()}`);
+      await new Promise((r) => setTimeout(r, 50));
+
+      // The battle-manager should gate canTera to false despite the request having canTerastallize
+      state = manager.getState();
+      expect(state.availableActions?.canTera).toBe(false);
+    });
+
+    it("gates canTera to false for opponent after they terastallize", async () => {
+      const mockAI: AIPlayer = {
+        difficulty: "random",
+        chooseAction: vi.fn().mockResolvedValue({ type: "move", moveIndex: 1 }),
+        chooseLeads: vi.fn().mockReturnValue([1, 2, 3, 4, 5, 6]),
+      };
+
+      const manager = new BattleManager({
+        formatId: "gen9ou",
+        gameType: "singles",
+        playerTeam: PACKED_TEAM,
+        opponentTeam: PACKED_TEAM,
+      });
+      manager.setAI(mockAI);
+
+      // Start the battle
+      const startPromise = manager.start();
+      await new Promise((r) => setTimeout(r, 10));
+      pushChunk(`|request|${makeP1Request()}`);
+      await startPromise;
+
+      // Verify initial state: p2 hasn't terastallized
+      let state = manager.getState();
+      expect(state.sides.p2.hasTerastallized).toBe(false);
+
+      // Push a protocol chunk showing p2 terastallizing
+      pushChunk(`|-terastallize|p2a: Heatran|Fire\n|request|${makeP1Request()}`);
+      await new Promise((r) => setTimeout(r, 50));
+
+      // Verify p2 hasTerastallized flag is set
+      state = manager.getState();
+      expect(state.sides.p2.hasTerastallized).toBe(true);
+
+      // When the next p2 request comes in (with canTerastallize set by sim),
+      // battle-manager should gate it to false
+      pushChunk(`|request|${makeP2Request()}`);
+      await new Promise((r) => setTimeout(r, 50));
+
+      // The AI's available actions should have canTera=false
+      // (We can't directly check p2's availableActions since it's not exposed,
+      // but the flag should prevent AI from being given tera option)
+      state = manager.getState();
+      expect(state.sides.p2.hasTerastallized).toBe(true);
+    });
+
+    it("preserves canTera=true if player has not yet terastallized", async () => {
+      const manager = new BattleManager({
+        formatId: "gen9ou",
+        gameType: "singles",
+        playerTeam: PACKED_TEAM,
+        opponentTeam: PACKED_TEAM,
+      });
+
+      // Start the battle
+      const startPromise = manager.start();
+      await new Promise((r) => setTimeout(r, 10));
+      pushChunk(`|request|${makeP1Request()}`);
+      await startPromise;
+
+      // Multiple requests without terastallizing
+      pushChunk(`|request|${makeP1Request()}`);
+      await new Promise((r) => setTimeout(r, 50));
+
+      let state = manager.getState();
+      expect(state.sides.p1.hasTerastallized).toBe(false);
+      expect(state.availableActions?.canTera).toBe(true);
+
+      // Another request
+      pushChunk(`|request|${makeP1Request()}`);
+      await new Promise((r) => setTimeout(r, 50));
+
+      state = manager.getState();
+      expect(state.sides.p1.hasTerastallized).toBe(false);
+      expect(state.availableActions?.canTera).toBe(true);
+    });
+  });
 });

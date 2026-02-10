@@ -50,8 +50,7 @@ export function AskPecharuntButton({ step, className }: AskPecharuntButtonProps)
   }
 
   function handleQuestionClick(question: string) {
-    void question;
-    openSidebar();
+    openSidebar(question);
     setShowSuggestions(false);
   }
 

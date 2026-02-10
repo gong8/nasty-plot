@@ -15,10 +15,24 @@ vi.mock("@nasty-plot/db", () => ({
 
 vi.mock("@pkmn/dex", () => ({
   Dex: {
+    forGen: vi.fn().mockReturnValue({
+      species: { get: vi.fn(), all: vi.fn() },
+      moves: { get: vi.fn(), all: vi.fn() },
+      abilities: { get: vi.fn(), all: vi.fn() },
+      items: { get: vi.fn(), all: vi.fn() },
+      learnsets: { get: vi.fn() },
+    }),
     species: {
       get: vi.fn(),
     },
   },
+}));
+
+vi.mock("@nasty-plot/formats", () => ({
+  getFormat: vi.fn().mockReturnValue({
+    id: "gen9ou",
+    defaultLevel: 100,
+  }),
 }));
 
 import { prisma } from "@nasty-plot/db";

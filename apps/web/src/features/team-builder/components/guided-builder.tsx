@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
@@ -16,8 +16,8 @@ import {
   DEFAULT_EVS, DEFAULT_IVS,
   type TeamSlotInput, type NatureName, type StatsTable,
 } from "@nasty-plot/core";
-import { useGuidedBuilder, type GuidedStep, type GuidedPokemonPick } from "../hooks/use-guided-builder";
-import { useAddSlot } from "@/features/teams/hooks/use-teams";
+import { useGuidedBuilder, type GuidedStep, type GuidedPokemonPick, type SampleTeamEntry } from "../hooks/use-guided-builder";
+import { useAddSlot, useUpdateSlot } from "@/features/teams/hooks/use-teams";
 import { StepStart } from "./guided/step-start";
 import { StepPickPokemon } from "./guided/step-pick-pokemon";
 import { StepCustomizeSets } from "./guided/step-customize-sets";
@@ -86,20 +86,75 @@ function StepIndicator({ current }: { current: GuidedStep }) {
 export function GuidedBuilder({ teamId, formatId }: GuidedBuilderProps) {
   const router = useRouter();
   const addSlot = useAddSlot();
+  const updateSlotMutation = useUpdateSlot();
 
   const guided = useGuidedBuilder(teamId, formatId);
   const [isSaving, setIsSaving] = useState(false);
 
+  // --- Incremental DB persistence ---
+  // Persist slots to DB as they're picked so /api/recommend and
+  // /api/teams/[teamId]/analysis have real data to work with.
+
+  const persistSlotToDb = useCallback(
+    async (position: number, pokemonId: string) => {
+      const slotInput: TeamSlotInput = {
+        position,
+        pokemonId,
+        ability: "",
+        item: "",
+        nature: "Adamant" as NatureName,
+        level: 100,
+        moves: [""],
+        evs: { ...DEFAULT_EVS } as StatsTable,
+        ivs: { ...DEFAULT_IVS } as StatsTable,
+      };
+      try {
+        await addSlot.mutateAsync({ teamId, slot: slotInput });
+      } catch {
+        try {
+          await updateSlotMutation.mutateAsync({
+            teamId,
+            position,
+            data: { pokemonId },
+          });
+        } catch {
+          // Both failed — analysis/recommendations won't reflect this slot
+        }
+      }
+    },
+    [teamId, addSlot, updateSlotMutation]
+  );
+
+  // Sync draft-restored slots to DB on first load
+  const hasSyncedDraft = useRef(false);
+  useEffect(() => {
+    if (guided.isRestoringDraft || hasSyncedDraft.current) return;
+    hasSyncedDraft.current = true;
+    if (guided.filledSlots.length === 0) return;
+
+    (async () => {
+      for (const slot of guided.filledSlots) {
+        if (slot.pokemonId && slot.position) {
+          await persistSlotToDb(slot.position, slot.pokemonId).catch(() => {});
+        }
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [guided.isRestoringDraft]);
+
   // --- Handlers ---
 
-  const handleLeadPick = (pick: GuidedPokemonPick) => {
+  const handleLeadPick = async (pick: GuidedPokemonPick) => {
+    await persistSlotToDb(1, pick.pokemonId).catch(() => {});
     guided.addSlotPick(1, pick);
     guided.goToStep("build");
   };
 
-  const handleBuildPick = (pick: GuidedPokemonPick) => {
-    guided.addSlotPick(guided.currentBuildSlot, pick);
-    if (guided.currentBuildSlot >= 6) {
+  const handleBuildPick = async (pick: GuidedPokemonPick) => {
+    const position = guided.currentBuildSlot;
+    await persistSlotToDb(position, pick.pokemonId).catch(() => {});
+    guided.addSlotPick(position, pick);
+    if (position >= 6) {
       guided.goToStep("sets");
     } else {
       guided.nextBuildSlot();
@@ -114,25 +169,40 @@ export function GuidedBuilder({ teamId, formatId }: GuidedBuilderProps) {
     }
   };
 
+  // Save all slots to DB with full set data (for final save/test/switch)
+  const saveAllSlots = async () => {
+    for (const slot of guided.filledSlots) {
+      if (!slot.pokemonId || !slot.position) continue;
+      const slotInput: TeamSlotInput = {
+        position: slot.position,
+        pokemonId: slot.pokemonId,
+        ability: slot.ability || "",
+        item: slot.item || "",
+        nature: (slot.nature || "Adamant") as NatureName,
+        teraType: slot.teraType,
+        level: slot.level || 100,
+        moves: slot.moves || [""],
+        evs: (slot.evs || { ...DEFAULT_EVS }) as StatsTable,
+        ivs: (slot.ivs || { ...DEFAULT_IVS }) as StatsTable,
+      };
+      try {
+        // Slots should exist from incremental persistence — update with full set data
+        await updateSlotMutation.mutateAsync({
+          teamId,
+          position: slot.position,
+          data: slotInput,
+        });
+      } catch {
+        // Fallback: add as new slot if not yet persisted
+        await addSlot.mutateAsync({ teamId, slot: slotInput });
+      }
+    }
+  };
+
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      for (const slot of guided.filledSlots) {
-        if (!slot.pokemonId) continue;
-        const slotInput: TeamSlotInput = {
-          position: slot.position!,
-          pokemonId: slot.pokemonId,
-          ability: slot.ability || "",
-          item: slot.item || "",
-          nature: (slot.nature || "Adamant") as NatureName,
-          teraType: slot.teraType,
-          level: slot.level || 100,
-          moves: slot.moves || [""],
-          evs: (slot.evs || { ...DEFAULT_EVS }) as StatsTable,
-          ivs: (slot.ivs || { ...DEFAULT_IVS }) as StatsTable,
-        };
-        await addSlot.mutateAsync({ teamId, slot: slotInput });
-      }
+      await saveAllSlots();
       guided.clearDraft();
       router.push(`/teams/${teamId}`);
     } catch {
@@ -141,25 +211,9 @@ export function GuidedBuilder({ teamId, formatId }: GuidedBuilderProps) {
   };
 
   const handleTestTeam = async () => {
-    // Save first, then navigate to battle
     setIsSaving(true);
     try {
-      for (const slot of guided.filledSlots) {
-        if (!slot.pokemonId) continue;
-        const slotInput: TeamSlotInput = {
-          position: slot.position!,
-          pokemonId: slot.pokemonId,
-          ability: slot.ability || "",
-          item: slot.item || "",
-          nature: (slot.nature || "Adamant") as NatureName,
-          teraType: slot.teraType,
-          level: slot.level || 100,
-          moves: slot.moves || [""],
-          evs: (slot.evs || { ...DEFAULT_EVS }) as StatsTable,
-          ivs: (slot.ivs || { ...DEFAULT_IVS }) as StatsTable,
-        };
-        await addSlot.mutateAsync({ teamId, slot: slotInput });
-      }
+      await saveAllSlots();
       guided.clearDraft();
       router.push(`/battle/new?teamId=${teamId}`);
     } catch {
@@ -167,9 +221,18 @@ export function GuidedBuilder({ teamId, formatId }: GuidedBuilderProps) {
     }
   };
 
-  const handleSwitchToFreeform = () => {
-    // Save current state and redirect to freeform editor
-    // The slots are saved in the hook via draft persistence
+  const handleImportSample = async (sample: SampleTeamEntry) => {
+    // Persist sample team slots to DB first so analysis works on the sets step
+    for (let i = 0; i < sample.pokemonIds.length && i < 6; i++) {
+      await persistSlotToDb(i + 1, sample.pokemonIds[i]).catch(() => {});
+    }
+    guided.importSampleTeam(sample);
+  };
+
+  const handleSwitchToFreeform = async () => {
+    // Persist current slots with any set customizations before switching
+    try { await saveAllSlots(); } catch { /* continue anyway */ }
+    guided.clearDraft();
     router.push(`/teams/${teamId}`);
   };
 
@@ -228,7 +291,7 @@ export function GuidedBuilder({ teamId, formatId }: GuidedBuilderProps) {
             sampleTeams={guided.sampleTeams}
             isLoading={guided.isLoadingSampleTeams}
             onStartFromScratch={guided.startFromScratch}
-            onImportSample={guided.importSampleTeam}
+            onImportSample={handleImportSample}
           />
         )}
 

@@ -319,18 +319,23 @@ export interface TeamAnalysis {
 export interface ThreatEntry {
   pokemonId: string;
   pokemonName: string;
+  pokemonNum?: number;
+  types?: PokemonType[];
   usagePercent: number;
   threatLevel: "high" | "medium" | "low";
   reason: string;
+  threatenedSlots?: string[];
 }
 
 export interface SpeedTierEntry {
   pokemonId: string;
   pokemonName: string;
+  pokemonNum?: number;
   speed: number;
   nature: string;
   evs: number;
   boosted?: boolean;
+  isBenchmark?: boolean;
 }
 
 // --- Recommendations ---

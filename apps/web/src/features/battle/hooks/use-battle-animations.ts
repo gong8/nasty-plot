@@ -198,10 +198,13 @@ function extractDamagePercent(message: string, isHeal: boolean): string {
  */
 export function useBattleAnimations(state: BattleState): AnimationState {
   const [animState, setAnimState] = useState<AnimationState>(INITIAL_ANIMATION_STATE);
-  const lastLogLengthRef = useRef(0);
+  // Start at current log length so we don't animate history on mount
+  const lastLogLengthRef = useRef(state.fullLog.length);
+  const mountedRef = useRef(false);
   const queueRef = useRef<AnimationEvent[]>([]);
   const isProcessingRef = useRef(false);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const safetyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const processQueue = useCallback(() => {
     if (isProcessingRef.current || queueRef.current.length === 0) {
@@ -252,6 +255,13 @@ export function useBattleAnimations(state: BattleState): AnimationState {
 
   // Detect new log entries and queue animations
   useEffect(() => {
+    // Skip the initial mount — lastLogLengthRef is already set to current length
+    if (!mountedRef.current) {
+      mountedRef.current = true;
+      lastLogLengthRef.current = state.fullLog.length;
+      return;
+    }
+
     const fullLog = state.fullLog;
     const prevLength = lastLogLengthRef.current;
 
@@ -266,6 +276,16 @@ export function useBattleAnimations(state: BattleState): AnimationState {
         }
       }
 
+      // Safety valve: force-clear isAnimating after 5s in case the queue gets stuck
+      if (safetyTimeoutRef.current) clearTimeout(safetyTimeoutRef.current);
+      safetyTimeoutRef.current = setTimeout(() => {
+        if (isProcessingRef.current || queueRef.current.length > 0) {
+          queueRef.current = [];
+          isProcessingRef.current = false;
+          setAnimState(INITIAL_ANIMATION_STATE);
+        }
+      }, 5000);
+
       // Start processing if not already
       if (!isProcessingRef.current) {
         processQueue();
@@ -276,9 +296,8 @@ export function useBattleAnimations(state: BattleState): AnimationState {
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      if (safetyTimeoutRef.current) clearTimeout(safetyTimeoutRef.current);
     };
   }, []);
 

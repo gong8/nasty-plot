@@ -5,6 +5,7 @@ vi.mock("@nasty-plot/teams", () => ({
   createSampleTeam: vi.fn(),
   getSampleTeam: vi.fn(),
   deleteSampleTeam: vi.fn(),
+  importSampleTeamsFromPastes: vi.fn(),
 }));
 
 import {
@@ -12,12 +13,14 @@ import {
   createSampleTeam,
   getSampleTeam,
   deleteSampleTeam,
+  importSampleTeamsFromPastes,
 } from "@nasty-plot/teams";
 import { GET, POST } from "../../apps/web/src/app/api/sample-teams/route";
 import {
   GET as GET_BY_ID,
   DELETE as DELETE_BY_ID,
 } from "../../apps/web/src/app/api/sample-teams/[id]/route";
+import { POST as POST_IMPORT } from "../../apps/web/src/app/api/sample-teams/import/route";
 
 const mockSampleTeam = {
   id: "st-1",
@@ -231,5 +234,102 @@ describe("DELETE /api/sample-teams/[id]", () => {
 
     expect(response.status).toBe(500);
     expect(data.error).toBeDefined();
+  });
+});
+
+describe("POST /api/sample-teams/import", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("successfully imports teams from pastes array", async () => {
+    const mockImportedTeams = [
+      { ...mockSampleTeam, id: "st-import-1", name: "Imported Team 1" },
+      { ...mockSampleTeam, id: "st-import-2", name: "Imported Team 2" },
+    ];
+
+    (importSampleTeamsFromPastes as ReturnType<typeof vi.fn>).mockResolvedValue(
+      mockImportedTeams,
+    );
+
+    const pastes = [
+      "Pelipper @ Damp Rock\nAbility: Drizzle\nEVs: 248 HP / 252 SpA / 8 Spe",
+      "Barraskewda @ Choice Band\nAbility: Swift Swim\nEVs: 252 Atk / 4 SpD / 252 Spe",
+    ];
+
+    const req = new Request("http://localhost:3000/api/sample-teams/import", {
+      method: "POST",
+      body: JSON.stringify({
+        pastes,
+        formatId: "gen9ou",
+        source: "Smogon",
+      }),
+      headers: { "Content-Type": "application/json" },
+    });
+
+    const response = await POST_IMPORT(req);
+    const data = await response.json();
+
+    expect(response.status).toBe(201);
+    expect(data).toEqual(mockImportedTeams);
+    expect(importSampleTeamsFromPastes).toHaveBeenCalledWith(
+      pastes,
+      "gen9ou",
+      "Smogon",
+    );
+  });
+
+  it("returns 400 when pastes is missing", async () => {
+    const req = new Request("http://localhost:3000/api/sample-teams/import", {
+      method: "POST",
+      body: JSON.stringify({
+        formatId: "gen9ou",
+      }),
+      headers: { "Content-Type": "application/json" },
+    });
+
+    const response = await POST_IMPORT(req);
+    const data = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(data.error).toContain("pastes");
+    expect(data.error).toContain("formatId");
+    expect(data.error).toContain("required");
+  });
+
+  it("returns 400 when formatId is missing", async () => {
+    const req = new Request("http://localhost:3000/api/sample-teams/import", {
+      method: "POST",
+      body: JSON.stringify({
+        pastes: ["some paste"],
+      }),
+      headers: { "Content-Type": "application/json" },
+    });
+
+    const response = await POST_IMPORT(req);
+    const data = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(data.error).toContain("pastes");
+    expect(data.error).toContain("formatId");
+    expect(data.error).toContain("required");
+  });
+
+  it("returns 400 when pastes is not an array", async () => {
+    const req = new Request("http://localhost:3000/api/sample-teams/import", {
+      method: "POST",
+      body: JSON.stringify({
+        pastes: "not an array",
+        formatId: "gen9ou",
+      }),
+      headers: { "Content-Type": "application/json" },
+    });
+
+    const response = await POST_IMPORT(req);
+    const data = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(data.error).toContain("pastes");
+    expect(data.error).toContain("array");
   });
 });

@@ -2,7 +2,7 @@
 
 import { use } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Shuffle } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useTeam } from "@/features/teams/hooks/use-teams";
@@ -72,15 +72,7 @@ export default function GuidedBuilderPage({
             </p>
           </div>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => router.push(`/teams/${teamId}`)}
-          className="text-xs gap-1"
-        >
-          <Shuffle className="h-3 w-3" />
-          Switch to Freeform
-        </Button>
+{/* Freeform switch is in the GuidedBuilder footer (saves state before navigating) */}
       </div>
 
       {/* Guided builder wizard */}

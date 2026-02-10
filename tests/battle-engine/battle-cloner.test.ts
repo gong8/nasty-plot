@@ -205,6 +205,46 @@ describe("getLegalChoices", () => {
     expect(choices).toContain("switch 2");
   });
 
+  it("returns combined choice strings for doubles battles", () => {
+    const active1 = { fainted: false, species: { id: "garchomp" } };
+    const active2 = { fainted: false, species: { id: "heatran" } };
+    const mockBattle = makeMockBattle();
+    (mockBattle.p1 as Record<string, unknown>).request = {
+      active: [
+        {
+          moves: [
+            { disabled: false, target: "normal" },
+            { disabled: false, target: "allAdjacent" },
+          ],
+        },
+        {
+          moves: [
+            { disabled: false, target: "normal" },
+          ],
+        },
+      ],
+    };
+    (mockBattle.p1 as Record<string, unknown>).pokemon = [
+      active1,
+      active2,
+      { fainted: false, species: { id: "clefable" } },
+    ];
+    (mockBattle.p1 as Record<string, unknown>).active = [active1, active2];
+
+    const choices = getLegalChoices(mockBattle as never, "p1");
+
+    // Should return combined "slot1, slot2" format
+    expect(choices.length).toBeGreaterThan(0);
+    // Each choice should be a comma-separated pair
+    for (const choice of choices) {
+      expect(choice).toMatch(/^.+, .+$/);
+    }
+    // Verify some expected combinations exist
+    expect(choices.some(c => c.includes("move 1 -1"))).toBe(true);
+    expect(choices.some(c => c.includes("move 2"))).toBe(true);
+    expect(choices.some(c => c.includes("switch 3"))).toBe(true);
+  });
+
   it("returns move choices when active has no disabled moves", () => {
     const activePokemon = { fainted: false, species: { id: "garchomp" } };
     const mockBattle = makeMockBattle();

@@ -12,6 +12,7 @@ import {
   X,
   GitFork,
   Archive,
+  History,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -40,6 +41,7 @@ interface TeamHeaderProps {
   onImport: (paste: string) => Promise<void>;
   onFork?: (options: { name: string; branchName?: string; notes?: string }) => Promise<void>;
   onArchive?: () => void;
+  onShowVersions?: () => void;
 }
 
 export function TeamHeader({
@@ -49,6 +51,7 @@ export function TeamHeader({
   onImport,
   onFork,
   onArchive,
+  onShowVersions,
 }: TeamHeaderProps) {
   const [editing, setEditing] = useState(false);
   const [editName, setEditName] = useState(team.name);
@@ -181,6 +184,13 @@ export function TeamHeader({
 
       {/* Actions */}
       <div className="flex items-center gap-1">
+        {/* Versions */}
+        {onShowVersions && (
+          <Button variant="outline" size="sm" onClick={onShowVersions}>
+            <History className="h-4 w-4 mr-1" /> Versions
+          </Button>
+        )}
+
         {/* Fork */}
         {onFork && (
           <Dialog open={forkOpen} onOpenChange={(open) => {

@@ -17,6 +17,13 @@ vi.mock("@nasty-plot/db", () => ({
 
 vi.mock("@pkmn/dex", () => ({
   Dex: {
+    forGen: vi.fn().mockReturnValue({
+      species: { get: vi.fn(), all: vi.fn() },
+      moves: { get: vi.fn(), all: vi.fn() },
+      abilities: { get: vi.fn(), all: vi.fn() },
+      items: { get: vi.fn(), all: vi.fn() },
+      learnsets: { get: vi.fn() },
+    }),
     species: {
       get: vi.fn(),
     },
@@ -35,6 +42,13 @@ vi.mock("#analysis/synergy.service", () => ({
   calculateSynergy: vi.fn(),
 }));
 
+vi.mock("@nasty-plot/formats", () => ({
+  getFormat: vi.fn().mockReturnValue({
+    id: "gen9ou",
+    defaultLevel: 100,
+  }),
+}));
+
 import { prisma } from "@nasty-plot/db";
 import { Dex } from "@pkmn/dex";
 import { analyzeTypeCoverage } from "#analysis/coverage.service";
@@ -42,6 +56,7 @@ import { identifyThreats } from "#analysis/threat.service";
 import { calculateSynergy } from "#analysis/synergy.service";
 
 const mockTeamFindUnique = prisma.team.findUnique as ReturnType<typeof vi.fn>;
+const mockUsageFindMany = prisma.usageStats.findMany as ReturnType<typeof vi.fn>;
 const mockSpeciesGet = Dex.species.get as ReturnType<typeof vi.fn>;
 const mockCoverage = analyzeTypeCoverage as ReturnType<typeof vi.fn>;
 const mockThreats = identifyThreats as ReturnType<typeof vi.fn>;
@@ -106,6 +121,7 @@ describe("analyzeTeam", () => {
   beforeEach(() => {
     vi.clearAllMocks();
 
+    mockUsageFindMany.mockResolvedValue([]);
     mockCoverage.mockReturnValue({
       offensive: {},
       defensive: {},

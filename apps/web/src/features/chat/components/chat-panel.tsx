@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useEffect, useCallback } from "react";
+import { useRef, useEffect, useCallback, useState } from "react";
 import { useChatSidebar } from "@/features/chat/context/chat-provider";
 import { useChatStream } from "@/features/chat/hooks/use-chat-stream";
 import { ChatMessage } from "./chat-message";
@@ -8,6 +8,7 @@ import { ChatToolCall } from "./chat-tool-call";
 import { ChatActionNotify } from "./chat-action-notify";
 import { ChatPlanDisplay } from "./chat-plan-display";
 import { ChatInput } from "./chat-input";
+import { ArrowDown } from "lucide-react";
 
 interface ChatPanelProps {
   teamId?: string;
@@ -19,8 +20,9 @@ interface ChatPanelProps {
 export function ChatPanel({ sessionId, mode = "sidebar" }: ChatPanelProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
-  const { activeSessionId } = useChatSidebar();
+  const { activeSessionId, pendingInput, clearPendingInput } = useChatSidebar();
   const effectiveSessionId = sessionId ?? activeSessionId ?? undefined;
+  const [isAtBottom, setIsAtBottom] = useState(true);
 
   const {
     messages,
@@ -42,13 +44,37 @@ export function ChatPanel({ sessionId, mode = "sidebar" }: ChatPanelProps) {
     if (effectiveSessionId !== prevSessionRef.current) {
       prevSessionRef.current = effectiveSessionId;
       resetForSession(effectiveSessionId ?? null);
+      setIsAtBottom(true);
     }
   }, [effectiveSessionId, resetForSession]);
 
-  // Auto-scroll to bottom
+  // Track scroll position to detect if user has scrolled up
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "instant" });
-  }, [messages, toolCalls, planSteps]);
+    const el = scrollRef.current;
+    if (!el) return;
+
+    const handleScroll = () => {
+      const threshold = 60;
+      const atBottom =
+        el.scrollHeight - el.scrollTop - el.clientHeight < threshold;
+      setIsAtBottom(atBottom);
+    };
+
+    el.addEventListener("scroll", handleScroll, { passive: true });
+    return () => el.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  // Auto-scroll only when user is at the bottom
+  useEffect(() => {
+    if (isAtBottom) {
+      bottomRef.current?.scrollIntoView({ behavior: "instant" });
+    }
+  }, [messages, toolCalls, planSteps, isAtBottom]);
+
+  const scrollToBottom = useCallback(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    setIsAtBottom(true);
+  }, []);
 
   const handleSend = useCallback(
     (text: string) => sendMessage(text),
@@ -107,6 +133,19 @@ export function ChatPanel({ sessionId, mode = "sidebar" }: ChatPanelProps) {
         </div>
       </div>
 
+      {/* Scroll to bottom button */}
+      {!isAtBottom && (
+        <div className="relative">
+          <button
+            onClick={scrollToBottom}
+            className="absolute -top-10 left-1/2 -translate-x-1/2 z-10 flex items-center justify-center h-8 w-8 rounded-full border border-border bg-background shadow-md hover:bg-accent transition-colors"
+            title="Scroll to bottom"
+          >
+            <ArrowDown className="h-4 w-4 text-muted-foreground" />
+          </button>
+        </div>
+      )}
+
       {/* Input area */}
       <ChatInput
         onSend={handleSend}
@@ -115,6 +154,8 @@ export function ChatPanel({ sessionId, mode = "sidebar" }: ChatPanelProps) {
         isStreaming={isStreaming}
         hasMessages={messages.length > 0}
         lastMessageIsAssistant={lastMsg?.role === "assistant"}
+        pendingInput={pendingInput}
+        onClearPendingInput={clearPendingInput}
       />
     </div>
   );

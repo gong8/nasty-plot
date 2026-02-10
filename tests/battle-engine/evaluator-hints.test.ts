@@ -377,6 +377,80 @@ describe("evaluatePosition", () => {
     // Under Trick Room, p2 (slower) should have the advantage, so p1's score should be lower
     expect(trResult.score).toBeLessThan(normalResult.score);
   });
+
+  it("handles doubles battles with 2 actives per side", () => {
+    const doublesState = makeState({
+      format: "doubles",
+      sides: {
+        p1: {
+          active: [
+            makePokemon(),
+            makePokemon({ speciesId: "heatran", name: "Heatran", types: ["Fire", "Steel"] }),
+          ],
+          team: [
+            makePokemon(),
+            makePokemon({ speciesId: "heatran", name: "Heatran", types: ["Fire", "Steel"] }),
+          ],
+          name: "Player",
+          sideConditions: {
+            stealthRock: false,
+            spikes: 0,
+            toxicSpikes: 0,
+            stickyWeb: false,
+            reflect: 0,
+            lightScreen: 0,
+            auroraVeil: 0,
+            tailwind: 0,
+          },
+          canTera: true,
+        },
+        p2: {
+          active: [
+            makePokemon({
+              speciesId: "ironvaliant",
+              name: "Iron Valiant",
+              types: ["Fairy", "Fighting"],
+            }),
+            makePokemon({
+              speciesId: "greattusk",
+              name: "Great Tusk",
+              types: ["Ground", "Fighting"],
+            }),
+          ],
+          team: [
+            makePokemon({
+              speciesId: "ironvaliant",
+              name: "Iron Valiant",
+              types: ["Fairy", "Fighting"],
+            }),
+            makePokemon({
+              speciesId: "greattusk",
+              name: "Great Tusk",
+              types: ["Ground", "Fighting"],
+            }),
+          ],
+          name: "Opponent",
+          sideConditions: {
+            stealthRock: false,
+            spikes: 0,
+            toxicSpikes: 0,
+            stickyWeb: false,
+            reflect: 0,
+            lightScreen: 0,
+            auroraVeil: 0,
+            tailwind: 0,
+          },
+          canTera: true,
+        },
+      },
+    });
+
+    const result = evaluatePosition(doublesState, "p1");
+    expect(result.score).toBeGreaterThanOrEqual(-1);
+    expect(result.score).toBeLessThanOrEqual(1);
+    expect(result.features).toBeDefined();
+    expect(result.features.length).toBeGreaterThan(0);
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -1291,5 +1365,93 @@ describe("generateHints", () => {
     // Should still have switch options but no move scores
     const moveHints = result.rankedMoves.filter((m) => m.action.type === "move");
     expect(moveHints).toHaveLength(0);
+  });
+
+  it("handles activeSlot=1 for doubles battles", () => {
+    const doublesState = makeState({
+      format: "doubles",
+      sides: {
+        p1: {
+          active: [
+            makePokemon(),
+            makePokemon({ speciesId: "heatran", name: "Heatran", types: ["Fire", "Steel"] }),
+          ],
+          team: [
+            makePokemon(),
+            makePokemon({ speciesId: "heatran", name: "Heatran", types: ["Fire", "Steel"] }),
+            makePokemon({ speciesId: "clefable", name: "Clefable", types: ["Fairy"] }),
+          ],
+          name: "Player",
+          sideConditions: {
+            stealthRock: false,
+            spikes: 0,
+            toxicSpikes: 0,
+            stickyWeb: false,
+            reflect: 0,
+            lightScreen: 0,
+            auroraVeil: 0,
+            tailwind: 0,
+          },
+          canTera: true,
+        },
+        p2: {
+          active: [
+            makePokemon({
+              speciesId: "ironvaliant",
+              name: "Iron Valiant",
+              types: ["Fairy", "Fighting"],
+            }),
+            makePokemon({
+              speciesId: "greattusk",
+              name: "Great Tusk",
+              types: ["Ground", "Fighting"],
+            }),
+          ],
+          team: [
+            makePokemon({
+              speciesId: "ironvaliant",
+              name: "Iron Valiant",
+              types: ["Fairy", "Fighting"],
+            }),
+            makePokemon({
+              speciesId: "greattusk",
+              name: "Great Tusk",
+              types: ["Ground", "Fighting"],
+            }),
+          ],
+          name: "Opponent",
+          sideConditions: {
+            stealthRock: false,
+            spikes: 0,
+            toxicSpikes: 0,
+            stickyWeb: false,
+            reflect: 0,
+            lightScreen: 0,
+            auroraVeil: 0,
+            tailwind: 0,
+          },
+          canTera: true,
+        },
+      },
+    });
+
+    const doublesActions = makeActions();
+
+    // Generate hints for slot 1 (second active Pokemon)
+    const result = generateHints(doublesState, doublesActions, "p1", 1);
+
+    // Should return valid ranked moves and not throw
+    expect(result.rankedMoves.length).toBeGreaterThan(0);
+    expect(result.currentEval).toBeDefined();
+    expect(result.bestAction).toBeDefined();
+
+    // Verify all ranked moves are valid
+    for (const hint of result.rankedMoves) {
+      expect(hint).toHaveProperty("rank");
+      expect(hint).toHaveProperty("score");
+      expect(hint).toHaveProperty("classification");
+      expect(hint).toHaveProperty("explanation");
+      expect(hint).toHaveProperty("action");
+    }
   });
 });

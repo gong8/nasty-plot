@@ -175,13 +175,22 @@ export function MoveSelector({
 
                       {/* Per-move Tera toggle */}
                       {canTera && teraType && !move.disabled && (
-                        <button
+                        <span
+                          role="button"
+                          tabIndex={0}
                           onClick={(e) => {
                             e.stopPropagation();
                             toggleTeraOnMove(i);
                           }}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" || e.key === " ") {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              toggleTeraOnMove(i);
+                            }
+                          }}
                           className={cn(
-                            "absolute top-1 right-1 p-0.5 rounded-sm transition-all",
+                            "absolute top-1 right-1 p-0.5 rounded-sm transition-all cursor-pointer",
                             isTeraActive
                               ? "bg-pink-500/80 text-white"
                               : "bg-black/20 text-white/50 hover:text-white/80"
@@ -189,7 +198,7 @@ export function MoveSelector({
                           title={`Tera ${teraType}`}
                         >
                           <Sparkles className="h-3 w-3" />
-                        </button>
+                        </span>
                       )}
                     </button>
                   </TooltipTrigger>

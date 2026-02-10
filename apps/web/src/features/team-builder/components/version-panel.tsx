@@ -1,0 +1,122 @@
+"use client";
+
+import type { LineageNode, TeamDiff } from "@nasty-plot/core";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from "@/components/ui/sheet";
+import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
+import { LineageTree } from "./lineage-tree";
+import { TeamDiffView } from "./team-diff-view";
+
+interface VersionPanelProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  teamId: string;
+  lineageData: LineageNode | undefined;
+  lineageLoading: boolean;
+  compareTargetId: string | undefined;
+  onCompareTargetChange: (id: string | undefined) => void;
+  compareData: TeamDiff | undefined;
+  compareLoading: boolean;
+  onMerge: () => void;
+  mergeDisabled: boolean;
+}
+
+function collectNodes(node: LineageNode): LineageNode[] {
+  return [node, ...node.children.flatMap(collectNodes)];
+}
+
+export function VersionPanel({
+  open,
+  onOpenChange,
+  teamId,
+  lineageData,
+  lineageLoading,
+  compareTargetId,
+  onCompareTargetChange,
+  compareData,
+  compareLoading,
+  onMerge,
+  mergeDisabled,
+}: VersionPanelProps) {
+  return (
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent side="right">
+        <SheetHeader>
+          <SheetTitle>Versions</SheetTitle>
+          <SheetDescription>Team history and comparisons</SheetDescription>
+        </SheetHeader>
+
+        <ScrollArea className="flex-1 overflow-auto px-4 pb-4">
+          {/* Section 1: History */}
+          <div className="space-y-3">
+            <h3 className="text-sm font-medium text-muted-foreground">
+              History
+            </h3>
+            {lineageLoading ? (
+              <p className="text-sm text-muted-foreground">
+                Loading lineage...
+              </p>
+            ) : lineageData ? (
+              <LineageTree tree={lineageData} currentTeamId={teamId} />
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                No lineage data. Fork this team to start tracking variants.
+              </p>
+            )}
+          </div>
+
+          <Separator className="my-4" />
+
+          {/* Section 2: Compare */}
+          <div className="space-y-3">
+            <h3 className="text-sm font-medium text-muted-foreground">
+              Compare
+            </h3>
+
+            <select
+              value={compareTargetId ?? ""}
+              onChange={(e) =>
+                onCompareTargetChange(e.target.value || undefined)
+              }
+              className="rounded-md border bg-background px-3 py-1.5 text-sm w-full"
+            >
+              <option value="">Select a team...</option>
+              {lineageData &&
+                collectNodes(lineageData)
+                  .filter((n) => n.teamId !== teamId)
+                  .map((n) => (
+                    <option key={n.teamId} value={n.teamId}>
+                      {n.name}
+                      {n.branchName ? ` (${n.branchName})` : ""}
+                    </option>
+                  ))}
+            </select>
+
+            {compareLoading && (
+              <p className="text-sm text-muted-foreground">
+                Comparing teams...
+              </p>
+            )}
+
+            {compareData && <TeamDiffView diff={compareData} />}
+
+            <Button
+              onClick={onMerge}
+              disabled={mergeDisabled || !compareData}
+              className="w-full"
+            >
+              Merge
+            </Button>
+          </div>
+        </ScrollArea>
+      </SheetContent>
+    </Sheet>
+  );
+}

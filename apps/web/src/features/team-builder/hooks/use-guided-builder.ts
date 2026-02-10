@@ -163,15 +163,20 @@ export function useGuidedBuilder(teamId: string, formatId: string) {
 
   // Recommendations for the current team (updates as slots are added)
   const filledSlotCount = slots.filter((s) => s.pokemonId).length;
+  const slotFingerprint = slots
+    .filter((s) => s.pokemonId)
+    .map((s) => s.pokemonId!)
+    .sort()
+    .join(",");
   const recommendationsQuery = useQuery({
-    queryKey: ["guided-recommendations", teamId, filledSlotCount],
+    queryKey: ["guided-recommendations", teamId, slotFingerprint],
     queryFn: () => fetchRecommendations(teamId, 5),
     enabled: !!teamId && filledSlotCount > 0 && (step === "build" || step === "lead"),
   });
 
   // Real-time analysis
   const analysisQuery = useQuery({
-    queryKey: ["guided-analysis", teamId, filledSlotCount],
+    queryKey: ["guided-analysis", teamId, slotFingerprint],
     queryFn: () => fetchAnalysis(teamId),
     enabled: !!teamId && filledSlotCount > 0,
   });

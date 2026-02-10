@@ -4,12 +4,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AlertTriangle, Shield, Info } from "lucide-react";
-import type { ThreatEntry } from "@nasty-plot/core";
+import { PokemonSprite, TypeBadge } from "@nasty-plot/ui";
+import type { ThreatEntry, TeamSlotData } from "@nasty-plot/core";
 import { cn } from "@/lib/utils";
 
 interface ThreatListProps {
   threats: ThreatEntry[] | undefined;
   isLoading?: boolean;
+  slots?: TeamSlotData[];
 }
 
 function getThreatBadge(level: ThreatEntry["threatLevel"]) {
@@ -23,17 +25,19 @@ function getThreatBadge(level: ThreatEntry["threatLevel"]) {
   }
 }
 
-export function ThreatList({ threats, isLoading }: ThreatListProps) {
+export function ThreatList({ threats, isLoading, slots }: ThreatListProps) {
   if (isLoading) {
     return (
       <Card>
         <CardHeader>
           <CardTitle className="text-sm font-medium">Threats</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-2">
-          {[1, 2, 3].map((i) => (
-            <Skeleton key={i} className="h-14 w-full" />
-          ))}
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {[1, 2, 3, 4].map((i) => (
+              <Skeleton key={i} className="h-24 w-full" />
+            ))}
+          </div>
         </CardContent>
       </Card>
     );
@@ -54,6 +58,13 @@ export function ThreatList({ threats, isLoading }: ThreatListProps) {
     );
   }
 
+  // Build a lookup for team slot sprites
+  const slotMap = new Map(
+    (slots ?? [])
+      .filter((s) => s.species)
+      .map((s) => [s.pokemonId, { name: s.species!.name, num: s.species!.num }])
+  );
+
   return (
     <Card>
       <CardHeader>
@@ -62,7 +73,7 @@ export function ThreatList({ threats, isLoading }: ThreatListProps) {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="space-y-2">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {threats.map((threat) => {
             const badge = getThreatBadge(threat.threatLevel);
             const Icon = badge.icon;
@@ -71,20 +82,30 @@ export function ThreatList({ threats, isLoading }: ThreatListProps) {
               <div
                 key={threat.pokemonId}
                 className={cn(
-                  "flex items-start gap-3 p-2.5 rounded-lg border transition-colors",
-                  threat.threatLevel === "high" && "border-red-200 bg-red-50/50 dark:border-red-900/50 dark:bg-red-950/20",
-                  threat.threatLevel === "medium" && "border-yellow-200 bg-yellow-50/50 dark:border-yellow-900/50 dark:bg-yellow-950/20",
+                  "flex gap-3 p-3 rounded-lg border transition-colors",
+                  threat.threatLevel === "high" && "border-red-300 bg-red-50/50 dark:border-red-900/50 dark:bg-red-950/20",
+                  threat.threatLevel === "medium" && "border-amber-300 bg-amber-50/50 dark:border-amber-900/50 dark:bg-amber-950/20",
                   threat.threatLevel === "low" && "border-border"
                 )}
               >
-                {/* Pokemon Avatar */}
-                <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center text-xs font-medium shrink-0">
-                  {threat.pokemonName.slice(0, 2)}
-                </div>
+                {/* Pokemon Sprite */}
+                {threat.pokemonNum ? (
+                  <PokemonSprite
+                    pokemonId={threat.pokemonId}
+                    num={threat.pokemonNum}
+                    size={40}
+                    className="shrink-0"
+                  />
+                ) : (
+                  <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center text-xs font-medium shrink-0">
+                    {threat.pokemonName.slice(0, 2)}
+                  </div>
+                )}
 
                 {/* Info */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
+                <div className="flex-1 min-w-0 space-y-1.5">
+                  {/* Name + Badge + Usage */}
+                  <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-sm font-medium truncate">
                       {threat.pokemonName}
                     </span>
@@ -93,12 +114,44 @@ export function ThreatList({ threats, isLoading }: ThreatListProps) {
                       {badge.label}
                     </Badge>
                     <span className="text-[10px] text-muted-foreground ml-auto shrink-0">
-                      {threat.usagePercent.toFixed(1)}% usage
+                      {threat.usagePercent.toFixed(1)}%
                     </span>
                   </div>
-                  <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-2">
+
+                  {/* Type Badges */}
+                  {threat.types && threat.types.length > 0 && (
+                    <div className="flex gap-1">
+                      {threat.types.map((t) => (
+                        <TypeBadge key={t} type={t} size="sm" />
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Reason */}
+                  <p className="text-[11px] text-muted-foreground line-clamp-2">
                     {threat.reason}
                   </p>
+
+                  {/* Threatened team members */}
+                  {threat.threatenedSlots && threat.threatenedSlots.length > 0 && (
+                    <div className="flex items-center gap-1.5 pt-0.5">
+                      <span className="text-[10px] text-muted-foreground shrink-0">Threatens:</span>
+                      <div className="flex gap-1 flex-wrap">
+                        {threat.threatenedSlots.map((slotId) => {
+                          const info = slotMap.get(slotId);
+                          if (!info) return null;
+                          return (
+                            <PokemonSprite
+                              key={slotId}
+                              pokemonId={slotId}
+                              num={info.num}
+                              size={24}
+                            />
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             );

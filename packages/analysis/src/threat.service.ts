@@ -37,6 +37,7 @@ export async function identifyThreats(
     const threatTypes = species.types as PokemonType[];
     let threatScore = 0;
     const reasons: string[] = [];
+    const threatenedSlotIds = new Set<string>();
 
     // Check if this threat exploits team weaknesses with STAB
     for (const tType of threatTypes) {
@@ -44,7 +45,10 @@ export async function identifyThreats(
       for (const slot of slots) {
         const defTypes = slot.species?.types ?? [];
         if (defTypes.length === 0) continue;
-        if (getTypeEffectiveness(tType, defTypes) > 1) weakSlots++;
+        if (getTypeEffectiveness(tType, defTypes) > 1) {
+          weakSlots++;
+          threatenedSlotIds.add(slot.pokemonId);
+        }
       }
       if (weakSlots >= 2) {
         threatScore += weakSlots * 15;
@@ -72,11 +76,14 @@ export async function identifyThreats(
     threats.push({
       pokemonId: entry.pokemonId,
       pokemonName: species.name,
+      pokemonNum: species.num,
+      types: threatTypes,
       usagePercent: entry.usagePercent,
       threatLevel,
       reason: reasons.length > 0
         ? reasons.join("; ")
         : `High usage (${entry.usagePercent.toFixed(1)}%) in the metagame`,
+      threatenedSlots: threatenedSlotIds.size > 0 ? [...threatenedSlotIds] : undefined,
     });
   }
 
