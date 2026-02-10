@@ -2,7 +2,6 @@ import { BattleStreams } from "@pkmn/sim";
 import { processChunk, parseRequest, updateSideFromRequest } from "./protocol-parser";
 import type {
   BattleState,
-  BattlePhase,
   BattleFormat,
   BattleAction,
   BattleActionSet,
@@ -10,10 +9,6 @@ import type {
   SideConditions,
   AIPlayer,
 } from "./types";
-
-// ============================
-// Battle Manager
-// ============================
 
 function defaultSideConditions(): SideConditions {
   return {
@@ -29,16 +24,18 @@ function defaultSideConditions(): SideConditions {
 }
 
 export function createInitialState(id: string, format: BattleFormat): BattleState {
-  const makeEmptySide = (name: string) => ({
-    active: format === "doubles" ? [null, null] : [null],
-    team: [],
-    name,
-    sideConditions: defaultSideConditions(),
-    canTera: true,
-  });
+  function makeEmptySide(name: string) {
+    return {
+      active: format === "doubles" ? [null, null] : [null],
+      team: [] as never[],
+      name,
+      sideConditions: defaultSideConditions(),
+      canTera: true,
+    };
+  }
 
   return {
-    phase: "setup" as BattlePhase,
+    phase: "setup",
     format,
     turn: 0,
     sides: {
@@ -187,10 +184,6 @@ export class BattleManager {
     }
   }
 
-  // ============================
-  // Private methods
-  // ============================
-
   private async readStream() {
     try {
       for await (const chunk of this.stream) {
@@ -312,10 +305,6 @@ export class BattleManager {
   }
 }
 
-// ============================
-// Helpers
-// ============================
-
 function actionToChoice(action: BattleAction): string {
   if (action.type === "move") {
     let choice = `move ${action.moveIndex}`;
@@ -323,9 +312,8 @@ function actionToChoice(action: BattleAction): string {
     if (action.mega) choice += " mega";
     if (action.targetSlot != null) choice += ` ${action.targetSlot}`;
     return choice;
-  } else {
-    return `switch ${action.pokemonIndex}`;
   }
+  return `switch ${action.pokemonIndex}`;
 }
 
 function escapeTeam(team: string): string {

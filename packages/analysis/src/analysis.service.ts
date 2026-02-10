@@ -1,16 +1,21 @@
-import type { TeamSlotData, TeamAnalysis, SpeedTierEntry, PokemonType } from "@nasty-plot/core";
+import {
+  DEFAULT_IVS,
+  DEFAULT_EVS,
+  calculateAllStats,
+  type TeamSlotData,
+  type TeamAnalysis,
+  type SpeedTierEntry,
+  type PokemonType,
+} from "@nasty-plot/core";
+import { prisma } from "@nasty-plot/db";
 import { analyzeTypeCoverage } from "./coverage.service";
 import { identifyThreats } from "./threat.service";
 import { calculateSynergy } from "./synergy.service";
-import { calculateAllStats } from "@nasty-plot/core";
-import { DEFAULT_IVS, DEFAULT_EVS } from "@nasty-plot/core";
-import { prisma } from "@nasty-plot/db";
 
 /**
  * Full team analysis orchestrator.
  */
 export async function analyzeTeam(teamId: string): Promise<TeamAnalysis> {
-  // Load team from DB
   const team = await prisma.team.findUnique({
     where: { id: teamId },
     include: { slots: true },
@@ -20,10 +25,9 @@ export async function analyzeTeam(teamId: string): Promise<TeamAnalysis> {
     throw new Error(`Team not found: ${teamId}`);
   }
 
-  // Convert DB slots to TeamSlotData
   const { Dex } = await import("@pkmn/dex");
 
-  const slots: TeamSlotData[] = team.slots.map((s: typeof team.slots[number]) => {
+  const slots: TeamSlotData[] = team.slots.map((s) => {
     const species = Dex.species.get(s.pokemonId);
     const speciesData = species?.exists
       ? {
@@ -31,14 +35,7 @@ export async function analyzeTeam(teamId: string): Promise<TeamAnalysis> {
           name: species.name,
           num: species.num,
           types: species.types as [PokemonType] | [PokemonType, PokemonType],
-          baseStats: {
-            hp: species.baseStats.hp,
-            atk: species.baseStats.atk,
-            def: species.baseStats.def,
-            spa: species.baseStats.spa,
-            spd: species.baseStats.spd,
-            spe: species.baseStats.spe,
-          },
+          baseStats: { ...species.baseStats },
           abilities: Object.fromEntries(
             Object.entries(species.abilities).filter(([, v]) => v)
           ),
@@ -75,7 +72,6 @@ export async function analyzeTeam(teamId: string): Promise<TeamAnalysis> {
     };
   });
 
-  // Run analyses
   const coverage = analyzeTypeCoverage(slots);
   const threats = await identifyThreats(slots, team.formatId);
   const synergyScore = calculateSynergy(slots);
@@ -97,12 +93,10 @@ function calculateSpeedTiers(slots: TeamSlotData[]): SpeedTierEntry[] {
   for (const slot of slots) {
     if (!slot.species) continue;
 
-    const ivs = { ...DEFAULT_IVS, ...(slot.ivs ?? {}) } as typeof DEFAULT_IVS;
-    const evs = { ...DEFAULT_EVS, ...(slot.evs ?? {}) } as typeof DEFAULT_EVS;
     const stats = calculateAllStats(
       slot.species.baseStats,
-      ivs,
-      evs,
+      { ...DEFAULT_IVS, ...(slot.ivs ?? {}) },
+      { ...DEFAULT_EVS, ...(slot.evs ?? {}) },
       slot.level,
       slot.nature
     );
@@ -128,7 +122,6 @@ function generateSuggestions(
 ): string[] {
   const suggestions: string[] = [];
 
-  // Coverage gaps
   if (coverage.uncoveredTypes.length > 0) {
     const typesList = coverage.uncoveredTypes.slice(0, 3).join(", ");
     suggestions.push(
@@ -136,32 +129,27 @@ function generateSuggestions(
     );
   }
 
-  // Shared weaknesses
-  if (coverage.sharedWeaknesses.length > 0) {
-    for (const weakness of coverage.sharedWeaknesses.slice(0, 2)) {
-      suggestions.push(
-        `Multiple team members are weak to ${weakness}. Consider adding a Pokemon that resists ${weakness}.`
-      );
-    }
-  }
-
-  // High threats
-  const highThreats = threats.filter((t) => t.threatLevel === "high");
-  if (highThreats.length > 0) {
-    const threatNames = highThreats.slice(0, 2).map((t) => t.pokemonName).join(" and ");
+  for (const weakness of coverage.sharedWeaknesses.slice(0, 2)) {
     suggestions.push(
-      `${threatNames} ${highThreats.length === 1 ? "is a" : "are"} significant threat${highThreats.length === 1 ? "" : "s"}. Consider adding a check or counter.`
+      `Multiple team members are weak to ${weakness}. Consider adding a Pokemon that resists ${weakness}.`
     );
   }
 
-  // Synergy
+  const highThreats = threats.filter((t) => t.threatLevel === "high");
+  if (highThreats.length > 0) {
+    const threatNames = highThreats.slice(0, 2).map((t) => t.pokemonName).join(" and ");
+    const plural = highThreats.length !== 1;
+    suggestions.push(
+      `${threatNames} ${plural ? "are" : "is a"} significant threat${plural ? "s" : ""}. Consider adding a check or counter.`
+    );
+  }
+
   if (synergyScore < 40) {
     suggestions.push(
       "Team synergy is low. Consider Pokemon that complement each other's weaknesses and resistances."
     );
   }
 
-  // Team size
   if (slots.length < 6) {
     suggestions.push(
       `Your team only has ${slots.length} Pokemon. Fill the remaining slots for a complete team.`

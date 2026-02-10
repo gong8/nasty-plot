@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { calculateMatchupMatrix } from "@nasty-plot/damage-calc";
+import { getTeam } from "@nasty-plot/teams";
 import { prisma } from "@nasty-plot/db";
-import { Dex } from "@pkmn/dex";
-import type { TeamSlotData, PokemonType, ApiResponse, MatchupMatrixEntry, ApiError } from "@nasty-plot/core";
+import type { ApiResponse, MatchupMatrixEntry, ApiError } from "@nasty-plot/core";
 
 export async function POST(request: NextRequest) {
   try {
@@ -20,11 +20,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Load team slots
-    const team = await prisma.team.findUnique({
-      where: { id: teamId },
-      include: { slots: true },
-    });
+    const team = await getTeam(teamId);
 
     if (!team) {
       return NextResponse.json(
@@ -32,58 +28,6 @@ export async function POST(request: NextRequest) {
         { status: 404 }
       );
     }
-
-    const slots: TeamSlotData[] = team.slots.map((s: typeof team.slots[number]) => {
-      const species = Dex.species.get(s.pokemonId);
-      const speciesData = species?.exists
-        ? {
-            id: s.pokemonId,
-            name: species.name,
-            num: species.num,
-            types: species.types as [PokemonType] | [PokemonType, PokemonType],
-            baseStats: {
-              hp: species.baseStats.hp,
-              atk: species.baseStats.atk,
-              def: species.baseStats.def,
-              spa: species.baseStats.spa,
-              spd: species.baseStats.spd,
-              spe: species.baseStats.spe,
-            },
-            abilities: Object.fromEntries(
-              Object.entries(species.abilities).filter(([, v]) => v)
-            ),
-            weightkg: species.weightkg,
-          }
-        : undefined;
-
-      return {
-        position: s.position,
-        pokemonId: s.pokemonId,
-        species: speciesData,
-        ability: s.ability,
-        item: s.item,
-        nature: s.nature as TeamSlotData["nature"],
-        teraType: (s.teraType as PokemonType) ?? undefined,
-        level: s.level,
-        moves: [s.move1, s.move2 ?? undefined, s.move3 ?? undefined, s.move4 ?? undefined] as TeamSlotData["moves"],
-        evs: {
-          hp: s.evHp,
-          atk: s.evAtk,
-          def: s.evDef,
-          spa: s.evSpA,
-          spd: s.evSpD,
-          spe: s.evSpe,
-        },
-        ivs: {
-          hp: s.ivHp,
-          atk: s.ivAtk,
-          def: s.ivDef,
-          spa: s.ivSpA,
-          spd: s.ivSpD,
-          spe: s.ivSpe,
-        },
-      };
-    });
 
     // Resolve threat IDs: use provided or top usage Pokemon
     let resolvedThreats = threatIds ?? [];
@@ -102,7 +46,7 @@ export async function POST(request: NextRequest) {
       } satisfies ApiResponse<MatchupMatrixEntry[][]>);
     }
 
-    const matrix = calculateMatchupMatrix(slots, resolvedThreats, formatId);
+    const matrix = calculateMatchupMatrix(team.slots, resolvedThreats, formatId);
 
     return NextResponse.json({
       data: matrix,

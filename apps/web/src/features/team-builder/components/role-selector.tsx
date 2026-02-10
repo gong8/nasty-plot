@@ -11,8 +11,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { TypeBadge } from "@nasty-plot/ui";
-import { PokemonSprite } from "@nasty-plot/ui";
+import { TypeBadge, PokemonSprite } from "@nasty-plot/ui";
 import type { PokemonType, UsageStatsEntry } from "@nasty-plot/core";
 import type { CorePokemon, RoleDefinition } from "../hooks/use-guided-builder";
 

@@ -11,11 +11,4 @@ export function getOpenAI(): OpenAI {
   return _openai;
 }
 
-/** @deprecated Use getOpenAI() for lazy initialization */
-export const openai: OpenAI = new Proxy({} as OpenAI, {
-  get(_target, prop) {
-    return (getOpenAI() as unknown as Record<string | symbol, unknown>)[prop];
-  },
-});
-
 export const MODEL = process.env.OPENAI_MODEL || "gpt-4o";

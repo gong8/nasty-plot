@@ -2,7 +2,6 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { ResourceTemplate } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { apiGet } from "../api-client.js";
 
-// Full type effectiveness chart
 const TYPE_CHART: Record<string, Record<string, number>> = {
   Normal: { Rock: 0.5, Ghost: 0, Steel: 0.5 },
   Fire: {
@@ -106,72 +105,42 @@ const FORMATS_LIST = [
   { id: "gen9uber", name: "Ubers", generation: 9, gameType: "singles" },
   { id: "gen9vgc2024", name: "VGC 2024", generation: 9, gameType: "doubles" },
   { id: "gen9monotype", name: "Monotype", generation: 9, gameType: "singles" },
-  {
-    id: "gen9nationaldex",
-    name: "National Dex",
-    generation: 9,
-    gameType: "singles",
-  },
+  { id: "gen9nationaldex", name: "National Dex", generation: 9, gameType: "singles" },
 ];
 
-export function registerResources(server: McpServer) {
-  server.resource(
-    "type-chart",
-    "pokemon://type-chart",
-    async () => ({
-      contents: [
-        {
-          uri: "pokemon://type-chart",
-          text: JSON.stringify(TYPE_CHART, null, 2),
-          mimeType: "application/json",
-        },
-      ],
-    })
+function jsonResource(uri: string, data: unknown): {
+  contents: [{ uri: string; text: string; mimeType: "application/json" }];
+} {
+  return {
+    contents: [
+      { uri, text: JSON.stringify(data, null, 2), mimeType: "application/json" },
+    ],
+  };
+}
+
+export function registerResources(server: McpServer): void {
+  server.resource("type-chart", "pokemon://type-chart", async () =>
+    jsonResource("pokemon://type-chart", TYPE_CHART)
   );
 
-  server.resource(
-    "formats-list",
-    "pokemon://formats",
-    async () => ({
-      contents: [
-        {
-          uri: "pokemon://formats",
-          text: JSON.stringify(FORMATS_LIST, null, 2),
-          mimeType: "application/json",
-        },
-      ],
-    })
+  server.resource("formats-list", "pokemon://formats", async () =>
+    jsonResource("pokemon://formats", FORMATS_LIST)
   );
 
-  server.resource(
-    "natures",
-    "pokemon://natures",
-    async () => ({
-      contents: [
-        {
-          uri: "pokemon://natures",
-          text: JSON.stringify(NATURES_DATA, null, 2),
-          mimeType: "application/json",
-        },
-      ],
-    })
+  server.resource("natures", "pokemon://natures", async () =>
+    jsonResource("pokemon://natures", NATURES_DATA)
   );
 
-  server.resource(
-    "stat-formulas",
-    "pokemon://stat-formulas",
-    async () => ({
-      contents: [
-        {
-          uri: "pokemon://stat-formulas",
-          text: STAT_FORMULAS,
-          mimeType: "text/markdown",
-        },
-      ],
-    })
-  );
+  server.resource("stat-formulas", "pokemon://stat-formulas", async () => ({
+    contents: [
+      {
+        uri: "pokemon://stat-formulas",
+        text: STAT_FORMULAS,
+        mimeType: "text/markdown" as const,
+      },
+    ],
+  }));
 
-  // Dynamic resource template for format viability
   server.resource(
     "viability",
     new ResourceTemplate("pokemon://viability/{formatId}", {
@@ -180,7 +149,7 @@ export function registerResources(server: McpServer) {
           uri: `pokemon://viability/${f.id}`,
           name: `${f.name} Viability Rankings`,
           description: `Top Pokemon by usage in ${f.name}`,
-          mimeType: "application/json",
+          mimeType: "application/json" as const,
         })),
       }),
     }),
@@ -190,27 +159,11 @@ export function registerResources(server: McpServer) {
           `/formats/${encodeURIComponent(formatId as string)}/usage`,
           { limit: "50" }
         );
-        return {
-          contents: [
-            {
-              uri: uri.href,
-              text: JSON.stringify(data, null, 2),
-              mimeType: "application/json",
-            },
-          ],
-        };
+        return jsonResource(uri.href, data);
       } catch {
-        return {
-          contents: [
-            {
-              uri: uri.href,
-              text: JSON.stringify({
-                error: `No viability data for format "${formatId}"`,
-              }),
-              mimeType: "application/json",
-            },
-          ],
-        };
+        return jsonResource(uri.href, {
+          error: `No viability data for format "${formatId}"`,
+        });
       }
     }
   );

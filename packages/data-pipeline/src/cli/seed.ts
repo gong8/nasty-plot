@@ -1,9 +1,7 @@
 #!/usr/bin/env tsx
 
 import { prisma } from "@nasty-plot/db";
-import type { PrismaClient } from "@nasty-plot/db";
-import { fetchUsageStats } from "@nasty-plot/smogon-data";
-import { fetchSmogonSets } from "@nasty-plot/smogon-data";
+import { fetchUsageStats, fetchSmogonSets } from "@nasty-plot/smogon-data";
 import { isStale } from "../staleness.service";
 
 // Fallback format definitions (the formats module may provide these later)
@@ -40,7 +38,6 @@ function parseArgs(): CliArgs {
 }
 
 async function seedFormat(
-  prisma: PrismaClient,
   format: { id: string; name: string; generation: number; gameType: string },
   force: boolean
 ): Promise<{ success: boolean; error?: string }> {
@@ -104,31 +101,29 @@ async function seedFormat(
 
 async function main(): Promise<void> {
   const args = parseArgs();
-  // Using shared prisma singleton
 
   console.log("=== Nasty Plot Data Seeder ===");
   if (args.force) console.log("Force mode: ignoring staleness checks");
   if (args.formatId) console.log(`Target format: ${args.formatId}`);
 
-  const formatsToSeed = args.formatId
+  let formatsToSeed = args.formatId
     ? FORMATS.filter((f) => f.id === args.formatId)
     : FORMATS;
 
   if (formatsToSeed.length === 0 && args.formatId) {
-    // If user specified a format not in our list, create a minimal entry
-    formatsToSeed.push({
+    formatsToSeed = [{
       id: args.formatId,
       name: args.formatId,
       generation: parseInt(args.formatId.replace(/[^0-9]/g, "").charAt(0) || "9"),
       gameType: "singles" as const,
-    });
+    }];
   }
 
   const results: { format: string; success: boolean; error?: string }[] = [];
 
   for (const format of formatsToSeed) {
     try {
-      const result = await seedFormat(prisma, format, args.force);
+      const result = await seedFormat(format, args.force);
       results.push({ format: format.id, ...result });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);

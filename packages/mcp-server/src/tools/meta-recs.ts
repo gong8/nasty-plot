@@ -1,8 +1,9 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { apiGet, apiPost } from "../api-client.js";
+import { buildParams, handleTool } from "../tool-helpers.js";
 
-export function registerMetaRecsTools(server: McpServer) {
+export function registerMetaRecsTools(server: McpServer): void {
   server.tool(
     "get_meta_trends",
     "Get current metagame trends for a format including top Pokemon and usage shifts",
@@ -15,29 +16,15 @@ export function registerMetaRecsTools(server: McpServer) {
         .optional()
         .describe("Number of top Pokemon to return (default 20)"),
     },
-    async ({ formatId, limit }) => {
-      try {
-        const params: Record<string, string> = {};
-        if (limit) params.limit = limit.toString();
-        const data = await apiGet(
-          `/formats/${encodeURIComponent(formatId)}/usage`,
-          params
-        );
-        return {
-          content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }],
-        };
-      } catch (error) {
-        return {
-          content: [
-            {
-              type: "text" as const,
-              text: `Could not fetch meta trends for "${formatId}".`,
-            },
-          ],
-          isError: true,
-        };
-      }
-    }
+    ({ formatId, limit }) =>
+      handleTool(
+        () =>
+          apiGet(
+            `/formats/${encodeURIComponent(formatId)}/usage`,
+            buildParams({ limit })
+          ),
+        `Could not fetch meta trends for "${formatId}".`
+      )
   );
 
   server.tool(
@@ -46,27 +33,15 @@ export function registerMetaRecsTools(server: McpServer) {
     {
       formatId: z.string().describe("Format ID"),
     },
-    async ({ formatId }) => {
-      try {
-        const data = await apiGet(
-          `/formats/${encodeURIComponent(formatId)}/usage`,
-          { limit: "50" }
-        );
-        return {
-          content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }],
-        };
-      } catch (error) {
-        return {
-          content: [
-            {
-              type: "text" as const,
-              text: `Could not fetch viability for "${formatId}".`,
-            },
-          ],
-          isError: true,
-        };
-      }
-    }
+    ({ formatId }) =>
+      handleTool(
+        () =>
+          apiGet(
+            `/formats/${encodeURIComponent(formatId)}/usage`,
+            { limit: "50" }
+          ),
+        `Could not fetch viability for "${formatId}".`
+      )
   );
 
   server.tool(
@@ -76,27 +51,11 @@ export function registerMetaRecsTools(server: McpServer) {
       teamId: z.string().describe("Team UUID"),
       formatId: z.string().describe("Format ID for meta context"),
     },
-    async ({ teamId, formatId }) => {
-      try {
-        const data = await apiPost("/recommend", {
-          teamId,
-          formatId,
-        });
-        return {
-          content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }],
-        };
-      } catch (error) {
-        return {
-          content: [
-            {
-              type: "text" as const,
-              text: `Could not suggest teammates. Make sure team "${teamId}" exists.`,
-            },
-          ],
-          isError: true,
-        };
-      }
-    }
+    ({ teamId, formatId }) =>
+      handleTool(
+        () => apiPost("/recommend", { teamId, formatId }),
+        `Could not suggest teammates. Make sure team "${teamId}" exists.`
+      )
   );
 
   server.tool(
@@ -109,36 +68,21 @@ export function registerMetaRecsTools(server: McpServer) {
         .optional()
         .describe("Optional: find cores containing this Pokemon"),
     },
-    async ({ formatId, pokemonId }) => {
-      try {
-        // Usage data often includes teammate correlation info
-        const params: Record<string, string> = { limit: "30" };
-        const data = await apiGet(
-          `/formats/${encodeURIComponent(formatId)}/usage`,
-          params
-        );
-        // If a pokemonId filter was provided, note it in the response
-        const result = pokemonId
-          ? {
-              note: `Showing usage data for ${formatId}. Filter for cores containing ${pokemonId}.`,
-              data,
-            }
-          : data;
-        return {
-          content: [{ type: "text" as const, text: JSON.stringify(result, null, 2) }],
-        };
-      } catch (error) {
-        return {
-          content: [
-            {
-              type: "text" as const,
-              text: `Could not fetch cores for "${formatId}".`,
-            },
-          ],
-          isError: true,
-        };
-      }
-    }
+    ({ formatId, pokemonId }) =>
+      handleTool(
+        async () => {
+          const data = await apiGet(
+            `/formats/${encodeURIComponent(formatId)}/usage`,
+            { limit: "30" }
+          );
+          if (!pokemonId) return data;
+          return {
+            note: `Showing usage data for ${formatId}. Filter for cores containing ${pokemonId}.`,
+            data,
+          };
+        },
+        `Could not fetch cores for "${formatId}".`
+      )
   );
 
   server.tool(
@@ -151,28 +95,14 @@ export function registerMetaRecsTools(server: McpServer) {
         .optional()
         .describe("Format context for set selection"),
     },
-    async ({ pokemonId, formatId }) => {
-      try {
-        const params: Record<string, string> = {};
-        if (formatId) params.format = formatId;
-        const data = await apiGet(
-          `/pokemon/${encodeURIComponent(pokemonId)}/sets`,
-          params
-        );
-        return {
-          content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }],
-        };
-      } catch (error) {
-        return {
-          content: [
-            {
-              type: "text" as const,
-              text: `Could not fetch sets for "${pokemonId}".`,
-            },
-          ],
-          isError: true,
-        };
-      }
-    }
+    ({ pokemonId, formatId }) =>
+      handleTool(
+        () =>
+          apiGet(
+            `/pokemon/${encodeURIComponent(pokemonId)}/sets`,
+            buildParams({ format: formatId })
+          ),
+        `Could not fetch sets for "${pokemonId}".`
+      )
   );
 }

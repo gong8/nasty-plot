@@ -39,7 +39,7 @@ export async function getDataStatus(): Promise<
     orderBy: [{ source: "asc" }, { formatId: "asc" }],
   });
 
-  return logs.map((log: { source: string; formatId: string; lastSynced: Date; status: string }) => ({
+  return logs.map((log) => ({
     source: log.source,
     formatId: log.formatId,
     lastSynced: log.lastSynced,

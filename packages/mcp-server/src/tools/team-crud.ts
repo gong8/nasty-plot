@@ -1,8 +1,24 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { apiGet, apiPost, apiPut, apiDelete } from "../api-client.js";
+import { apiDelete, apiGet, apiPost, apiPut } from "../api-client.js";
+import { buildParams, handleTool, toolError, toolSuccess } from "../tool-helpers.js";
 
-export function registerTeamCrudTools(server: McpServer) {
+const DEFAULT_IVS = { hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31 };
+const ZERO_EVS = { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 };
+
+const evsSchema = z
+  .object({
+    hp: z.number().optional(),
+    atk: z.number().optional(),
+    def: z.number().optional(),
+    spa: z.number().optional(),
+    spd: z.number().optional(),
+    spe: z.number().optional(),
+  })
+  .optional()
+  .describe("EV spread");
+
+export function registerTeamCrudTools(server: McpServer): void {
   server.tool(
     "create_team",
     "Create a new Pokemon team for a competitive format",
@@ -17,29 +33,17 @@ export function registerTeamCrudTools(server: McpServer) {
         .describe("Builder mode (default 'freeform')"),
       notes: z.string().optional().describe("Optional team notes"),
     },
-    async ({ name, formatId, mode, notes }) => {
-      try {
-        const data = await apiPost("/teams", {
-          name,
-          formatId,
-          mode: mode ?? "freeform",
-          notes,
-        });
-        return {
-          content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }],
-        };
-      } catch (error) {
-        return {
-          content: [
-            {
-              type: "text" as const,
-              text: `Failed to create team. Check that format "${formatId}" exists.`,
-            },
-          ],
-          isError: true,
-        };
-      }
-    }
+    ({ name, formatId, mode, notes }) =>
+      handleTool(
+        () =>
+          apiPost("/teams", {
+            name,
+            formatId,
+            mode: mode ?? "freeform",
+            notes,
+          }),
+        `Failed to create team. Check that format "${formatId}" exists.`
+      )
   );
 
   server.tool(
@@ -48,24 +52,11 @@ export function registerTeamCrudTools(server: McpServer) {
     {
       teamId: z.string().describe("Team UUID"),
     },
-    async ({ teamId }) => {
-      try {
-        const data = await apiGet(`/teams/${encodeURIComponent(teamId)}`);
-        return {
-          content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }],
-        };
-      } catch (error) {
-        return {
-          content: [
-            {
-              type: "text" as const,
-              text: `Team "${teamId}" not found.`,
-            },
-          ],
-          isError: true,
-        };
-      }
-    }
+    ({ teamId }) =>
+      handleTool(
+        () => apiGet(`/teams/${encodeURIComponent(teamId)}`),
+        `Team "${teamId}" not found.`
+      )
   );
 
   server.tool(
@@ -74,23 +65,11 @@ export function registerTeamCrudTools(server: McpServer) {
     {
       formatId: z.string().optional().describe("Filter by format ID"),
     },
-    async ({ formatId }) => {
-      try {
-        const params: Record<string, string> = {};
-        if (formatId) params.formatId = formatId;
-        const data = await apiGet("/teams", params);
-        return {
-          content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }],
-        };
-      } catch (error) {
-        return {
-          content: [
-            { type: "text" as const, text: "Failed to list teams." },
-          ],
-          isError: true,
-        };
-      }
-    }
+    ({ formatId }) =>
+      handleTool(
+        () => apiGet("/teams", buildParams({ formatId })),
+        "Failed to list teams."
+      )
   );
 
   server.tool(
@@ -119,30 +98,9 @@ export function registerTeamCrudTools(server: McpServer) {
       moves: z
         .array(z.string())
         .describe("Array of 1-4 move names"),
-      evs: z
-        .object({
-          hp: z.number().optional(),
-          atk: z.number().optional(),
-          def: z.number().optional(),
-          spa: z.number().optional(),
-          spd: z.number().optional(),
-          spe: z.number().optional(),
-        })
-        .optional()
-        .describe("EV spread"),
+      evs: evsSchema,
     },
-    async ({
-      teamId,
-      position,
-      pokemonId,
-      ability,
-      item,
-      nature,
-      teraType,
-      level,
-      moves,
-      evs,
-    }) => {
+    async ({ teamId, position, pokemonId, ability, item, nature, teraType, level, moves, evs }) => {
       try {
         const data = await apiPost(
           `/teams/${encodeURIComponent(teamId)}/slots`,
@@ -155,32 +113,14 @@ export function registerTeamCrudTools(server: McpServer) {
             teraType,
             level: level ?? 100,
             moves,
-            evs: {
-              hp: evs?.hp ?? 0,
-              atk: evs?.atk ?? 0,
-              def: evs?.def ?? 0,
-              spa: evs?.spa ?? 0,
-              spd: evs?.spd ?? 0,
-              spe: evs?.spe ?? 0,
-            },
-            ivs: { hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31 },
+            evs: { ...ZERO_EVS, ...evs },
+            ivs: DEFAULT_IVS,
           }
         );
-        return {
-          content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }],
-        };
+        return toolSuccess(data);
       } catch (error) {
-        const msg =
-          error instanceof Error ? error.message : "Unknown error";
-        return {
-          content: [
-            {
-              type: "text" as const,
-              text: `Failed to add Pokemon to slot ${position}: ${msg}`,
-            },
-          ],
-          isError: true,
-        };
+        const msg = error instanceof Error ? error.message : "Unknown error";
+        return toolError(`Failed to add Pokemon to slot ${position}: ${msg}`);
       }
     }
   );
@@ -192,26 +132,14 @@ export function registerTeamCrudTools(server: McpServer) {
       teamId: z.string().describe("Team UUID"),
       position: z.number().describe("Slot position to remove (1-6)"),
     },
-    async ({ teamId, position }) => {
-      try {
-        const data = await apiDelete(
-          `/teams/${encodeURIComponent(teamId)}/slots/${position}`
-        );
-        return {
-          content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }],
-        };
-      } catch (error) {
-        return {
-          content: [
-            {
-              type: "text" as const,
-              text: `Failed to remove Pokemon from slot ${position}.`,
-            },
-          ],
-          isError: true,
-        };
-      }
-    }
+    ({ teamId, position }) =>
+      handleTool(
+        () =>
+          apiDelete(
+            `/teams/${encodeURIComponent(teamId)}/slots/${position}`
+          ),
+        `Failed to remove Pokemon from slot ${position}.`
+      )
   );
 
   server.tool(
@@ -228,38 +156,16 @@ export function registerTeamCrudTools(server: McpServer) {
         .array(z.string())
         .optional()
         .describe("New move list"),
-      evs: z
-        .object({
-          hp: z.number().optional(),
-          atk: z.number().optional(),
-          def: z.number().optional(),
-          spa: z.number().optional(),
-          spd: z.number().optional(),
-          spe: z.number().optional(),
-        })
-        .optional()
-        .describe("New EV spread"),
+      evs: evsSchema,
     },
-    async ({ teamId, position, ...updates }) => {
-      try {
-        const data = await apiPut(
-          `/teams/${encodeURIComponent(teamId)}/slots/${position}`,
-          updates
-        );
-        return {
-          content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }],
-        };
-      } catch (error) {
-        return {
-          content: [
-            {
-              type: "text" as const,
-              text: `Failed to update slot ${position}.`,
-            },
-          ],
-          isError: true,
-        };
-      }
-    }
+    ({ teamId, position, ...updates }) =>
+      handleTool(
+        () =>
+          apiPut(
+            `/teams/${encodeURIComponent(teamId)}/slots/${position}`,
+            updates
+          ),
+        `Failed to update slot ${position}.`
+      )
   );
 }

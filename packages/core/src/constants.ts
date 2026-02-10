@@ -1,8 +1,8 @@
-import type { NatureData, PokemonType, StatName } from "./types";
+import type { NatureData, NatureName, PokemonType, StatName, StatsTable } from "./types";
 
 // --- Nature Data ---
 
-export const NATURE_DATA: Record<string, NatureData> = {
+export const NATURE_DATA: Record<NatureName, NatureData> = {
   Adamant:  { name: "Adamant",  plus: "atk", minus: "spa" },
   Bashful:  { name: "Bashful" },
   Bold:     { name: "Bold",     plus: "def", minus: "atk" },
@@ -110,5 +110,5 @@ export const MIN_IV = 0;
 
 // --- Default IVs/EVs ---
 
-export const DEFAULT_IVS = { hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31 };
-export const DEFAULT_EVS = { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 };
+export const DEFAULT_IVS: StatsTable = { hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31 };
+export const DEFAULT_EVS: StatsTable = { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 };

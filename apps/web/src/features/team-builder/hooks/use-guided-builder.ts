@@ -2,17 +2,12 @@
 
 import { useState, useCallback, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import type {
-  UsageStatsEntry,
-  PaginatedResponse,
-  SmogonSetData,
-  ApiResponse,
-  TeamSlotData,
-  NatureName,
-  PokemonType,
-  StatsTable,
+import {
+  DEFAULT_EVS, DEFAULT_IVS,
+  type UsageStatsEntry, type PaginatedResponse, type SmogonSetData,
+  type ApiResponse, type TeamSlotData, type NatureName,
+  type PokemonType, type StatsTable,
 } from "@nasty-plot/core";
-import { DEFAULT_EVS, DEFAULT_IVS } from "@nasty-plot/core";
 
 // --- Types ---
 

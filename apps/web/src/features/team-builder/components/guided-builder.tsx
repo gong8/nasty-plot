@@ -22,8 +22,7 @@ import { useGuidedBuilder } from "../hooks/use-guided-builder";
 import { CorePicker } from "./core-picker";
 import { RoleSelector } from "./role-selector";
 import { useAddSlot } from "@/features/teams/hooks/use-teams";
-import type { TeamSlotInput, PokemonType, NatureName, StatsTable } from "@nasty-plot/core";
-import { DEFAULT_EVS, DEFAULT_IVS } from "@nasty-plot/core";
+import { DEFAULT_EVS, DEFAULT_IVS, type TeamSlotInput, type PokemonType, type NatureName, type StatsTable } from "@nasty-plot/core";
 
 interface GuidedBuilderProps {
   teamId: string;

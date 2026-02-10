@@ -4,20 +4,19 @@ import type {
   BattlePokemon,
   BattleLogEntry,
   BattleLogType,
-  BattleMove,
   BattleActionSet,
   StatusCondition,
   Weather,
   Terrain,
   BoostTable,
-  SideConditions,
 } from "./types";
 
-// ============================
-// Protocol Parser
-// ============================
-// Parses @pkmn/sim protocol messages into BattleState mutations.
-// Protocol reference: https://github.com/smogon/pokemon-showdown/blob/master/sim/SIM-PROTOCOL.md
+/**
+ * Protocol Parser
+ *
+ * Parses @pkmn/sim protocol messages into BattleState mutations.
+ * Protocol reference: https://github.com/smogon/pokemon-showdown/blob/master/sim/SIM-PROTOCOL.md
+ */
 
 type Side = "p1" | "p2";
 
@@ -70,6 +69,11 @@ function parseDetails(details: string): { species: string; level: number; gender
   return { species, level, gender };
 }
 
+/** Convert a species display name like "Great Tusk" to an ID like "greattusk". */
+function toSpeciesId(name: string): string {
+  return name.toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
 /** Slot letter to 0-based index */
 function slotIndex(slot: string): number {
   return slot.charCodeAt(0) - "a".charCodeAt(0);
@@ -77,19 +81,6 @@ function slotIndex(slot: string): number {
 
 function defaultBoosts(): BoostTable {
   return { atk: 0, def: 0, spa: 0, spd: 0, spe: 0, accuracy: 0, evasion: 0 };
-}
-
-function defaultSideConditions(): SideConditions {
-  return {
-    stealthRock: false,
-    spikes: 0,
-    toxicSpikes: 0,
-    stickyWeb: false,
-    reflect: 0,
-    lightScreen: 0,
-    auroraVeil: 0,
-    tailwind: 0,
-  };
 }
 
 function makeEmptyPokemon(): BattlePokemon {
@@ -128,14 +119,6 @@ function findPokemon(state: BattleState, side: Side, name: string): BattlePokemo
     if (p.nickname === name || p.name === name) return p;
   }
   return null;
-}
-
-/**
- * Find active Pokemon at a slot position.
- */
-function getActive(state: BattleState, side: Side, slot: string): BattlePokemon | null {
-  const idx = slotIndex(slot);
-  return state.sides[side].active[idx] ?? null;
 }
 
 /**
@@ -182,7 +165,7 @@ export function processLine(
         // New pokemon we haven't seen
         pokemon = makeEmptyPokemon();
         pokemon.name = details.species;
-        pokemon.speciesId = details.species.toLowerCase().replace(/[^a-z0-9]/g, "");
+        pokemon.speciesId = toSpeciesId(details.species);
         pokemon.nickname = ident.name;
         pokemon.level = details.level;
         side.team.push(pokemon);
@@ -201,7 +184,7 @@ export function processLine(
 
       const verb = cmd === "switch" ? "sent out" : cmd === "drag" ? "was dragged out" : "appeared";
       return logEntry("switch",
-        `${ident.side === "p1" ? side.name : side.name} ${verb} ${ident.name}!`,
+        `${side.name} ${verb} ${ident.name}!`,
         state.turn, ident.side);
     }
 
@@ -361,13 +344,7 @@ export function processLine(
 
     case "-fieldend": {
       const fieldName = args[0]?.replace("move: ", "");
-      const terrainMap: Record<string, boolean> = {
-        "Electric Terrain": true,
-        "Grassy Terrain": true,
-        "Misty Terrain": true,
-        "Psychic Terrain": true,
-      };
-      if (fieldName in terrainMap) {
+      if (fieldName?.endsWith("Terrain")) {
         state.field.terrain = "";
         state.field.terrainTurns = 0;
       }
@@ -527,12 +504,7 @@ export function processLine(
 
     case "win": {
       const winnerName = args[0];
-      // Determine which side won
-      if (state.sides.p1.name === winnerName) {
-        state.winner = "p1";
-      } else {
-        state.winner = "p2";
-      }
+      state.winner = state.sides.p1.name === winnerName ? "p1" : "p2";
       state.phase = "ended";
       return logEntry("win", `${winnerName} won the battle!`, state.turn);
     }
@@ -579,6 +551,22 @@ export function processLine(
     case "t:":
       return null;
 
+    case "-fail": {
+      const ident = parsePokemonIdent(args[0] || "");
+      if (ident) {
+        return logEntry("info", `${ident.name}'s move failed!`, state.turn, ident.side);
+      }
+      return null;
+    }
+
+    case "-miss": {
+      const ident = parsePokemonIdent(args[0] || "");
+      if (ident) {
+        return logEntry("info", `${ident.name}'s attack missed!`, state.turn, ident.side);
+      }
+      return null;
+    }
+
     case "-activate":
     case "-hint":
     case "-combine":
@@ -586,8 +574,6 @@ export function processLine(
     case "-prepare":
     case "-mustrecharge":
     case "-nothing":
-    case "-fail":
-    case "-miss":
     case "-notarget":
     case "-ohko":
     case "-hitcount":
@@ -604,19 +590,6 @@ export function processLine(
     case "debug":
     case "seed":
     case "error":
-      // These are informational, we can log some of them
-      if (cmd === "-fail") {
-        const ident = parsePokemonIdent(args[0] || "");
-        if (ident) {
-          return logEntry("info", `${ident.name}'s move failed!`, state.turn, ident.side);
-        }
-      }
-      if (cmd === "-miss") {
-        const ident = parsePokemonIdent(args[0] || "");
-        if (ident) {
-          return logEntry("info", `${ident.name}'s attack missed!`, state.turn, ident.side);
-        }
-      }
       return null;
 
     default:
@@ -680,7 +653,7 @@ export function parseRequest(requestJson: string): {
 
   // Normal turn: extract moves and switches
   const active = req.active?.[0];
-  const moves = (active?.moves || []).map((m: RequestMove, i: number) => ({
+  const moves = (active?.moves || []).map((m: RequestMove) => ({
     name: m.move,
     id: m.id,
     pp: m.pp,
@@ -715,14 +688,14 @@ function extractSwitches(pokemon: RequestPokemon[]): BattleActionSet["switches"]
       return {
         index: i + 1, // 1-indexed
         name: details.species,
-        speciesId: details.species.toLowerCase().replace(/[^a-z0-9]/g, ""),
+        speciesId: toSpeciesId(details.species),
         hp: hpData.hp,
         maxHp: hpData.maxHp,
         status,
         fainted: hpData.hp === 0 || p.condition === "0 fnt",
       };
     })
-    .filter((p, i) => !p.fainted); // Can't switch to fainted
+    .filter((p) => !p.fainted);
 }
 
 /** Update side pokemon data from request side info */
@@ -741,13 +714,13 @@ export function updateSideFromRequest(
 
     // Find existing or create
     let pokemon = state.sides[side].team.find(
-      (p) => p.name === details.species || p.speciesId === details.species.toLowerCase().replace(/[^a-z0-9]/g, "")
+      (p) => p.name === details.species || p.speciesId === toSpeciesId(details.species)
     );
 
     if (!pokemon) {
       pokemon = makeEmptyPokemon();
       pokemon.name = details.species;
-      pokemon.speciesId = details.species.toLowerCase().replace(/[^a-z0-9]/g, "");
+      pokemon.speciesId = toSpeciesId(details.species);
       pokemon.nickname = reqPoke.ident?.replace(/^p[12][a-d]?: /, "") || details.species;
       pokemon.level = details.level;
       state.sides[side].team.push(pokemon);
@@ -803,14 +776,11 @@ export function updateSideFromRequest(
   }
 }
 
-// Helper function
 function logEntry(type: BattleLogType, message: string, turn: number, side?: Side): BattleLogEntry {
   return { type, message, turn, side };
 }
 
-// ============================
-// Request JSON types (from @pkmn/sim)
-// ============================
+/** Request JSON types from @pkmn/sim */
 
 interface RequestMove {
   move: string;

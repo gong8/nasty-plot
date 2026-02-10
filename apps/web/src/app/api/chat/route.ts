@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
-import { streamChat } from "@nasty-plot/llm";
 import {
+  streamChat,
   createSession,
   getSession,
   addMessage,

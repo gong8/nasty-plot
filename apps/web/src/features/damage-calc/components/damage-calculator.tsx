@@ -13,8 +13,11 @@ import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
 import { ArrowRight, Swords, Shield, Zap } from "lucide-react";
 import { useDamageCalc } from "../hooks/use-damage-calc";
-import { POKEMON_TYPES, NATURES, STATS, type PokemonType, type NatureName, type StatsTable, type DamageCalcInput } from "@nasty-plot/core";
-import { STAT_LABELS, STAT_COLORS, TYPE_COLORS, MAX_SINGLE_EV } from "@nasty-plot/core";
+import {
+  POKEMON_TYPES, NATURES, STATS,
+  STAT_LABELS, STAT_COLORS, TYPE_COLORS, MAX_SINGLE_EV,
+  type PokemonType, type NatureName, type StatsTable, type DamageCalcInput,
+} from "@nasty-plot/core";
 import { cn } from "@/lib/utils";
 
 interface PokemonConfig {

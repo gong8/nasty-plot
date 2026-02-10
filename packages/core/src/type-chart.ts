@@ -9,12 +9,9 @@ export function getTypeEffectiveness(
   defenseTypes: PokemonType[]
 ): number {
   let multiplier = 1;
+  const chart = TYPE_CHART[attackType];
   for (const defType of defenseTypes) {
-    const chart = TYPE_CHART[attackType];
-    const effectiveness = chart[defType];
-    if (effectiveness !== undefined) {
-      multiplier *= effectiveness;
-    }
+    multiplier *= chart[defType] ?? 1;
   }
   return multiplier;
 }
@@ -47,11 +44,13 @@ export function getImmunities(types: PokemonType[]): PokemonType[] {
   );
 }
 
+export type EffectivenessBucket = "4x" | "2x" | "1x" | "0.5x" | "0.25x" | "0x";
+
 /**
  * Get full defensive profile for a type combination.
  */
-export function getDefensiveProfile(types: PokemonType[]) {
-  const profile: Record<string, PokemonType[]> = {
+export function getDefensiveProfile(types: PokemonType[]): Record<EffectivenessBucket, PokemonType[]> {
+  const profile: Record<EffectivenessBucket, PokemonType[]> = {
     "4x": [],
     "2x": [],
     "1x": [],
@@ -62,23 +61,26 @@ export function getDefensiveProfile(types: PokemonType[]) {
 
   for (const attackType of POKEMON_TYPES) {
     const eff = getTypeEffectiveness(attackType, types);
-    if (eff >= 4) profile["4x"].push(attackType);
-    else if (eff >= 2) profile["2x"].push(attackType);
-    else if (eff === 1) profile["1x"].push(attackType);
-    else if (eff >= 0.5) profile["0.5x"].push(attackType);
-    else if (eff > 0) profile["0.25x"].push(attackType);
-    else profile["0x"].push(attackType);
+    const bucket = effectivenessToBucket(eff);
+    profile[bucket].push(attackType);
   }
 
   return profile;
+}
+
+function effectivenessToBucket(eff: number): EffectivenessBucket {
+  if (eff === 0) return "0x";
+  if (eff >= 4) return "4x";
+  if (eff >= 2) return "2x";
+  if (eff === 1) return "1x";
+  if (eff >= 0.5) return "0.5x";
+  return "0.25x";
 }
 
 /**
  * Get offensive coverage: which types can this type hit super-effectively?
  */
 export function getOffensiveCoverage(attackType: PokemonType): PokemonType[] {
-  return POKEMON_TYPES.filter((defType) => {
-    const chart = TYPE_CHART[attackType];
-    return (chart[defType] ?? 1) > 1;
-  });
+  const chart = TYPE_CHART[attackType];
+  return POKEMON_TYPES.filter((defType) => (chart[defType] ?? 1) > 1);
 }

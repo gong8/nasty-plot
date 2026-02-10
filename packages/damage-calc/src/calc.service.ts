@@ -1,46 +1,38 @@
 import { Generations } from "@pkmn/data";
 import { Dex } from "@pkmn/dex";
-import {
-  calculate,
-  Pokemon,
-  Move,
-  Field,
-  Side,
-} from "@smogon/calc";
+import { calculate, Field, Move, Pokemon, State } from "@smogon/calc";
 import type {
   DamageCalcInput,
   DamageCalcResult,
   MatchupMatrixEntry,
-  TeamSlotData,
   StatsTable,
+  TeamSlotData,
 } from "@nasty-plot/core";
 
 const gens = new Generations(Dex);
 const gen = gens.get(9);
 
-function toCalcEvs(evs?: Partial<StatsTable>) {
+// ---------------------------------------------------------------------------
+// Helpers: stat table conversion
+// ---------------------------------------------------------------------------
+
+function fillStats(
+  partial: Partial<StatsTable> | undefined,
+  defaultValue: number
+): StatsTable {
   return {
-    hp: evs?.hp ?? 0,
-    atk: evs?.atk ?? 0,
-    def: evs?.def ?? 0,
-    spa: evs?.spa ?? 0,
-    spd: evs?.spd ?? 0,
-    spe: evs?.spe ?? 0,
+    hp: partial?.hp ?? defaultValue,
+    atk: partial?.atk ?? defaultValue,
+    def: partial?.def ?? defaultValue,
+    spa: partial?.spa ?? defaultValue,
+    spd: partial?.spd ?? defaultValue,
+    spe: partial?.spe ?? defaultValue,
   };
 }
 
-function toCalcIvs(ivs?: Partial<StatsTable>) {
-  return {
-    hp: ivs?.hp ?? 31,
-    atk: ivs?.atk ?? 31,
-    def: ivs?.def ?? 31,
-    spa: ivs?.spa ?? 31,
-    spd: ivs?.spd ?? 31,
-    spe: ivs?.spe ?? 31,
-  };
-}
-
-function toCalcBoosts(boosts?: Partial<StatsTable>) {
+function toCalcBoosts(
+  boosts: Partial<StatsTable> | undefined
+): Partial<StatsTable> | undefined {
   if (!boosts) return undefined;
   return {
     atk: boosts.atk ?? 0,
@@ -51,47 +43,58 @@ function toCalcBoosts(boosts?: Partial<StatsTable>) {
   };
 }
 
-/**
- * Resolve a pokemonId to a display name usable by @smogon/calc.
- * pokemonId is in camelCase (e.g. "greatTusk"), we need "Great Tusk".
- * We try the @pkmn/dex lookup first, falling back to naive conversion.
- */
+// ---------------------------------------------------------------------------
+// Helpers: status mapping
+// ---------------------------------------------------------------------------
+
 type CalcStatusName = "slp" | "psn" | "brn" | "frz" | "par" | "tox";
 
 const STATUS_MAP: Record<string, CalcStatusName> = {
-  "Burned": "brn",
-  "Paralyzed": "par",
-  "Poisoned": "psn",
+  Burned: "brn",
+  Paralyzed: "par",
+  Poisoned: "psn",
   "Badly Poisoned": "tox",
-  "Asleep": "slp",
-  "Frozen": "frz",
+  Asleep: "slp",
+  Frozen: "frz",
 };
 
-function toCalcStatus(status?: string): CalcStatusName | "" | undefined {
+function toCalcStatus(status?: string): CalcStatusName | undefined {
   if (!status || status === "None" || status === "Healthy") return undefined;
-  return STATUS_MAP[status] ?? undefined;
+  return STATUS_MAP[status];
 }
 
+// ---------------------------------------------------------------------------
+// Helpers: species name resolution
+// ---------------------------------------------------------------------------
+
+/**
+ * Resolve a pokemonId to a display name usable by @smogon/calc.
+ * pokemonId is in camelCase (e.g. "greatTusk"), we need "Great Tusk".
+ * Tries @pkmn/dex lookup first, falling back to naive conversion.
+ */
 function resolveSpeciesName(pokemonId: string): string {
-  // Try direct dex lookup
   const species = Dex.species.get(pokemonId);
   if (species?.exists) return species.name;
-  // Fallback: split camelCase and capitalize
   return pokemonId
     .replace(/([a-z])([A-Z])/g, "$1 $2")
     .replace(/^./, (s) => s.toUpperCase());
 }
 
+// ---------------------------------------------------------------------------
+// Helpers: damage array processing
+// ---------------------------------------------------------------------------
+
 function flattenDamage(damage: number | number[] | number[][]): number[] {
   if (typeof damage === "number") return [damage];
-  if (Array.isArray(damage) && damage.length > 0) {
-    if (Array.isArray(damage[0])) {
-      // number[][] (doubles spread moves) — flatten first sub-array
-      return (damage as number[][])[0];
-    }
-    return damage as number[];
-  }
-  return [0];
+  if (!Array.isArray(damage) || damage.length === 0) return [0];
+  // number[][] (doubles spread moves) -- use first sub-array
+  if (Array.isArray(damage[0])) return (damage as number[][])[0];
+  return damage as number[];
+}
+
+function toPercent(value: number, total: number): number {
+  if (total <= 0) return 0;
+  return Math.round((value / total) * 1000) / 10;
 }
 
 function deriveKoChance(damageArr: number[], defenderHp: number): string {
@@ -99,78 +102,77 @@ function deriveKoChance(damageArr: number[], defenderHp: number): string {
   const minDmg = Math.min(...damageArr);
   const maxDmg = Math.max(...damageArr);
 
-  if (minDmg >= defenderHp) return "guaranteed OHKO";
-  if (maxDmg >= defenderHp) return "possible OHKO";
-
-  // Check 2HKO through 4HKO
-  for (const n of [2, 3, 4]) {
-    if (minDmg * n >= defenderHp) return `guaranteed ${n}HKO`;
-    if (maxDmg * n >= defenderHp) return `possible ${n}HKO`;
+  for (const n of [1, 2, 3, 4]) {
+    const label = n === 1 ? "OHKO" : `${n}HKO`;
+    if (minDmg * n >= defenderHp) return `guaranteed ${label}`;
+    if (maxDmg * n >= defenderHp) return `possible ${label}`;
   }
 
   return "5+ hits to KO";
 }
 
+// ---------------------------------------------------------------------------
+// Helpers: Pokemon construction for @smogon/calc
+// ---------------------------------------------------------------------------
+
+type CalcPokemonInput = DamageCalcInput["attacker"];
+
+function buildCalcPokemon(input: CalcPokemonInput): Pokemon {
+  return new Pokemon(gen, resolveSpeciesName(input.pokemonId), {
+    level: input.level,
+    ability: input.ability || undefined,
+    item: input.item || undefined,
+    nature: input.nature || "Hardy",
+    evs: fillStats(input.evs, 0),
+    ivs: fillStats(input.ivs, 31),
+    boosts: toCalcBoosts(input.boosts),
+    teraType: input.teraType || undefined,
+    status: toCalcStatus(input.status),
+  });
+}
+
+function buildField(
+  input: DamageCalcInput["field"],
+  move: Move
+): Field {
+  if (!input) return new Field();
+
+  if (input.isCritical) move.isCrit = true;
+
+  const fieldOptions: Partial<State.Field> = {
+    weather: input.weather as State.Field["weather"],
+    terrain: input.terrain as State.Field["terrain"],
+    gameType: input.isDoubles ? "Doubles" : undefined,
+    defenderSide: {
+      isReflect: input.isReflect,
+      isLightScreen: input.isLightScreen,
+      isAuroraVeil: input.isAuroraVeil,
+    } as State.Side,
+  };
+
+  return new Field(fieldOptions);
+}
+
+// ---------------------------------------------------------------------------
+// Public API
+// ---------------------------------------------------------------------------
+
 export function calculateDamage(input: DamageCalcInput): DamageCalcResult {
   const attackerName = resolveSpeciesName(input.attacker.pokemonId);
   const defenderName = resolveSpeciesName(input.defender.pokemonId);
 
-  const attacker = new Pokemon(gen, attackerName, {
-    level: input.attacker.level,
-    ability: input.attacker.ability || undefined,
-    item: input.attacker.item || undefined,
-    nature: input.attacker.nature || "Hardy",
-    evs: toCalcEvs(input.attacker.evs),
-    ivs: toCalcIvs(input.attacker.ivs),
-    boosts: toCalcBoosts(input.attacker.boosts),
-    teraType: input.attacker.teraType || undefined,
-    status: toCalcStatus(input.attacker.status),
-  });
-
-  const defender = new Pokemon(gen, defenderName, {
-    level: input.defender.level,
-    ability: input.defender.ability || undefined,
-    item: input.defender.item || undefined,
-    nature: input.defender.nature || "Hardy",
-    evs: toCalcEvs(input.defender.evs),
-    ivs: toCalcIvs(input.defender.ivs),
-    boosts: toCalcBoosts(input.defender.boosts),
-    teraType: input.defender.teraType || undefined,
-    status: toCalcStatus(input.defender.status),
-  });
-
+  const attacker = buildCalcPokemon(input.attacker);
+  const defender = buildCalcPokemon(input.defender);
   const move = new Move(gen, input.move);
+  const field = buildField(input.field, move);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const fieldOptions: Record<string, any> = {};
-  if (input.field) {
-    if (input.field.weather) fieldOptions.weather = input.field.weather;
-    if (input.field.terrain) fieldOptions.terrain = input.field.terrain;
-    if (input.field.isCritical) move.isCrit = true;
-    if (input.field.isDoubles) fieldOptions.gameType = "Doubles";
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const attackerSideOptions: Record<string, any> = {};
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const defenderSideOptions: Record<string, any> = {};
-
-    if (input.field.isReflect) defenderSideOptions.isReflect = true;
-    if (input.field.isLightScreen) defenderSideOptions.isLightScreen = true;
-    if (input.field.isAuroraVeil) defenderSideOptions.isAuroraVeil = true;
-
-    fieldOptions.attackerSide = attackerSideOptions;
-    fieldOptions.defenderSide = defenderSideOptions;
-  }
-
-  const field = new Field(fieldOptions);
   const result = calculate(gen, attacker, defender, move, field);
-
   const damageArr = flattenDamage(result.damage);
   const defenderHp = defender.maxHP();
   const minDamage = Math.min(...damageArr);
   const maxDamage = Math.max(...damageArr);
-  const minPercent = defenderHp > 0 ? Math.round((minDamage / defenderHp) * 1000) / 10 : 0;
-  const maxPercent = defenderHp > 0 ? Math.round((maxDamage / defenderHp) * 1000) / 10 : 0;
+  const minPercent = toPercent(minDamage, defenderHp);
+  const maxPercent = toPercent(maxDamage, defenderHp);
 
   let description: string;
   try {
@@ -179,8 +181,6 @@ export function calculateDamage(input: DamageCalcInput): DamageCalcResult {
     description = `${attackerName} ${input.move} vs ${defenderName}: ${minPercent}-${maxPercent}%`;
   }
 
-  const koChance = deriveKoChance(damageArr, defenderHp);
-
   return {
     moveName: input.move,
     damage: damageArr,
@@ -188,7 +188,7 @@ export function calculateDamage(input: DamageCalcInput): DamageCalcResult {
     maxPercent,
     minDamage,
     maxDamage,
-    koChance,
+    koChance: deriveKoChance(damageArr, defenderHp),
     description,
   };
 }
@@ -198,15 +198,14 @@ export function calculateMatchupMatrix(
   threatIds: string[],
   _formatId: string
 ): MatchupMatrixEntry[][] {
-  const matrix: MatchupMatrixEntry[][] = [];
+  return teamSlots.map((slot) => {
+    const moves = slot.moves.filter(Boolean) as string[];
+    const attackerName = slot.species?.name ?? resolveSpeciesName(slot.pokemonId);
 
-  for (const slot of teamSlots) {
-    const row: MatchupMatrixEntry[] = [];
-    for (const threatId of threatIds) {
-      const moves = slot.moves.filter(Boolean) as string[];
-      let bestEntry: MatchupMatrixEntry = {
+    return threatIds.map((threatId) => {
+      const baseEntry: MatchupMatrixEntry = {
         attackerId: slot.pokemonId,
-        attackerName: slot.species?.name ?? resolveSpeciesName(slot.pokemonId),
+        attackerName,
         defenderId: threatId,
         defenderName: resolveSpeciesName(threatId),
         bestMove: moves[0] ?? "Struggle",
@@ -214,7 +213,7 @@ export function calculateMatchupMatrix(
         koChance: "N/A",
       };
 
-      for (const moveName of moves) {
+      return moves.reduce((best, moveName) => {
         try {
           const result = calculateDamage({
             attacker: {
@@ -226,16 +225,13 @@ export function calculateMatchupMatrix(
               evs: slot.evs,
               ivs: slot.ivs,
             },
-            defender: {
-              pokemonId: threatId,
-              level: 100,
-            },
+            defender: { pokemonId: threatId, level: 100 },
             move: moveName,
           });
 
-          if (result.maxPercent > bestEntry.maxPercent) {
-            bestEntry = {
-              ...bestEntry,
+          if (result.maxPercent > best.maxPercent) {
+            return {
+              ...best,
               bestMove: moveName,
               maxPercent: result.maxPercent,
               koChance: result.koChance,
@@ -244,12 +240,8 @@ export function calculateMatchupMatrix(
         } catch {
           // Skip moves that fail to calculate (status moves, etc.)
         }
-      }
-
-      row.push(bestEntry);
-    }
-    matrix.push(row);
-  }
-
-  return matrix;
+        return best;
+      }, baseEntry);
+    });
+  });
 }

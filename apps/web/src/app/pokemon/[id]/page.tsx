@@ -15,11 +15,15 @@ import { getSpecies, getLearnset, getMove } from "@nasty-plot/pokemon-data";
 import { prisma } from "@nasty-plot/db";
 import { getSetsForPokemon } from "@nasty-plot/smogon-data";
 import { SiteHeader } from "@/components/site-header";
-import { StatBar } from "@nasty-plot/ui";
-import { TypeBadge } from "@nasty-plot/ui";
+import { StatBar, TypeBadge } from "@nasty-plot/ui";
 import { CompetitiveData } from "./competitive-data";
-import { STATS } from "@nasty-plot/core";
-import type { MoveData, StatName, UsageStatsEntry } from "@nasty-plot/core";
+import { STATS, type MoveData, type StatName, type UsageStatsEntry } from "@nasty-plot/core";
+
+const CATEGORY_COLORS: Record<string, string> = {
+  Physical: "text-red-500",
+  Special: "text-blue-500",
+  Status: "text-gray-500",
+};
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -143,7 +147,6 @@ export default async function PokemonDetailPage({ params }: Props) {
         {/* Competitive Data: Usage stats + Smogon sets */}
         <div className="mt-6">
           <CompetitiveData
-            pokemonId={id}
             usageByFormat={usageByFormat}
             setsByFormat={setsByFormat}
           />
@@ -174,15 +177,7 @@ export default async function PokemonDetailPage({ params }: Props) {
                       <TypeBadge type={move.type} size="sm" />
                     </TableCell>
                     <TableCell>
-                      <span
-                        className={`text-xs font-medium ${
-                          move.category === "Physical"
-                            ? "text-red-500"
-                            : move.category === "Special"
-                            ? "text-blue-500"
-                            : "text-gray-500"
-                        }`}
-                      >
+                      <span className={`text-xs font-medium ${CATEGORY_COLORS[move.category] ?? "text-gray-500"}`}>
                         {move.category}
                       </span>
                     </TableCell>

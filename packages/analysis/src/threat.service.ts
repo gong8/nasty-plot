@@ -1,7 +1,12 @@
-import type { TeamSlotData, ThreatEntry, PokemonType } from "@nasty-plot/core";
+import { getTypeEffectiveness, type TeamSlotData, type ThreatEntry, type PokemonType } from "@nasty-plot/core";
 import { prisma } from "@nasty-plot/db";
-import { getTypeEffectiveness, getWeaknesses } from "@nasty-plot/core";
 import { Dex } from "@pkmn/dex";
+
+const THREAT_LEVEL_ORDER: Record<ThreatEntry["threatLevel"], number> = {
+  high: 0,
+  medium: 1,
+  low: 2,
+};
 
 /**
  * Identify threats to the team based on usage stats and type matchups.
@@ -10,23 +15,8 @@ export async function identifyThreats(
   slots: TeamSlotData[],
   formatId: string
 ): Promise<ThreatEntry[]> {
-  // Collect team weaknesses
-  const teamWeaknesses = new Set<PokemonType>();
-  for (const slot of slots) {
-    const types = slot.species?.types ?? [];
-    if (types.length === 0) continue;
-    const weaks = getWeaknesses(types as PokemonType[]);
-    for (const w of weaks) {
-      teamWeaknesses.add(w);
-    }
-  }
-
-  // Get top usage Pokemon for this format
-  const now = new Date();
   const usageEntries = await prisma.usageStats.findMany({
-    where: {
-      formatId,
-    },
+    where: { formatId },
     orderBy: { rank: "asc" },
     take: 50,
   });
@@ -41,7 +31,6 @@ export async function identifyThreats(
   for (const entry of usageEntries) {
     if (teamPokemonIds.has(entry.pokemonId)) continue;
 
-    // Resolve species types
     const species = Dex.species.get(entry.pokemonId);
     if (!species?.exists) continue;
 
@@ -55,8 +44,7 @@ export async function identifyThreats(
       for (const slot of slots) {
         const defTypes = slot.species?.types ?? [];
         if (defTypes.length === 0) continue;
-        const eff = getTypeEffectiveness(tType, defTypes as PokemonType[]);
-        if (eff > 1) weakSlots++;
+        if (getTypeEffectiveness(tType, defTypes) > 1) weakSlots++;
       }
       if (weakSlots >= 2) {
         threatScore += weakSlots * 15;
@@ -69,8 +57,7 @@ export async function identifyThreats(
     // Higher usage = higher threat baseline
     threatScore += Math.min(entry.usagePercent * 2, 30);
 
-    // Determine threat level
-    let threatLevel: "high" | "medium" | "low";
+    let threatLevel: ThreatEntry["threatLevel"];
     if (threatScore >= 40) {
       threatLevel = "high";
     } else if (threatScore >= 20) {
@@ -79,7 +66,7 @@ export async function identifyThreats(
       threatLevel = "low";
     }
 
-    // Only include medium+ threats
+    // Only include medium+ threats or low threats with meaningful scores
     if (threatLevel === "low" && threatScore < 10) continue;
 
     threats.push({
@@ -93,10 +80,8 @@ export async function identifyThreats(
     });
   }
 
-  // Sort: high first, then medium, then low; within each level, by usage
-  const levelOrder = { high: 0, medium: 1, low: 2 };
   threats.sort((a, b) => {
-    const levelDiff = levelOrder[a.threatLevel] - levelOrder[b.threatLevel];
+    const levelDiff = THREAT_LEVEL_ORDER[a.threatLevel] - THREAT_LEVEL_ORDER[b.threatLevel];
     if (levelDiff !== 0) return levelDiff;
     return b.usagePercent - a.usagePercent;
   });

@@ -1,8 +1,4 @@
-import type { PokemonType, StatsTable, NatureName } from "@nasty-plot/core";
-
-// ============================
-// Battle State Types
-// ============================
+import type { PokemonType, StatsTable } from "@nasty-plot/core";
 
 export type BattlePhase = "setup" | "preview" | "battle" | "ended";
 export type BattleFormat = "singles" | "doubles";
@@ -119,10 +115,6 @@ export interface BattleState {
   id: string;
 }
 
-// ============================
-// Battle Actions
-// ============================
-
 export interface MoveAction {
   type: "move";
   moveIndex: number; // 1-indexed as @pkmn/sim uses
@@ -171,10 +163,6 @@ export interface BattleActionSet {
   activeSlot?: number;
 }
 
-// ============================
-// Battle Log
-// ============================
-
 export type BattleLogType =
   | "move"
   | "damage"
@@ -212,10 +200,6 @@ export interface BattleLogEntry {
   data?: Record<string, unknown>;
 }
 
-// ============================
-// Battle Setup
-// ============================
-
 export interface BattleSetupConfig {
   formatId: string;
   gameType: BattleFormat;
@@ -226,10 +210,6 @@ export interface BattleSetupConfig {
   playerName: string;
   opponentName: string;
 }
-
-// ============================
-// AI Types
-// ============================
 
 export interface AIPlayer {
   readonly difficulty: AIDifficulty;

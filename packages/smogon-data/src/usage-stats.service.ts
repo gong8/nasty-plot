@@ -87,10 +87,7 @@ export async function fetchUsageStats(
   year?: number,
   month?: number
 ): Promise<void> {
-  const resolved = await resolveYearMonth(formatId, year, month);
-  const { url } = resolved;
-  const statYear = resolved.year;
-  const statMonth = resolved.month;
+  const { url, year: statYear, month: statMonth } = await resolveYearMonth(formatId, year, month);
 
   console.log(`[usage-stats] Fetching ${url}`);
 
@@ -214,6 +211,14 @@ export async function fetchUsageStats(
   );
 }
 
+function rowToEntry(r: { pokemonId: string; usagePercent: number; rank: number }): UsageStatsEntry {
+  return {
+    pokemonId: r.pokemonId,
+    usagePercent: r.usagePercent,
+    rank: r.rank,
+  };
+}
+
 /**
  * Query usage stats from the DB, ordered by rank.
  */
@@ -232,11 +237,7 @@ export async function getUsageStats(
     skip,
   });
 
-  return rows.map((r: { pokemonId: string; usagePercent: number; rank: number }) => ({
-    pokemonId: r.pokemonId,
-    usagePercent: r.usagePercent,
-    rank: r.rank,
-  }));
+  return rows.map(rowToEntry);
 }
 
 /**
@@ -259,11 +260,7 @@ export async function getTopPokemon(
     take: limit,
   });
 
-  return rows.map((r: { pokemonId: string; usagePercent: number; rank: number }) => ({
-    pokemonId: r.pokemonId,
-    usagePercent: r.usagePercent,
-    rank: r.rank,
-  }));
+  return rows.map(rowToEntry);
 }
 
 /**
@@ -280,7 +277,7 @@ export async function getTeammates(
     take: limit,
   });
 
-  return rows.map((r: { pokemonBId: string; correlationPercent: number }) => ({
+  return rows.map((r) => ({
     pokemonId: r.pokemonBId,
     correlationPercent: r.correlationPercent,
   }));

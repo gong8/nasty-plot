@@ -3,9 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { POKEMON_TYPES, type PokemonType, type TeamSlotData } from "@nasty-plot/core";
-import { TYPE_COLORS } from "@nasty-plot/core";
-import { getTypeEffectiveness } from "@nasty-plot/core";
+import { POKEMON_TYPES, TYPE_COLORS, getTypeEffectiveness, type PokemonType, type TeamSlotData } from "@nasty-plot/core";
 import { cn } from "@/lib/utils";
 
 interface WeaknessHeatmapProps {

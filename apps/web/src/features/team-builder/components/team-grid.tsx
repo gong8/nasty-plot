@@ -3,9 +3,8 @@
 import { Plus } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { TYPE_COLORS } from "@nasty-plot/core";
+import { TYPE_COLORS, type PokemonType, type TeamData } from "@nasty-plot/core";
 import { PokemonSprite } from "@nasty-plot/ui";
-import type { PokemonType, TeamData } from "@nasty-plot/core";
 
 interface TeamGridProps {
   team: TeamData;

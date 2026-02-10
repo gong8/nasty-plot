@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@nasty-plot/db";
-import { fetchUsageStats } from "@nasty-plot/smogon-data";
-import { fetchSmogonSets } from "@nasty-plot/smogon-data";
+import { fetchUsageStats, fetchSmogonSets } from "@nasty-plot/smogon-data";
 import { isStale } from "@nasty-plot/data-pipeline";
 
 const DEFAULT_FORMATS = [
@@ -45,8 +44,7 @@ export async function POST(request: NextRequest) {
       // Format may already exist, that's fine
     }
 
-    let success = true;
-    let error: string | undefined;
+    const errors: string[] = [];
 
     // Usage stats
     try {
@@ -55,8 +53,7 @@ export async function POST(request: NextRequest) {
         await fetchUsageStats(format.id);
       }
     } catch (err) {
-      error = err instanceof Error ? err.message : String(err);
-      // Continue to try sets even if stats fail
+      errors.push(err instanceof Error ? err.message : String(err));
     }
 
     // Smogon sets
@@ -66,13 +63,11 @@ export async function POST(request: NextRequest) {
         await fetchSmogonSets(format.id);
       }
     } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      error = error ? `${error}; ${msg}` : msg;
-      success = false;
+      errors.push(err instanceof Error ? err.message : String(err));
     }
 
-    if (error && success) success = false;
-    results.push({ format: format.id, success: !error, error });
+    const error = errors.length > 0 ? errors.join("; ") : undefined;
+    results.push({ format: format.id, success: errors.length === 0, error });
   }
 
   const allSuccess = results.every((r) => r.success);

@@ -5,29 +5,21 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
-import { POKEMON_TYPES, type PokemonType, type TypeCoverage } from "@nasty-plot/core";
-import { TYPE_COLORS } from "@nasty-plot/core";
+import { POKEMON_TYPES, TYPE_COLORS, type PokemonType, type TypeCoverage } from "@nasty-plot/core";
 import { cn } from "@/lib/utils";
 
 interface CoverageChartProps {
   coverage: TypeCoverage | undefined;
 }
 
-function getCoverageLevel(count: number, mode: "offensive" | "defensive"): {
+function getCoverageLevel(count: number): {
   label: string;
   className: string;
 } {
-  if (mode === "offensive") {
-    if (count === 0) return { label: "None", className: "bg-red-500/20 text-red-700 border-red-300" };
-    if (count === 1) return { label: "1x", className: "bg-yellow-500/20 text-yellow-700 border-yellow-300" };
-    if (count === 2) return { label: "2x", className: "bg-green-400/20 text-green-700 border-green-300" };
-    return { label: `${count}x`, className: "bg-green-600/20 text-green-800 border-green-400" };
-  } else {
-    if (count === 0) return { label: "None", className: "bg-red-500/20 text-red-700 border-red-300" };
-    if (count === 1) return { label: "1x", className: "bg-yellow-500/20 text-yellow-700 border-yellow-300" };
-    if (count === 2) return { label: "2x", className: "bg-green-400/20 text-green-700 border-green-300" };
-    return { label: `${count}x`, className: "bg-green-600/20 text-green-800 border-green-400" };
-  }
+  if (count === 0) return { label: "None", className: "bg-red-500/20 text-red-700 border-red-300" };
+  if (count === 1) return { label: "1x", className: "bg-yellow-500/20 text-yellow-700 border-yellow-300" };
+  if (count === 2) return { label: "2x", className: "bg-green-400/20 text-green-700 border-green-300" };
+  return { label: `${count}x`, className: "bg-green-600/20 text-green-800 border-green-400" };
 }
 
 export function CoverageChart({ coverage }: CoverageChartProps) {
@@ -67,7 +59,7 @@ export function CoverageChart({ coverage }: CoverageChartProps) {
         <div className="grid grid-cols-6 gap-1.5">
           {POKEMON_TYPES.map((type) => {
             const count = data[type] ?? 0;
-            const { label, className } = getCoverageLevel(count, mode);
+            const { label, className } = getCoverageLevel(count);
             return (
               <Tooltip key={type}>
                 <TooltipTrigger asChild>

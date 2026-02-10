@@ -10,7 +10,7 @@ function buildSetsUrl(formatId: string): string {
 }
 
 // Raw shape from pkmn.cc - fields can be arrays for slash options
-type RawSetEntry = {
+interface RawSetEntry {
   ability: string | string[];
   item: string | string[];
   nature: string | string[];
@@ -18,15 +18,17 @@ type RawSetEntry = {
   moves: (string | string[])[];
   evs?: Record<string, number> | Record<string, number>[];
   ivs?: Record<string, number> | Record<string, number>[];
-};
+}
 
 type RawSetsJson = Record<string, Record<string, RawSetEntry>>;
 
-/**
- * Normalize ability/item fields that can be string or string[]
- * into a single string (first element if array).
- */
-function normalizeStringOrArray(val: string | string[]): string {
+/** Take the first element if array, otherwise return the value as-is. */
+function firstOf(val: string | string[]): string {
+  return Array.isArray(val) ? val[0] : val;
+}
+
+/** Take the first element if array of records, otherwise return the value as-is. */
+function firstRecord(val: Record<string, number> | Record<string, number>[]): Record<string, number> {
   return Array.isArray(val) ? val[0] : val;
 }
 
@@ -54,18 +56,14 @@ export async function fetchSmogonSets(formatId: string): Promise<void> {
     for (const [setName, setData] of Object.entries(sets)) {
       if (!setData || typeof setData !== "object") continue;
 
-      const ability = normalizeStringOrArray(setData.ability ?? "");
-      const item = normalizeStringOrArray(setData.item ?? "");
-      const nature = normalizeStringOrArray(setData.nature ?? "Serious");
-      const teraType = setData.teraType
-        ? normalizeStringOrArray(setData.teraType)
-        : null;
+      const ability = firstOf(setData.ability ?? "");
+      const item = firstOf(setData.item ?? "");
+      const nature = firstOf(setData.nature ?? "Serious");
+      const teraType = setData.teraType ? firstOf(setData.teraType) : null;
 
       const movesJson = JSON.stringify(setData.moves ?? []);
-      const rawEvs = setData.evs ?? {};
-      const evsJson = JSON.stringify(Array.isArray(rawEvs) ? rawEvs[0] : rawEvs);
-      const rawIvs = setData.ivs;
-      const normalizedIvs = rawIvs ? (Array.isArray(rawIvs) ? rawIvs[0] : rawIvs) : null;
+      const evsJson = JSON.stringify(firstRecord(setData.evs ?? {}));
+      const normalizedIvs = setData.ivs ? firstRecord(setData.ivs) : null;
       const ivsJson =
         normalizedIvs && Object.keys(normalizedIvs).length > 0
           ? JSON.stringify(normalizedIvs)

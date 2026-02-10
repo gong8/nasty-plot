@@ -2,8 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { STAT_COLORS } from "@nasty-plot/core";
-import type { SpeedTierEntry } from "@nasty-plot/core";
+import { STAT_COLORS, type SpeedTierEntry } from "@nasty-plot/core";
 import { cn } from "@/lib/utils";
 
 interface SpeedTiersProps {
@@ -44,21 +43,20 @@ export function SpeedTiers({ tiers }: SpeedTiersProps) {
     ...BENCHMARKS.map((b) => b.speed)
   );
 
-  // Combine team tiers and benchmarks, sorted by speed
-  const combined = [
-    ...tiers.map((t) => ({
+  type TeamEntry = SpeedTierEntry & { isTeam: true; label: string };
+  type BenchmarkEntry = { speed: number; label: string; isTeam: false };
+  type CombinedEntry = TeamEntry | BenchmarkEntry;
+
+  const combined: CombinedEntry[] = [
+    ...tiers.map((t): TeamEntry => ({
       ...t,
       isTeam: true,
       label: t.pokemonName,
     })),
-    ...BENCHMARKS.map((b) => ({
+    ...BENCHMARKS.map((b): BenchmarkEntry => ({
       speed: b.speed,
       label: b.label,
       isTeam: false,
-      pokemonId: "",
-      pokemonName: "",
-      nature: "",
-      evs: 0,
     })),
   ].sort((a, b) => b.speed - a.speed);
 
@@ -114,12 +112,12 @@ export function SpeedTiers({ tiers }: SpeedTiersProps) {
                 </TooltipTrigger>
                 <TooltipContent>
                   <div className="text-xs">
-                    {isTeam ? (
+                    {entry.isTeam ? (
                       <>
-                        <p className="font-medium">{(entry as SpeedTierEntry & { isTeam: boolean }).pokemonName}</p>
+                        <p className="font-medium">{entry.pokemonName}</p>
                         <p>Speed: {entry.speed}</p>
-                        <p>Nature: {(entry as SpeedTierEntry & { isTeam: boolean }).nature}</p>
-                        <p>Speed EVs: {(entry as SpeedTierEntry & { isTeam: boolean }).evs}</p>
+                        <p>Nature: {entry.nature}</p>
+                        <p>Speed EVs: {entry.evs}</p>
                       </>
                     ) : (
                       <p>{entry.label} - {entry.speed} Spe</p>

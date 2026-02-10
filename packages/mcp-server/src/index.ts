@@ -15,20 +15,29 @@ const server = new McpServer({
 registerTools(server);
 registerResources(server);
 
-// Map of session ID to transport for stateful connections
 const transports = new Map<string, StreamableHTTPServerTransport>();
+
+function getSessionTransport(
+  req: express.Request,
+  res: express.Response
+): StreamableHTTPServerTransport | null {
+  const sessionId = req.headers["mcp-session-id"] as string | undefined;
+  if (!sessionId || !transports.has(sessionId)) {
+    res.status(400).json({ error: "Invalid or missing session ID" });
+    return null;
+  }
+  return transports.get(sessionId)!;
+}
 
 app.post("/mcp", async (req, res) => {
   const sessionId = req.headers["mcp-session-id"] as string | undefined;
 
   if (sessionId && transports.has(sessionId)) {
-    // Reuse existing transport for this session
     const transport = transports.get(sessionId)!;
     await transport.handleRequest(req, res, req.body);
     return;
   }
 
-  // New session - create a new transport
   const transport = new StreamableHTTPServerTransport({
     sessionIdGenerator: () =>
       `session-${Date.now()}-${Math.random().toString(36).slice(2)}`,
@@ -40,10 +49,7 @@ app.post("/mcp", async (req, res) => {
     }
   };
 
-  // Connect the server to this transport
   await server.connect(transport);
-
-  // Store the transport by session ID after handling the init request
   await transport.handleRequest(req, res, req.body);
 
   if (transport.sessionId) {
@@ -52,27 +58,19 @@ app.post("/mcp", async (req, res) => {
 });
 
 app.get("/mcp", async (req, res) => {
-  const sessionId = req.headers["mcp-session-id"] as string | undefined;
-  if (!sessionId || !transports.has(sessionId)) {
-    res.status(400).json({ error: "Invalid or missing session ID" });
-    return;
-  }
-  const transport = transports.get(sessionId)!;
+  const transport = getSessionTransport(req, res);
+  if (!transport) return;
   await transport.handleRequest(req, res);
 });
 
 app.delete("/mcp", async (req, res) => {
-  const sessionId = req.headers["mcp-session-id"] as string | undefined;
-  if (!sessionId || !transports.has(sessionId)) {
-    res.status(400).json({ error: "Invalid or missing session ID" });
-    return;
-  }
-  const transport = transports.get(sessionId)!;
+  const transport = getSessionTransport(req, res);
+  if (!transport) return;
   await transport.handleRequest(req, res);
+  const sessionId = req.headers["mcp-session-id"] as string;
   transports.delete(sessionId);
 });
 
-// Health check
 app.get("/health", (_req, res) => {
   res.json({
     status: "ok",

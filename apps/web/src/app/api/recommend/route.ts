@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
     const recommendations = await getRecommendations(
       teamId,
       limit ?? 10,
-      weights ?? undefined
+      weights
     );
 
     return NextResponse.json({

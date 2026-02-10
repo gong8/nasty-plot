@@ -8,7 +8,7 @@ describe("openai-client", () => {
     vi.unstubAllEnvs();
   });
 
-  it("exports openai proxy and MODEL constant", async () => {
+  it("exports getOpenAI and MODEL constant", async () => {
     vi.stubEnv("OPENAI_API_KEY", "test-key");
 
     vi.mock("openai", () => {
@@ -24,7 +24,7 @@ describe("openai-client", () => {
 
     const mod = await import("../openai-client");
 
-    expect(mod.openai).toBeDefined();
+    expect(mod.getOpenAI).toBeDefined();
     expect(mod.MODEL).toBeDefined();
     expect(typeof mod.MODEL).toBe("string");
   });

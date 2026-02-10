@@ -7,13 +7,11 @@ import {
   RandomAI,
   GreedyAI,
   HeuristicAI,
-} from "@nasty-plot/battle-engine";
-import type {
-  BattleState,
-  BattleFormat,
-  AIDifficulty,
-  BattleLogEntry,
-  AIPlayer,
+  type BattleState,
+  type BattleFormat,
+  type AIDifficulty,
+  type BattleLogEntry,
+  type AIPlayer,
 } from "@nasty-plot/battle-engine";
 
 interface UseBattleConfig {

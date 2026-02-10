@@ -1,8 +1,9 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { apiGet } from "../api-client.js";
+import { buildParams, handleTool } from "../tool-helpers.js";
 
-export function registerDataQueryTools(server: McpServer) {
+export function registerDataQueryTools(server: McpServer): void {
   server.tool(
     "get_pokemon",
     "Get detailed information about a Pokemon including stats, types, abilities, and tier",
@@ -11,24 +12,11 @@ export function registerDataQueryTools(server: McpServer) {
         .string()
         .describe("Pokemon ID or name (e.g., 'greatTusk' or 'Great Tusk')"),
     },
-    async ({ pokemonId }) => {
-      try {
-        const data = await apiGet(`/pokemon/${encodeURIComponent(pokemonId)}`);
-        return {
-          content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }],
-        };
-      } catch (error) {
-        return {
-          content: [
-            {
-              type: "text" as const,
-              text: `Could not find Pokemon "${pokemonId}". Check the spelling or try a different name. Common formats: "greatTusk", "flutterMane", "ironValiant".`,
-            },
-          ],
-          isError: true,
-        };
-      }
-    }
+    ({ pokemonId }) =>
+      handleTool(
+        () => apiGet(`/pokemon/${encodeURIComponent(pokemonId)}`),
+        `Could not find Pokemon "${pokemonId}". Check the spelling or try a different name. Common formats: "greatTusk", "flutterMane", "ironValiant".`
+      )
   );
 
   server.tool(
@@ -41,26 +29,11 @@ export function registerDataQueryTools(server: McpServer) {
         .optional()
         .describe("Max results to return (default 10)"),
     },
-    async ({ query, limit }) => {
-      try {
-        const params: Record<string, string> = { search: query };
-        if (limit) params.limit = limit.toString();
-        const data = await apiGet("/pokemon", params);
-        return {
-          content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }],
-        };
-      } catch (error) {
-        return {
-          content: [
-            {
-              type: "text" as const,
-              text: `Search failed for "${query}". Try a simpler query.`,
-            },
-          ],
-          isError: true,
-        };
-      }
-    }
+    ({ query, limit }) =>
+      handleTool(
+        () => apiGet("/pokemon", buildParams({ search: query, limit })),
+        `Search failed for "${query}". Try a simpler query.`
+      )
   );
 
   server.tool(
@@ -75,29 +48,15 @@ export function registerDataQueryTools(server: McpServer) {
         .optional()
         .describe("Number of results (default 20)"),
     },
-    async ({ formatId, limit }) => {
-      try {
-        const params: Record<string, string> = {};
-        if (limit) params.limit = limit.toString();
-        const data = await apiGet(
-          `/formats/${encodeURIComponent(formatId)}/usage`,
-          params
-        );
-        return {
-          content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }],
-        };
-      } catch (error) {
-        return {
-          content: [
-            {
-              type: "text" as const,
-              text: `Could not fetch usage stats for format "${formatId}". Valid formats include: gen9ou, gen9uu, gen9uber, gen9vgc2024.`,
-            },
-          ],
-          isError: true,
-        };
-      }
-    }
+    ({ formatId, limit }) =>
+      handleTool(
+        () =>
+          apiGet(
+            `/formats/${encodeURIComponent(formatId)}/usage`,
+            buildParams({ limit })
+          ),
+        `Could not fetch usage stats for format "${formatId}". Valid formats include: gen9ou, gen9uu, gen9uber, gen9vgc2024.`
+      )
   );
 
   server.tool(
@@ -110,29 +69,15 @@ export function registerDataQueryTools(server: McpServer) {
         .optional()
         .describe("Format ID to filter sets (e.g., 'gen9ou')"),
     },
-    async ({ pokemonId, formatId }) => {
-      try {
-        const params: Record<string, string> = {};
-        if (formatId) params.format = formatId;
-        const data = await apiGet(
-          `/pokemon/${encodeURIComponent(pokemonId)}/sets`,
-          params
-        );
-        return {
-          content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }],
-        };
-      } catch (error) {
-        return {
-          content: [
-            {
-              type: "text" as const,
-              text: `Could not fetch sets for "${pokemonId}". The Pokemon may not have Smogon sets available.`,
-            },
-          ],
-          isError: true,
-        };
-      }
-    }
+    ({ pokemonId, formatId }) =>
+      handleTool(
+        () =>
+          apiGet(
+            `/pokemon/${encodeURIComponent(pokemonId)}/sets`,
+            buildParams({ format: formatId })
+          ),
+        `Could not fetch sets for "${pokemonId}". The Pokemon may not have Smogon sets available.`
+      )
   );
 
   server.tool(
@@ -141,37 +86,20 @@ export function registerDataQueryTools(server: McpServer) {
     {
       pokemonId: z.string().describe("Pokemon ID (e.g., 'greatTusk')"),
     },
-    async ({ pokemonId }) => {
-      try {
-        const data = (await apiGet(
-          `/pokemon/${encodeURIComponent(pokemonId)}`
-        )) as { data: { types: string[] } };
-        const types = data?.data?.types ?? [];
-        return {
-          content: [
-            {
-              type: "text" as const,
-              text: JSON.stringify(
-                {
-                  pokemonId,
-                  types,
-                  note: "Use the type chart resource for full matchup details.",
-                },
-                null,
-                2
-              ),
-            },
-          ],
-        };
-      } catch (error) {
-        return {
-          content: [
-            { type: "text" as const, text: `Could not fetch type data for "${pokemonId}".` },
-          ],
-          isError: true,
-        };
-      }
-    }
+    ({ pokemonId }) =>
+      handleTool(
+        async () => {
+          const data = (await apiGet(
+            `/pokemon/${encodeURIComponent(pokemonId)}`
+          )) as { data: { types: string[] } };
+          return {
+            pokemonId,
+            types: data?.data?.types ?? [],
+            note: "Use the type chart resource for full matchup details.",
+          };
+        },
+        `Could not fetch type data for "${pokemonId}".`
+      )
   );
 
   server.tool(
@@ -188,30 +116,15 @@ export function registerDataQueryTools(server: McpServer) {
         .optional()
         .describe("Filter by category: 'Physical', 'Special', or 'Status'"),
     },
-    async ({ pokemonId, moveType, category }) => {
-      try {
-        const params: Record<string, string> = {};
-        if (moveType) params.type = moveType;
-        if (category) params.category = category;
-        const data = await apiGet(
-          `/pokemon/${encodeURIComponent(pokemonId)}/learnset`,
-          params
-        );
-        return {
-          content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }],
-        };
-      } catch (error) {
-        return {
-          content: [
-            {
-              type: "text" as const,
-              text: `Could not fetch learnset for "${pokemonId}".`,
-            },
-          ],
-          isError: true,
-        };
-      }
-    }
+    ({ pokemonId, moveType, category }) =>
+      handleTool(
+        () =>
+          apiGet(
+            `/pokemon/${encodeURIComponent(pokemonId)}/learnset`,
+            buildParams({ type: moveType, category })
+          ),
+        `Could not fetch learnset for "${pokemonId}".`
+      )
   );
 
   server.tool(
@@ -220,31 +133,15 @@ export function registerDataQueryTools(server: McpServer) {
     {
       pokemonId: z.string().describe("Pokemon ID (e.g., 'greatTusk')"),
     },
-    async ({ pokemonId }) => {
-      try {
-        const data = (await apiGet(
-          `/pokemon/${encodeURIComponent(pokemonId)}`
-        )) as { data: { abilities: Record<string, string> } };
-        const abilities = data?.data?.abilities ?? {};
-        return {
-          content: [
-            {
-              type: "text" as const,
-              text: JSON.stringify({ pokemonId, abilities }, null, 2),
-            },
-          ],
-        };
-      } catch (error) {
-        return {
-          content: [
-            {
-              type: "text" as const,
-              text: `Could not fetch abilities for "${pokemonId}".`,
-            },
-          ],
-          isError: true,
-        };
-      }
-    }
+    ({ pokemonId }) =>
+      handleTool(
+        async () => {
+          const data = (await apiGet(
+            `/pokemon/${encodeURIComponent(pokemonId)}`
+          )) as { data: { abilities: Record<string, string> } };
+          return { pokemonId, abilities: data?.data?.abilities ?? {} };
+        },
+        `Could not fetch abilities for "${pokemonId}".`
+      )
   );
 }

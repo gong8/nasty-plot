@@ -28,7 +28,7 @@ export function validateTeam(team: TeamData): {
   // Item clause: no duplicate items (skip empty items)
   const seenItems = new Set<string>();
   for (const slot of team.slots) {
-    if (slot.item && slot.item.trim() !== "") {
+    if (slot.item?.trim()) {
       if (seenItems.has(slot.item)) {
         errors.push({
           field: `slot.${slot.position}.item`,

@@ -10,25 +10,15 @@ import type {
   BattlePokemon,
 } from "../types";
 import type { PokemonType } from "@nasty-plot/core";
+import {
+  flattenDamage,
+  getSpeciesTypes,
+  getTypeEffectiveness,
+  fallbackMove,
+} from "./shared";
 
 const gens = new Generations(Dex);
 const gen = gens.get(9);
-
-// Type effectiveness chart for quick lookups without needing calc
-const TYPE_EFFECTIVENESS: Record<string, Record<string, number>> = {};
-
-function getTypeEffectiveness(atkType: string, defTypes: string[]): number {
-  let mult = 1;
-  for (const defType of defTypes) {
-    const species = Dex.types.get(atkType);
-    if (!species?.exists) continue;
-    const eff = Dex.types.get(atkType)?.damageTaken?.[defType];
-    if (eff === 1) mult *= 2;
-    else if (eff === 2) mult *= 0.5;
-    else if (eff === 3) mult *= 0;
-  }
-  return mult;
-}
 
 /**
  * HeuristicAI uses type matchup awareness, switching logic, and situational
@@ -49,7 +39,7 @@ export class HeuristicAI implements AIPlayer {
     const oppActive = state.sides.p1.active[0];
 
     if (!myActive || !oppActive) {
-      return this.fallbackMove(actions);
+      return fallbackMove(actions);
     }
 
     // Score each possible action
@@ -67,10 +57,9 @@ export class HeuristicAI implements AIPlayer {
       });
     }
 
-    // Score switches (only if we have bad matchup)
+    // Score switches only if we have a bad matchup
     const matchupScore = this.evaluateMatchup(myActive, oppActive);
     if (matchupScore < -0.3) {
-      // Bad matchup, consider switching
       for (const sw of actions.switches) {
         if (sw.fainted) continue;
         const swPokemon = state.sides.p2.team.find(
@@ -86,21 +75,22 @@ export class HeuristicAI implements AIPlayer {
       }
     }
 
-    // Pick highest scored action
     if (scoredActions.length === 0) {
-      return this.fallbackMove(actions);
+      return fallbackMove(actions);
     }
 
+    // Pick highest scored action, with some randomness among top choices
     scoredActions.sort((a, b) => b.score - a.score);
-
-    // Add some randomness to top choices (within 15% of best)
     const bestScore = scoredActions[0].score;
     const topChoices = scoredActions.filter(
       (a) => a.score >= bestScore * 0.85
     );
 
-    const pick = topChoices[Math.floor(Math.random() * topChoices.length)];
-    return pick.action;
+    return topChoices[Math.floor(Math.random() * topChoices.length)].action;
+  }
+
+  chooseLeads(teamSize: number, _gameType: BattleFormat): number[] {
+    return Array.from({ length: teamSize }, (_, i) => i + 1);
   }
 
   private scoreMove(
@@ -109,59 +99,67 @@ export class HeuristicAI implements AIPlayer {
     oppPokemon: BattlePokemon,
     state: BattleState
   ): number {
-    let score = 0;
-    const moveName = move.name;
-    const moveData = Dex.moves.get(moveName);
+    const moveData = Dex.moves.get(move.name);
     if (!moveData?.exists) return 0;
 
-    // Damaging move scoring
-    if (moveData.category !== "Status") {
-      try {
-        const attacker = new Pokemon(gen, myPokemon.name, {
-          level: myPokemon.level,
-          ability: myPokemon.ability || undefined,
-          item: myPokemon.item || undefined,
-        });
-        const defender = new Pokemon(gen, oppPokemon.name, {
-          level: oppPokemon.level,
-          ability: oppPokemon.ability || undefined,
-          item: oppPokemon.item || undefined,
-          curHP: oppPokemon.hp,
-        });
-        const calcMove = new Move(gen, moveName);
-        const result = calculate(gen, attacker, defender, calcMove, new Field());
-        const damage = flattenDamage(result.damage);
-        const avgDamage = damage.reduce((a, b) => a + b, 0) / damage.length;
-        const maxDamage = Math.max(...damage);
+    if (moveData.category === "Status") {
+      return this.scoreStatusMove(moveData, myPokemon, oppPokemon, state);
+    }
 
-        // Base score from damage percentage
-        const dmgPercent = defender.maxHP() > 0 ? avgDamage / defender.maxHP() : 0;
-        score += dmgPercent * 100;
+    return this.scoreDamagingMove(moveData, move.name, myPokemon, oppPokemon);
+  }
 
-        // Bonus for KO potential
-        if (maxDamage >= oppPokemon.hp) {
-          score += 50; // Can KO!
-        }
+  private scoreDamagingMove(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    moveData: any,
+    moveName: string,
+    myPokemon: BattlePokemon,
+    oppPokemon: BattlePokemon
+  ): number {
+    let score = 0;
 
-        // STAB bonus (already in calc, but prefer STAB moves slightly)
-        const myTypes = getSpeciesTypes(myPokemon.name);
-        if (myTypes.includes(moveData.type as PokemonType)) {
-          score += 5;
-        }
+    try {
+      const attacker = new Pokemon(gen, myPokemon.name, {
+        level: myPokemon.level,
+        ability: myPokemon.ability || undefined,
+        item: myPokemon.item || undefined,
+      });
+      const defender = new Pokemon(gen, oppPokemon.name, {
+        level: oppPokemon.level,
+        ability: oppPokemon.ability || undefined,
+        item: oppPokemon.item || undefined,
+        curHP: oppPokemon.hp,
+      });
+      const calcMove = new Move(gen, moveName);
+      const result = calculate(gen, attacker, defender, calcMove, new Field());
+      const damage = flattenDamage(result.damage);
+      const avgDamage = damage.reduce((a, b) => a + b, 0) / damage.length;
+      const maxDamage = Math.max(...damage);
 
-        // Priority move bonus when opponent is low
-        if (moveData.priority > 0 && oppPokemon.hpPercent < 30) {
-          score += 20;
-        }
-      } catch {
-        // Calc failed, use type effectiveness estimate
-        const oppTypes = getSpeciesTypes(oppPokemon.name);
-        const eff = getTypeEffectiveness(moveData.type, oppTypes as string[]);
-        score += eff * 20;
+      // Base score from damage percentage
+      const dmgPercent = defender.maxHP() > 0 ? avgDamage / defender.maxHP() : 0;
+      score += dmgPercent * 100;
+
+      // Bonus for KO potential
+      if (maxDamage >= oppPokemon.hp) {
+        score += 50;
       }
-    } else {
-      // Status move scoring
-      score = this.scoreStatusMove(moveData, myPokemon, oppPokemon, state);
+
+      // Slight preference for STAB moves
+      const myTypes = getSpeciesTypes(myPokemon.name);
+      if (myTypes.includes(moveData.type as PokemonType)) {
+        score += 5;
+      }
+
+      // Priority move bonus when opponent is low
+      if (moveData.priority > 0 && oppPokemon.hpPercent < 30) {
+        score += 20;
+      }
+    } catch {
+      // Calc failed, fall back to type effectiveness estimate
+      const oppTypes = getSpeciesTypes(oppPokemon.name);
+      const eff = getTypeEffectiveness(moveData.type, oppTypes as string[]);
+      score += eff * 20;
     }
 
     return score;
@@ -175,68 +173,86 @@ export class HeuristicAI implements AIPlayer {
     state: BattleState
   ): number {
     const moveName = moveData.id;
-    let score = 0;
 
     // Hazard moves: high value early game
     if (["stealthrock", "spikes", "toxicspikes", "stickyweb"].includes(moveName)) {
-      const oppSide = state.sides.p1.sideConditions;
-      if (moveName === "stealthrock" && !oppSide.stealthRock) {
-        score = state.turn <= 3 ? 45 : 25;
-      } else if (moveName === "spikes" && oppSide.spikes < 3) {
-        score = state.turn <= 5 ? 35 : 15;
-      } else if (moveName === "toxicspikes" && oppSide.toxicSpikes < 2) {
-        score = state.turn <= 4 ? 30 : 12;
-      } else if (moveName === "stickyweb" && !oppSide.stickyWeb) {
-        score = state.turn <= 2 ? 40 : 20;
-      }
-      return score;
+      return this.scoreHazardMove(moveName, state);
     }
 
     // Status inflicting moves
     if (["willowisp", "thunderwave", "toxic", "spore", "sleeppowder", "yawn"].includes(moveName)) {
-      if (oppPokemon.status === "") {
-        // Opponent has no status - good target
-        score = 30;
-        if (moveName === "spore" || moveName === "sleeppowder") score = 40; // Sleep is very strong
-        if (moveName === "toxic") score = 35;
-        if (moveName === "thunderwave") score = 25;
-        if (moveName === "willowisp") score = 28;
-      }
-      return score;
+      return this.scoreStatusInfliction(moveName, oppPokemon);
     }
 
     // Setup moves
     if (["swordsdance", "nastyplot", "calmmind", "dragondance", "irondefense", "amnesia"].includes(moveName)) {
-      // Setup when opponent can't threaten well
       const matchup = this.evaluateMatchup(myPokemon, oppPokemon);
       if (matchup > 0.2 && myPokemon.hpPercent > 70) {
-        score = 35;
+        return 35;
       }
-      return score;
+      return 0;
     }
 
     // Recovery moves
     if (["recover", "roost", "softboiled", "moonlight", "synthesis", "shoreup", "slackoff"].includes(moveName)) {
-      if (myPokemon.hpPercent < 50) {
-        score = 40;
-      } else if (myPokemon.hpPercent < 75) {
-        score = 20;
-      }
-      return score;
+      if (myPokemon.hpPercent < 50) return 40;
+      if (myPokemon.hpPercent < 75) return 20;
+      return 0;
     }
 
-    // Defog / Rapid Spin for hazard removal
+    // Hazard removal
     if (moveName === "defog" || moveName === "rapidspin") {
       const mySide = state.sides.p2.sideConditions;
-      const hazardCount = (mySide.stealthRock ? 1 : 0) + mySide.spikes + mySide.toxicSpikes + (mySide.stickyWeb ? 1 : 0);
+      const hazardCount =
+        (mySide.stealthRock ? 1 : 0) +
+        mySide.spikes +
+        mySide.toxicSpikes +
+        (mySide.stickyWeb ? 1 : 0);
       if (hazardCount > 0) {
-        score = 30 + hazardCount * 5;
+        return 30 + hazardCount * 5;
       }
-      return score;
+      return 0;
     }
 
     // Default: small score for unknown status moves
     return 5;
+  }
+
+  private scoreHazardMove(moveName: string, state: BattleState): number {
+    const oppSide = state.sides.p1.sideConditions;
+
+    switch (moveName) {
+      case "stealthrock":
+        return !oppSide.stealthRock ? (state.turn <= 3 ? 45 : 25) : 0;
+      case "spikes":
+        return oppSide.spikes < 3 ? (state.turn <= 5 ? 35 : 15) : 0;
+      case "toxicspikes":
+        return oppSide.toxicSpikes < 2 ? (state.turn <= 4 ? 30 : 12) : 0;
+      case "stickyweb":
+        return !oppSide.stickyWeb ? (state.turn <= 2 ? 40 : 20) : 0;
+      default:
+        return 0;
+    }
+  }
+
+  private scoreStatusInfliction(moveName: string, oppPokemon: BattlePokemon): number {
+    if (oppPokemon.status !== "") return 0;
+
+    switch (moveName) {
+      case "spore":
+      case "sleeppowder":
+        return 40;
+      case "toxic":
+        return 35;
+      case "willowisp":
+        return 28;
+      case "thunderwave":
+        return 25;
+      case "yawn":
+        return 30;
+      default:
+        return 0;
+    }
   }
 
   private evaluateMatchup(myPokemon: BattlePokemon, oppPokemon: BattlePokemon): number {
@@ -247,14 +263,12 @@ export class HeuristicAI implements AIPlayer {
     let myOffense = 0;
     let oppOffense = 0;
 
-    // Check how well our types hit them
     for (const t of myTypes) {
       const eff = getTypeEffectiveness(t, oppTypes as string[]);
       if (eff > 1) myOffense += 0.3;
       if (eff < 1) myOffense -= 0.15;
     }
 
-    // Check how well their types hit us
     for (const t of oppTypes) {
       const eff = getTypeEffectiveness(t, myTypes as string[]);
       if (eff > 1) oppOffense += 0.3;
@@ -267,7 +281,7 @@ export class HeuristicAI implements AIPlayer {
   private scoreSwitchTarget(
     switchTarget: BattlePokemon,
     opponent: BattlePokemon,
-    current: BattlePokemon
+    _current: BattlePokemon
   ): number {
     let score = 0;
 
@@ -278,12 +292,12 @@ export class HeuristicAI implements AIPlayer {
     // Health factor
     score += (switchTarget.hpPercent / 100) * 10;
 
-    // Penalty for switching into something with bad matchup
+    // Penalty for switching into a bad matchup
     if (matchup < -0.3) {
       score -= 30;
     }
 
-    // Bonus if we resist what the opponent likely uses
+    // Bonus for resisting the opponent's STAB types
     const oppTypes = getSpeciesTypes(opponent.name);
     const switchTypes = getSpeciesTypes(switchTarget.name);
     for (const t of oppTypes) {
@@ -332,35 +346,4 @@ export class HeuristicAI implements AIPlayer {
 
     return { type: "switch", pokemonIndex: bestIndex };
   }
-
-  private fallbackMove(actions: BattleActionSet): BattleAction {
-    const enabledMoves = actions.moves.filter((m) => !m.disabled);
-    if (enabledMoves.length > 0) {
-      const idx = actions.moves.indexOf(enabledMoves[0]);
-      return { type: "move", moveIndex: idx + 1 };
-    }
-    return { type: "move", moveIndex: 1 };
-  }
-
-  chooseLeads(teamSize: number, _gameType: BattleFormat): number[] {
-    // Lead with first Pokemon (assumed to be the team's lead)
-    return Array.from({ length: teamSize }, (_, i) => i + 1);
-  }
-}
-
-function getSpeciesTypes(name: string): PokemonType[] {
-  const species = Dex.species.get(name);
-  if (species?.exists) return species.types as PokemonType[];
-  return ["Normal"];
-}
-
-function flattenDamage(damage: number | number[] | number[][]): number[] {
-  if (typeof damage === "number") return [damage];
-  if (Array.isArray(damage) && damage.length > 0) {
-    if (Array.isArray(damage[0])) {
-      return (damage as number[][])[0];
-    }
-    return damage as number[];
-  }
-  return [0];
 }

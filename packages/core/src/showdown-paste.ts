@@ -1,5 +1,6 @@
-import { DEFAULT_EVS, DEFAULT_IVS, NATURE_DATA } from "./constants";
-import type { NatureName, StatsTable, TeamSlotData } from "./types";
+import { DEFAULT_EVS, DEFAULT_IVS } from "./constants";
+import { STATS } from "./types";
+import type { NatureName, PokemonType, StatsTable, TeamSlotData } from "./types";
 
 const STAT_SHOWDOWN_MAP: Record<string, keyof StatsTable> = {
   HP: "hp", Atk: "atk", Def: "def", SpA: "spa", SpD: "spd", Spe: "spe",
@@ -67,7 +68,7 @@ function parseOneSlot(block: string, position: number): Partial<TeamSlotData> | 
     } else if (line.startsWith("Level: ")) {
       slot.level = parseInt(line.slice(7), 10);
     } else if (line.startsWith("Tera Type: ")) {
-      slot.teraType = line.slice(11).trim() as TeamSlotData["teraType"];
+      slot.teraType = line.slice(11).trim() as PokemonType;
     } else if (line.startsWith("EVs: ")) {
       slot.evs = parseStatSpread(line.slice(5), DEFAULT_EVS);
     } else if (line.startsWith("IVs: ")) {
@@ -154,7 +155,7 @@ function formatStatSpread(
   defaults: StatsTable
 ): string | null {
   const parts: string[] = [];
-  for (const stat of ["hp", "atk", "def", "spa", "spd", "spe"] as (keyof StatsTable)[]) {
+  for (const stat of STATS) {
     if (stats[stat] !== defaults[stat]) {
       parts.push(`${stats[stat]} ${STAT_TO_SHOWDOWN[stat]}`);
     }

@@ -20,7 +20,7 @@ export const FORMAT_DEFINITIONS: FormatDefinition[] = [
     teamSize: 6,
     maxLevel: 100,
     defaultLevel: 100,
-    rules: [...STANDARD_SINGLES_RULES],
+    rules: STANDARD_SINGLES_RULES,
     bans: [
       "Koraidon", "Miraidon", "Mewtwo", "Kyogre", "Groudon", "Rayquaza",
       "Dialga", "Palkia", "Giratina", "Arceus", "Reshiram", "Zekrom",
@@ -42,7 +42,7 @@ export const FORMAT_DEFINITIONS: FormatDefinition[] = [
     teamSize: 6,
     maxLevel: 100,
     defaultLevel: 100,
-    rules: [...STANDARD_SINGLES_RULES],
+    rules: STANDARD_SINGLES_RULES,
     bans: [
       "OU", "UUBL",
       "Drizzle", "Drought", "Light Clay",
@@ -58,7 +58,7 @@ export const FORMAT_DEFINITIONS: FormatDefinition[] = [
     teamSize: 6,
     maxLevel: 100,
     defaultLevel: 100,
-    rules: [...STANDARD_SINGLES_RULES],
+    rules: STANDARD_SINGLES_RULES,
     bans: [
       "OU", "UUBL", "UU", "RUBL",
     ],
@@ -73,7 +73,7 @@ export const FORMAT_DEFINITIONS: FormatDefinition[] = [
     teamSize: 6,
     maxLevel: 100,
     defaultLevel: 100,
-    rules: [...STANDARD_SINGLES_RULES],
+    rules: STANDARD_SINGLES_RULES,
     bans: [
       "OU", "UUBL", "UU", "RUBL", "RU", "NUBL",
     ],
@@ -102,8 +102,7 @@ export const FORMAT_DEFINITIONS: FormatDefinition[] = [
     maxLevel: 5,
     defaultLevel: 5,
     rules: [
-      ...STANDARD_SINGLES_RULES,
-      "Little Cup",
+      ...STANDARD_SINGLES_RULES, "Little Cup",
     ],
     bans: [
       "Dragon Rage", "Sonic Boom",
@@ -121,8 +120,7 @@ export const FORMAT_DEFINITIONS: FormatDefinition[] = [
     maxLevel: 100,
     defaultLevel: 100,
     rules: [
-      ...STANDARD_SINGLES_RULES,
-      "Same Type Clause",
+      ...STANDARD_SINGLES_RULES, "Same Type Clause",
     ],
     bans: [
       "Koraidon", "Miraidon", "Arceus", "Calyrex-Ice", "Calyrex-Shadow",
@@ -161,7 +159,7 @@ export const FORMAT_DEFINITIONS: FormatDefinition[] = [
     teamSize: 6,
     maxLevel: 100,
     defaultLevel: 100,
-    rules: [...STANDARD_SINGLES_RULES],
+    rules: STANDARD_SINGLES_RULES,
     bans: [
       "OU", "UUBL",
       "Drizzle", "Drought",

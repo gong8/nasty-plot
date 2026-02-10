@@ -4,20 +4,18 @@ import { streamChat } from "../chat.service";
 // Mocks
 // ---------------------------------------------------------------------------
 
+const mockCreate = vi.fn();
+
 vi.mock("../openai-client", () => ({
-  openai: {
+  getOpenAI: () => ({
     chat: {
       completions: {
-        create: vi.fn(),
+        create: mockCreate,
       },
     },
-  },
+  }),
   MODEL: "gpt-4o-test",
 }));
-
-import { openai } from "../openai-client";
-
-const mockCreate = openai.chat.completions.create as ReturnType<typeof vi.fn>;
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -73,7 +71,7 @@ describe("streamChat", () => {
 
   it("returns a readable stream", async () => {
     mockCreate.mockResolvedValue(
-      asyncIterator([makeChunk("Hello")])
+      asyncIterator([makeChunk("Hello")]),
     );
 
     const stream = await streamChat({
@@ -85,7 +83,7 @@ describe("streamChat", () => {
 
   it("streams content chunks", async () => {
     mockCreate.mockResolvedValue(
-      asyncIterator([makeChunk("Hello "), makeChunk("world")])
+      asyncIterator([makeChunk("Hello "), makeChunk("world")]),
     );
 
     const stream = await streamChat({
@@ -101,7 +99,7 @@ describe("streamChat", () => {
 
   it("ends with [DONE]", async () => {
     mockCreate.mockResolvedValue(
-      asyncIterator([makeChunk("test")])
+      asyncIterator([makeChunk("test")]),
     );
 
     const stream = await streamChat({
@@ -117,11 +115,6 @@ describe("streamChat", () => {
   it("calls OpenAI with system prompt and user messages", async () => {
     mockCreate.mockResolvedValue(asyncIterator([makeChunk("ok")]));
 
-    await streamChat({
-      messages: [{ role: "user", content: "Help with my team" }],
-    });
-
-    // Wait for stream to complete
     const stream = await streamChat({
       messages: [{ role: "user", content: "Help with my team" }],
     });
@@ -131,7 +124,7 @@ describe("streamChat", () => {
       expect.objectContaining({
         model: "gpt-4o-test",
         stream: true,
-      })
+      }),
     );
   });
 
@@ -176,7 +169,7 @@ describe("streamChat", () => {
     await collectStream(stream);
 
     expect(mockFetch).toHaveBeenCalledWith(
-      expect.stringContaining("/api/teams/team-1")
+      expect.stringContaining("/api/teams/team-1"),
     );
   });
 
@@ -196,7 +189,7 @@ describe("streamChat", () => {
     await collectStream(stream);
 
     expect(mockFetch).toHaveBeenCalledWith(
-      expect.stringContaining("/api/formats/gen9ou/usage")
+      expect.stringContaining("/api/formats/gen9ou/usage"),
     );
   });
 

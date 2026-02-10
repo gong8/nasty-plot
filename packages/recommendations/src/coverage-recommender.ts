@@ -1,12 +1,12 @@
 import {
-  POKEMON_TYPES,
   type PokemonType,
   type Recommendation,
   type RecommendationReason,
   type TeamSlotData,
+  getTypeEffectiveness,
+  getOffensiveCoverage,
 } from "@nasty-plot/core";
 import { analyzeTypeCoverage } from "@nasty-plot/analysis";
-import { getTypeEffectiveness, getOffensiveCoverage } from "@nasty-plot/core";
 import { prisma } from "@nasty-plot/db";
 import { Dex } from "@pkmn/dex";
 
@@ -34,14 +34,12 @@ export async function getCoverageBasedRecommendations(
   const teamPokemonIds = new Set(slots.map((s) => s.pokemonId));
   const recommendations: Recommendation[] = [];
 
-  const candidates = usageEntries.length > 0
-    ? usageEntries.filter((e: typeof usageEntries[number]) => !teamPokemonIds.has(e.pokemonId))
-    : [];
+  const candidates = usageEntries.filter((e) => !teamPokemonIds.has(e.pokemonId));
 
-  // If no usage data, scan the dex for common Pokemon
+  // Fall back to scanning the dex when no usage data exists
   const candidateIds =
     candidates.length > 0
-      ? candidates.map((c: typeof candidates[number]) => c.pokemonId)
+      ? candidates.map((c) => c.pokemonId)
       : getAllLegalSpeciesIds();
 
   for (const pokemonId of candidateIds) {

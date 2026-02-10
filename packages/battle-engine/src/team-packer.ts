@@ -1,5 +1,5 @@
 import { Dex } from "@pkmn/dex";
-import { DEFAULT_IVS } from "@nasty-plot/core";
+import { DEFAULT_IVS, STATS, STAT_LABELS } from "@nasty-plot/core";
 import type { TeamSlotData, StatsTable } from "@nasty-plot/core";
 
 /**
@@ -105,13 +105,9 @@ export function teamToShowdownPaste(slots: TeamSlotData[]): string {
 
     // EVs
     const evParts: string[] = [];
-    const statNames = ["hp", "atk", "def", "spa", "spd", "spe"] as const;
-    const showdownStatNames: Record<string, string> = {
-      hp: "HP", atk: "Atk", def: "Def", spa: "SpA", spd: "SpD", spe: "Spe",
-    };
-    for (const stat of statNames) {
+    for (const stat of STATS) {
       if (slot.evs[stat] > 0) {
-        evParts.push(`${slot.evs[stat]} ${showdownStatNames[stat]}`);
+        evParts.push(`${slot.evs[stat]} ${STAT_LABELS[stat]}`);
       }
     }
     if (evParts.length > 0) lines.push(`EVs: ${evParts.join(" / ")}`);
@@ -120,9 +116,9 @@ export function teamToShowdownPaste(slots: TeamSlotData[]): string {
 
     // IVs
     const ivParts: string[] = [];
-    for (const stat of statNames) {
+    for (const stat of STATS) {
       if ((slot.ivs?.[stat] ?? 31) !== 31) {
-        ivParts.push(`${slot.ivs[stat]} ${showdownStatNames[stat]}`);
+        ivParts.push(`${slot.ivs[stat]} ${STAT_LABELS[stat]}`);
       }
     }
     if (ivParts.length > 0) lines.push(`IVs: ${ivParts.join(" / ")}`);

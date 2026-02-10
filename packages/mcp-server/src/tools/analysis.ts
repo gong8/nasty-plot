@@ -1,39 +1,25 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { apiGet, apiPost } from "../api-client.js";
+import { handleTool } from "../tool-helpers.js";
 
-export function registerAnalysisTools(server: McpServer) {
+export function registerAnalysisTools(server: McpServer): void {
   server.tool(
     "analyze_team_coverage",
     "Analyze a team's type coverage including offensive and defensive matchups, uncovered types, and shared weaknesses",
     {
       teamId: z.string().describe("Team UUID"),
     },
-    async ({ teamId }) => {
-      try {
-        const data = (await apiGet(
-          `/teams/${encodeURIComponent(teamId)}/analysis`
-        )) as { data: { coverage: unknown } };
-        return {
-          content: [
-            {
-              type: "text" as const,
-              text: JSON.stringify(data?.data?.coverage ?? data, null, 2),
-            },
-          ],
-        };
-      } catch (error) {
-        return {
-          content: [
-            {
-              type: "text" as const,
-              text: `Could not analyze team "${teamId}". Make sure the team exists and has Pokemon.`,
-            },
-          ],
-          isError: true,
-        };
-      }
-    }
+    ({ teamId }) =>
+      handleTool(
+        async () => {
+          const data = (await apiGet(
+            `/teams/${encodeURIComponent(teamId)}/analysis`
+          )) as { data: { coverage: unknown } };
+          return data?.data?.coverage ?? data;
+        },
+        `Could not analyze team "${teamId}". Make sure the team exists and has Pokemon.`
+      )
   );
 
   server.tool(
@@ -42,35 +28,24 @@ export function registerAnalysisTools(server: McpServer) {
     {
       teamId: z.string().describe("Team UUID"),
     },
-    async ({ teamId }) => {
-      try {
-        const data = (await apiGet(
-          `/teams/${encodeURIComponent(teamId)}/analysis`
-        )) as {
-          data: {
-            coverage?: { sharedWeaknesses: unknown };
-            threats?: unknown;
+    ({ teamId }) =>
+      handleTool(
+        async () => {
+          const data = (await apiGet(
+            `/teams/${encodeURIComponent(teamId)}/analysis`
+          )) as {
+            data: {
+              coverage?: { sharedWeaknesses: unknown };
+              threats?: unknown;
+            };
           };
-        };
-        const result = {
-          sharedWeaknesses: data?.data?.coverage?.sharedWeaknesses ?? [],
-          threats: data?.data?.threats ?? [],
-        };
-        return {
-          content: [{ type: "text" as const, text: JSON.stringify(result, null, 2) }],
-        };
-      } catch (error) {
-        return {
-          content: [
-            {
-              type: "text" as const,
-              text: `Could not find weaknesses for team "${teamId}".`,
-            },
-          ],
-          isError: true,
-        };
-      }
-    }
+          return {
+            sharedWeaknesses: data?.data?.coverage?.sharedWeaknesses ?? [],
+            threats: data?.data?.threats ?? [],
+          };
+        },
+        `Could not find weaknesses for team "${teamId}".`
+      )
   );
 
   server.tool(
@@ -85,28 +60,16 @@ export function registerAnalysisTools(server: McpServer) {
         .optional()
         .describe("Format context (e.g., 'gen9ou')"),
     },
-    async ({ pokemonId, formatId }) => {
-      try {
-        const data = await apiPost("/recommend", {
-          targetPokemonId: pokemonId,
-          formatId: formatId ?? "gen9ou",
-          type: "counters",
-        });
-        return {
-          content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }],
-        };
-      } catch (error) {
-        return {
-          content: [
-            {
-              type: "text" as const,
-              text: `Could not suggest counters for "${pokemonId}".`,
-            },
-          ],
-          isError: true,
-        };
-      }
-    }
+    ({ pokemonId, formatId }) =>
+      handleTool(
+        () =>
+          apiPost("/recommend", {
+            targetPokemonId: pokemonId,
+            formatId: formatId ?? "gen9ou",
+            type: "counters",
+          }),
+        `Could not suggest counters for "${pokemonId}".`
+      )
   );
 
   server.tool(
@@ -116,82 +79,32 @@ export function registerAnalysisTools(server: McpServer) {
       pokemonA: z.string().describe("First Pokemon ID"),
       pokemonB: z.string().describe("Second Pokemon ID"),
     },
-    async ({ pokemonA, pokemonB }) => {
-      try {
-        const [dataA, dataB] = await Promise.all([
-          apiGet(`/pokemon/${encodeURIComponent(pokemonA)}`) as Promise<{
-            data: {
-              name: string;
-              types: string[];
-              baseStats: Record<string, number>;
-              abilities: Record<string, string>;
-              tier?: string;
-            };
-          }>,
-          apiGet(`/pokemon/${encodeURIComponent(pokemonB)}`) as Promise<{
-            data: {
-              name: string;
-              types: string[];
-              baseStats: Record<string, number>;
-              abilities: Record<string, string>;
-              tier?: string;
-            };
-          }>,
-        ]);
+    ({ pokemonA, pokemonB }) =>
+      handleTool(
+        async () => {
+          const [dataA, dataB] = await Promise.all([
+            apiGet(`/pokemon/${encodeURIComponent(pokemonA)}`),
+            apiGet(`/pokemon/${encodeURIComponent(pokemonB)}`),
+          ]);
 
-        const a = dataA.data;
-        const b = dataB.data;
-        const bstA = Object.values(a.baseStats).reduce(
-          (sum: number, v: number) => sum + v,
-          0
-        );
-        const bstB = Object.values(b.baseStats).reduce(
-          (sum: number, v: number) => sum + v,
-          0
-        );
+          const a = (dataA as { data: PokemonData }).data;
+          const b = (dataB as { data: PokemonData }).data;
+          const bstA = sumStats(a.baseStats);
+          const bstB = sumStats(b.baseStats);
 
-        const comparison = {
-          pokemonA: {
-            name: a.name,
-            types: a.types,
-            baseStats: a.baseStats,
-            bst: bstA,
-            abilities: a.abilities,
-            tier: a.tier,
-          },
-          pokemonB: {
-            name: b.name,
-            types: b.types,
-            baseStats: b.baseStats,
-            bst: bstB,
-            abilities: b.abilities,
-            tier: b.tier,
-          },
-          statDifferences: Object.fromEntries(
-            Object.keys(a.baseStats).map((stat) => [
-              stat,
-              a.baseStats[stat] - b.baseStats[stat],
-            ])
-          ),
-        };
-
-        return {
-          content: [
-            { type: "text" as const, text: JSON.stringify(comparison, null, 2) },
-          ],
-        };
-      } catch (error) {
-        return {
-          content: [
-            {
-              type: "text" as const,
-              text: `Could not compare "${pokemonA}" and "${pokemonB}". Check that both names are correct.`,
-            },
-          ],
-          isError: true,
-        };
-      }
-    }
+          return {
+            pokemonA: { ...a, bst: bstA },
+            pokemonB: { ...b, bst: bstB },
+            statDifferences: Object.fromEntries(
+              Object.keys(a.baseStats).map((stat) => [
+                stat,
+                a.baseStats[stat] - b.baseStats[stat],
+              ])
+            ),
+          };
+        },
+        `Could not compare "${pokemonA}" and "${pokemonB}". Check that both names are correct.`
+      )
   );
 
   server.tool(
@@ -210,40 +123,22 @@ export function registerAnalysisTools(server: McpServer) {
         .optional()
         .describe("Defender level (default 100)"),
     },
-    async ({
-      attackerPokemon,
-      defenderPokemon,
-      moveName,
-      attackerLevel,
-      defenderLevel,
-    }) => {
-      try {
-        const data = await apiPost("/damage-calc", {
-          attacker: {
-            pokemonId: attackerPokemon,
-            level: attackerLevel ?? 100,
-          },
-          defender: {
-            pokemonId: defenderPokemon,
-            level: defenderLevel ?? 100,
-          },
-          move: moveName,
-        });
-        return {
-          content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }],
-        };
-      } catch (error) {
-        return {
-          content: [
-            {
-              type: "text" as const,
-              text: `Damage calculation failed. Check move name "${moveName}" and Pokemon IDs.`,
+    ({ attackerPokemon, defenderPokemon, moveName, attackerLevel, defenderLevel }) =>
+      handleTool(
+        () =>
+          apiPost("/damage-calc", {
+            attacker: {
+              pokemonId: attackerPokemon,
+              level: attackerLevel ?? 100,
             },
-          ],
-          isError: true,
-        };
-      }
-    }
+            defender: {
+              pokemonId: defenderPokemon,
+              level: defenderLevel ?? 100,
+            },
+            move: moveName,
+          }),
+        `Damage calculation failed. Check move name "${moveName}" and Pokemon IDs.`
+      )
   );
 
   server.tool(
@@ -252,30 +147,27 @@ export function registerAnalysisTools(server: McpServer) {
     {
       teamId: z.string().describe("Team UUID"),
     },
-    async ({ teamId }) => {
-      try {
-        const data = (await apiGet(
-          `/teams/${encodeURIComponent(teamId)}/analysis`
-        )) as { data: { speedTiers: unknown } };
-        return {
-          content: [
-            {
-              type: "text" as const,
-              text: JSON.stringify(data?.data?.speedTiers ?? [], null, 2),
-            },
-          ],
-        };
-      } catch (error) {
-        return {
-          content: [
-            {
-              type: "text" as const,
-              text: `Could not fetch speed tiers for team "${teamId}".`,
-            },
-          ],
-          isError: true,
-        };
-      }
-    }
+    ({ teamId }) =>
+      handleTool(
+        async () => {
+          const data = (await apiGet(
+            `/teams/${encodeURIComponent(teamId)}/analysis`
+          )) as { data: { speedTiers: unknown } };
+          return data?.data?.speedTiers ?? [];
+        },
+        `Could not fetch speed tiers for team "${teamId}".`
+      )
   );
+}
+
+interface PokemonData {
+  name: string;
+  types: string[];
+  baseStats: Record<string, number>;
+  abilities: Record<string, string>;
+  tier?: string;
+}
+
+function sumStats(stats: Record<string, number>): number {
+  return Object.values(stats).reduce((sum, v) => sum + v, 0);
 }

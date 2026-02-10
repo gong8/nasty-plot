@@ -29,8 +29,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { validateTeam } from "@nasty-plot/core";
-import type { TeamData } from "@nasty-plot/core";
+import { validateTeam, type TeamData } from "@nasty-plot/core";
 
 interface TeamHeaderProps {
   team: TeamData;

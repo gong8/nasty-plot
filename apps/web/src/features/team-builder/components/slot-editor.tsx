@@ -18,24 +18,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  NATURE_DATA,
-  TYPE_COLORS,
-  STAT_LABELS,
-  STAT_COLORS,
-  MAX_TOTAL_EVS,
-  MAX_SINGLE_EV,
+  NATURE_DATA, TYPE_COLORS, STAT_LABELS, STAT_COLORS,
+  MAX_TOTAL_EVS, MAX_SINGLE_EV,
+  POKEMON_TYPES, NATURES, STATS,
+  calculateAllStats, getTotalEvs,
+  type NatureName, type PokemonSpecies, type PokemonType,
+  type StatName, type StatsTable, type TeamSlotData, type TeamSlotInput,
 } from "@nasty-plot/core";
-import { calculateAllStats, getTotalEvs } from "@nasty-plot/core";
-import type {
-  NatureName,
-  PokemonSpecies,
-  PokemonType,
-  StatName,
-  StatsTable,
-  TeamSlotData,
-  TeamSlotInput,
-} from "@nasty-plot/core";
-import { POKEMON_TYPES, NATURES, STATS } from "@nasty-plot/core";
 import { PokemonSprite } from "@nasty-plot/ui";
 import { PokemonSearchPanel } from "./pokemon-search-panel";
 import { ItemCombobox } from "./item-combobox";

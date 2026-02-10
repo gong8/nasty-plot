@@ -1,11 +1,11 @@
 import { Dex } from "@pkmn/dex";
+import { POKEMON_TYPES } from "@nasty-plot/core";
 import type {
   PokemonSpecies,
   PokemonType,
   MoveData,
   AbilityData,
   ItemData,
-  StatsTable,
 } from "@nasty-plot/core";
 
 const dex = Dex.forGen(9);
@@ -19,30 +19,23 @@ function mapTypes(types: readonly string[]): [PokemonType] | [PokemonType, Pokem
   return [types[0] as PokemonType, types[1] as PokemonType];
 }
 
-function mapStats(stats: { hp: number; atk: number; def: number; spa: number; spd: number; spe: number }): StatsTable {
+function toSpecies(species: ReturnType<typeof dex.species.get>): PokemonSpecies {
   return {
-    hp: stats.hp,
-    atk: stats.atk,
-    def: stats.def,
-    spa: stats.spa,
-    spd: stats.spd,
-    spe: stats.spe,
+    id: species.id,
+    name: species.name,
+    num: species.num,
+    types: mapTypes(species.types),
+    baseStats: { ...species.baseStats },
+    abilities: { ...species.abilities } as Record<string, string>,
+    weightkg: species.weightkg,
+    tier: species.tier,
   };
 }
 
 export function getSpecies(id: string): PokemonSpecies | null {
   const species = dex.species.get(id);
   if (!species || !species.exists) return null;
-  return {
-    id: species.id,
-    name: species.name,
-    num: species.num,
-    types: mapTypes(species.types),
-    baseStats: mapStats(species.baseStats),
-    abilities: { ...species.abilities } as Record<string, string>,
-    weightkg: species.weightkg,
-    tier: species.tier,
-  };
+  return toSpecies(species);
 }
 
 /**
@@ -70,24 +63,13 @@ export function getAllSpecies(): PokemonSpecies[] {
       !species.battleOnly &&
       !isCosmeticForme(species)
     ) {
-      all.push({
-        id: species.id,
-        name: species.name,
-        num: species.num,
-        types: mapTypes(species.types),
-        baseStats: mapStats(species.baseStats),
-        abilities: { ...species.abilities } as Record<string, string>,
-        weightkg: species.weightkg,
-        tier: species.tier,
-      });
+      all.push(toSpecies(species));
     }
   }
   return all;
 }
 
-export function getMove(id: string): MoveData | null {
-  const move = dex.moves.get(id);
-  if (!move || !move.exists) return null;
+function toMove(move: ReturnType<typeof dex.moves.get>): MoveData {
   return {
     id: move.id,
     name: move.name,
@@ -103,23 +85,17 @@ export function getMove(id: string): MoveData | null {
   };
 }
 
+export function getMove(id: string): MoveData | null {
+  const move = dex.moves.get(id);
+  if (!move || !move.exists) return null;
+  return toMove(move);
+}
+
 export function getAllMoves(): MoveData[] {
   const all: MoveData[] = [];
   for (const move of dex.moves.all()) {
     if (move.exists && !move.isNonstandard) {
-      all.push({
-        id: move.id,
-        name: move.name,
-        type: move.type as PokemonType,
-        category: move.category,
-        basePower: move.basePower,
-        accuracy: move.accuracy,
-        pp: move.pp,
-        priority: move.priority,
-        target: move.target,
-        flags: { ...move.flags } as Record<string, number>,
-        description: move.shortDesc || move.desc,
-      });
+      all.push(toMove(move));
     }
   }
   return all;
@@ -177,15 +153,10 @@ export function searchItems(query: string): ItemData[] {
 
 export function getTypeChart(): Record<PokemonType, Partial<Record<PokemonType, number>>> {
   const chart = {} as Record<PokemonType, Partial<Record<PokemonType, number>>>;
-  const types: PokemonType[] = [
-    "Normal", "Fire", "Water", "Electric", "Grass", "Ice",
-    "Fighting", "Poison", "Ground", "Flying", "Psychic", "Bug",
-    "Rock", "Ghost", "Dragon", "Dark", "Steel", "Fairy",
-  ];
 
-  for (const atkType of types) {
+  for (const atkType of POKEMON_TYPES) {
     const partial: Partial<Record<PokemonType, number>> = {};
-    for (const defType of types) {
+    for (const defType of POKEMON_TYPES) {
       const effectiveness = dex.types.get(atkType).damageTaken[defType];
       // @pkmn/dex damageTaken: 0 = normal, 1 = super effective (2x), 2 = resist (0.5x), 3 = immune (0x)
       if (effectiveness === 1) partial[defType] = 2;

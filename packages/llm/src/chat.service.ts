@@ -1,7 +1,9 @@
-import OpenAI from "openai";
-import { openai, MODEL } from "./openai-client";
+import type OpenAI from "openai";
+import { getOpenAI, MODEL } from "./openai-client";
 import { buildTeamContext, buildMetaContext } from "./context-builder";
 import type { ChatMessage, TeamData, UsageStatsEntry } from "@nasty-plot/core";
+
+const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
 const SYSTEM_PROMPT = `You are a competitive Pokemon expert assistant for Scarlet/Violet (Gen 9). You help trainers build, analyse, and optimize their teams.
 
@@ -98,17 +100,15 @@ const tools: OpenAI.ChatCompletionTool[] = [
 
 async function executeTool(
   name: string,
-  args: Record<string, unknown>
+  args: Record<string, unknown>,
 ): Promise<string> {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-
   try {
     let result: unknown;
 
     switch (name) {
       case "search_pokemon": {
         const res = await fetch(
-          `${baseUrl}/api/pokemon?search=${encodeURIComponent(args.query as string)}`
+          `${BASE_URL}/api/pokemon?search=${encodeURIComponent(args.query as string)}`,
         );
         result = await res.json();
         break;
@@ -116,13 +116,13 @@ async function executeTool(
       case "get_usage_stats": {
         const limit = (args.limit as number) || 20;
         const res = await fetch(
-          `${baseUrl}/api/formats/${encodeURIComponent(args.formatId as string)}/usage?limit=${limit}`
+          `${BASE_URL}/api/formats/${encodeURIComponent(args.formatId as string)}/usage?limit=${limit}`,
         );
         result = await res.json();
         break;
       }
       case "calculate_damage": {
-        const res = await fetch(`${baseUrl}/api/damage-calc`, {
+        const res = await fetch(`${BASE_URL}/api/damage-calc`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -142,13 +142,13 @@ async function executeTool(
       }
       case "analyze_team": {
         const res = await fetch(
-          `${baseUrl}/api/teams/${encodeURIComponent(args.teamId as string)}/analysis`
+          `${BASE_URL}/api/teams/${encodeURIComponent(args.teamId as string)}/analysis`,
         );
         result = await res.json();
         break;
       }
       case "suggest_teammates": {
-        const res = await fetch(`${baseUrl}/api/recommend`, {
+        const res = await fetch(`${BASE_URL}/api/recommend`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -178,19 +178,16 @@ interface StreamChatOptions {
 }
 
 export async function streamChat(
-  options: StreamChatOptions
+  options: StreamChatOptions,
 ): Promise<ReadableStream<Uint8Array>> {
   const { messages, teamId, formatId } = options;
   const encoder = new TextEncoder();
 
   const systemParts = [SYSTEM_PROMPT];
 
-  // Add team context if available
   if (teamId) {
     try {
-      const baseUrl =
-        process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-      const res = await fetch(`${baseUrl}/api/teams/${teamId}`);
+      const res = await fetch(`${BASE_URL}/api/teams/${teamId}`);
       if (res.ok) {
         const teamData = (await res.json()) as { data: TeamData };
         systemParts.push("\n" + buildTeamContext(teamData.data));
@@ -200,20 +197,15 @@ export async function streamChat(
     }
   }
 
-  // Add meta context if available
   if (formatId) {
     try {
-      const baseUrl =
-        process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
       const res = await fetch(
-        `${baseUrl}/api/formats/${formatId}/usage?limit=20`
+        `${BASE_URL}/api/formats/${formatId}/usage?limit=20`,
       );
       if (res.ok) {
-        const usageData = (await res.json()) as {
-          data: UsageStatsEntry[];
-        };
+        const usageData = (await res.json()) as { data: UsageStatsEntry[] };
         systemParts.push(
-          "\n" + buildMetaContext(formatId, usageData.data)
+          "\n" + buildMetaContext(formatId, usageData.data),
         );
       }
     } catch {
@@ -227,7 +219,7 @@ export async function streamChat(
       (m): OpenAI.ChatCompletionMessageParam => ({
         role: m.role as "user" | "assistant",
         content: m.content,
-      })
+      }),
     ),
   ];
 
@@ -240,8 +232,8 @@ export async function streamChat(
           error instanceof Error ? error.message : "Unknown error";
         controller.enqueue(
           encoder.encode(
-            `data: ${JSON.stringify({ error: errorMsg })}\n\n`
-          )
+            `data: ${JSON.stringify({ error: errorMsg })}\n\n`,
+          ),
         );
       } finally {
         controller.enqueue(encoder.encode("data: [DONE]\n\n"));
@@ -251,16 +243,26 @@ export async function streamChat(
   });
 }
 
+function sendEvent(
+  controller: ReadableStreamDefaultController<Uint8Array>,
+  encoder: TextEncoder,
+  data: Record<string, unknown>,
+): void {
+  controller.enqueue(
+    encoder.encode(`data: ${JSON.stringify(data)}\n\n`),
+  );
+}
+
 async function processStream(
   controller: ReadableStreamDefaultController<Uint8Array>,
   encoder: TextEncoder,
-  messages: OpenAI.ChatCompletionMessageParam[]
-) {
-  let currentMessages = [...messages];
+  messages: OpenAI.ChatCompletionMessageParam[],
+): Promise<void> {
+  const currentMessages = [...messages];
   const maxToolRounds = 5;
 
   for (let round = 0; round < maxToolRounds; round++) {
-    const stream = await openai.chat.completions.create({
+    const stream = await getOpenAI().chat.completions.create({
       model: MODEL,
       messages: currentMessages,
       tools,
@@ -268,10 +270,10 @@ async function processStream(
     });
 
     let hasToolCalls = false;
-    const toolCalls: Map<
+    const toolCalls = new Map<
       number,
       { id: string; name: string; arguments: string }
-    > = new Map();
+    >();
     let contentBuffer = "";
 
     for await (const chunk of stream) {
@@ -280,11 +282,7 @@ async function processStream(
 
       if (delta.content) {
         contentBuffer += delta.content;
-        controller.enqueue(
-          encoder.encode(
-            `data: ${JSON.stringify({ content: delta.content })}\n\n`
-          )
-        );
+        sendEvent(controller, encoder, { content: delta.content });
       }
 
       if (delta.tool_calls) {
@@ -322,11 +320,9 @@ async function processStream(
     currentMessages.push(assistantMsg);
 
     for (const tc of toolCalls.values()) {
-      controller.enqueue(
-        encoder.encode(
-          `data: ${JSON.stringify({ toolCall: { name: tc.name, status: "executing" } })}\n\n`
-        )
-      );
+      sendEvent(controller, encoder, {
+        toolCall: { name: tc.name, status: "executing" },
+      });
 
       let args: Record<string, unknown> = {};
       try {
@@ -337,11 +333,9 @@ async function processStream(
 
       const result = await executeTool(tc.name, args);
 
-      controller.enqueue(
-        encoder.encode(
-          `data: ${JSON.stringify({ toolCall: { name: tc.name, status: "complete" } })}\n\n`
-        )
-      );
+      sendEvent(controller, encoder, {
+        toolCall: { name: tc.name, status: "complete" },
+      });
 
       currentMessages.push({
         role: "tool",

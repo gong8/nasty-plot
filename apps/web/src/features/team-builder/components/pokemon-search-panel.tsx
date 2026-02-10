@@ -6,8 +6,7 @@ import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { TYPE_COLORS } from "@nasty-plot/core";
-import type { PokemonSpecies, PokemonType } from "@nasty-plot/core";
+import { TYPE_COLORS, type PokemonSpecies, type PokemonType } from "@nasty-plot/core";
 
 interface PokemonSearchPanelProps {
   onSelect: (pokemon: PokemonSpecies) => void;

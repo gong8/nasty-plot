@@ -1,8 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { TYPE_COLORS } from "@nasty-plot/core";
-import type { PokemonType } from "@nasty-plot/core";
+import { TYPE_COLORS, type PokemonType } from "@nasty-plot/core";
 import type { BattleActionSet } from "@nasty-plot/battle-engine";
 import { Button } from "@/components/ui/button";
 import { ArrowLeftRight, Sparkles } from "lucide-react";

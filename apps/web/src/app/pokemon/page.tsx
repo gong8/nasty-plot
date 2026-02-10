@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
@@ -15,16 +15,19 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { PokemonSprite } from "@nasty-plot/ui";
-import { TypeBadge } from "@nasty-plot/ui";
-import { POKEMON_TYPES } from "@nasty-plot/core";
-import type {
-  PaginatedResponse,
-  PokemonSpecies,
-  PokemonType,
-  FormatDefinition,
-  ApiResponse,
+import { PokemonSprite, TypeBadge } from "@nasty-plot/ui";
+import {
+  POKEMON_TYPES,
+  type PaginatedResponse,
+  type PokemonSpecies,
+  type PokemonType,
+  type FormatDefinition,
+  type ApiResponse,
 } from "@nasty-plot/core";
+
+function getBaseStatTotal(stats: PokemonSpecies["baseStats"]): number {
+  return stats.hp + stats.atk + stats.def + stats.spa + stats.spd + stats.spe;
+}
 
 export default function PokemonBrowserPage() {
   const [search, setSearch] = useState("");
@@ -34,16 +37,14 @@ export default function PokemonBrowserPage() {
   const [page, setPage] = useState(1);
   const pageSize = 50;
 
-  // Debounce search
-  const [timer, setTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   function handleSearchChange(value: string) {
     setSearch(value);
-    if (timer) clearTimeout(timer);
-    const t = setTimeout(() => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => {
       setDebouncedSearch(value);
       setPage(1);
     }, 300);
-    setTimer(t);
   }
 
   // Fetch formats for the selector
@@ -66,10 +67,6 @@ export default function PokemonBrowserPage() {
   });
 
   const totalPages = pokemonData ? Math.ceil(pokemonData.total / pageSize) : 0;
-
-  function getBaseStatTotal(stats: PokemonSpecies["baseStats"]) {
-    return stats.hp + stats.atk + stats.def + stats.spa + stats.spd + stats.spe;
-  }
 
   return (
     <div className="min-h-screen flex flex-col">

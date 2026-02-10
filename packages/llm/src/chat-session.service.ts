@@ -1,5 +1,5 @@
 import { prisma } from "@nasty-plot/db";
-import type { ChatMessage, ChatSessionData } from "@nasty-plot/core";
+import type { ChatMessage, ChatRole, ChatSessionData } from "@nasty-plot/core";
 
 export async function createSession(
   teamId?: string
@@ -58,21 +58,21 @@ export async function addMessage(
   });
 }
 
-function mapSession(
-  session: {
-    id: string;
-    teamId: string | null;
+interface DbSession {
+  id: string;
+  teamId: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+  messages: {
+    id: number;
+    role: string;
+    content: string;
+    toolCalls: string | null;
     createdAt: Date;
-    updatedAt: Date;
-    messages: {
-      id: number;
-      role: string;
-      content: string;
-      toolCalls: string | null;
-      createdAt: Date;
-    }[];
-  }
-): ChatSessionData {
+  }[];
+}
+
+function mapSession(session: DbSession): ChatSessionData {
   return {
     id: session.id,
     teamId: session.teamId ?? undefined,
@@ -80,7 +80,7 @@ function mapSession(
     updatedAt: session.updatedAt.toISOString(),
     messages: session.messages.map((m) => ({
       id: m.id,
-      role: m.role as ChatMessage["role"],
+      role: m.role as ChatRole,
       content: m.content,
       toolCalls: m.toolCalls ? JSON.parse(m.toolCalls) : undefined,
       createdAt: m.createdAt.toISOString(),

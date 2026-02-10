@@ -9,38 +9,74 @@ import type {
   TeamSlotInput,
 } from "@nasty-plot/core";
 
-// --- DB <-> Domain Mapping Helpers ---
+// --- DB Row Types ---
 
-function dbSlotToDomain(
-  dbSlot: {
-    id: number;
-    teamId: string;
-    position: number;
-    pokemonId: string;
-    nickname: string | null;
-    ability: string;
-    item: string;
-    nature: string;
-    teraType: string | null;
-    level: number;
-    move1: string;
-    move2: string | null;
-    move3: string | null;
-    move4: string | null;
-    evHp: number;
-    evAtk: number;
-    evDef: number;
-    evSpA: number;
-    evSpD: number;
-    evSpe: number;
-    ivHp: number;
-    ivAtk: number;
-    ivDef: number;
-    ivSpA: number;
-    ivSpD: number;
-    ivSpe: number;
-  }
-): TeamSlotData {
+type DbSlotRow = {
+  id: number;
+  teamId: string;
+  position: number;
+  pokemonId: string;
+  nickname: string | null;
+  ability: string;
+  item: string;
+  nature: string;
+  teraType: string | null;
+  level: number;
+  move1: string;
+  move2: string | null;
+  move3: string | null;
+  move4: string | null;
+  evHp: number;
+  evAtk: number;
+  evDef: number;
+  evSpA: number;
+  evSpD: number;
+  evSpe: number;
+  ivHp: number;
+  ivAtk: number;
+  ivDef: number;
+  ivSpA: number;
+  ivSpD: number;
+  ivSpe: number;
+};
+
+type DbTeamRow = {
+  id: string;
+  name: string;
+  formatId: string;
+  mode: string;
+  notes: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+  slots: DbSlotRow[];
+};
+
+// --- DB <-> Domain Mapping ---
+
+function evsToDb(evs: StatsTable) {
+  return {
+    evHp: evs.hp, evAtk: evs.atk, evDef: evs.def,
+    evSpA: evs.spa, evSpD: evs.spd, evSpe: evs.spe,
+  };
+}
+
+function ivsToDb(ivs: StatsTable) {
+  return {
+    ivHp: ivs.hp, ivAtk: ivs.atk, ivDef: ivs.def,
+    ivSpA: ivs.spa, ivSpD: ivs.spd, ivSpe: ivs.spe,
+  };
+}
+
+function movesToDb(moves: TeamSlotInput["moves"]) {
+  return {
+    move1: moves[0] || "",
+    move2: moves[1] ?? null,
+    move3: moves[2] ?? null,
+    move4: moves[3] ?? null,
+  };
+}
+
+function dbSlotToDomain(dbSlot: DbSlotRow): TeamSlotData {
   const species = getSpecies(dbSlot.pokemonId);
   return {
     position: dbSlot.position,
@@ -87,64 +123,13 @@ function domainSlotToDb(slot: TeamSlotInput) {
     nature: slot.nature,
     teraType: slot.teraType ?? null,
     level: slot.level,
-    move1: slot.moves[0] || "",
-    move2: slot.moves[1] ?? null,
-    move3: slot.moves[2] ?? null,
-    move4: slot.moves[3] ?? null,
-    evHp: slot.evs.hp,
-    evAtk: slot.evs.atk,
-    evDef: slot.evs.def,
-    evSpA: slot.evs.spa,
-    evSpD: slot.evs.spd,
-    evSpe: slot.evs.spe,
-    ivHp: slot.ivs.hp,
-    ivAtk: slot.ivs.atk,
-    ivDef: slot.ivs.def,
-    ivSpA: slot.ivs.spa,
-    ivSpD: slot.ivs.spd,
-    ivSpe: slot.ivs.spe,
+    ...movesToDb(slot.moves),
+    ...evsToDb(slot.evs),
+    ...ivsToDb(slot.ivs),
   };
 }
 
-function dbTeamToDomain(
-  dbTeam: {
-    id: string;
-    name: string;
-    formatId: string;
-    mode: string;
-    notes: string | null;
-    createdAt: Date;
-    updatedAt: Date;
-    slots: Array<{
-      id: number;
-      teamId: string;
-      position: number;
-      pokemonId: string;
-      nickname: string | null;
-      ability: string;
-      item: string;
-      nature: string;
-      teraType: string | null;
-      level: number;
-      move1: string;
-      move2: string | null;
-      move3: string | null;
-      move4: string | null;
-      evHp: number;
-      evAtk: number;
-      evDef: number;
-      evSpA: number;
-      evSpD: number;
-      evSpe: number;
-      ivHp: number;
-      ivAtk: number;
-      ivDef: number;
-      ivSpA: number;
-      ivSpD: number;
-      ivSpe: number;
-    }>;
-  }
-): TeamData {
+function dbTeamToDomain(dbTeam: DbTeamRow): TeamData {
   return {
     id: dbTeam.id,
     name: dbTeam.name,
@@ -161,6 +146,17 @@ function dbTeamToDomain(
 
 // --- Service Functions ---
 
+function parseGeneration(formatId: string): number {
+  const digits = formatId.replace(/[^0-9]/g, "");
+  return parseInt(digits.charAt(0) || "9");
+}
+
+function inferGameType(formatId: string): "singles" | "doubles" {
+  return formatId.includes("doubles") || formatId.includes("vgc")
+    ? "doubles"
+    : "singles";
+}
+
 export async function createTeam(input: TeamCreateInput): Promise<TeamData> {
   // Auto-create Format record if it doesn't exist to avoid FK violations
   await prisma.format.upsert({
@@ -169,8 +165,8 @@ export async function createTeam(input: TeamCreateInput): Promise<TeamData> {
     create: {
       id: input.formatId,
       name: input.formatId,
-      generation: parseInt(input.formatId.replace(/[^0-9]/g, "").charAt(0) || "9"),
-      gameType: input.formatId.includes("doubles") || input.formatId.includes("vgc") ? "doubles" : "singles",
+      generation: parseGeneration(input.formatId),
+      gameType: inferGameType(input.formatId),
       isActive: true,
     },
   });
@@ -259,30 +255,9 @@ export async function updateSlot(
   if (data.teraType !== undefined) updateData.teraType = data.teraType ?? null;
   if (data.level !== undefined) updateData.level = data.level;
 
-  if (data.moves !== undefined) {
-    updateData.move1 = data.moves[0] || "";
-    updateData.move2 = data.moves[1] ?? null;
-    updateData.move3 = data.moves[2] ?? null;
-    updateData.move4 = data.moves[3] ?? null;
-  }
-
-  if (data.evs !== undefined) {
-    updateData.evHp = data.evs.hp;
-    updateData.evAtk = data.evs.atk;
-    updateData.evDef = data.evs.def;
-    updateData.evSpA = data.evs.spa;
-    updateData.evSpD = data.evs.spd;
-    updateData.evSpe = data.evs.spe;
-  }
-
-  if (data.ivs !== undefined) {
-    updateData.ivHp = data.ivs.hp;
-    updateData.ivAtk = data.ivs.atk;
-    updateData.ivDef = data.ivs.def;
-    updateData.ivSpA = data.ivs.spa;
-    updateData.ivSpD = data.ivs.spd;
-    updateData.ivSpe = data.ivs.spe;
-  }
+  if (data.moves !== undefined) Object.assign(updateData, movesToDb(data.moves));
+  if (data.evs !== undefined) Object.assign(updateData, evsToDb(data.evs));
+  if (data.ivs !== undefined) Object.assign(updateData, ivsToDb(data.ivs));
 
   const updated = await prisma.teamSlot.update({
     where: { teamId_position: { teamId, position } },
@@ -299,7 +274,6 @@ export async function removeSlot(
     where: { teamId_position: { teamId, position } },
   });
 
-  // Reorder remaining slots
   const remaining = await prisma.teamSlot.findMany({
     where: { teamId },
     orderBy: { position: "asc" },
@@ -329,11 +303,7 @@ export async function reorderSlots(
     orderBy: { position: "asc" },
   });
 
-  // Capture original position -> id mapping before any updates
-  const posToId = new Map<number, number>();
-  for (const slot of slots) {
-    posToId.set(slot.position, slot.id);
-  }
+  const posToId = new Map(slots.map((s) => [s.position, s.id]));
 
   // Use temporary positions to avoid unique constraint conflicts
   const tempOffset = 100;
@@ -344,7 +314,6 @@ export async function reorderSlots(
     });
   }
 
-  // Now assign final positions based on newOrder
   for (let i = 0; i < newOrder.length; i++) {
     const slotId = posToId.get(newOrder[i]);
     if (slotId !== undefined) {

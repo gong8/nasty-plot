@@ -60,7 +60,6 @@ export async function importIntoTeam(
 ): Promise<TeamData> {
   const slotInputs = buildSlotInputs(paste);
 
-  // Clear existing slots and add new ones
   await clearSlots(teamId);
   for (const slotInput of slotInputs) {
     await addSlot(teamId, slotInput);

@@ -3,8 +3,7 @@
 import { Check } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { TypeBadge } from "@nasty-plot/ui";
-import { PokemonSprite } from "@nasty-plot/ui";
+import { TypeBadge, PokemonSprite } from "@nasty-plot/ui";
 import type { PokemonType, UsageStatsEntry } from "@nasty-plot/core";
 import type { CorePokemon } from "../hooks/use-guided-builder";
 

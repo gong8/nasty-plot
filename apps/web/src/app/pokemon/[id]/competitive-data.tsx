@@ -11,8 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import type { UsageStatsEntry, SmogonSetData, StatName } from "@nasty-plot/core";
-import { STATS } from "@nasty-plot/core";
+import type { UsageStatsEntry, SmogonSetData } from "@nasty-plot/core";
 
 interface FormatUsage {
   formatId: string;
@@ -21,7 +20,6 @@ interface FormatUsage {
 }
 
 interface CompetitiveDataProps {
-  pokemonId: string;
   usageByFormat: FormatUsage[];
   setsByFormat: { formatId: string; formatName: string; sets: SmogonSetData[] }[];
 }
@@ -98,21 +96,20 @@ function SetCard({ set }: { set: SmogonSetData }) {
 }
 
 export function CompetitiveData({
-  pokemonId,
   usageByFormat,
   setsByFormat,
 }: CompetitiveDataProps) {
-  const hasUsage = usageByFormat.some((f) => f.stats !== null);
-  const hasSets = setsByFormat.some((f) => f.sets.length > 0);
+  const formatsWithUsage = usageByFormat.filter((f) => f.stats !== null);
+  const formatsWithSets = setsByFormat.filter((f) => f.sets.length > 0);
 
-  if (!hasUsage && !hasSets) {
+  if (formatsWithUsage.length === 0 && formatsWithSets.length === 0) {
     return null;
   }
 
   return (
     <div className="space-y-6">
       {/* Usage Stats */}
-      {hasUsage && (
+      {formatsWithUsage.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle>Usage Statistics</CardTitle>
@@ -127,21 +124,19 @@ export function CompetitiveData({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {usageByFormat
-                  .filter((f) => f.stats !== null)
-                  .map((f) => (
-                    <TableRow key={f.formatId}>
-                      <TableCell className="font-medium">
-                        {f.formatName}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {formatPercent(f.stats!.usagePercent)}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        #{f.stats!.rank}
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                {formatsWithUsage.map((f) => (
+                  <TableRow key={f.formatId}>
+                    <TableCell className="font-medium">
+                      {f.formatName}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {formatPercent(f.stats!.usagePercent)}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      #{f.stats!.rank}
+                    </TableCell>
+                  </TableRow>
+                ))}
               </TableBody>
             </Table>
           </CardContent>
@@ -149,47 +144,36 @@ export function CompetitiveData({
       )}
 
       {/* Smogon Sets */}
-      {hasSets && (
+      {formatsWithSets.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle>Recommended Sets</CardTitle>
           </CardHeader>
           <CardContent>
-            {setsByFormat.filter((f) => f.sets.length > 0).length === 1 ? (
-              // Single format, no tabs needed
+            {formatsWithSets.length === 1 ? (
               <div className="space-y-3">
-                {setsByFormat
-                  .filter((f) => f.sets.length > 0)[0]
-                  .sets.map((set) => (
-                    <SetCard key={set.setName} set={set} />
-                  ))}
+                {formatsWithSets[0].sets.map((set) => (
+                  <SetCard key={set.setName} set={set} />
+                ))}
               </div>
             ) : (
-              <Tabs
-                defaultValue={
-                  setsByFormat.find((f) => f.sets.length > 0)?.formatId
-                }
-              >
+              <Tabs defaultValue={formatsWithSets[0].formatId}>
                 <TabsList>
-                  {setsByFormat
-                    .filter((f) => f.sets.length > 0)
-                    .map((f) => (
-                      <TabsTrigger key={f.formatId} value={f.formatId}>
-                        {f.formatName}
-                      </TabsTrigger>
-                    ))}
-                </TabsList>
-                {setsByFormat
-                  .filter((f) => f.sets.length > 0)
-                  .map((f) => (
-                    <TabsContent key={f.formatId} value={f.formatId}>
-                      <div className="space-y-3 pt-3">
-                        {f.sets.map((set) => (
-                          <SetCard key={set.setName} set={set} />
-                        ))}
-                      </div>
-                    </TabsContent>
+                  {formatsWithSets.map((f) => (
+                    <TabsTrigger key={f.formatId} value={f.formatId}>
+                      {f.formatName}
+                    </TabsTrigger>
                   ))}
+                </TabsList>
+                {formatsWithSets.map((f) => (
+                  <TabsContent key={f.formatId} value={f.formatId}>
+                    <div className="space-y-3 pt-3">
+                      {f.sets.map((set) => (
+                        <SetCard key={set.setName} set={set} />
+                      ))}
+                    </div>
+                  </TabsContent>
+                ))}
               </Tabs>
             )}
           </CardContent>

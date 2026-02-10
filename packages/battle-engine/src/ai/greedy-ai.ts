@@ -2,6 +2,7 @@ import { Generations } from "@pkmn/data";
 import { Dex } from "@pkmn/dex";
 import { calculate, Pokemon, Move, Field } from "@smogon/calc";
 import type { AIPlayer, BattleState, BattleActionSet, BattleAction, BattleFormat } from "../types";
+import { flattenDamage, fallbackMove, pickHealthiestSwitch } from "./shared";
 
 const gens = new Generations(Dex);
 const gen = gens.get(9);
@@ -18,21 +19,14 @@ export class GreedyAI implements AIPlayer {
     actions: BattleActionSet
   ): Promise<BattleAction> {
     if (actions.forceSwitch) {
-      return this.chooseBestSwitch(state, actions);
+      return pickHealthiestSwitch(actions);
     }
 
-    // Calculate damage for each available move
     const activePokemon = state.sides.p2.active[0];
     const opponentPokemon = state.sides.p1.active[0];
 
     if (!activePokemon || !opponentPokemon) {
-      // Fallback to random
-      const enabledMoves = actions.moves.filter((m) => !m.disabled);
-      if (enabledMoves.length > 0) {
-        const idx = actions.moves.indexOf(enabledMoves[0]);
-        return { type: "move", moveIndex: idx + 1 };
-      }
-      return { type: "move", moveIndex: 1 };
+      return fallbackMove(actions);
     }
 
     let bestDamage = -1;
@@ -57,8 +51,7 @@ export class GreedyAI implements AIPlayer {
         });
 
         const calcMove = new Move(gen, move.name);
-        const field = new Field();
-        const result = calculate(gen, attacker, defender, calcMove, field);
+        const result = calculate(gen, attacker, defender, calcMove, new Field());
 
         const damage = flattenDamage(result.damage);
         const avgDamage = damage.reduce((a, b) => a + b, 0) / damage.length;
@@ -74,7 +67,7 @@ export class GreedyAI implements AIPlayer {
 
     // If best damage is very low, consider switching
     if (bestDamage < 20 && actions.switches.length > 0) {
-      const switchAction = this.chooseBestSwitch(state, actions);
+      const switchAction = pickHealthiestSwitch(actions);
       if (switchAction.type === "switch") {
         return switchAction;
       }
@@ -84,37 +77,10 @@ export class GreedyAI implements AIPlayer {
       return { type: "move", moveIndex: bestMoveIndex + 1 };
     }
 
-    // Fallback: first non-disabled move
-    const firstEnabled = actions.moves.findIndex((m) => !m.disabled);
-    return { type: "move", moveIndex: (firstEnabled >= 0 ? firstEnabled : 0) + 1 };
-  }
-
-  private chooseBestSwitch(state: BattleState, actions: BattleActionSet): BattleAction {
-    const available = actions.switches.filter((s) => !s.fainted);
-    if (available.length === 0) {
-      return { type: "move", moveIndex: 1 };
-    }
-
-    // Pick the switch with the most HP
-    const best = available.reduce((a, b) =>
-      (a.hp / a.maxHp) > (b.hp / b.maxHp) ? a : b
-    );
-    return { type: "switch", pokemonIndex: best.index };
+    return fallbackMove(actions);
   }
 
   chooseLeads(teamSize: number, _gameType: BattleFormat): number[] {
-    // Lead with first Pokemon (typically the team's intended lead)
     return Array.from({ length: teamSize }, (_, i) => i + 1);
   }
-}
-
-function flattenDamage(damage: number | number[] | number[][]): number[] {
-  if (typeof damage === "number") return [damage];
-  if (Array.isArray(damage) && damage.length > 0) {
-    if (Array.isArray(damage[0])) {
-      return (damage as number[][])[0];
-    }
-    return damage as number[];
-  }
-  return [0];
 }

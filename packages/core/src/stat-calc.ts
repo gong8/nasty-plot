@@ -1,9 +1,10 @@
 import { NATURE_DATA } from "./constants";
+import { STATS } from "./types";
 import type { NatureName, StatName, StatsTable } from "./types";
 
 /**
  * Calculate a single stat value using the standard Pokemon formula.
- * HP: floor((floor((2*Base + IV + floor(EV/4)) * Level / 100) + Level + 10))
+ * HP: floor((2*Base + IV + floor(EV/4)) * Level / 100) + Level + 10
  * Other: floor((floor((2*Base + IV + floor(EV/4)) * Level / 100) + 5) * NatureMod)
  */
 export function calculateStat(
@@ -14,20 +15,17 @@ export function calculateStat(
   level: number,
   nature: NatureName
 ): number {
-  const core = Math.floor(
-    (Math.floor((2 * base + iv + Math.floor(ev / 4)) * level / 100))
-  );
+  const core = Math.floor((2 * base + iv + Math.floor(ev / 4)) * level / 100);
 
   if (stat === "hp") {
-    // Shedinja special case
-    if (base === 1) return 1;
+    if (base === 1) return 1; // Shedinja
     return core + level + 10;
   }
 
   const natureData = NATURE_DATA[nature];
   let natureMod = 1.0;
-  if (natureData?.plus === stat) natureMod = 1.1;
-  if (natureData?.minus === stat) natureMod = 0.9;
+  if (natureData.plus === stat) natureMod = 1.1;
+  if (natureData.minus === stat) natureMod = 0.9;
 
   return Math.floor((core + 5) * natureMod);
 }
@@ -43,7 +41,7 @@ export function calculateAllStats(
   nature: NatureName
 ): StatsTable {
   const stats = {} as StatsTable;
-  for (const stat of ["hp", "atk", "def", "spa", "spd", "spe"] as StatName[]) {
+  for (const stat of STATS) {
     stats[stat] = calculateStat(stat, baseStats[stat], ivs[stat], evs[stat], level, nature);
   }
   return stats;
@@ -60,7 +58,7 @@ export function getTotalEvs(evs: StatsTable): number {
  * Validate EV spread: each stat 0-252, total <= 510.
  */
 export function validateEvs(evs: StatsTable): { valid: boolean; reason?: string } {
-  for (const stat of ["hp", "atk", "def", "spa", "spd", "spe"] as StatName[]) {
+  for (const stat of STATS) {
     if (evs[stat] < 0 || evs[stat] > 252) {
       return { valid: false, reason: `${stat} EVs must be between 0 and 252` };
     }

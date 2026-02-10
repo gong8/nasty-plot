@@ -4,14 +4,20 @@ import {
   removeSlot,
 } from "@nasty-plot/teams";
 
+function parsePosition(position: string): number | null {
+  const pos = parseInt(position, 10);
+  if (isNaN(pos) || pos < 1 || pos > 6) return null;
+  return pos;
+}
+
 export async function PUT(
   request: Request,
   { params }: { params: Promise<{ teamId: string; position: string }> }
 ) {
   try {
     const { teamId, position } = await params;
-    const pos = parseInt(position, 10);
-    if (isNaN(pos) || pos < 1 || pos > 6) {
+    const pos = parsePosition(position);
+    if (pos === null) {
       return NextResponse.json(
         { error: "Invalid position" },
         { status: 400 }
@@ -32,8 +38,8 @@ export async function DELETE(
 ) {
   try {
     const { teamId, position } = await params;
-    const pos = parseInt(position, 10);
-    if (isNaN(pos) || pos < 1 || pos > 6) {
+    const pos = parsePosition(position);
+    if (pos === null) {
       return NextResponse.json(
         { error: "Invalid position" },
         { status: 400 }

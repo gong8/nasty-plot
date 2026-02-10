@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getAllSpecies, searchSpecies } from "@nasty-plot/pokemon-data";
+import { getAllSpecies } from "@nasty-plot/pokemon-data";
 import { getFormatPokemon } from "@nasty-plot/formats";
 import type { PaginatedResponse, PokemonSpecies, PokemonType } from "@nasty-plot/core";
 
