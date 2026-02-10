@@ -24,6 +24,9 @@ import {
   useForkTeam,
   useCompareTeams,
   useLineageTree,
+  useTeams,
+  useArchiveTeam,
+  useMergeTeams,
 } from "@/features/teams/hooks/use-teams";
 import { TeamHeader } from "@/features/team-builder/components/team-header";
 import { TeamGrid } from "@/features/team-builder/components/team-grid";
@@ -36,7 +39,8 @@ import { MatchupMatrix } from "@/features/damage-calc/components/matchup-matrix"
 import { RecommendationPanel } from "@/features/recommendations/components/recommendation-panel";
 import { TeamDiffView } from "@/features/team-builder/components/team-diff-view";
 import { LineageTree } from "@/features/team-builder/components/lineage-tree";
-import type { TeamSlotInput, TeamAnalysis, MatchupMatrixEntry, LineageNode } from "@nasty-plot/core";
+import { MergeWizard } from "@/features/team-builder/components/merge-wizard";
+import type { TeamSlotInput, TeamAnalysis, MatchupMatrixEntry, LineageNode, MergeDecision } from "@nasty-plot/core";
 
 function collectNodes(node: LineageNode): LineageNode[] {
   return [node, ...node.children.flatMap(collectNodes)];
@@ -62,6 +66,9 @@ export default function TeamEditorPage({
   const [addingNew, setAddingNew] = useState(false);
   const [activeTab, setActiveTab] = useState("overview");
   const [compareTargetId, setCompareTargetId] = useState<string | undefined>();
+  const [mergeOpen, setMergeOpen] = useState(false);
+  const [mergeTeamAId, setMergeTeamAId] = useState<string | undefined>();
+  const [mergeTeamBId, setMergeTeamBId] = useState<string | undefined>();
 
   const updateTeamMut = useUpdateTeam();
   const deleteTeamMut = useDeleteTeam();
@@ -69,11 +76,15 @@ export default function TeamEditorPage({
   const updateSlotMut = useUpdateSlot();
   const removeSlotMut = useRemoveSlot();
   const forkTeamMut = useForkTeam();
+  const archiveTeamMut = useArchiveTeam();
+  const mergeTeamsMut = useMergeTeams();
   const lineageQuery = useLineageTree(teamId);
+  const allTeamsQuery = useTeams();
   const compareQuery = useCompareTeams(
     compareTargetId ? teamId : undefined,
     compareTargetId,
   );
+  const mergeCompareQuery = useCompareTeams(mergeTeamAId, mergeTeamBId);
 
   // Fetch analysis data when analysis tab is selected and team has slots
   const analysisQuery = useQuery<{ data: TeamAnalysis }>({
@@ -113,6 +124,36 @@ export default function TeamEditorPage({
       router.push(`/teams/${forked.id}`);
     },
     [teamId, forkTeamMut, router],
+  );
+
+  const handleArchive = useCallback(async () => {
+    await archiveTeamMut.mutateAsync(teamId);
+    router.push("/teams");
+  }, [teamId, archiveTeamMut, router]);
+
+  const handleMergeSelectTeams = useCallback(
+    (teamAId: string, teamBId: string) => {
+      setMergeTeamAId(teamAId);
+      setMergeTeamBId(teamBId);
+    },
+    [],
+  );
+
+  const handleMerge = useCallback(
+    async (decisions: MergeDecision[], options: { name: string; branchName?: string; notes?: string }) => {
+      if (!mergeTeamAId || !mergeTeamBId) return;
+      const merged = await mergeTeamsMut.mutateAsync({
+        teamAId: mergeTeamAId,
+        teamBId: mergeTeamBId,
+        decisions,
+        options,
+      });
+      setMergeOpen(false);
+      setMergeTeamAId(undefined);
+      setMergeTeamBId(undefined);
+      router.push(`/teams/${merged.id}`);
+    },
+    [mergeTeamAId, mergeTeamBId, mergeTeamsMut, router],
   );
 
   const handleUpdateName = useCallback(
@@ -238,6 +279,7 @@ export default function TeamEditorPage({
             onDelete={handleDelete}
             onImport={handleImport}
             onFork={handleFork}
+            onArchive={handleArchive}
           />
         </div>
       </div>
@@ -325,26 +367,32 @@ export default function TeamEditorPage({
           )}
         </TabsContent>
         <TabsContent value="compare" className="py-4 space-y-4">
-          {lineageQuery.data && (
-            <div className="flex items-center gap-3">
-              <label className="text-sm font-medium">Compare with:</label>
-              <select
-                value={compareTargetId ?? ""}
-                onChange={(e) => setCompareTargetId(e.target.value || undefined)}
-                className="rounded-md border bg-background px-3 py-1.5 text-sm"
-              >
-                <option value="">Select a team...</option>
-                {collectNodes(lineageQuery.data)
-                  .filter((n) => n.teamId !== teamId)
-                  .map((n) => (
-                    <option key={n.teamId} value={n.teamId}>
-                      {n.name}
-                      {n.branchName ? ` (${n.branchName})` : ""}
-                    </option>
-                  ))}
-              </select>
-            </div>
-          )}
+          <div className="flex items-center gap-3 flex-wrap">
+            {lineageQuery.data && (
+              <>
+                <label className="text-sm font-medium">Compare with:</label>
+                <select
+                  value={compareTargetId ?? ""}
+                  onChange={(e) => setCompareTargetId(e.target.value || undefined)}
+                  className="rounded-md border bg-background px-3 py-1.5 text-sm"
+                >
+                  <option value="">Select a team...</option>
+                  {collectNodes(lineageQuery.data)
+                    .filter((n) => n.teamId !== teamId)
+                    .map((n) => (
+                      <option key={n.teamId} value={n.teamId}>
+                        {n.name}
+                        {n.branchName ? ` (${n.branchName})` : ""}
+                      </option>
+                    ))}
+                </select>
+              </>
+            )}
+            <div className="flex-1" />
+            <Button variant="outline" size="sm" onClick={() => setMergeOpen(true)}>
+              Merge Teams
+            </Button>
+          </div>
           {compareQuery.data && <TeamDiffView diff={compareQuery.data} />}
           {compareQuery.isLoading && (
             <div className="text-center text-muted-foreground py-8">
@@ -385,6 +433,17 @@ export default function TeamEditorPage({
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Merge Wizard */}
+      <MergeWizard
+        open={mergeOpen}
+        onOpenChange={setMergeOpen}
+        teams={allTeamsQuery.data ?? []}
+        diff={mergeCompareQuery.data ?? null}
+        onSelectTeams={handleMergeSelectTeams}
+        onMerge={handleMerge}
+        isLoading={mergeTeamsMut.isPending}
+      />
 
     </div>
   );

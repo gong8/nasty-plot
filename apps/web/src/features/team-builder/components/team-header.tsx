@@ -11,6 +11,7 @@ import {
   Check,
   X,
   GitFork,
+  Archive,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -38,6 +39,7 @@ interface TeamHeaderProps {
   onDelete: () => void;
   onImport: (paste: string) => Promise<void>;
   onFork?: (options: { name: string; branchName?: string; notes?: string }) => Promise<void>;
+  onArchive?: () => void;
 }
 
 export function TeamHeader({
@@ -46,6 +48,7 @@ export function TeamHeader({
   onDelete,
   onImport,
   onFork,
+  onArchive,
 }: TeamHeaderProps) {
   const [editing, setEditing] = useState(false);
   const [editName, setEditName] = useState(team.name);
@@ -330,6 +333,31 @@ export function TeamHeader({
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* Archive */}
+        {onArchive && (
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button variant="outline" size="sm">
+                <Archive className="h-4 w-4 mr-1" /> Archive
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Archive Team</DialogTitle>
+                <DialogDescription>
+                  Archive &ldquo;{team.name}&rdquo;? It will be hidden from your
+                  team list but can be restored later.
+                </DialogDescription>
+              </DialogHeader>
+              <DialogFooter>
+                <Button onClick={onArchive}>
+                  Archive Team
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        )}
 
         {/* Delete */}
         <Dialog>
