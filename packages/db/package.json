@@ -1,0 +1,14 @@
+{
+  "name": "@nasty-plot/db",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@prisma/client": "^7.3.0",
+    "@prisma/adapter-better-sqlite3": "^7.3.0",
+    "prisma": "^7.3.0"
+  }
+}

@@ -8,7 +8,7 @@ const app = express();
 app.use(express.json());
 
 const server = new McpServer({
-  name: "pokemon-team-builder",
+  name: "nasty-plot",
   version: "0.1.0",
 });
 

@@ -1,0 +1,14 @@
+{
+  "name": "@nasty-plot/battle-engine",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": { ".": "./src/index.ts" },
+  "dependencies": {
+    "@pkmn/sim": "^0.10.6",
+    "@pkmn/dex": "^0.10.6",
+    "@pkmn/data": "^0.10.6",
+    "@nasty-plot/core": "*"
+  },
+  "devDependencies": { "vitest": "^4.0.18" }
+}

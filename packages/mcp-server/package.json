@@ -1,5 +1,5 @@
 {
-  "name": "@pokemon-team-builder/mcp-server",
+  "name": "@nasty-plot/mcp-server",
   "version": "0.1.0",
   "private": true,
   "type": "module",

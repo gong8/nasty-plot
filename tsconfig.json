@@ -1,34 +1,22 @@
 {
-  "compilerOptions": {
-    "target": "ES2017",
-    "lib": ["dom", "dom.iterable", "esnext"],
-    "allowJs": true,
-    "skipLibCheck": true,
-    "strict": true,
-    "noEmit": true,
-    "esModuleInterop": true,
-    "module": "esnext",
-    "moduleResolution": "bundler",
-    "resolveJsonModule": true,
-    "isolatedModules": true,
-    "jsx": "react-jsx",
-    "incremental": true,
-    "plugins": [
-      {
-        "name": "next"
-      }
-    ],
-    "paths": {
-      "@/*": ["./src/*"]
-    }
-  },
-  "include": [
-    "next-env.d.ts",
-    "**/*.ts",
-    "**/*.tsx",
-    ".next/types/**/*.ts",
-    ".next/dev/types/**/*.ts",
-    "**/*.mts"
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {},
+  "references": [
+    { "path": "packages/core" },
+    { "path": "packages/db" },
+    { "path": "packages/pokemon-data" },
+    { "path": "packages/battle-engine" },
+    { "path": "packages/analysis" },
+    { "path": "packages/damage-calc" },
+    { "path": "packages/smogon-data" },
+    { "path": "packages/formats" },
+    { "path": "packages/data-pipeline" },
+    { "path": "packages/recommendations" },
+    { "path": "packages/llm" },
+    { "path": "packages/teams" },
+    { "path": "packages/ui" },
+    { "path": "apps/web" }
   ],
+  "include": [],
   "exclude": ["node_modules"]
 }

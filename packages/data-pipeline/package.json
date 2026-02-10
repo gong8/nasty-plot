@@ -1,0 +1,21 @@
+{
+  "name": "@nasty-plot/data-pipeline",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "scripts": {
+    "test": "vitest run",
+    "seed": "tsx src/cli/seed.ts"
+  },
+  "dependencies": {
+    "@nasty-plot/db": "*",
+    "@nasty-plot/smogon-data": "*"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "vitest": "^3.0.0",
+    "tsx": "^4.0.0"
+  }
+}

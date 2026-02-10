@@ -1,0 +1,21 @@
+{
+  "name": "@nasty-plot/recommendations",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "scripts": {
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@nasty-plot/core": "*",
+    "@nasty-plot/db": "*",
+    "@nasty-plot/analysis": "*",
+    "@pkmn/dex": "^0.8.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "vitest": "^3.0.0"
+  }
+}

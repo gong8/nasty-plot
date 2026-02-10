@@ -1,0 +1,13 @@
+{
+  "name": "@nasty-plot/core",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "vitest": "^4.0.18"
+  }
+}

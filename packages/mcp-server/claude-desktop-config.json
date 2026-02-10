@@ -1,6 +1,6 @@
 {
   "mcpServers": {
-    "pokemon-team-builder": {
+    "nasty-plot": {
       "url": "http://localhost:3001/mcp"
     }
   }

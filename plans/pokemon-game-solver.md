@@ -1,7 +1,7 @@
 # Pokemon Game Solver - Feature Design Document
 
 ## Vision
-A battle simulator + AI solver engine integrated into the Pokemon Team Builder app:
+A battle simulator + AI solver engine integrated into the Nasty Plot app:
 1. **Battle Simulator** - Full Pokemon battles powered by `@pkmn/sim`
 2. **AI Opponents** - Tiered difficulty bots from random to MCTS-powered solver
 3. **Strategic Hints** - Real-time move recommendations with win probability (like chess engine eval bar)
@@ -80,6 +80,8 @@ Defense boosts                | 25     | Survivability
 ## Architecture
 
 ### Module Structure
+
+**Planned structure** (full vision):
 ```
 src/modules/battle/
 ├── engine/                    # Battle simulation layer
@@ -129,6 +131,46 @@ src/modules/battle/
 └── utils/
     └── protocol-parser.ts     # Parse @pkmn/sim protocol messages
 ```
+
+**What has been built so far** (Phase 1-3):
+```
+src/modules/battle/
+├── engine/
+│   ├── battle-manager.ts      # ✅ BattleManager + createInitialState (uses BattleStreams.BattleStream)
+│   ├── protocol-parser.ts     # ✅ processLine, processChunk, parseRequest, updateSideFromRequest
+│   └── team-packer.ts         # ✅ packOneSlot, packTeam, teamToShowdownPaste
+├── ai/
+│   ├── types.ts               # ✅ Re-exports AIPlayer from ../types
+│   ├── random-ai.ts           # ✅ Uniform random from legal moves, Fisher-Yates shuffle for leads
+│   ├── greedy-ai.ts           # ✅ @smogon/calc damage scoring, picks highest damage
+│   └── heuristic-ai.ts        # ✅ Type matchups, status/hazard scoring, switching logic
+├── components/
+│   ├── BattleView.tsx         # ✅ Phase container (preview → battle → ended)
+│   ├── BattleSetup.tsx        # ✅ Team paste inputs, saved teams, format/AI selectors, sample teams
+│   ├── BattleField.tsx        # ✅ Active Pokemon display with info plates
+│   ├── PokemonSprite.tsx      # ✅ BattleSprite using @pkmn/img
+│   ├── HealthBar.tsx          # ✅ Animated HP bar (green/yellow/red)
+│   ├── MoveSelector.tsx       # ✅ Type-colored move buttons, PP, Tera toggle, switch button
+│   ├── SwitchMenu.tsx         # ✅ Bench Pokemon list with HP bars and status
+│   ├── TeamPreview.tsx        # ✅ Singles lead selection (click to select)
+│   ├── BattleLog.tsx          # ✅ Color-coded log, auto-scroll
+│   └── FieldStatus.tsx        # ✅ Weather, terrain, hazards, screens with icons
+├── hooks/
+│   └── use-battle.ts          # ✅ Core hook: startBattle, chooseLead, submitMove, submitSwitch, rematch
+├── types/
+│   └── index.ts               # ✅ All types: BattleState, BattlePokemon, BattleAction, AIPlayer, etc.
+└── __tests__/
+    ├── team-packer.test.ts    # ✅ 15 tests
+    ├── protocol-parser.test.ts# ✅ 33 tests
+    └── ai.test.ts             # ✅ 13 tests
+
+src/app/battle/
+├── page.tsx                   # ✅ Battle hub with AI difficulty descriptions
+├── new/page.tsx               # ✅ Setup page (encodes config in URL params)
+└── live/page.tsx              # ✅ Active battle page (decodes URL params, Suspense boundary)
+```
+
+**Note**: The original plan called for `/battle/[id]` but we used `/battle/live` with URL search params instead (simpler, no DB persistence yet). `battle-state.ts` was merged into `types/index.ts`. `battle-stream.ts` was not needed — `battle-manager.ts` uses `BattleStreams.BattleStream` directly.
 
 ### Battle Flow
 ```
@@ -225,41 +267,45 @@ model SampleTeam {
 
 ## Implementation Phases (Vertical Slice Approach)
 
-### Phase 1: Engine Foundation (Week 1-2)
+### Phase 1: Engine Foundation (Week 1-2) -- DONE
 **Goal**: Battles work programmatically with tests, no UI yet.
 
-- [ ] Install `@pkmn/sim` and `@pkmn/img`
-- [ ] Build `BattleManager` class wrapping BattleStream
-- [ ] Build `team-packer.ts` converting `TeamSlotData` → packed format
-- [ ] Build `protocol-parser.ts` to normalize @pkmn/sim messages into typed state
-- [ ] Build `battle-state.ts` with full typed battle state interface
-- [ ] Support singles and doubles battle creation
-- [ ] Handle full battle lifecycle: create → preview → turns → end
-- [ ] Write comprehensive unit tests with Vitest
+- [x] Install `@pkmn/sim` and `@pkmn/img`
+- [x] Build `BattleManager` class wrapping BattleStream
+- [x] Build `team-packer.ts` converting `TeamSlotData` → packed format
+- [x] Build `protocol-parser.ts` to normalize @pkmn/sim messages into typed state
+- [x] Build `battle-state.ts` → types defined in `types/index.ts` (BattleState, BattlePokemon, etc.)
+- [x] Support singles and doubles battle creation
+- [x] Handle full battle lifecycle: create → preview → turns → end
+- [x] Write comprehensive unit tests with Vitest (team-packer: 15 tests, protocol-parser: 33 tests, ai: 13 tests)
 
-### Phase 2: Battle UI (Week 2-4)
+### Phase 2: Battle UI (Week 2-4) -- MOSTLY DONE
 **Goal**: Playable battles in the browser (manual control of both sides).
 
-- [ ] `/battle/new` setup page with team/format/mode selectors
-- [ ] `TeamPreview` component (singles lead pick + VGC 4-pick-2-lead)
-- [ ] `BattleField` component with sprites (@pkmn/img), HP bars, status icons
-- [ ] `MoveSelector` with type-colored buttons and damage preview (from @smogon/calc)
-- [ ] `SwitchMenu` showing bench Pokemon with HP
-- [ ] `BattleLog` with turn-by-turn text
-- [ ] `FieldStatus` showing weather, terrain, hazards, screens
-- [ ] HP drain animations (CSS transitions)
-- [ ] Doubles layout (2v2 active Pokemon)
-- [ ] `use-battle` hook managing state + @pkmn/sim interaction
+- [x] `/battle/new` setup page with team/format/mode selectors
+- [x] `TeamPreview` component (singles lead pick)
+- [ ] `TeamPreview` VGC 4-pick-2-lead flow (doubles-specific)
+- [x] `BattleField` component with sprites (@pkmn/img), HP bars, status icons
+- [x] `MoveSelector` with type-colored buttons
+- [ ] Damage preview on move hover (from @smogon/calc)
+- [x] `SwitchMenu` showing bench Pokemon with HP
+- [x] `BattleLog` with turn-by-turn text (color-coded)
+- [x] `FieldStatus` showing weather, terrain, hazards, screens
+- [x] HP drain animations (CSS transitions on HealthBar)
+- [ ] Doubles layout (2v2 active Pokemon) — BattleField supports it structurally but untested
+- [x] `use-battle` hook managing state + @pkmn/sim interaction
+- [x] `/battle` hub page, `/battle/live` active battle page
+- [x] "Battle" added to site navigation
 
-### Phase 3: AI Opponents (Week 4-5)
+### Phase 3: AI Opponents (Week 4-5) -- MOSTLY DONE
 **Goal**: Play against bots of varying difficulty.
 
-- [ ] Define `AIPlayer` interface: `chooseAction(state, legalMoves) → Action`
-- [ ] `RandomAI` - uniform random from legal moves
-- [ ] `GreedyAI` - pick highest damage move using @smogon/calc
-- [ ] `HeuristicAI` - type matchups, switching on bad matchups, status moves
-- [ ] AI difficulty selector in battle setup
-- [ ] AI thinking delay (so it doesn't feel instant)
+- [x] Define `AIPlayer` interface: `chooseAction(state, legalMoves) → Action`
+- [x] `RandomAI` - uniform random from legal moves
+- [x] `GreedyAI` - pick highest damage move using @smogon/calc
+- [x] `HeuristicAI` - type matchups, switching on bad matchups, status moves
+- [x] AI difficulty selector in battle setup
+- [x] AI thinking delay (300-700ms so it doesn't feel instant)
 - [ ] `SetPredictor` using Smogon data (for hidden info mode)
 
 ### Phase 4: Hint System + Evaluation (Week 5-6)
@@ -336,12 +382,22 @@ model SampleTeam {
 
 ---
 
-## Dependencies to Add
+## Remaining Work (Phase 1-3 Gaps)
+
+These items from Phases 1-3 are not yet done:
+
+1. **Damage preview on move hover** — MoveSelector shows moves but doesn't display expected damage ranges when hovering. Would use existing `@smogon/calc` service.
+2. **Doubles TeamPreview** — VGC 6→4→2 lead selection flow. Current TeamPreview only supports singles (click one lead).
+3. **Doubles layout testing** — BattleField structurally supports 2v2 but is untested in a real doubles battle.
+4. **SetPredictor** — Use Smogon usage data to infer opponent's likely sets (moveset, EVs, item) in hidden-info mode.
+5. **Browser integration testing** — Full end-to-end manual testing (play a battle start to finish).
+
+## Dependencies
 ```json
 {
-  "@pkmn/sim": "latest",
-  "@pkmn/img": "latest",
-  "@pkmn/randoms": "latest"
+  "@pkmn/sim": "installed ✅",
+  "@pkmn/img": "installed ✅",
+  "@pkmn/randoms": "not yet needed"
 }
 ```
 
