@@ -7,15 +7,21 @@ import { registerResources } from "./resources/index.js";
 const app = express();
 app.use(express.json());
 
-const server = new McpServer({
-  name: "nasty-plot",
-  version: "0.1.0",
-});
+/** Create a fresh McpServer instance with all tools and resources registered. */
+function createServer(): McpServer {
+  const server = new McpServer({
+    name: "nasty-plot",
+    version: "0.1.0",
+  });
+  registerTools(server);
+  registerResources(server);
+  return server;
+}
 
-registerTools(server);
-registerResources(server);
-
-const transports = new Map<string, StreamableHTTPServerTransport>();
+const transports = new Map<
+  string,
+  { transport: StreamableHTTPServerTransport; server: McpServer }
+>();
 
 function getSessionTransport(
   req: express.Request,
@@ -26,14 +32,14 @@ function getSessionTransport(
     res.status(400).json({ error: "Invalid or missing session ID" });
     return null;
   }
-  return transports.get(sessionId)!;
+  return transports.get(sessionId)!.transport;
 }
 
 app.post("/mcp", async (req, res) => {
   const sessionId = req.headers["mcp-session-id"] as string | undefined;
 
   if (sessionId && transports.has(sessionId)) {
-    const transport = transports.get(sessionId)!;
+    const { transport } = transports.get(sessionId)!;
     await transport.handleRequest(req, res, req.body);
     return;
   }
@@ -42,6 +48,8 @@ app.post("/mcp", async (req, res) => {
     sessionIdGenerator: () =>
       `session-${Date.now()}-${Math.random().toString(36).slice(2)}`,
   });
+
+  const server = createServer();
 
   transport.onclose = () => {
     if (transport.sessionId) {
@@ -53,7 +61,7 @@ app.post("/mcp", async (req, res) => {
   await transport.handleRequest(req, res, req.body);
 
   if (transport.sessionId) {
-    transports.set(transport.sessionId, transport);
+    transports.set(transport.sessionId, { transport, server });
   }
 });
 

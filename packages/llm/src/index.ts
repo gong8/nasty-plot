@@ -6,6 +6,7 @@ export {
   addMessage,
 } from "./chat-session.service";
 export { streamChat } from "./chat.service";
+export { streamCliChat } from "./cli-chat";
 export { getOpenAI, MODEL } from "./openai-client";
 export {
   getMcpTools,

@@ -17,7 +17,7 @@ const STATUS_BADGE: Record<string, { label: string; color: string }> = {
   slp: { label: "SLP", color: "bg-muted-foreground" },
   frz: { label: "FRZ", color: "bg-cyan-400" },
   psn: { label: "PSN", color: "bg-purple-500" },
-  tox: { label: "TOX", color: "bg-purple-700" },
+  tox: { label: "TOX", color: "bg-purple-700 dark:bg-purple-500" },
 };
 
 function ActivePokemonDisplay({

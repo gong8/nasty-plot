@@ -18,6 +18,9 @@ const jetbrainsMono = JetBrains_Mono({
 export const metadata: Metadata = {
   title: "Nasty Plot",
   description: "Competitive Pokemon team builder for Scarlet/Violet",
+  icons: {
+    icon: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/1025.png",
+  },
 };
 
 export default function RootLayout({

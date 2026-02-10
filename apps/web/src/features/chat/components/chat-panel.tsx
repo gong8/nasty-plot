@@ -206,7 +206,7 @@ export function ChatPanel({ teamId, formatId, sessionId }: ChatPanelProps) {
         <ScrollArea className="flex-1 p-4" ref={scrollRef as React.RefObject<HTMLDivElement>}>
           <div className="space-y-4">
             {messages.length === 0 && (
-              <div className="text-center text-muted-foreground py-12">
+              <div className="text-center py-12">
                 <img
                   src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/1025.png"
                   alt="Pecharunt"
@@ -214,10 +214,10 @@ export function ChatPanel({ teamId, formatId, sessionId }: ChatPanelProps) {
                   height={64}
                   className="pixelated mx-auto mb-3"
                 />
-                <p className="text-lg font-medium">
+                <p className="text-lg font-medium text-foreground">
                   Pecharunt&apos;s Team Lab
                 </p>
-                <p className="text-sm mt-1">
+                <p className="text-sm mt-1 text-muted-foreground">
                   Ask about competitive sets, damage calcs, meta trends, and team synergy.
                 </p>
               </div>
@@ -255,7 +255,7 @@ export function ChatPanel({ teamId, formatId, sessionId }: ChatPanelProps) {
                   className={`max-w-[80%] rounded-lg px-4 py-2 text-sm whitespace-pre-wrap ${
                     msg.role === "user"
                       ? "bg-primary text-primary-foreground"
-                      : "bg-muted/50 dark:bg-primary/5 border border-border"
+                      : "bg-muted/50 dark:bg-primary/10 border border-border text-foreground"
                   }`}
                 >
                   {msg.content ||

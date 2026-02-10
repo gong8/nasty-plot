@@ -54,7 +54,7 @@ const TERRAIN_COLORS: Record<string, string> = {
   Electric: "text-yellow-500",
   Grassy: "text-green-500",
   Misty: "text-pink-400",
-  Psychic: "text-purple-500",
+  Psychic: "text-purple-500 dark:text-purple-400",
 };
 
 function SideHazards({
@@ -91,7 +91,7 @@ function SideHazards({
         </div>
       )}
       {screens.length > 0 && (
-        <div className="flex items-center gap-1 text-blue-500">
+        <div className="flex items-center gap-1 text-blue-500 dark:text-blue-400">
           <Shield className="h-3 w-3" />
           {screens.map((s) => (
             <span key={s} className="bg-blue-500/10 px-1 rounded">{s}</span>
@@ -144,7 +144,7 @@ export function FieldStatus({ field, p1Conditions, p2Conditions, className }: Fi
       })()}
 
       {hasTrickRoom && (
-        <div className="flex items-center gap-1 text-purple-500">
+        <div className="flex items-center gap-1 text-purple-500 dark:text-purple-400">
           <RotateCcw className="h-3.5 w-3.5" />
           <span>Trick Room ({field.trickRoom})</span>
         </div>

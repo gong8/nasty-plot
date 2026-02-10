@@ -40,11 +40,11 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
-  --color-success: oklch(0.55 0.20 150);
-  --color-glass-bg: oklch(1.0 0 0 / 80%);
-  --color-glass-border: oklch(0.15 0.04 290 / 10%);
-  --color-glow-primary: oklch(0.52 0.25 345 / 15%);
-  --color-glow-accent: oklch(0.45 0.13 170 / 15%);
+  --color-success: var(--success);
+  --color-glass-bg: var(--glass-bg);
+  --color-glass-border: var(--glass-border);
+  --color-glow-primary: var(--glow-primary);
+  --color-glow-accent: var(--glow-accent);
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -88,6 +88,11 @@
   --sidebar-accent-foreground: oklch(0.15 0.04 320);
   --sidebar-border: oklch(0.15 0.04 320 / 12%);
   --sidebar-ring: oklch(0.52 0.25 345);
+  --success: oklch(0.55 0.20 150);
+  --glass-bg: oklch(1.0 0 0 / 80%);
+  --glass-border: oklch(0.15 0.04 320 / 10%);
+  --glow-primary: oklch(0.52 0.25 345 / 15%);
+  --glow-accent: oklch(0.45 0.13 170 / 15%);
 }
 
 .dark {
@@ -103,13 +108,13 @@
   --secondary: oklch(0.18 0.06 325);
   --secondary-foreground: oklch(0.92 0.04 335);
   --muted: oklch(0.18 0.06 325);
-  --muted-foreground: oklch(0.65 0.06 335);
+  --muted-foreground: oklch(0.72 0.06 335);
   --accent: oklch(0.75 0.13 170);
   --accent-foreground: oklch(0.12 0.05 170);
   --destructive: oklch(0.70 0.22 30);
   --destructive-foreground: oklch(0.98 0.005 30);
-  --border: oklch(0.72 0.22 345 / 12%);
-  --input: oklch(0.72 0.22 345 / 12%);
+  --border: oklch(0.72 0.22 345 / 18%);
+  --input: oklch(0.72 0.22 345 / 18%);
   --ring: oklch(0.72 0.22 345);
   --chart-1: oklch(0.72 0.22 345);
   --chart-2: oklch(0.75 0.13 170);
@@ -122,13 +127,13 @@
   --sidebar-primary-foreground: oklch(0.98 0.005 345);
   --sidebar-accent: oklch(0.18 0.06 325);
   --sidebar-accent-foreground: oklch(0.92 0.04 335);
-  --sidebar-border: oklch(0.72 0.22 345 / 12%);
+  --sidebar-border: oklch(0.72 0.22 345 / 18%);
   --sidebar-ring: oklch(0.72 0.22 345);
-  --color-glass-bg: oklch(0.16 0.06 325 / 80%);
-  --color-glass-border: oklch(0.72 0.22 345 / 12%);
-  --color-glow-primary: oklch(0.72 0.22 345 / 30%);
-  --color-glow-accent: oklch(0.75 0.13 170 / 30%);
-  --color-success: oklch(0.78 0.17 150);
+  --success: oklch(0.78 0.17 150);
+  --glass-bg: oklch(0.16 0.06 325 / 90%);
+  --glass-border: oklch(0.72 0.22 345 / 20%);
+  --glow-primary: oklch(0.72 0.22 345 / 30%);
+  --glow-accent: oklch(0.75 0.13 170 / 30%);
 }
 
 @layer base {

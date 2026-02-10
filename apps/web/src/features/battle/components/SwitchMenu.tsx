@@ -29,7 +29,7 @@ const STATUS_COLORS: Record<string, string> = {
   slp: "text-muted-foreground bg-muted-foreground/10",
   frz: "text-cyan-400 bg-cyan-400/10",
   psn: "text-purple-500 bg-purple-500/10",
-  tox: "text-purple-600 bg-purple-600/10",
+  tox: "text-purple-600 dark:text-purple-400 bg-purple-600/10 dark:bg-purple-400/15",
 };
 
 export function SwitchMenu({ actions, onSwitch, onBack, className }: SwitchMenuProps) {

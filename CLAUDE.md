@@ -66,9 +66,9 @@ Presentation: ui, web
 ## Development Commands
 
 ```bash
-pnpm dev              # Next.js dev server (Turbopack)
-pnpm dev:mcp          # MCP server on port 3001
-pnpm dev:all          # Both concurrently
+pnpm dev              # Next.js + MCP server + dev proxy (all concurrently)
+pnpm dev:mcp          # MCP server only (port 3001)
+pnpm dev:proxy        # Dev proxy only
 pnpm test             # Vitest run (CI mode)
 pnpm test:watch       # Vitest watch mode
 pnpm test:coverage    # Vitest with V8 coverage
