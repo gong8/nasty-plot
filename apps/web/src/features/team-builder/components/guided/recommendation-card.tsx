@@ -1,22 +1,22 @@
-"use client";
+"use client"
 
-import { Check } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
-import { TypeBadge, PokemonSprite } from "@nasty-plot/ui";
-import type { PokemonType, RecommendationReason } from "@nasty-plot/core";
+import { Check } from "lucide-react"
+import { Card, CardContent } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { cn } from "@/lib/utils"
+import { TypeBadge, PokemonSprite } from "@nasty-plot/ui"
+import type { PokemonType, RecommendationReason } from "@nasty-plot/core"
 
 interface RecommendationCardProps {
-  pokemonId: string;
-  pokemonName: string;
-  types: PokemonType[];
-  num?: number;
-  score: number; // 0-100
-  reasons: RecommendationReason[];
-  onPick: () => void;
-  isDisabled?: boolean;
+  pokemonId: string
+  pokemonName: string
+  types: PokemonType[]
+  num?: number
+  score: number // 0-100
+  reasons: RecommendationReason[]
+  onPick: () => void
+  isDisabled?: boolean
 }
 
 const REASON_LABELS: Record<RecommendationReason["type"], string> = {
@@ -24,12 +24,12 @@ const REASON_LABELS: Record<RecommendationReason["type"], string> = {
   coverage: "Covers gaps",
   synergy: "Good synergy",
   meta: "Meta pick",
-};
+}
 
 function getScoreColor(score: number): string {
-  if (score > 70) return "bg-green-500";
-  if (score > 40) return "bg-yellow-500";
-  return "bg-red-500";
+  if (score > 70) return "bg-green-500"
+  if (score > 40) return "bg-yellow-500"
+  return "bg-red-500"
 }
 
 export function RecommendationCard({
@@ -42,7 +42,7 @@ export function RecommendationCard({
   onPick,
   isDisabled = false,
 }: RecommendationCardProps) {
-  const displayReasons = reasons.slice(0, 3);
+  const displayReasons = reasons.slice(0, 3)
 
   return (
     <Card
@@ -50,10 +50,10 @@ export function RecommendationCard({
         "transition-all",
         isDisabled
           ? "opacity-50 cursor-not-allowed"
-          : "hover:shadow-md hover:border-primary/50 cursor-pointer"
+          : "hover:shadow-md hover:border-primary/50 cursor-pointer",
       )}
       onClick={() => {
-        if (!isDisabled) onPick();
+        if (!isDisabled) onPick()
       }}
     >
       <CardContent className="flex items-center gap-4 p-4">
@@ -88,9 +88,7 @@ export function RecommendationCard({
                 style={{ width: `${Math.min(100, Math.max(0, score))}%` }}
               />
             </div>
-            <span className="text-[10px] text-muted-foreground tabular-nums shrink-0">
-              {score}
-            </span>
+            <span className="text-[10px] text-muted-foreground tabular-nums shrink-0">{score}</span>
           </div>
 
           {/* Reasons */}
@@ -114,8 +112,8 @@ export function RecommendationCard({
             variant="default"
             disabled={isDisabled}
             onClick={(e) => {
-              e.stopPropagation();
-              onPick();
+              e.stopPropagation()
+              onPick()
             }}
           >
             <Check className="h-4 w-4 mr-1" />
@@ -124,5 +122,5 @@ export function RecommendationCard({
         </div>
       </CardContent>
     </Card>
-  );
+  )
 }

@@ -1,44 +1,44 @@
-"use client";
+"use client"
 
-import { use, useEffect, useState, useCallback } from "react";
-import { useReplay } from "@/features/battle/hooks/use-replay";
-import { useReplayAnimations } from "@/features/battle/hooks/use-replay-animations";
-import { BattleField } from "@/features/battle/components/BattleField";
-import { BattleLog } from "@/features/battle/components/BattleLog";
-import { ReplayControls } from "@/features/battle/components/ReplayControls";
-import { WinProbabilityGraph } from "@/features/battle/components/WinProbabilityGraph";
-import { EvalBar } from "@/features/battle/components/EvalBar";
-import { CommentaryPanel } from "@/features/battle/components/CommentaryPanel";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Loader2 } from "lucide-react";
-import type { BattleFormat } from "@nasty-plot/battle-engine";
+import { use, useEffect, useState, useCallback } from "react"
+import { useReplay } from "@/features/battle/hooks/use-replay"
+import { useReplayAnimations } from "@/features/battle/hooks/use-replay-animations"
+import { BattleField } from "@/features/battle/components/BattleField"
+import { BattleLog } from "@/features/battle/components/BattleLog"
+import { ReplayControls } from "@/features/battle/components/ReplayControls"
+import { WinProbabilityGraph } from "@/features/battle/components/WinProbabilityGraph"
+import { EvalBar } from "@/features/battle/components/EvalBar"
+import { CommentaryPanel } from "@/features/battle/components/CommentaryPanel"
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
+import { Loader2 } from "lucide-react"
+import type { BattleFormat } from "@nasty-plot/battle-engine"
 
 interface BattleData {
-  id: string;
-  formatId: string;
-  gameType: string;
-  team1Name: string;
-  team2Name: string;
-  winnerId: string | null;
-  turnCount: number;
-  protocolLog: string;
-  commentary: string | null;
+  id: string
+  formatId: string
+  gameType: string
+  team1Name: string
+  team2Name: string
+  winnerId: string | null
+  turnCount: number
+  protocolLog: string
+  commentary: string | null
 }
 
 export default function ReplayPage({ params }: { params: Promise<{ battleId: string }> }) {
-  const { battleId } = use(params);
-  const [battleData, setBattleData] = useState<BattleData | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const { battleId } = use(params)
+  const [battleData, setBattleData] = useState<BattleData | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     fetch(`/api/battles/${battleId}/replay`)
       .then((res) => {
-        if (!res.ok) throw new Error("Battle not found");
-        return res.json();
+        if (!res.ok) throw new Error("Battle not found")
+        return res.json()
       })
       .then(setBattleData)
-      .catch((err) => setError(err.message));
-  }, [battleId]);
+      .catch((err) => setError(err.message))
+  }, [battleId])
 
   if (error) {
     return (
@@ -47,7 +47,7 @@ export default function ReplayPage({ params }: { params: Promise<{ battleId: str
           <p className="text-destructive">Error: {error}</p>
         </main>
       </>
-    );
+    )
   }
 
   if (!battleData) {
@@ -57,36 +57,35 @@ export default function ReplayPage({ params }: { params: Promise<{ battleId: str
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
         </main>
       </>
-    );
+    )
   }
 
   return (
     <main className="h-[calc(100vh-80px)]">
       <ReplayViewerContent battleData={battleData} />
     </main>
-  );
+  )
 }
 
 function ReplayViewerContent({ battleData }: { battleData: BattleData }) {
   const replay = useReplay({
     protocolLog: battleData.protocolLog,
     format: battleData.gameType as BattleFormat,
-  });
+  })
 
-  const animState = useReplayAnimations(
-    replay.currentFrame?.entries ?? [],
-    replay.currentIndex,
-  );
+  const animState = useReplayAnimations(replay.currentFrame?.entries ?? [], replay.currentIndex, {
+    speed: replay.speed,
+  })
 
   // Parse persisted commentary
   const [commentary, setCommentary] = useState<Record<number, string>>(() => {
-    if (!battleData.commentary) return {};
+    if (!battleData.commentary) return {}
     try {
-      return JSON.parse(battleData.commentary);
+      return JSON.parse(battleData.commentary)
     } catch {
-      return {};
+      return {}
     }
-  });
+  })
 
   const handleCommentaryGenerated = useCallback(
     (turn: number, text: string) => {
@@ -95,13 +94,13 @@ function ReplayViewerContent({ battleData }: { battleData: BattleData }) {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ turn, text }),
-      }).catch((err) => console.error("[Replay commentary persist]", err));
+      }).catch((err) => console.error("[Replay commentary persist]", err))
 
       // Update local state
-      setCommentary((prev) => ({ ...prev, [turn]: text }));
+      setCommentary((prev) => ({ ...prev, [turn]: text }))
     },
     [battleData.id],
-  );
+  )
 
   if (!replay.isReady || !replay.currentFrame) {
     return (
@@ -109,11 +108,11 @@ function ReplayViewerContent({ battleData }: { battleData: BattleData }) {
         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
         <span className="ml-2 text-muted-foreground">Loading replay...</span>
       </div>
-    );
+    )
   }
 
-  const allFrames = replay.getAllFrames();
-  const winProb = replay.currentFrame.winProbTeam1;
+  const allFrames = replay.getAllFrames()
+  const winProb = replay.currentFrame.winProbTeam1
 
   return (
     <div className="flex flex-col h-full">
@@ -141,9 +140,9 @@ function ReplayViewerContent({ battleData }: { battleData: BattleData }) {
           <BattleField
             state={replay.currentFrame.state}
             animationStates={animState.slotAnimations}
-            moveFlash={animState.moveFlash}
-            effectivenessFlash={animState.effectivenessFlash}
+            textMessage={animState.textMessage}
             damageNumbers={animState.damageNumbers}
+            textSpeed={replay.speed}
             className="max-h-full"
           />
         </div>
@@ -151,9 +150,15 @@ function ReplayViewerContent({ battleData }: { battleData: BattleData }) {
         {/* Tabbed sidebar */}
         <Tabs defaultValue="log" className="lg:flex-[3] flex-1 min-w-0 min-h-0">
           <TabsList className="w-full">
-            <TabsTrigger value="log" className="text-xs">Log</TabsTrigger>
-            <TabsTrigger value="graph" className="text-xs">Graph</TabsTrigger>
-            <TabsTrigger value="commentary" className="text-xs">Commentary</TabsTrigger>
+            <TabsTrigger value="log" className="text-xs">
+              Log
+            </TabsTrigger>
+            <TabsTrigger value="graph" className="text-xs">
+              Graph
+            </TabsTrigger>
+            <TabsTrigger value="commentary" className="text-xs">
+              Commentary
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="log" className="flex-1 min-h-0">
@@ -203,5 +208,5 @@ function ReplayViewerContent({ battleData }: { battleData: BattleData }) {
         />
       </div>
     </div>
-  );
+  )
 }

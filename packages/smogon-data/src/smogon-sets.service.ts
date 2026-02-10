@@ -1,32 +1,34 @@
-import { prisma } from "@nasty-plot/db";
-import { toId } from "@nasty-plot/core";
-import type { SmogonSetData, NatureName, PokemonType } from "@nasty-plot/core";
+import { prisma } from "@nasty-plot/db"
+import { toId } from "@nasty-plot/core"
+import type { SmogonSetData, NatureName, PokemonType } from "@nasty-plot/core"
 
 function buildSetsUrl(formatId: string): string {
-  return `https://data.pkmn.cc/sets/${formatId}.json`;
+  return `https://data.pkmn.cc/sets/${formatId}.json`
 }
 
 // Raw shape from pkmn.cc - fields can be arrays for slash options
 interface RawSetEntry {
-  ability: string | string[];
-  item: string | string[];
-  nature: string | string[];
-  teraType?: string | string[];
-  moves: (string | string[])[];
-  evs?: Record<string, number> | Record<string, number>[];
-  ivs?: Record<string, number> | Record<string, number>[];
+  ability: string | string[]
+  item: string | string[]
+  nature: string | string[]
+  teraType?: string | string[]
+  moves: (string | string[])[]
+  evs?: Record<string, number> | Record<string, number>[]
+  ivs?: Record<string, number> | Record<string, number>[]
 }
 
-type RawSetsJson = Record<string, Record<string, RawSetEntry>>;
+type RawSetsJson = Record<string, Record<string, RawSetEntry>>
 
 /** Take the first element if array, otherwise return the value as-is. */
 function firstOf(val: string | string[]): string {
-  return Array.isArray(val) ? val[0] : val;
+  return Array.isArray(val) ? val[0] : val
 }
 
 /** Take the first element if array of records, otherwise return the value as-is. */
-function firstRecord(val: Record<string, number> | Record<string, number>[]): Record<string, number> {
-  return Array.isArray(val) ? val[0] : val;
+function firstRecord(
+  val: Record<string, number> | Record<string, number>[],
+): Record<string, number> {
+  return Array.isArray(val) ? val[0] : val
 }
 
 /**
@@ -38,46 +40,44 @@ export async function fetchSmogonSets(
   formatId: string,
   options?: { pkmnSetsId?: string },
 ): Promise<void> {
-  const setsId = options?.pkmnSetsId ?? formatId;
-  const url = buildSetsUrl(setsId);
-  console.log(`[smogon-sets] Fetching ${url}`);
+  const setsId = options?.pkmnSetsId ?? formatId
+  const url = buildSetsUrl(setsId)
+  console.log(`[smogon-sets] Fetching ${url}`)
 
-  const res = await fetch(url);
+  const res = await fetch(url)
   if (!res.ok) {
-    throw new Error(
-      `Failed to fetch sets: ${res.status} ${res.statusText} (${url})`
-    );
+    throw new Error(`Failed to fetch sets: ${res.status} ${res.statusText} (${url})`)
   }
 
-  const json: RawSetsJson = await res.json();
-  let totalSets = 0;
-  let skipped = 0;
+  const json: RawSetsJson = await res.json()
+  let totalSets = 0
+  let skipped = 0
 
   for (const [pokemonName, sets] of Object.entries(json)) {
-    const pokemonId = toId(pokemonName);
+    const pokemonId = toId(pokemonName)
     if (!pokemonId || !sets || typeof sets !== "object") {
-      skipped++;
-      continue;
+      skipped++
+      continue
     }
 
     for (const [setName, setData] of Object.entries(sets)) {
       if (!setData || typeof setData !== "object") {
-        skipped++;
-        continue;
+        skipped++
+        continue
       }
 
-      const ability = firstOf(setData.ability ?? "");
-      const item = firstOf(setData.item ?? "");
-      const nature = firstOf(setData.nature ?? "Serious");
-      const teraType = setData.teraType ? firstOf(setData.teraType) : null;
+      const ability = firstOf(setData.ability ?? "")
+      const item = firstOf(setData.item ?? "")
+      const nature = firstOf(setData.nature ?? "Serious")
+      const teraType = setData.teraType ? firstOf(setData.teraType) : null
 
-      const movesJson = JSON.stringify(setData.moves ?? []);
-      const evsJson = JSON.stringify(firstRecord(setData.evs ?? {}));
-      const normalizedIvs = setData.ivs ? firstRecord(setData.ivs) : null;
+      const movesJson = JSON.stringify(setData.moves ?? [])
+      const evsJson = JSON.stringify(firstRecord(setData.evs ?? {}))
+      const normalizedIvs = setData.ivs ? firstRecord(setData.ivs) : null
       const ivsJson =
         normalizedIvs && Object.keys(normalizedIvs).length > 0
           ? JSON.stringify(normalizedIvs)
-          : null;
+          : null
 
       await prisma.smogonSet.upsert({
         where: {
@@ -104,9 +104,9 @@ export async function fetchSmogonSets(
           evs: evsJson,
           ivs: ivsJson,
         },
-      });
+      })
 
-      totalSets++;
+      totalSets++
     }
   }
 
@@ -127,11 +127,11 @@ export async function fetchSmogonSets(
       status: "success",
       message: `Fetched ${totalSets} sets${skipped > 0 ? ` (${skipped} entries skipped)` : ""}`,
     },
-  });
+  })
 
   console.log(
-    `[smogon-sets] Done: ${totalSets} sets saved for ${formatId}${skipped > 0 ? ` (${skipped} skipped)` : ""}`
-  );
+    `[smogon-sets] Done: ${totalSets} sets saved for ${formatId}${skipped > 0 ? ` (${skipped} skipped)` : ""}`,
+  )
 }
 
 /**
@@ -139,34 +139,34 @@ export async function fetchSmogonSets(
  * Handles malformed JSON gracefully by returning safe defaults.
  */
 function rowToSetData(row: {
-  pokemonId: string;
-  setName: string;
-  ability: string;
-  item: string;
-  nature: string;
-  teraType: string | null;
-  moves: string;
-  evs: string;
-  ivs: string | null;
+  pokemonId: string
+  setName: string
+  ability: string
+  item: string
+  nature: string
+  teraType: string | null
+  moves: string
+  evs: string
+  ivs: string | null
 }): SmogonSetData {
-  let moves: (string | string[])[];
-  let evs: Record<string, number>;
-  let ivs: Record<string, number> | undefined;
+  let moves: (string | string[])[]
+  let evs: Record<string, number>
+  let ivs: Record<string, number> | undefined
 
   try {
-    moves = JSON.parse(row.moves);
+    moves = JSON.parse(row.moves)
   } catch {
-    moves = [];
+    moves = []
   }
   try {
-    evs = JSON.parse(row.evs);
+    evs = JSON.parse(row.evs)
   } catch {
-    evs = {};
+    evs = {}
   }
   try {
-    ivs = row.ivs ? JSON.parse(row.ivs) : undefined;
+    ivs = row.ivs ? JSON.parse(row.ivs) : undefined
   } catch {
-    ivs = undefined;
+    ivs = undefined
   }
 
   return {
@@ -179,7 +179,7 @@ function rowToSetData(row: {
     moves,
     evs,
     ivs,
-  };
+  }
 }
 
 /**
@@ -187,33 +187,33 @@ function rowToSetData(row: {
  */
 export async function getSetsForPokemon(
   formatId: string,
-  pokemonId: string
+  pokemonId: string,
 ): Promise<SmogonSetData[]> {
   const rows = await prisma.smogonSet.findMany({
     where: { formatId, pokemonId },
-  });
+  })
 
-  return rows.map(rowToSetData);
+  return rows.map(rowToSetData)
 }
 
 /**
  * Get all sets for a format, grouped by pokemonId.
  */
 export async function getAllSetsForFormat(
-  formatId: string
+  formatId: string,
 ): Promise<Record<string, SmogonSetData[]>> {
   const rows = await prisma.smogonSet.findMany({
     where: { formatId },
-  });
+  })
 
-  const grouped: Record<string, SmogonSetData[]> = {};
+  const grouped: Record<string, SmogonSetData[]> = {}
   for (const row of rows) {
-    const data = rowToSetData(row);
+    const data = rowToSetData(row)
     if (!grouped[data.pokemonId]) {
-      grouped[data.pokemonId] = [];
+      grouped[data.pokemonId] = []
     }
-    grouped[data.pokemonId].push(data);
+    grouped[data.pokemonId].push(data)
   }
 
-  return grouped;
+  return grouped
 }

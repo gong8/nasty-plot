@@ -1,20 +1,20 @@
-"use client";
+"use client"
 
-import { use, useCallback, useState } from "react";
-import { useRouter } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Plus } from "lucide-react";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { use, useCallback, useState } from "react"
+import { useRouter } from "next/navigation"
+import { useQuery } from "@tanstack/react-query"
+import { ArrowLeft, Plus } from "lucide-react"
+import { Skeleton } from "@/components/ui/skeleton"
+import { Button } from "@/components/ui/button"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { useTeamBuilder } from "@/features/team-builder/hooks/use-team-builder";
+} from "@/components/ui/dialog"
+import { useTeamBuilder } from "@/features/team-builder/hooks/use-team-builder"
 import {
   useUpdateTeam,
   useDeleteTeam,
@@ -26,69 +26,60 @@ import {
   useLineageTree,
   useArchiveTeam,
   useMergeTeams,
-} from "@/features/teams/hooks/use-teams";
-import { TeamHeader } from "@/features/team-builder/components/team-header";
-import { TeamGrid } from "@/features/team-builder/components/team-grid";
-import { SlotEditor } from "@/features/team-builder/components/slot-editor";
-import { CoverageChart } from "@/features/analysis/components/coverage-chart";
-import { WeaknessHeatmap } from "@/features/analysis/components/weakness-heatmap";
-import { ThreatList } from "@/features/analysis/components/threat-list";
-import { SpeedTiers } from "@/features/analysis/components/speed-tiers";
-import { MatchupMatrix } from "@/features/damage-calc/components/matchup-matrix";
-import { RecommendationPanel } from "@/features/recommendations/components/recommendation-panel";
-import { MergeWizard } from "@/features/team-builder/components/merge-wizard";
-import { VersionPanel } from "@/features/team-builder/components/version-panel";
-import { OpponentSelector } from "@/features/damage-calc/components/opponent-selector";
-import type { TeamSlotInput, TeamAnalysis, MatchupMatrixEntry, MergeDecision } from "@nasty-plot/core";
+} from "@/features/teams/hooks/use-teams"
+import { TeamHeader } from "@/features/team-builder/components/team-header"
+import { TeamGrid } from "@/features/team-builder/components/team-grid"
+import { SlotEditor } from "@/features/team-builder/components/slot-editor"
+import { CoverageChart } from "@/features/analysis/components/coverage-chart"
+import { WeaknessHeatmap } from "@/features/analysis/components/weakness-heatmap"
+import { ThreatList } from "@/features/analysis/components/threat-list"
+import { SpeedTiers } from "@/features/analysis/components/speed-tiers"
+import { MatchupMatrix } from "@/features/damage-calc/components/matchup-matrix"
+import { RecommendationPanel } from "@/features/recommendations/components/recommendation-panel"
+import { MergeWizard } from "@/features/team-builder/components/merge-wizard"
+import { VersionPanel } from "@/features/team-builder/components/version-panel"
+import { OpponentSelector } from "@/features/damage-calc/components/opponent-selector"
+import type {
+  TeamSlotInput,
+  TeamAnalysis,
+  MatchupMatrixEntry,
+  MergeDecision,
+} from "@nasty-plot/core"
 
-export default function TeamEditorPage({
-  params,
-}: {
-  params: Promise<{ teamId: string }>;
-}) {
-  const { teamId } = use(params);
-  const router = useRouter();
-  const {
-    team,
-    isLoading,
-    error,
-    selectedSlot,
-    selectedSlotData,
-    selectSlot,
-    refetch,
-  } = useTeamBuilder(teamId);
+export default function TeamEditorPage({ params }: { params: Promise<{ teamId: string }> }) {
+  const { teamId } = use(params)
+  const router = useRouter()
+  const { team, isLoading, error, selectedSlot, selectedSlotData, selectSlot, refetch } =
+    useTeamBuilder(teamId)
 
-  const [addingNew, setAddingNew] = useState(false);
-  const [activeTab, setActiveTab] = useState("overview");
-  const [compareTargetId, setCompareTargetId] = useState<string | undefined>();
-  const [mergeOpen, setMergeOpen] = useState(false);
-  const [versionsOpen, setVersionsOpen] = useState(false);
-  const [customThreatIds, setCustomThreatIds] = useState<string[]>([]);
+  const [addingNew, setAddingNew] = useState(false)
+  const [activeTab, setActiveTab] = useState("overview")
+  const [compareTargetId, setCompareTargetId] = useState<string | undefined>()
+  const [mergeOpen, setMergeOpen] = useState(false)
+  const [versionsOpen, setVersionsOpen] = useState(false)
+  const [customThreatIds, setCustomThreatIds] = useState<string[]>([])
 
-  const updateTeamMut = useUpdateTeam();
-  const deleteTeamMut = useDeleteTeam();
-  const addSlotMut = useAddSlot();
-  const updateSlotMut = useUpdateSlot();
-  const removeSlotMut = useRemoveSlot();
-  const forkTeamMut = useForkTeam();
-  const archiveTeamMut = useArchiveTeam();
-  const mergeTeamsMut = useMergeTeams();
-  const lineageQuery = useLineageTree(teamId);
-  const compareQuery = useCompareTeams(
-    compareTargetId ? teamId : undefined,
-    compareTargetId,
-  );
+  const updateTeamMut = useUpdateTeam()
+  const deleteTeamMut = useDeleteTeam()
+  const addSlotMut = useAddSlot()
+  const updateSlotMut = useUpdateSlot()
+  const removeSlotMut = useRemoveSlot()
+  const forkTeamMut = useForkTeam()
+  const archiveTeamMut = useArchiveTeam()
+  const mergeTeamsMut = useMergeTeams()
+  const lineageQuery = useLineageTree(teamId)
+  const compareQuery = useCompareTeams(compareTargetId ? teamId : undefined, compareTargetId)
 
   // Fetch analysis data when analysis tab is selected and team has slots
   const analysisQuery = useQuery<{ data: TeamAnalysis }>({
     queryKey: ["team-analysis", teamId],
     queryFn: () =>
       fetch(`/api/teams/${teamId}/analysis`).then((r) => {
-        if (!r.ok) throw new Error("Failed to fetch analysis");
-        return r.json();
+        if (!r.ok) throw new Error("Failed to fetch analysis")
+        return r.json()
       }),
     enabled: activeTab === "analysis" && !!team && team.slots.length > 0,
-  });
+  })
 
   // Fetch matchup matrix when matchups tab is selected
   const matchupQuery = useQuery<{ data: MatchupMatrixEntry[][] }>({
@@ -103,120 +94,120 @@ export default function TeamEditorPage({
           ...(customThreatIds.length > 0 && { threatIds: customThreatIds }),
         }),
       }).then((r) => {
-        if (!r.ok) throw new Error("Failed to fetch matchup matrix");
-        return r.json();
+        if (!r.ok) throw new Error("Failed to fetch matchup matrix")
+        return r.json()
       }),
     enabled: activeTab === "matchups" && !!team && team.slots.length > 0,
-  });
+  })
 
   const handleFork = useCallback(
     async (options: { name: string; branchName?: string; notes?: string }) => {
       const forked = await forkTeamMut.mutateAsync({
         teamId,
         options,
-      });
-      router.push(`/teams/${forked.id}`);
+      })
+      router.push(`/teams/${forked.id}`)
     },
     [teamId, forkTeamMut, router],
-  );
+  )
 
   const handleArchive = useCallback(async () => {
-    await archiveTeamMut.mutateAsync(teamId);
-    router.push("/teams");
-  }, [teamId, archiveTeamMut, router]);
+    await archiveTeamMut.mutateAsync(teamId)
+    router.push("/teams")
+  }, [teamId, archiveTeamMut, router])
 
   const handleMerge = useCallback(
     async (
       decisions: MergeDecision[],
       options: { name: string; branchName?: string; notes?: string },
     ) => {
-      if (!compareTargetId) return;
+      if (!compareTargetId) return
       const merged = await mergeTeamsMut.mutateAsync({
         teamAId: teamId,
         teamBId: compareTargetId,
         decisions,
         options,
-      });
-      setMergeOpen(false);
-      router.push(`/teams/${merged.id}`);
+      })
+      setMergeOpen(false)
+      router.push(`/teams/${merged.id}`)
     },
     [teamId, compareTargetId, mergeTeamsMut, router],
-  );
+  )
 
   const handleUpdateName = useCallback(
     (name: string) => {
-      updateTeamMut.mutate({ teamId, data: { name } });
+      updateTeamMut.mutate({ teamId, data: { name } })
     },
-    [teamId, updateTeamMut]
-  );
+    [teamId, updateTeamMut],
+  )
 
   const handleDelete = useCallback(async () => {
-    await deleteTeamMut.mutateAsync(teamId);
-    router.push("/teams");
-  }, [teamId, deleteTeamMut, router]);
+    await deleteTeamMut.mutateAsync(teamId)
+    router.push("/teams")
+  }, [teamId, deleteTeamMut, router])
 
   const handleImport = useCallback(
     async (paste: string) => {
-      if (!team) return;
+      if (!team) return
       const res = await fetch(`/api/teams/${teamId}/import`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ paste }),
-      });
+      })
       if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(body.error || "Import failed");
+        const body = await res.json().catch(() => ({}))
+        throw new Error(body.error || "Import failed")
       }
-      await refetch();
+      await refetch()
     },
-    [team, teamId, refetch]
-  );
+    [team, teamId, refetch],
+  )
 
   const handleAddSlot = useCallback(() => {
-    setAddingNew(true);
-    selectSlot(null);
-  }, [selectSlot]);
+    setAddingNew(true)
+    selectSlot(null)
+  }, [selectSlot])
 
   const handleSaveSlot = useCallback(
     async (data: TeamSlotInput) => {
       if (addingNew) {
-        await addSlotMut.mutateAsync({ teamId, slot: data });
-        setAddingNew(false);
+        await addSlotMut.mutateAsync({ teamId, slot: data })
+        setAddingNew(false)
       } else if (selectedSlot !== null) {
         await updateSlotMut.mutateAsync({
           teamId,
           position: selectedSlot,
           data,
-        });
+        })
       }
     },
-    [teamId, addingNew, selectedSlot, addSlotMut, updateSlotMut]
-  );
+    [teamId, addingNew, selectedSlot, addSlotMut, updateSlotMut],
+  )
 
   const handleRemoveSlot = useCallback(async () => {
-    if (selectedSlot === null) return;
-    await removeSlotMut.mutateAsync({ teamId, position: selectedSlot });
-    selectSlot(null);
-  }, [teamId, selectedSlot, removeSlotMut, selectSlot]);
+    if (selectedSlot === null) return
+    await removeSlotMut.mutateAsync({ teamId, position: selectedSlot })
+    selectSlot(null)
+  }, [teamId, selectedSlot, removeSlotMut, selectSlot])
 
   const handleSelectSlot = useCallback(
     (position: number) => {
-      setAddingNew(false);
-      selectSlot(position);
+      setAddingNew(false)
+      selectSlot(position)
     },
-    [selectSlot]
-  );
+    [selectSlot],
+  )
 
-  const dialogOpen = selectedSlot !== null || addingNew;
+  const dialogOpen = selectedSlot !== null || addingNew
   const handleDialogClose = useCallback(
     (open: boolean) => {
       if (!open) {
-        selectSlot(null);
-        setAddingNew(false);
+        selectSlot(null)
+        setAddingNew(false)
       }
     },
-    [selectSlot]
-  );
+    [selectSlot],
+  )
 
   if (isLoading) {
     return (
@@ -228,7 +219,7 @@ export default function TeamEditorPage({
           ))}
         </div>
       </div>
-    );
+    )
   }
 
   if (error || !team) {
@@ -241,11 +232,11 @@ export default function TeamEditorPage({
           </p>
         </div>
       </div>
-    );
+    )
   }
 
-  const nextPosition = team.slots.length + 1;
-  const analysis = analysisQuery.data?.data;
+  const nextPosition = team.slots.length + 1
+  const analysis = analysisQuery.data?.data
 
   return (
     <div className="container mx-auto max-w-6xl py-8 px-4 space-y-6">
@@ -322,10 +313,7 @@ export default function TeamEditorPage({
             onSelectionChange={setCustomThreatIds}
             formatId={team.formatId}
           />
-          <MatchupMatrix
-            matrix={matchupQuery.data?.data}
-            isLoading={matchupQuery.isLoading}
-          />
+          <MatchupMatrix matrix={matchupQuery.data?.data} isLoading={matchupQuery.isLoading} />
         </TabsContent>
         <TabsContent value="analysis" className="py-4">
           {team.slots.length === 0 ? (
@@ -366,13 +354,9 @@ export default function TeamEditorPage({
       <Dialog open={dialogOpen} onOpenChange={handleDialogClose}>
         <DialogContent className="sm:max-w-[90vw] sm:h-[90vh] flex flex-col overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>
-              {addingNew ? "Add Pokemon" : "Edit Pokemon"}
-            </DialogTitle>
+            <DialogTitle>{addingNew ? "Add Pokemon" : "Edit Pokemon"}</DialogTitle>
             <DialogDescription>
-              {addingNew
-                ? "Search and add a Pokemon to your team"
-                : "Edit this Pokemon's set"}
+              {addingNew ? "Search and add a Pokemon to your team" : "Edit this Pokemon's set"}
             </DialogDescription>
           </DialogHeader>
           <div className="flex-1 overflow-hidden">
@@ -399,7 +383,6 @@ export default function TeamEditorPage({
           isLoading={mergeTeamsMut.isPending}
         />
       )}
-
     </div>
-  );
+  )
 }

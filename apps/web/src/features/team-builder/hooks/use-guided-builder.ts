@@ -1,129 +1,133 @@
-"use client";
+"use client"
 
-import { useState, useCallback, useMemo, useEffect, useRef } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useState, useCallback, useMemo, useEffect, useRef } from "react"
+import { useQuery } from "@tanstack/react-query"
 import {
-  DEFAULT_EVS, DEFAULT_IVS,
-  type UsageStatsEntry, type PaginatedResponse, type SmogonSetData,
-  type ApiResponse, type TeamSlotData, type NatureName,
-  type PokemonType, type StatsTable, type TeamAnalysis,
+  DEFAULT_EVS,
+  DEFAULT_IVS,
+  type UsageStatsEntry,
+  type PaginatedResponse,
+  type SmogonSetData,
+  type ApiResponse,
+  type TeamSlotData,
+  type NatureName,
+  type PokemonType,
+  type StatsTable,
+  type TeamAnalysis,
   type Recommendation,
-} from "@nasty-plot/core";
+} from "@nasty-plot/core"
 
 // --- Types ---
 
-export type GuidedStep = "start" | "lead" | "build" | "sets" | "review";
+export type GuidedStep = "start" | "lead" | "build" | "sets" | "review"
 
 export interface GuidedPokemonPick {
-  pokemonId: string;
-  pokemonName: string;
-  types: PokemonType[];
-  usagePercent?: number;
-  num?: number;
+  pokemonId: string
+  pokemonName: string
+  types: PokemonType[]
+  usagePercent?: number
+  num?: number
 }
 
 export interface SampleTeamEntry {
-  id: string;
-  name: string;
-  formatId: string;
-  archetype?: string;
-  source?: string;
-  sourceUrl?: string;
-  paste: string;
-  pokemonIds: string[];
+  id: string
+  name: string
+  formatId: string
+  archetype?: string
+  source?: string
+  sourceUrl?: string
+  paste: string
+  pokemonIds: string[]
 }
 
-const STEP_ORDER: GuidedStep[] = ["start", "lead", "build", "sets", "review"];
+const STEP_ORDER: GuidedStep[] = ["start", "lead", "build", "sets", "review"]
 
-const DRAFT_STORAGE_KEY = "nasty-plot-guided-draft";
+const DRAFT_STORAGE_KEY = "nasty-plot-guided-draft"
 
 interface DraftState {
-  teamId: string;
-  step: GuidedStep;
-  slots: Partial<TeamSlotData>[];
-  currentBuildSlot: number;
-  startedFromSample: boolean;
+  teamId: string
+  step: GuidedStep
+  slots: Partial<TeamSlotData>[]
+  currentBuildSlot: number
+  startedFromSample: boolean
 }
 
 // --- Fetchers ---
 
 async function fetchUsage(formatId: string, limit: number): Promise<UsageStatsEntry[]> {
-  const res = await fetch(`/api/formats/${formatId}/usage?limit=${limit}`);
-  if (!res.ok) throw new Error("Failed to fetch usage stats");
-  const json: PaginatedResponse<UsageStatsEntry> = await res.json();
-  return json.data;
+  const res = await fetch(`/api/formats/${formatId}/usage?limit=${limit}`)
+  if (!res.ok) throw new Error("Failed to fetch usage stats")
+  const json: PaginatedResponse<UsageStatsEntry> = await res.json()
+  return json.data
 }
 
 async function fetchSets(pokemonId: string, format: string): Promise<SmogonSetData[]> {
-  const res = await fetch(`/api/pokemon/${pokemonId}/sets?format=${format}`);
-  if (!res.ok) return [];
-  const json: ApiResponse<SmogonSetData[]> = await res.json();
-  return json.data;
+  const res = await fetch(`/api/pokemon/${pokemonId}/sets?format=${format}`)
+  if (!res.ok) return []
+  const json: ApiResponse<SmogonSetData[]> = await res.json()
+  return json.data
 }
 
-async function fetchRecommendations(
-  teamId: string,
-  limit: number = 5,
-): Promise<Recommendation[]> {
+async function fetchRecommendations(teamId: string, limit: number = 5): Promise<Recommendation[]> {
   const res = await fetch("/api/recommend", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ teamId, limit }),
-  });
-  if (!res.ok) return [];
-  const json: ApiResponse<Recommendation[]> = await res.json();
-  return json.data;
+  })
+  if (!res.ok) return []
+  const json: ApiResponse<Recommendation[]> = await res.json()
+  return json.data
 }
 
 async function fetchAnalysis(teamId: string): Promise<TeamAnalysis | null> {
-  const res = await fetch(`/api/teams/${teamId}/analysis`);
-  if (!res.ok) return null;
-  const json: ApiResponse<TeamAnalysis> = await res.json();
-  return json.data;
+  const res = await fetch(`/api/teams/${teamId}/analysis`)
+  if (!res.ok) return null
+  const json: ApiResponse<TeamAnalysis> = await res.json()
+  return json.data
 }
 
 async function fetchSampleTeams(formatId: string): Promise<SampleTeamEntry[]> {
-  const res = await fetch(`/api/sample-teams?formatId=${encodeURIComponent(formatId)}`);
-  if (!res.ok) return [];
-  return res.json();
+  const res = await fetch(`/api/sample-teams?formatId=${encodeURIComponent(formatId)}`)
+  if (!res.ok) return []
+  return res.json()
 }
 
 // --- Hook ---
 
 export function useGuidedBuilder(teamId: string, formatId: string) {
   // --- Core state ---
-  const [step, setStep] = useState<GuidedStep>("start");
-  const [slots, setSlots] = useState<Partial<TeamSlotData>[]>([]);
-  const [currentBuildSlot, setCurrentBuildSlot] = useState(2); // 2-6 for build phase
-  const [startedFromSample, setStartedFromSample] = useState(false);
-  const [isRestoringDraft, setIsRestoringDraft] = useState(true);
+  const [step, setStep] = useState<GuidedStep>("start")
+  const [slots, setSlots] = useState<Partial<TeamSlotData>[]>([])
+  const [currentBuildSlot, setCurrentBuildSlot] = useState(2) // 2-6 for build phase
+  const [startedFromSample, setStartedFromSample] = useState(false)
+  const [isRestoringDraft, setIsRestoringDraft] = useState(true)
 
   // --- Draft persistence ---
 
   // Restore draft on mount
   useEffect(() => {
     try {
-      const stored = localStorage.getItem(DRAFT_STORAGE_KEY);
+      const stored = localStorage.getItem(DRAFT_STORAGE_KEY)
       if (stored) {
-        const draft: DraftState = JSON.parse(stored);
+        const draft: DraftState = JSON.parse(stored)
         if (draft.teamId === teamId) {
-          setStep(draft.step);
-          setSlots(draft.slots);
-          setCurrentBuildSlot(draft.currentBuildSlot);
-          setStartedFromSample(draft.startedFromSample);
+          setStep(draft.step)
+          setSlots(draft.slots)
+          setCurrentBuildSlot(draft.currentBuildSlot)
+          setStartedFromSample(draft.startedFromSample)
         }
       }
     } catch {
       // Ignore parse errors
     }
-    setIsRestoringDraft(false);
-  }, [teamId]);
+    setIsRestoringDraft(false)
+  }, [teamId])
 
   // Save draft on state changes
-  const saveDraftRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const saveDraftRef = useRef<ReturnType<typeof setTimeout>>(undefined)
   useEffect(() => {
-    if (isRestoringDraft) return;
-    clearTimeout(saveDraftRef.current);
+    if (isRestoringDraft) return
+    clearTimeout(saveDraftRef.current)
     saveDraftRef.current = setTimeout(() => {
       const draft: DraftState = {
         teamId,
@@ -131,19 +135,19 @@ export function useGuidedBuilder(teamId: string, formatId: string) {
         slots,
         currentBuildSlot,
         startedFromSample,
-      };
+      }
       try {
-        localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(draft));
+        localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(draft))
       } catch {
         // localStorage full or unavailable
       }
-    }, 500);
-    return () => clearTimeout(saveDraftRef.current);
-  }, [teamId, step, slots, currentBuildSlot, startedFromSample, isRestoringDraft]);
+    }, 500)
+    return () => clearTimeout(saveDraftRef.current)
+  }, [teamId, step, slots, currentBuildSlot, startedFromSample, isRestoringDraft])
 
   const clearDraft = useCallback(() => {
-    localStorage.removeItem(DRAFT_STORAGE_KEY);
-  }, []);
+    localStorage.removeItem(DRAFT_STORAGE_KEY)
+  }, [])
 
   // --- Data fetching ---
 
@@ -152,77 +156,74 @@ export function useGuidedBuilder(teamId: string, formatId: string) {
     queryKey: ["guided-usage", formatId],
     queryFn: () => fetchUsage(formatId, 50),
     enabled: !!formatId,
-  });
+  })
 
   // Sample teams for the format
   const sampleTeamsQuery = useQuery({
     queryKey: ["guided-sample-teams", formatId],
     queryFn: () => fetchSampleTeams(formatId),
     enabled: !!formatId && step === "start",
-  });
+  })
 
   // Recommendations for the current team (updates as slots are added)
-  const filledSlotCount = slots.filter((s) => s.pokemonId).length;
+  const filledSlotCount = slots.filter((s) => s.pokemonId).length
   const slotFingerprint = slots
     .filter((s) => s.pokemonId)
     .map((s) => s.pokemonId!)
     .sort()
-    .join(",");
+    .join(",")
   const recommendationsQuery = useQuery({
     queryKey: ["guided-recommendations", teamId, slotFingerprint],
     queryFn: () => fetchRecommendations(teamId, 5),
     enabled: !!teamId && filledSlotCount > 0 && (step === "build" || step === "lead"),
-  });
+  })
 
   // Real-time analysis
   const analysisQuery = useQuery({
     queryKey: ["guided-analysis", teamId, slotFingerprint],
     queryFn: () => fetchAnalysis(teamId),
     enabled: !!teamId && filledSlotCount > 0,
-  });
+  })
 
   // --- Navigation ---
 
   const goToStep = useCallback((newStep: GuidedStep) => {
-    setStep(newStep);
-  }, []);
+    setStep(newStep)
+  }, [])
 
   const nextStep = useCallback(() => {
     setStep((current) => {
-      const idx = STEP_ORDER.indexOf(current);
-      if (idx < STEP_ORDER.length - 1) return STEP_ORDER[idx + 1];
-      return current;
-    });
-  }, []);
+      const idx = STEP_ORDER.indexOf(current)
+      if (idx < STEP_ORDER.length - 1) return STEP_ORDER[idx + 1]
+      return current
+    })
+  }, [])
 
   const prevStep = useCallback(() => {
     setStep((current) => {
-      const idx = STEP_ORDER.indexOf(current);
-      if (idx > 0) return STEP_ORDER[idx - 1];
-      return current;
-    });
-  }, []);
+      const idx = STEP_ORDER.indexOf(current)
+      if (idx > 0) return STEP_ORDER[idx - 1]
+      return current
+    })
+  }, [])
 
-  const stepIndex = STEP_ORDER.indexOf(step);
+  const stepIndex = STEP_ORDER.indexOf(step)
 
   // Build phase sub-navigation
   const nextBuildSlot = useCallback(() => {
-    setCurrentBuildSlot((prev) => Math.min(prev + 1, 6));
-  }, []);
+    setCurrentBuildSlot((prev) => Math.min(prev + 1, 6))
+  }, [])
 
   const prevBuildSlot = useCallback(() => {
-    setCurrentBuildSlot((prev) => Math.max(prev - 1, 2));
-  }, []);
+    setCurrentBuildSlot((prev) => Math.max(prev - 1, 2))
+  }, [])
 
   // --- Slot management ---
 
-  const addSlotPick = useCallback((
-    position: number,
-    pick: GuidedPokemonPick,
-  ) => {
+  const addSlotPick = useCallback((position: number, pick: GuidedPokemonPick) => {
     setSlots((prev) => {
       // Remove any existing slot at this position
-      const filtered = prev.filter((s) => s.position !== position);
+      const filtered = prev.filter((s) => s.position !== position)
       const newSlot: Partial<TeamSlotData> = {
         position,
         pokemonId: pick.pokemonId,
@@ -233,64 +234,57 @@ export function useGuidedBuilder(teamId: string, formatId: string) {
         moves: [""] as TeamSlotData["moves"],
         evs: { ...DEFAULT_EVS } as StatsTable,
         ivs: { ...DEFAULT_IVS } as StatsTable,
-      };
-      return [...filtered, newSlot].sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
-    });
-  }, []);
+      }
+      return [...filtered, newSlot].sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
+    })
+  }, [])
 
   const removeSlot = useCallback((position: number) => {
-    setSlots((prev) => prev.filter((s) => s.position !== position));
-  }, []);
+    setSlots((prev) => prev.filter((s) => s.position !== position))
+  }, [])
 
   const updateSlot = useCallback((position: number, updates: Partial<TeamSlotData>) => {
     setSlots((prev) =>
-      prev.map((slot) =>
-        slot.position === position ? { ...slot, ...updates } : slot
-      )
-    );
-  }, []);
+      prev.map((slot) => (slot.position === position ? { ...slot, ...updates } : slot)),
+    )
+  }, [])
 
   // --- Set application ---
 
   const applySet = useCallback(
     async (position: number, pokemonId: string) => {
       try {
-        const sets = await fetchSets(pokemonId, formatId);
-        if (sets.length === 0) return null;
+        const sets = await fetchSets(pokemonId, formatId)
+        if (sets.length === 0) return null
 
-        const set = sets[0]; // Most popular set
-        const moves = set.moves.map((m) => (Array.isArray(m) ? m[0] : m));
+        const set = sets[0] // Most popular set
+        const moves = set.moves.map((m) => (Array.isArray(m) ? m[0] : m))
 
         const updates: Partial<TeamSlotData> = {
           ability: set.ability,
           item: set.item,
           nature: set.nature,
           teraType: set.teraType,
-          moves: [
-            moves[0] ?? "",
-            moves[1],
-            moves[2],
-            moves[3],
-          ] as TeamSlotData["moves"],
+          moves: [moves[0] ?? "", moves[1], moves[2], moves[3]] as TeamSlotData["moves"],
           evs: { ...DEFAULT_EVS, ...set.evs } as StatsTable,
           ivs: { ...DEFAULT_IVS, ...(set.ivs ?? {}) } as StatsTable,
-        };
+        }
 
-        updateSlot(position, updates);
-        return set;
+        updateSlot(position, updates)
+        return set
       } catch {
-        return null;
+        return null
       }
     },
-    [formatId, updateSlot]
-  );
+    [formatId, updateSlot],
+  )
 
   const applyAllSets = useCallback(async () => {
     const promises = slots
       .filter((s) => s.pokemonId && !s.ability) // Only apply if no ability set yet
-      .map((s) => applySet(s.position!, s.pokemonId!));
-    await Promise.allSettled(promises);
-  }, [slots, applySet]);
+      .map((s) => applySet(s.position!, s.pokemonId!))
+    await Promise.allSettled(promises)
+  }, [slots, applySet])
 
   // --- Sample team import ---
 
@@ -307,89 +301,82 @@ export function useGuidedBuilder(teamId: string, formatId: string) {
       moves: [""] as TeamSlotData["moves"],
       evs: { ...DEFAULT_EVS } as StatsTable,
       ivs: { ...DEFAULT_IVS } as StatsTable,
-    }));
-    setSlots(newSlots);
-    setStartedFromSample(true);
-    setStep("sets"); // Jump directly to set customization
-  }, []);
+    }))
+    setSlots(newSlots)
+    setStartedFromSample(true)
+    setStep("sets") // Jump directly to set customization
+  }, [])
 
   // --- Start paths ---
 
   const startFromScratch = useCallback(() => {
-    setSlots([]);
-    setStartedFromSample(false);
-    setStep("lead");
-  }, []);
+    setSlots([])
+    setStartedFromSample(false)
+    setStep("lead")
+  }, [])
 
   // --- Derived state ---
 
-  const filledSlots = useMemo(
-    () => slots.filter((s) => s.pokemonId),
-    [slots]
-  );
+  const filledSlots = useMemo(() => slots.filter((s) => s.pokemonId), [slots])
 
-  const allSelectedIds = useMemo(
-    () => new Set(filledSlots.map((s) => s.pokemonId!)),
-    [filledSlots]
-  );
+  const allSelectedIds = useMemo(() => new Set(filledSlots.map((s) => s.pokemonId!)), [filledSlots])
 
   const typeCoverage = useMemo(() => {
-    const types = filledSlots
-      .flatMap((s) => {
-        // Use types from usage data if available
-        const usage = usageQuery.data?.find((u) => u.pokemonId === s.pokemonId);
-        return usage?.types ?? [];
-      });
-    return [...new Set(types)];
-  }, [filledSlots, usageQuery.data]);
+    const types = filledSlots.flatMap((s) => {
+      // Use types from usage data if available
+      const usage = usageQuery.data?.find((u) => u.pokemonId === s.pokemonId)
+      return usage?.types ?? []
+    })
+    return [...new Set(types)]
+  }, [filledSlots, usageQuery.data])
 
   // --- Validation ---
 
   const validationErrors = useMemo(() => {
-    const errors: string[] = [];
-    const warnings: string[] = [];
+    const errors: string[] = []
+    const warnings: string[] = []
 
     if (filledSlots.length === 0) {
-      errors.push("Your team has no Pokemon. Add at least one to save.");
-      return { errors, warnings, isValid: false };
+      errors.push("Your team has no Pokemon. Add at least one to save.")
+      return { errors, warnings, isValid: false }
     }
 
     // Check duplicates
-    const ids = filledSlots.map((s) => s.pokemonId);
-    const duplicates = ids.filter((id, i) => ids.indexOf(id) !== i);
+    const ids = filledSlots.map((s) => s.pokemonId)
+    const duplicates = ids.filter((id, i) => ids.indexOf(id) !== i)
     if (duplicates.length > 0) {
-      errors.push(`Duplicate species: ${[...new Set(duplicates)].join(", ")}`);
+      errors.push(`Duplicate species: ${[...new Set(duplicates)].join(", ")}`)
     }
 
     // Check for empty moves
     filledSlots.forEach((slot) => {
-      const hasMove = slot.moves?.some((m) => m && m.trim());
+      const hasMove = slot.moves?.some((m) => m && m.trim())
       if (!hasMove) {
-        warnings.push(`No moves set for ${slot.pokemonId}`);
+        warnings.push(`No moves set for ${slot.pokemonId}`)
       }
-    });
+    })
 
     // Check for missing abilities
     filledSlots.forEach((slot) => {
       if (!slot.ability) {
-        warnings.push(`No ability set for ${slot.pokemonId}`);
+        warnings.push(`No ability set for ${slot.pokemonId}`)
       }
-    });
+    })
 
     if (filledSlots.length < 6) {
-      warnings.push(`Team has only ${filledSlots.length}/6 Pokemon`);
+      warnings.push(`Team has only ${filledSlots.length}/6 Pokemon`)
     }
 
-    return { errors, warnings, isValid: errors.length === 0 };
-  }, [filledSlots]);
+    return { errors, warnings, isValid: errors.length === 0 }
+  }, [filledSlots])
 
   // --- Context for chat ---
 
   const chatContext = useMemo(() => {
     const slotSummaries = filledSlots.map((s) => {
-      const movesStr = s.moves?.filter(Boolean).join(", ") || "No moves";
-      return `${s.pokemonId} (${s.ability || "no ability"}, ${s.item || "no item"}) - ${movesStr}`;
-    });
+      const movesStr = s.moves?.filter(Boolean).join(", ") || "No moves"
+      return `${s.pokemonId} (${s.ability || "no ability"}, ${s.item || "no item"}) - ${movesStr}`
+    })
 
     return {
       step,
@@ -397,8 +384,8 @@ export function useGuidedBuilder(teamId: string, formatId: string) {
       currentBuildSlot,
       slotSummaries,
       formatId,
-    };
-  }, [step, filledSlots, currentBuildSlot, formatId]);
+    }
+  }, [step, filledSlots, currentBuildSlot, formatId])
 
   return {
     // State
@@ -443,5 +430,5 @@ export function useGuidedBuilder(teamId: string, formatId: string) {
     importSampleTeam,
     startFromScratch,
     clearDraft,
-  };
+  }
 }

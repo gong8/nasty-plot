@@ -1,17 +1,9 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import {
-  HeuristicAI,
-  MCTSAI,
-  createInitialState,
-} from "@nasty-plot/battle-engine";
-import type {
-  BattleState,
-  BattleActionSet,
-  PredictedSet,
-} from "@nasty-plot/battle-engine";
+import { describe, it, expect, vi, beforeEach } from "vitest"
+import { HeuristicAI, MCTSAI, createInitialState } from "@nasty-plot/battle-engine"
+import type { BattleState, BattleActionSet, PredictedSet } from "@nasty-plot/battle-engine"
 
 function makeState(): BattleState {
-  const state = createInitialState("test-predictor", "singles");
+  const state = createInitialState("test-predictor", "singles")
 
   state.sides.p1.active = [
     {
@@ -41,7 +33,7 @@ function makeState(): BattleState {
       },
       volatiles: [],
     },
-  ];
+  ]
 
   state.sides.p2.active = [
     {
@@ -71,11 +63,11 @@ function makeState(): BattleState {
       },
       volatiles: [],
     },
-  ];
+  ]
 
-  state.sides.p2.team = [state.sides.p2.active[0]!];
+  state.sides.p2.team = [state.sides.p2.active[0]!]
 
-  return state;
+  return state
 }
 
 function makeActions(): BattleActionSet {
@@ -130,7 +122,7 @@ function makeActions(): BattleActionSet {
       },
     ],
     forceSwitch: false,
-  };
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -139,8 +131,8 @@ function makeActions(): BattleActionSet {
 
 describe("BattleState opponentPredictions", () => {
   it("can store predictions on state", () => {
-    const state = makeState();
-    expect(state.opponentPredictions).toBeUndefined();
+    const state = makeState()
+    expect(state.opponentPredictions).toBeUndefined()
 
     const predictions: Record<string, PredictedSet> = {
       garchomp: {
@@ -150,29 +142,29 @@ describe("BattleState opponentPredictions", () => {
         predictedAbility: "Rough Skin",
         confidence: 0.8,
       },
-    };
-    state.opponentPredictions = predictions;
+    }
+    state.opponentPredictions = predictions
 
-    expect(state.opponentPredictions).toBeDefined();
-    expect(state.opponentPredictions!["garchomp"].predictedMoves).toHaveLength(4);
-    expect(state.opponentPredictions!["garchomp"].confidence).toBe(0.8);
-  });
+    expect(state.opponentPredictions).toBeDefined()
+    expect(state.opponentPredictions!["garchomp"].predictedMoves).toHaveLength(4)
+    expect(state.opponentPredictions!["garchomp"].confidence).toBe(0.8)
+  })
 
   it("predictions are optional and default to undefined", () => {
-    const state = createInitialState("test", "singles");
-    expect(state.opponentPredictions).toBeUndefined();
-  });
-});
+    const state = createInitialState("test", "singles")
+    expect(state.opponentPredictions).toBeUndefined()
+  })
+})
 
 // ---------------------------------------------------------------------------
 // HeuristicAI with predictions
 // ---------------------------------------------------------------------------
 
 describe("HeuristicAI with opponentPredictions", () => {
-  const ai = new HeuristicAI();
+  const ai = new HeuristicAI()
 
   it("factors predicted moves into switch scoring", async () => {
-    const state = makeState();
+    const state = makeState()
 
     // Set up a bad matchup so switches are considered
     // p2 active: Weavile (Dark/Ice), p1 active: Blaziken (Fire/Fighting)
@@ -204,7 +196,7 @@ describe("HeuristicAI with opponentPredictions", () => {
         },
         volatiles: [],
       },
-    ];
+    ]
     state.sides.p1.active = [
       {
         speciesId: "blaziken",
@@ -233,7 +225,7 @@ describe("HeuristicAI with opponentPredictions", () => {
         },
         volatiles: [],
       },
-    ];
+    ]
 
     // Predictions for Blaziken (opponent) include Ice Punch which would hurt Dragon types
     state.opponentPredictions = {
@@ -244,7 +236,7 @@ describe("HeuristicAI with opponentPredictions", () => {
         predictedAbility: "Speed Boost",
         confidence: 0.9,
       },
-    };
+    }
 
     // Switch targets: Dragonite (Dragon/Flying, weak to Ice) and Toxapex (Poison/Water, resists Ice)
     state.sides.p2.team = [
@@ -303,7 +295,7 @@ describe("HeuristicAI with opponentPredictions", () => {
         },
         volatiles: [],
       },
-    ];
+    ]
 
     const actions: BattleActionSet = {
       moves: [
@@ -343,34 +335,34 @@ describe("HeuristicAI with opponentPredictions", () => {
         },
       ],
       forceSwitch: false,
-    };
+    }
 
-    const result = await ai.chooseAction(state, actions);
+    const result = await ai.chooseAction(state, actions)
     // The AI should return a valid action
-    expect(result.type).toMatch(/^(move|switch)$/);
-  });
+    expect(result.type).toMatch(/^(move|switch)$/)
+  })
 
   it("works normally without opponentPredictions", async () => {
-    const state = makeState();
+    const state = makeState()
     // No opponentPredictions set
-    expect(state.opponentPredictions).toBeUndefined();
+    expect(state.opponentPredictions).toBeUndefined()
 
-    const actions = makeActions();
-    const result = await ai.chooseAction(state, actions);
-    expect(result.type).toMatch(/^(move|switch)$/);
-  });
+    const actions = makeActions()
+    const result = await ai.chooseAction(state, actions)
+    expect(result.type).toMatch(/^(move|switch)$/)
+  })
 
   it("handles empty predictions gracefully", async () => {
-    const state = makeState();
-    state.opponentPredictions = {};
+    const state = makeState()
+    state.opponentPredictions = {}
 
-    const actions = makeActions();
-    const result = await ai.chooseAction(state, actions);
-    expect(result.type).toMatch(/^(move|switch)$/);
-  });
+    const actions = makeActions()
+    const result = await ai.chooseAction(state, actions)
+    expect(result.type).toMatch(/^(move|switch)$/)
+  })
 
   it("penalizes switches into predicted SE coverage moves on force switch", async () => {
-    const state = makeState();
+    const state = makeState()
 
     // p1 active: Garchomp with predicted Ice Beam (4x SE vs Dragonite)
     state.opponentPredictions = {
@@ -381,7 +373,7 @@ describe("HeuristicAI with opponentPredictions", () => {
         predictedAbility: "Rough Skin",
         confidence: 0.95,
       },
-    };
+    }
 
     state.sides.p2.team = [
       state.sides.p2.active[0]!,
@@ -439,7 +431,7 @@ describe("HeuristicAI with opponentPredictions", () => {
         },
         volatiles: [],
       },
-    ];
+    ]
 
     const actions: BattleActionSet = {
       moves: [],
@@ -465,24 +457,24 @@ describe("HeuristicAI with opponentPredictions", () => {
         },
       ],
       forceSwitch: true,
-    };
+    }
 
     // Run multiple times to check the AI consistently prefers Toxapex
     // (which resists both Earthquake and is not weak to Ice Beam)
-    let toxapexCount = 0;
-    const iterations = 20;
+    let toxapexCount = 0
+    const iterations = 20
     for (let i = 0; i < iterations; i++) {
-      const result = await ai.chooseAction(state, actions);
-      expect(result.type).toBe("switch");
+      const result = await ai.chooseAction(state, actions)
+      expect(result.type).toBe("switch")
       if ((result as { pokemonIndex: number }).pokemonIndex === 3) {
-        toxapexCount++;
+        toxapexCount++
       }
     }
     // Toxapex should be chosen most of the time since Dragonite is penalized
     // for being weak to predicted Ice Beam (4x) and Dragon Claw (2x)
-    expect(toxapexCount).toBeGreaterThan(iterations / 2);
-  });
-});
+    expect(toxapexCount).toBeGreaterThan(iterations / 2)
+  })
+})
 
 // ---------------------------------------------------------------------------
 // MCTS AI with predictions
@@ -490,8 +482,8 @@ describe("HeuristicAI with opponentPredictions", () => {
 
 describe("MCTSAI with opponentPredictions", () => {
   it("stores predictions from state and falls back to heuristic without battle state", async () => {
-    const ai = new MCTSAI();
-    const state = makeState();
+    const ai = new MCTSAI()
+    const state = makeState()
 
     state.opponentPredictions = {
       garchomp: {
@@ -499,31 +491,31 @@ describe("MCTSAI with opponentPredictions", () => {
         predictedMoves: ["Earthquake", "Outrage"],
         confidence: 0.7,
       },
-    };
+    }
 
-    const actions = makeActions();
+    const actions = makeActions()
     // Without setBattleState, MCTS falls back to HeuristicAI
-    const result = await ai.chooseAction(state, actions);
-    expect(result.type).toMatch(/^(move|switch)$/);
-  });
+    const result = await ai.chooseAction(state, actions)
+    expect(result.type).toMatch(/^(move|switch)$/)
+  })
 
   it("works without predictions", async () => {
-    const ai = new MCTSAI();
-    const state = makeState();
+    const ai = new MCTSAI()
+    const state = makeState()
     // No predictions set
 
-    const actions = makeActions();
-    const result = await ai.chooseAction(state, actions);
-    expect(result.type).toMatch(/^(move|switch)$/);
-  });
+    const actions = makeActions()
+    const result = await ai.chooseAction(state, actions)
+    expect(result.type).toMatch(/^(move|switch)$/)
+  })
 
   it("handles empty predictions object", async () => {
-    const ai = new MCTSAI();
-    const state = makeState();
-    state.opponentPredictions = {};
+    const ai = new MCTSAI()
+    const state = makeState()
+    state.opponentPredictions = {}
 
-    const actions = makeActions();
-    const result = await ai.chooseAction(state, actions);
-    expect(result.type).toMatch(/^(move|switch)$/);
-  });
-});
+    const actions = makeActions()
+    const result = await ai.chooseAction(state, actions)
+    expect(result.type).toMatch(/^(move|switch)$/)
+  })
+})

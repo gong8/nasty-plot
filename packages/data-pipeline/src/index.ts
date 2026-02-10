@@ -1,1 +1,1 @@
-export { isStale, getDataStatus } from "./staleness.service";
+export { isStale, getDataStatus } from "./staleness.service"

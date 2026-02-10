@@ -1,20 +1,20 @@
-"use client";
+"use client"
 
-import { useState } from "react";
-import { useChatSidebar } from "@/features/chat/context/chat-provider";
-import { ChatSidebarResizeHandle } from "./chat-sidebar-resize-handle";
-import { ChatPanel } from "@/features/chat/components/chat-panel";
-import { ChatSessionList } from "@/features/chat/components/chat-session-list";
-import { X, History, Plus } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { useState } from "react"
+import { useChatSidebar } from "@/features/chat/context/chat-provider"
+import { ChatSidebarResizeHandle } from "./chat-sidebar-resize-handle"
+import { ChatPanel } from "@/features/chat/components/chat-panel"
+import { ChatSessionList } from "@/features/chat/components/chat-session-list"
+import { X, History, Plus } from "lucide-react"
+import { Button } from "@/components/ui/button"
 
 interface ChatSidebarProps {
-  fullPage?: boolean;
+  fullPage?: boolean
 }
 
 export function ChatSidebar({ fullPage = false }: ChatSidebarProps) {
-  const { isOpen, width, closeSidebar, activeSessionId, newSession } = useChatSidebar();
-  const [showHistory, setShowHistory] = useState(false);
+  const { isOpen, width, closeSidebar, activeSessionId, newSession } = useChatSidebar()
+  const [showHistory, setShowHistory] = useState(false)
 
   // Full-page mode: static layout with session list on the left
   if (fullPage) {
@@ -25,11 +25,11 @@ export function ChatSidebar({ fullPage = false }: ChatSidebarProps) {
           <ChatPanel sessionId={activeSessionId ?? undefined} mode="fullpage" />
         </div>
       </div>
-    );
+    )
   }
 
   // Sidebar mode: fixed position, right side
-  if (!isOpen) return null;
+  if (!isOpen) return null
 
   return (
     <div
@@ -60,7 +60,13 @@ export function ChatSidebar({ fullPage = false }: ChatSidebarProps) {
           <span className="text-sm font-semibold">Pecharunt</span>
         </div>
         <div className="flex items-center gap-1">
-          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={newSession} title="New chat">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7"
+            onClick={newSession}
+            title="New chat"
+          >
             <Plus className="h-4 w-4" />
           </Button>
           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={closeSidebar}>
@@ -81,5 +87,5 @@ export function ChatSidebar({ fullPage = false }: ChatSidebarProps) {
         <ChatPanel sessionId={activeSessionId ?? undefined} mode="sidebar" />
       </div>
     </div>
-  );
+  )
 }

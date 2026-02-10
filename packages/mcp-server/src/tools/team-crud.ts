@@ -1,10 +1,10 @@
-import { z } from "zod";
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { apiDelete, apiGet, apiPost, apiPut } from "../api-client.js";
-import { buildParams, handleTool, toolError, toolSuccess } from "../tool-helpers.js";
+import { z } from "zod"
+import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js"
+import { apiDelete, apiGet, apiPost, apiPut } from "../api-client.js"
+import { buildParams, handleTool, toolError, toolSuccess } from "../tool-helpers.js"
 
-const DEFAULT_IVS = { hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31 };
-const ZERO_EVS = { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 };
+const DEFAULT_IVS = { hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31 }
+const ZERO_EVS = { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 }
 
 const evsSchema = z
   .object({
@@ -16,7 +16,7 @@ const evsSchema = z
     spe: z.number().optional(),
   })
   .optional()
-  .describe("EV spread");
+  .describe("EV spread")
 
 export function registerTeamCrudTools(server: McpServer): void {
   server.tool(
@@ -24,13 +24,8 @@ export function registerTeamCrudTools(server: McpServer): void {
     "Create a new Pokemon team for a competitive format",
     {
       name: z.string().describe("Team name"),
-      formatId: z
-        .string()
-        .describe("Format ID (e.g., 'gen9ou', 'gen9vgc2024')"),
-      mode: z
-        .enum(["freeform", "guided"])
-        .optional()
-        .describe("Builder mode (default 'freeform')"),
+      formatId: z.string().describe("Format ID (e.g., 'gen9ou', 'gen9vgc2024')"),
+      mode: z.enum(["freeform", "guided"]).optional().describe("Builder mode (default 'freeform')"),
       notes: z.string().optional().describe("Optional team notes"),
     },
     ({ name, formatId, mode, notes }) =>
@@ -42,9 +37,9 @@ export function registerTeamCrudTools(server: McpServer): void {
             mode: mode ?? "freeform",
             notes,
           }),
-        `Failed to create team. Check that format "${formatId}" exists.`
-      )
-  );
+        `Failed to create team. Check that format "${formatId}" exists.`,
+      ),
+  )
 
   server.tool(
     "get_team",
@@ -55,9 +50,9 @@ export function registerTeamCrudTools(server: McpServer): void {
     ({ teamId }) =>
       handleTool(
         () => apiGet(`/teams/${encodeURIComponent(teamId)}`),
-        `Team "${teamId}" not found.`
-      )
-  );
+        `Team "${teamId}" not found.`,
+      ),
+  )
 
   server.tool(
     "list_teams",
@@ -66,11 +61,8 @@ export function registerTeamCrudTools(server: McpServer): void {
       formatId: z.string().optional().describe("Filter by format ID"),
     },
     ({ formatId }) =>
-      handleTool(
-        () => apiGet("/teams", buildParams({ formatId })),
-        "Failed to list teams."
-      )
-  );
+      handleTool(() => apiGet("/teams", buildParams({ formatId })), "Failed to list teams."),
+  )
 
   server.tool(
     "add_pokemon_to_team",
@@ -78,52 +70,36 @@ export function registerTeamCrudTools(server: McpServer): void {
     {
       teamId: z.string().describe("Team UUID"),
       position: z.number().describe("Slot position (1-6)"),
-      pokemonId: z
-        .string()
-        .describe("Pokemon ID (e.g., 'greatTusk')"),
-      ability: z
-        .string()
-        .describe("Ability name (e.g., 'Protosynthesis')"),
-      item: z
-        .string()
-        .describe("Held item (e.g., 'Booster Energy')"),
-      nature: z
-        .string()
-        .describe("Nature (e.g., 'Jolly', 'Timid')"),
-      teraType: z
-        .string()
-        .optional()
-        .describe("Tera type (e.g., 'Ground', 'Steel')"),
+      pokemonId: z.string().describe("Pokemon ID (e.g., 'greatTusk')"),
+      ability: z.string().describe("Ability name (e.g., 'Protosynthesis')"),
+      item: z.string().describe("Held item (e.g., 'Booster Energy')"),
+      nature: z.string().describe("Nature (e.g., 'Jolly', 'Timid')"),
+      teraType: z.string().optional().describe("Tera type (e.g., 'Ground', 'Steel')"),
       level: z.number().optional().describe("Level (default 100)"),
-      moves: z
-        .array(z.string())
-        .describe("Array of 1-4 move names"),
+      moves: z.array(z.string()).describe("Array of 1-4 move names"),
       evs: evsSchema,
     },
     async ({ teamId, position, pokemonId, ability, item, nature, teraType, level, moves, evs }) => {
       try {
-        const data = await apiPost(
-          `/teams/${encodeURIComponent(teamId)}/slots`,
-          {
-            position,
-            pokemonId,
-            ability,
-            item,
-            nature,
-            teraType,
-            level: level ?? 100,
-            moves,
-            evs: { ...ZERO_EVS, ...evs },
-            ivs: DEFAULT_IVS,
-          }
-        );
-        return toolSuccess(data);
+        const data = await apiPost(`/teams/${encodeURIComponent(teamId)}/slots`, {
+          position,
+          pokemonId,
+          ability,
+          item,
+          nature,
+          teraType,
+          level: level ?? 100,
+          moves,
+          evs: { ...ZERO_EVS, ...evs },
+          ivs: DEFAULT_IVS,
+        })
+        return toolSuccess(data)
       } catch (error) {
-        const msg = error instanceof Error ? error.message : "Unknown error";
-        return toolError(`Failed to add Pokemon to slot ${position}: ${msg}`);
+        const msg = error instanceof Error ? error.message : "Unknown error"
+        return toolError(`Failed to add Pokemon to slot ${position}: ${msg}`)
       }
-    }
-  );
+    },
+  )
 
   server.tool(
     "remove_pokemon_from_team",
@@ -134,13 +110,10 @@ export function registerTeamCrudTools(server: McpServer): void {
     },
     ({ teamId, position }) =>
       handleTool(
-        () =>
-          apiDelete(
-            `/teams/${encodeURIComponent(teamId)}/slots/${position}`
-          ),
-        `Failed to remove Pokemon from slot ${position}.`
-      )
-  );
+        () => apiDelete(`/teams/${encodeURIComponent(teamId)}/slots/${position}`),
+        `Failed to remove Pokemon from slot ${position}.`,
+      ),
+  )
 
   server.tool(
     "update_pokemon_set",
@@ -152,20 +125,13 @@ export function registerTeamCrudTools(server: McpServer): void {
       item: z.string().optional().describe("New held item"),
       nature: z.string().optional().describe("New nature"),
       teraType: z.string().optional().describe("New Tera type"),
-      moves: z
-        .array(z.string())
-        .optional()
-        .describe("New move list"),
+      moves: z.array(z.string()).optional().describe("New move list"),
       evs: evsSchema,
     },
     ({ teamId, position, ...updates }) =>
       handleTool(
-        () =>
-          apiPut(
-            `/teams/${encodeURIComponent(teamId)}/slots/${position}`,
-            updates
-          ),
-        `Failed to update slot ${position}.`
-      )
-  );
+        () => apiPut(`/teams/${encodeURIComponent(teamId)}/slots/${position}`, updates),
+        `Failed to update slot ${position}.`,
+      ),
+  )
 }

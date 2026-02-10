@@ -1,27 +1,21 @@
-"use client";
+"use client"
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { ArrowLeft, Sparkles, Wrench } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { useState } from "react"
+import { useRouter } from "next/navigation"
+import { ArrowLeft, Sparkles, Wrench } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { cn } from "@/lib/utils";
-import { useCreateTeam } from "@/features/teams/hooks/use-teams";
+} from "@/components/ui/select"
+import { cn } from "@/lib/utils"
+import { useCreateTeam } from "@/features/teams/hooks/use-teams"
 
 const COMMON_FORMATS = [
   { id: "gen9ou", name: "Gen 9 OU" },
@@ -37,52 +31,45 @@ const COMMON_FORMATS = [
   { id: "gen9doublesou", name: "Gen 9 Doubles OU" },
   { id: "gen9battlestadiumsingles", name: "Battle Stadium Singles" },
   { id: "gen9battlestadiumdoubles", name: "Battle Stadium Doubles" },
-];
+]
 
-type BuilderMode = "freeform" | "guided";
+type BuilderMode = "freeform" | "guided"
 
 export default function NewTeamPage() {
-  const router = useRouter();
-  const createTeam = useCreateTeam();
-  const [name, setName] = useState("");
-  const [formatId, setFormatId] = useState("gen9ou");
-  const [mode, setMode] = useState<BuilderMode>("freeform");
+  const router = useRouter()
+  const createTeam = useCreateTeam()
+  const [name, setName] = useState("")
+  const [formatId, setFormatId] = useState("gen9ou")
+  const [mode, setMode] = useState<BuilderMode>("freeform")
 
   const handleCreate = async () => {
-    if (!name.trim()) return;
+    if (!name.trim()) return
     try {
       const team = await createTeam.mutateAsync({
         name: name.trim(),
         formatId,
         mode,
-      });
+      })
       if (mode === "guided") {
-        router.push(`/teams/${team.id}/guided`);
+        router.push(`/teams/${team.id}/guided`)
       } else {
-        router.push(`/teams/${team.id}`);
+        router.push(`/teams/${team.id}`)
       }
     } catch {
       // Error handled by mutation state
     }
-  };
+  }
 
   return (
     <div className="container mx-auto max-w-md py-8 px-4 space-y-4">
-      <Button
-        variant="ghost"
-        size="sm"
-        className="gap-1"
-        onClick={() => router.push("/teams")}
-      >
+      <Button variant="ghost" size="sm" className="gap-1" onClick={() => router.push("/teams")}>
         <ArrowLeft className="h-4 w-4" />
         Back to Teams
       </Button>
       <Card>
         <CardHeader>
           <CardTitle className="font-display">Create New Team</CardTitle>
-          <CardDescription>
-            Name it, pick a format, choose your approach.
-          </CardDescription>
+          <CardDescription>Name it, pick a format, choose your approach.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
@@ -93,7 +80,7 @@ export default function NewTeamPage() {
               value={name}
               onChange={(e) => setName(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === "Enter") handleCreate();
+                if (e.key === "Enter") handleCreate()
               }}
               autoFocus
             />
@@ -125,16 +112,14 @@ export default function NewTeamPage() {
                   "flex flex-col items-center gap-2 rounded-lg border p-3 text-left transition-all",
                   mode === "freeform"
                     ? "border-primary bg-primary/5 ring-1 ring-primary"
-                    : "border-border hover:border-primary/50"
+                    : "border-border hover:border-primary/50",
                 )}
                 onClick={() => setMode("freeform")}
               >
                 <Wrench className="h-5 w-5 text-muted-foreground" />
                 <div className="text-center">
                   <p className="text-sm font-medium">Freeform</p>
-                  <p className="text-xs text-muted-foreground">
-                    Pick Pokemon manually
-                  </p>
+                  <p className="text-xs text-muted-foreground">Pick Pokemon manually</p>
                 </div>
               </button>
               <button
@@ -143,22 +128,21 @@ export default function NewTeamPage() {
                   "flex flex-col items-center gap-2 rounded-lg border p-3 text-left transition-all",
                   mode === "guided"
                     ? "border-primary bg-primary/5 ring-1 ring-primary"
-                    : "border-border hover:border-primary/50"
+                    : "border-border hover:border-primary/50",
                 )}
                 onClick={() => setMode("guided")}
               >
                 <Sparkles className="h-5 w-5 text-muted-foreground" />
                 <div className="text-center">
                   <p className="text-sm font-medium">Guided</p>
-                  <p className="text-xs text-muted-foreground">
-                    Step-by-step with recommendations
-                  </p>
+                  <p className="text-xs text-muted-foreground">Step-by-step with recommendations</p>
                 </div>
               </button>
             </div>
             {mode === "guided" && (
               <p className="text-xs text-muted-foreground mt-1">
-                Start from scratch or from a sample team. Recommendations and analysis at every step.
+                Start from scratch or from a sample team. Recommendations and analysis at every
+                step.
               </p>
             )}
           </div>
@@ -179,5 +163,5 @@ export default function NewTeamPage() {
         </CardContent>
       </Card>
     </div>
-  );
+  )
 }

@@ -1,28 +1,28 @@
-"use client";
+"use client"
 
-import { useRef, useEffect, useCallback, useState } from "react";
-import { useChatSidebar } from "@/features/chat/context/chat-provider";
-import { useChatStream } from "@/features/chat/hooks/use-chat-stream";
-import { ChatMessage } from "./chat-message";
-import { ChatToolCall } from "./chat-tool-call";
-import { ChatActionNotify } from "./chat-action-notify";
-import { ChatPlanDisplay } from "./chat-plan-display";
-import { ChatInput } from "./chat-input";
-import { ArrowDown } from "lucide-react";
+import { useRef, useEffect, useCallback, useState } from "react"
+import { useChatSidebar } from "@/features/chat/context/chat-provider"
+import { useChatStream } from "@/features/chat/hooks/use-chat-stream"
+import { ChatMessage } from "./chat-message"
+import { ChatToolCall } from "./chat-tool-call"
+import { ChatActionNotify } from "./chat-action-notify"
+import { ChatPlanDisplay } from "./chat-plan-display"
+import { ChatInput } from "./chat-input"
+import { ArrowDown } from "lucide-react"
 
 interface ChatPanelProps {
-  teamId?: string;
-  formatId?: string;
-  sessionId?: string;
-  mode?: "sidebar" | "fullpage";
+  teamId?: string
+  formatId?: string
+  sessionId?: string
+  mode?: "sidebar" | "fullpage"
 }
 
 export function ChatPanel({ sessionId, mode = "sidebar" }: ChatPanelProps) {
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const bottomRef = useRef<HTMLDivElement>(null);
-  const { activeSessionId, pendingInput, clearPendingInput } = useChatSidebar();
-  const effectiveSessionId = sessionId ?? activeSessionId ?? undefined;
-  const [isAtBottom, setIsAtBottom] = useState(true);
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const bottomRef = useRef<HTMLDivElement>(null)
+  const { activeSessionId, pendingInput, clearPendingInput } = useChatSidebar()
+  const effectiveSessionId = sessionId ?? activeSessionId ?? undefined
+  const [isAtBottom, setIsAtBottom] = useState(true)
 
   const {
     messages,
@@ -34,54 +34,50 @@ export function ChatPanel({ sessionId, mode = "sidebar" }: ChatPanelProps) {
     stopGeneration,
     retryLast,
     resetForSession,
-  } = useChatStream(effectiveSessionId);
+  } = useChatStream(effectiveSessionId)
 
   // Load session on mount and when active session changes.
   // Initialize to null (not effectiveSessionId) so the first render
   // triggers a load when there's already an active session from localStorage.
-  const prevSessionRef = useRef<string | undefined | null>(null);
+  const prevSessionRef = useRef<string | undefined | null>(null)
   useEffect(() => {
     if (effectiveSessionId !== prevSessionRef.current) {
-      prevSessionRef.current = effectiveSessionId;
-      resetForSession(effectiveSessionId ?? null);
-      setIsAtBottom(true);
+      prevSessionRef.current = effectiveSessionId
+      resetForSession(effectiveSessionId ?? null)
+      setIsAtBottom(true)
     }
-  }, [effectiveSessionId, resetForSession]);
+  }, [effectiveSessionId, resetForSession])
 
   // Track scroll position to detect if user has scrolled up
   useEffect(() => {
-    const el = scrollRef.current;
-    if (!el) return;
+    const el = scrollRef.current
+    if (!el) return
 
     const handleScroll = () => {
-      const threshold = 60;
-      const atBottom =
-        el.scrollHeight - el.scrollTop - el.clientHeight < threshold;
-      setIsAtBottom(atBottom);
-    };
+      const threshold = 60
+      const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < threshold
+      setIsAtBottom(atBottom)
+    }
 
-    el.addEventListener("scroll", handleScroll, { passive: true });
-    return () => el.removeEventListener("scroll", handleScroll);
-  }, []);
+    el.addEventListener("scroll", handleScroll, { passive: true })
+    return () => el.removeEventListener("scroll", handleScroll)
+  }, [])
 
   // Auto-scroll only when user is at the bottom
   useEffect(() => {
     if (isAtBottom) {
-      bottomRef.current?.scrollIntoView({ behavior: "instant" });
+      bottomRef.current?.scrollIntoView({ behavior: "instant" })
     }
-  }, [messages, toolCalls, planSteps, isAtBottom]);
+  }, [messages, toolCalls, planSteps, isAtBottom])
 
   const scrollToBottom = useCallback(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-    setIsAtBottom(true);
-  }, []);
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" })
+    setIsAtBottom(true)
+  }, [])
 
-  const handleSend = useCallback(
-    (text: string) => sendMessage(text),
-    [sendMessage]
-  );
+  const handleSend = useCallback((text: string) => sendMessage(text), [sendMessage])
 
-  const lastMsg = messages[messages.length - 1];
+  const lastMsg = messages[messages.length - 1]
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -97,9 +93,7 @@ export function ChatPanel({ sessionId, mode = "sidebar" }: ChatPanelProps) {
                 height={64}
                 className="pixelated mx-auto mb-3"
               />
-              <p className="text-lg font-medium text-foreground">
-                Pecharunt&apos;s Team Lab
-              </p>
+              <p className="text-lg font-medium text-foreground">Pecharunt&apos;s Team Lab</p>
               <p className="text-sm mt-1 text-muted-foreground">
                 Ask about competitive sets, damage calcs, meta trends, and team synergy.
               </p>
@@ -158,5 +152,5 @@ export function ChatPanel({ sessionId, mode = "sidebar" }: ChatPanelProps) {
         onClearPendingInput={clearPendingInput}
       />
     </div>
-  );
+  )
 }

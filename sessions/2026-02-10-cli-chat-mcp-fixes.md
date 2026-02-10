@@ -1,8 +1,10 @@
 # Session: CLI Chat & MCP Pipeline Fixes
+
 **Date:** 2026-02-10
 **Duration context:** Long (continued from a prior session that ran out of context)
 
 ## What was accomplished
+
 - **Fixed the core chat pipeline**: The in-app LLM chat now successfully makes MCP tool calls via the Claude CLI, bypassing the broken `claude-max-api-proxy` which strips all tool definitions
 - **Fixed MCP server multi-session bug**: Server could only handle one client at a time; now creates a fresh `McpServer` per HTTP session
 - **Fixed MCP API client URL construction**: `new URL("/path", "http://localhost:3000/api")` was silently dropping the `/api` prefix, causing all MCP tools to hit Next.js page routes (HTML) instead of API routes (JSON)
@@ -13,6 +15,7 @@
 - **Added system prompt guardrails**: CLI chat model is explicitly told to only use MCP tools, never code tools
 
 ## Key decisions & rationale
+
 - **CLI mode over proxy**: `claude-max-api-proxy` fundamentally cannot support tool calls (text-in/text-out pipe). The new `cli-chat.ts` spawns `claude` directly with `--mcp-config` so the CLI handles tool discovery and execution natively
 - **`--strict-mcp-config`**: Prevents the CLI from loading the user's global MCP servers (Serena, Linear, Playwright, etc.) which were polluting the tool namespace
 - **`--disallowedTools` for code tools**: Blocks Bash, Read, Write, Edit, Glob, Grep, etc. so the model can only use MCP tools for data lookups
@@ -23,31 +26,37 @@
 ## Bugs found & fixed
 
 ### 1. `claude-max-api-proxy` strips tools (root cause of original slowness)
+
 - **Symptom**: 165-second response times, zero tool calls
 - **Cause**: The proxy's `openaiToCli()` function ignores `request.tools`, and `cliToOpenai()` never emits `delta.tool_calls`
 - **Fix**: Bypass the proxy entirely; spawn `claude` CLI directly with `--mcp-config`
 
 ### 2. MCP server "Already connected to a transport" crash
+
 - **Symptom**: CLI reported `mcp_servers: [{"name":"nasty-plot","status":"failed"}]`
 - **Cause**: Single `McpServer` instance with `server.connect(transport)` called per session — but `connect()` can only bind once
 - **Fix**: `createServer()` factory function that creates a fresh `McpServer` per session (`packages/mcp-server/src/index.ts`)
 
 ### 3. API client URL dropping `/api` prefix
+
 - **Symptom**: MCP tools returned "Could not find Pokemon" even though `@pkmn/dex` has the data
 - **Cause**: `new URL("/pokemon/pecharunt", "http://localhost:3000/api")` resolves to `http://localhost:3000/pokemon/pecharunt` (URL spec: absolute paths override base path). Tools were hitting Next.js page routes (HTML) instead of API routes (JSON)
 - **Fix**: String concatenation instead of `new URL(path, base)` in `packages/mcp-server/src/api-client.ts`
 
 ### 4. Prisma 7 generated client ESM resolution failure
+
 - **Symptom**: `SyntaxError: The requested module '../../../generated/prisma/client' does not provide an export named 'PrismaClient'`
 - **Cause**: Generated `.ts` files use extensionless imports (`./enums` not `./enums.ts`); no `package.json` with `"type": "module"` in the generated directory; Node 25 defaults to CJS resolution
 - **Fix**: Added `generated/prisma/package.json` with `{ "type": "module" }`. Updated `db:generate` script to recreate it after each `prisma generate`
 
 ### 5. `suggest_sets` optional formatId causing silent 400s
+
 - **Symptom**: Tool returned generic error; model thought Pokemon didn't exist
 - **Cause**: MCP tool schema marked `formatId` as optional, but the API route returns 400 without it
 - **Fix**: Made `formatId` required in the tool schema
 
 ## Pitfalls & gotchas encountered
+
 - **`handleTool` swallows errors**: The generic error messages ("Could not find Pokemon") made it impossible to diagnose issues. The actual errors (HTML parse failure, 400 missing param) were hidden. Now includes the real error detail.
 - **`new URL()` base path behavior**: This is a well-known footgun. `new URL("/foo", "http://host/bar")` gives `http://host/foo`, not `http://host/bar/foo`. Always use string concatenation for path joining.
 - **`--verbose` required with `--output-format stream-json`**: The CLI silently requires this flag combination. Without `--verbose`, the CLI hangs with no output.
@@ -55,6 +64,7 @@
 - **Model hallucination on partial tool failures**: When 3 of 5 tools return errors, the model concludes the Pokemon doesn't exist — even if `get_pokemon` succeeded with full data. Better error messages help but this is fundamentally a model behavior issue.
 
 ## Files changed
+
 - `packages/mcp-server/src/index.ts` — Per-session McpServer creation
 - `packages/mcp-server/src/api-client.ts` — Fixed URL construction
 - `packages/mcp-server/src/tool-helpers.ts` — Error messages include actual error detail
@@ -68,6 +78,7 @@
 - `package.json` — Updated `db:generate` script to preserve ESM package.json
 
 ## Known issues & next steps
+
 - **Pecharunt is rank 9 in OU with 14.8% usage** but only has 2 Smogon sets (Pivot, Nasty Plot). The model may need to supplement with its own knowledge for detailed spreads
 - **`get_common_cores` is a fake tool**: It just returns usage stats with a note to "filter for cores" — doesn't actually compute teammate correlations. The `TeammateCorr` table has real data that could power this properly
 - **`get_type_matchups` is redundant**: It calls `/api/pokemon/{id}` and extracts types, then tells the model to "use the type chart resource." Could compute actual matchups inline
@@ -76,6 +87,7 @@
 - **`--setting-sources ""`**: This was added to prevent loading user settings but untested whether it actually works. Monitor for side effects
 
 ## Tech notes
+
 - **CLI chat architecture**: `cli-chat.ts` spawns `claude --print --output-format stream-json` with MCP config, parses NDJSON stream, converts to SSE format for the frontend. Key message types: `stream_event` (content deltas), `assistant` (tool_use blocks), `user` (tool results), `result` (final summary)
 - **`USE_CLI` detection**: Auto-enables when `LLM_BASE_URL` includes `localhost:3456` (proxy) or `LLM_PROVIDER=cli`. Falls back to OpenAI path otherwise
 - **MCP server session management**: Each POST without `mcp-session-id` header creates a new session (server + transport pair). Subsequent requests with the session ID reuse the existing transport. Sessions are cleaned up on transport close.

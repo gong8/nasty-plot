@@ -1,38 +1,85 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { ResourceTemplate } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { apiGet } from "../api-client.js";
+import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js"
+import { ResourceTemplate } from "@modelcontextprotocol/sdk/server/mcp.js"
+import { apiGet } from "../api-client.js"
 
 const TYPE_CHART: Record<string, Record<string, number>> = {
   Normal: { Rock: 0.5, Ghost: 0, Steel: 0.5 },
   Fire: {
-    Fire: 0.5, Water: 0.5, Grass: 2, Ice: 2, Bug: 2, Rock: 0.5,
-    Dragon: 0.5, Steel: 2,
+    Fire: 0.5,
+    Water: 0.5,
+    Grass: 2,
+    Ice: 2,
+    Bug: 2,
+    Rock: 0.5,
+    Dragon: 0.5,
+    Steel: 2,
   },
   Water: { Fire: 2, Water: 0.5, Grass: 0.5, Ground: 2, Rock: 2, Dragon: 0.5 },
   Electric: {
-    Water: 2, Electric: 0.5, Grass: 0.5, Ground: 0, Flying: 2, Dragon: 0.5,
+    Water: 2,
+    Electric: 0.5,
+    Grass: 0.5,
+    Ground: 0,
+    Flying: 2,
+    Dragon: 0.5,
   },
   Grass: {
-    Fire: 0.5, Water: 2, Grass: 0.5, Poison: 0.5, Ground: 2, Flying: 0.5,
-    Bug: 0.5, Rock: 2, Dragon: 0.5, Steel: 0.5,
+    Fire: 0.5,
+    Water: 2,
+    Grass: 0.5,
+    Poison: 0.5,
+    Ground: 2,
+    Flying: 0.5,
+    Bug: 0.5,
+    Rock: 2,
+    Dragon: 0.5,
+    Steel: 0.5,
   },
   Ice: { Fire: 0.5, Water: 0.5, Grass: 2, Ice: 0.5, Ground: 2, Flying: 2, Dragon: 2, Steel: 0.5 },
   Fighting: {
-    Normal: 2, Ice: 2, Poison: 0.5, Flying: 0.5, Psychic: 0.5,
-    Bug: 0.5, Rock: 2, Ghost: 0, Dark: 2, Steel: 2, Fairy: 0.5,
+    Normal: 2,
+    Ice: 2,
+    Poison: 0.5,
+    Flying: 0.5,
+    Psychic: 0.5,
+    Bug: 0.5,
+    Rock: 2,
+    Ghost: 0,
+    Dark: 2,
+    Steel: 2,
+    Fairy: 0.5,
   },
   Poison: { Grass: 2, Poison: 0.5, Ground: 0.5, Rock: 0.5, Ghost: 0.5, Steel: 0, Fairy: 2 },
   Ground: {
-    Fire: 2, Electric: 2, Grass: 0.5, Poison: 2, Flying: 0,
-    Bug: 0.5, Rock: 2, Steel: 2,
+    Fire: 2,
+    Electric: 2,
+    Grass: 0.5,
+    Poison: 2,
+    Flying: 0,
+    Bug: 0.5,
+    Rock: 2,
+    Steel: 2,
   },
   Flying: {
-    Electric: 0.5, Grass: 2, Fighting: 2, Bug: 2, Rock: 0.5, Steel: 0.5,
+    Electric: 0.5,
+    Grass: 2,
+    Fighting: 2,
+    Bug: 2,
+    Rock: 0.5,
+    Steel: 0.5,
   },
   Psychic: { Fighting: 2, Poison: 2, Psychic: 0.5, Dark: 0, Steel: 0.5 },
   Bug: {
-    Fire: 0.5, Grass: 2, Fighting: 0.5, Poison: 0.5, Flying: 0.5,
-    Psychic: 2, Ghost: 0.5, Dark: 2, Steel: 0.5, Fairy: 0.5,
+    Fire: 0.5,
+    Grass: 2,
+    Fighting: 0.5,
+    Poison: 0.5,
+    Flying: 0.5,
+    Psychic: 2,
+    Ghost: 0.5,
+    Dark: 2,
+    Steel: 0.5,
+    Fairy: 0.5,
   },
   Rock: { Fire: 2, Ice: 2, Fighting: 0.5, Ground: 0.5, Flying: 2, Bug: 2, Steel: 0.5 },
   Ghost: { Normal: 0, Psychic: 2, Ghost: 2, Dark: 0.5 },
@@ -40,7 +87,7 @@ const TYPE_CHART: Record<string, Record<string, number>> = {
   Dark: { Fighting: 0.5, Psychic: 2, Ghost: 2, Dark: 0.5, Fairy: 0.5 },
   Steel: { Fire: 0.5, Water: 0.5, Electric: 0.5, Ice: 2, Rock: 2, Steel: 0.5, Fairy: 2 },
   Fairy: { Fire: 0.5, Poison: 0.5, Fighting: 2, Dragon: 2, Dark: 2, Steel: 0.5 },
-};
+}
 
 const NATURES_DATA = {
   Adamant: { plus: "atk", minus: "spa" },
@@ -68,7 +115,7 @@ const NATURES_DATA = {
   Sassy: { plus: "spd", minus: "spe" },
   Serious: {},
   Timid: { plus: "spe", minus: "atk" },
-};
+}
 
 const STAT_FORMULAS = `# Pokemon Stat Calculation Formulas
 
@@ -95,7 +142,7 @@ At level 100 with 31 IVs:
 - 252 EVs = 63 stat points at level 100
 - 4 EVs = 1 stat point at level 100
 - Max total EVs: 510 (typically 252/252/4 or custom spreads)
-`;
+`
 
 const FORMATS_LIST = [
   { id: "gen9ou", name: "OU", generation: 9, gameType: "singles" },
@@ -106,30 +153,31 @@ const FORMATS_LIST = [
   { id: "gen9vgc2024", name: "VGC 2024", generation: 9, gameType: "doubles" },
   { id: "gen9monotype", name: "Monotype", generation: 9, gameType: "singles" },
   { id: "gen9nationaldex", name: "National Dex", generation: 9, gameType: "singles" },
-];
+]
 
-function jsonResource(uri: string, data: unknown): {
-  contents: [{ uri: string; text: string; mimeType: "application/json" }];
+function jsonResource(
+  uri: string,
+  data: unknown,
+): {
+  contents: [{ uri: string; text: string; mimeType: "application/json" }]
 } {
   return {
-    contents: [
-      { uri, text: JSON.stringify(data, null, 2), mimeType: "application/json" },
-    ],
-  };
+    contents: [{ uri, text: JSON.stringify(data, null, 2), mimeType: "application/json" }],
+  }
 }
 
 export function registerResources(server: McpServer): void {
   server.resource("type-chart", "pokemon://type-chart", async () =>
-    jsonResource("pokemon://type-chart", TYPE_CHART)
-  );
+    jsonResource("pokemon://type-chart", TYPE_CHART),
+  )
 
   server.resource("formats-list", "pokemon://formats", async () =>
-    jsonResource("pokemon://formats", FORMATS_LIST)
-  );
+    jsonResource("pokemon://formats", FORMATS_LIST),
+  )
 
   server.resource("natures", "pokemon://natures", async () =>
-    jsonResource("pokemon://natures", NATURES_DATA)
-  );
+    jsonResource("pokemon://natures", NATURES_DATA),
+  )
 
   server.resource("stat-formulas", "pokemon://stat-formulas", async () => ({
     contents: [
@@ -139,7 +187,7 @@ export function registerResources(server: McpServer): void {
         mimeType: "text/markdown" as const,
       },
     ],
-  }));
+  }))
 
   server.resource(
     "viability",
@@ -155,16 +203,15 @@ export function registerResources(server: McpServer): void {
     }),
     async (uri, { formatId }) => {
       try {
-        const data = await apiGet(
-          `/formats/${encodeURIComponent(formatId as string)}/usage`,
-          { limit: "50" }
-        );
-        return jsonResource(uri.href, data);
+        const data = await apiGet(`/formats/${encodeURIComponent(formatId as string)}/usage`, {
+          limit: "50",
+        })
+        return jsonResource(uri.href, data)
       } catch {
         return jsonResource(uri.href, {
           error: `No viability data for format "${formatId}"`,
-        });
+        })
       }
-    }
-  );
+    },
+  )
 }

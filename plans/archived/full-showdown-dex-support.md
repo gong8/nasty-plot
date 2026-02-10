@@ -5,6 +5,7 @@
 The app currently supports only ~839 Pokemon (Gen 9 SV-native), but Showdown supports ~1,225 selectable entries including "Past" Pokemon (Greninja, Mega evolutions, etc.) usable in National Dex formats. The same problem exists for items (~249 SV-native vs ~533 including Mega Stones and Z-Crystals) and moves (~685 vs ~892 including past moves like Hidden Power and Pursuit).
 
 **Current problems:**
+
 - `getAllSpecies()` filters out `isNonstandard: "Past"` Pokemon — too restrictive
 - `getAllItems()` filters out Past items (Mega Stones, Z-Crystals) — NatDex teams can't use them
 - `getAllMoves()` filters out Past moves (Hidden Power, Pursuit, Return) — NatDex teams can't use them
@@ -13,6 +14,7 @@ The app currently supports only ~839 Pokemon (Gen 9 SV-native), but Showdown sup
 - No Mega Evolution or Z-Move mechanics support in team builder
 
 **What already exists:**
+
 - `DexScope` type (`"sv" | "natdex"`) defined in `packages/core/src/types.ts`
 - Format definitions already have `dexScope` populated in `packages/formats/src/data/format-definitions.ts`
 - `/api/pokemon` already supports `?format=` parameter via `getFormatPokemon()`
@@ -57,7 +59,7 @@ isNonstandard?: string | null;
 - In `getAllSpecies()`: replace `!species.isNonstandard` with targeted exclusion
 
 ```typescript
-const EXCLUDED_NONSTANDARD = new Set(["CAP", "LGPE", "Custom", "Future", "Unobtainable"]);
+const EXCLUDED_NONSTANDARD = new Set(["CAP", "LGPE", "Custom", "Future", "Unobtainable"])
 
 // In getAllSpecies filter, replace:
 //   !species.isNonstandard
@@ -94,8 +96,9 @@ Make format service filter species, items, and moves based on `format.dexScope`.
 **File:** `packages/formats/src/format.service.ts`
 
 In `getFormatPokemon()` and `isLegalInFormat()`:
+
 ```typescript
-if (format.dexScope === "sv" && species.isNonstandard === "Past") return false;
+if (format.dexScope === "sv" && species.isNonstandard === "Past") return false
 ```
 
 ### 2b. Add `getFormatItems(formatId)` function
@@ -103,15 +106,16 @@ if (format.dexScope === "sv" && species.isNonstandard === "Past") return false;
 **File:** `packages/formats/src/format.service.ts`
 
 New function — returns items legal in a given format.
+
 ```typescript
 export function getFormatItems(formatId: string): ItemData[] {
-  const format = getFormat(formatId);
-  if (!format) return [];
-  return getAllItems().filter(item => {
-    if (format.dexScope === "sv" && item.isNonstandard === "Past") return false;
+  const format = getFormat(formatId)
+  if (!format) return []
+  return getAllItems().filter((item) => {
+    if (format.dexScope === "sv" && item.isNonstandard === "Past") return false
     // Check item bans (e.g., specific Mega Stones banned in a format)
-    return !isBannedItem(item, format);
-  });
+    return !isBannedItem(item, format)
+  })
 }
 ```
 
@@ -122,15 +126,16 @@ Also add item ban checking against `format.bans` (some formats ban specific item
 **File:** `packages/formats/src/format.service.ts`
 
 New function — returns moves legal in a given format.
+
 ```typescript
 export function getFormatMoves(formatId: string): MoveData[] {
-  const format = getFormat(formatId);
-  if (!format) return [];
-  return getAllMoves().filter(move => {
-    if (format.dexScope === "sv" && move.isNonstandard === "Past") return false;
+  const format = getFormat(formatId)
+  if (!format) return []
+  return getAllMoves().filter((move) => {
+    if (format.dexScope === "sv" && move.isNonstandard === "Past") return false
     // Check move bans (e.g., "Baton Pass" banned in NatDex)
-    return !isBannedMove(move, format);
-  });
+    return !isBannedMove(move, format)
+  })
 }
 ```
 
@@ -139,11 +144,12 @@ export function getFormatMoves(formatId: string): MoveData[] {
 **File:** `packages/formats/src/format.service.ts` (or `packages/pokemon-data/src/dex.service.ts`)
 
 Wraps `getLearnset()` with format filtering — cross-references against `getFormatMoves()`.
+
 ```typescript
 export async function getFormatLearnset(speciesId: string, formatId: string): Promise<MoveData[]> {
-  const learnset = await getLearnset(speciesId);
-  const legalMoves = new Set(getFormatMoves(formatId).map(m => m.id));
-  return learnset.filter(moveId => legalMoves.has(moveId));
+  const learnset = await getLearnset(speciesId)
+  const legalMoves = new Set(getFormatMoves(formatId).map((m) => m.id))
+  return learnset.filter((moveId) => legalMoves.has(moveId))
 }
 ```
 
@@ -164,9 +170,10 @@ Thread `formatId` through all team editor selection UIs. Add format support to i
 **File:** `apps/web/src/app/api/items/route.ts`
 
 Add `?format=` support (same pattern as `/api/pokemon`):
+
 ```typescript
-const formatId = searchParams.get("format");
-let items = formatId ? getFormatItems(formatId) : getAllItems();
+const formatId = searchParams.get("format")
+let items = formatId ? getFormatItems(formatId) : getAllItems()
 ```
 
 ### 3b. Learnset API — add format parameter
@@ -174,16 +181,16 @@ let items = formatId ? getFormatItems(formatId) : getAllItems();
 **File:** `apps/web/src/app/api/pokemon/[id]/learnset/route.ts`
 
 Add `?format=` support:
+
 ```typescript
-const formatId = searchParams.get("format");
-const moves = formatId
-  ? await getFormatLearnset(id, formatId)
-  : await getLearnset(id);
+const formatId = searchParams.get("format")
+const moves = formatId ? await getFormatLearnset(id, formatId) : await getLearnset(id)
 ```
 
 ### 3c. Thread formatId through team editor — Pokemon search
 
 **Files:**
+
 - `apps/web/src/features/team-builder/components/pokemon-search-panel.tsx` — accept `formatId?` prop, append `&format=` to API call
 - `apps/web/src/features/team-builder/components/slot-editor.tsx` — accept `formatId?` prop, pass to `PokemonSearchPanel`
 - `apps/web/src/app/teams/[teamId]/page.tsx` — pass `formatId={team.formatId}` to `<SlotEditor>`
@@ -232,11 +239,12 @@ Use `@pkmn/dex` — Mega Stones have a `megaStone` field pointing to the species
 **File:** `packages/teams/src/validation.service.ts` (or `packages/core/src/validation.ts`)
 
 New validation rule in `validateTeam()`:
+
 ```typescript
 // Count slots holding Mega Stones
-const megaCount = slots.filter(s => isMegaStone(s.item)).length;
+const megaCount = slots.filter((s) => isMegaStone(s.item)).length
 if (megaCount > 1) {
-  errors.push({ type: "team", message: "Only one Mega Evolution per team" });
+  errors.push({ type: "team", message: "Only one Mega Evolution per team" })
 }
 ```
 
@@ -245,9 +253,14 @@ if (megaCount > 1) {
 **File:** `packages/teams/src/validation.service.ts`
 
 Validate that if a Pokemon holds a Mega Stone, it's actually the correct stone for that Pokemon:
+
 ```typescript
-if (isMegaStone(slot.item) && !getMegaStonesFor(slot.pokemonId).some(s => s.id === slot.item)) {
-  errors.push({ type: "slot", position: slot.position, message: `${slot.item} is not compatible with this Pokemon` });
+if (isMegaStone(slot.item) && !getMegaStonesFor(slot.pokemonId).some((s) => s.id === slot.item)) {
+  errors.push({
+    type: "slot",
+    position: slot.position,
+    message: `${slot.item} is not compatible with this Pokemon`,
+  })
 }
 ```
 
@@ -285,6 +298,7 @@ Use `@pkmn/dex` — Z-Crystals have `zMove` and `zMoveFrom` fields.
 **File:** `packages/teams/src/validation.service.ts`
 
 Validate that if a Pokemon holds a Z-Crystal:
+
 - For type-based Z-Crystals: Pokemon knows at least one move of the matching type
 - For signature Z-Crystals: Pokemon is the correct species AND knows the signature move
 
@@ -322,21 +336,22 @@ Replace hardcoded FORMATS array with FORMAT_DEFINITIONS as single source of trut
 **File:** `packages/data-pipeline/src/cli/seed.ts`
 
 Replace the hardcoded `FORMATS` array:
+
 ```typescript
 // Before:
 const FORMATS = [
   { id: "gen9ou", name: "OU", generation: 9, gameType: "singles" as const },
   // ... 10 entries
-];
+]
 
 // After:
-import { FORMAT_DEFINITIONS } from "@nasty-plot/formats";
-const FORMATS = FORMAT_DEFINITIONS.filter(f => f.isActive).map(f => ({
+import { FORMAT_DEFINITIONS } from "@nasty-plot/formats"
+const FORMATS = FORMAT_DEFINITIONS.filter((f) => f.isActive).map((f) => ({
   id: f.id,
   name: f.name,
   generation: f.generation,
   gameType: f.gameType,
-}));
+}))
 ```
 
 This automatically picks up NatDex formats (gen9nationaldex, gen9nationaldexuu) and any future additions.

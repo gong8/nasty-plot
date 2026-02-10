@@ -1,5 +1,1 @@
-export type {
-  FormatDefinition,
-  GameType,
-  DexScope,
-} from "@nasty-plot/core";
+export type { FormatDefinition, GameType, DexScope } from "@nasty-plot/core"

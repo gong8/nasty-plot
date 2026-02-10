@@ -1,54 +1,54 @@
-"use client";
+"use client"
 
-import Link from "next/link";
-import { useEffect, useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Swords, Zap, Brain, Dices, FlaskConical, Clock, Trophy } from "lucide-react";
+import Link from "next/link"
+import { useEffect, useState } from "react"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Swords, Zap, Brain, Dices, FlaskConical, Clock, Trophy } from "lucide-react"
 
 interface BattleSummary {
-  id: string;
-  formatId: string;
-  gameType: string;
-  mode: string;
-  aiDifficulty: string | null;
-  team1Name: string;
-  team2Name: string;
-  winnerId: string | null;
-  turnCount: number;
-  createdAt: string;
+  id: string
+  formatId: string
+  gameType: string
+  mode: string
+  aiDifficulty: string | null
+  team1Name: string
+  team2Name: string
+  winnerId: string | null
+  turnCount: number
+  createdAt: string
 }
 
 function winnerLabel(winnerId: string | null, team1Name: string, team2Name: string): string {
-  if (!winnerId) return "No result";
-  if (winnerId === "team1") return team1Name;
-  if (winnerId === "team2") return team2Name;
-  if (winnerId === "draw") return "Draw";
-  return winnerId;
+  if (!winnerId) return "No result"
+  if (winnerId === "team1") return team1Name
+  if (winnerId === "team2") return team2Name
+  if (winnerId === "draw") return "Draw"
+  return winnerId
 }
 
 function timeAgo(dateStr: string): string {
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return "just now";
-  if (mins < 60) return `${mins}m ago`;
-  const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  return `${days}d ago`;
+  const diff = Date.now() - new Date(dateStr).getTime()
+  const mins = Math.floor(diff / 60000)
+  if (mins < 1) return "just now"
+  if (mins < 60) return `${mins}m ago`
+  const hours = Math.floor(mins / 60)
+  if (hours < 24) return `${hours}h ago`
+  const days = Math.floor(hours / 24)
+  return `${days}d ago`
 }
 
 export default function BattleHubPage() {
-  const [battles, setBattles] = useState<BattleSummary[]>([]);
-  const [loadingBattles, setLoadingBattles] = useState(true);
+  const [battles, setBattles] = useState<BattleSummary[]>([])
+  const [loadingBattles, setLoadingBattles] = useState(true)
 
   useEffect(() => {
     fetch("/api/battles?limit=10")
       .then((res) => res.json())
       .then((data) => setBattles(data.battles || []))
       .catch(() => {})
-      .finally(() => setLoadingBattles(false));
-  }, []);
+      .finally(() => setLoadingBattles(false))
+  }, [])
 
   return (
     <>
@@ -107,7 +107,8 @@ export default function BattleHubPage() {
             </CardHeader>
             <CardContent>
               <p className="text-sm text-muted-foreground">
-                Type-aware switching, status moves, and setup plays. The closest thing to a real opponent.
+                Type-aware switching, status moves, and setup plays. The closest thing to a real
+                opponent.
               </p>
             </CardContent>
           </Card>
@@ -121,7 +122,8 @@ export default function BattleHubPage() {
             </CardHeader>
             <CardContent>
               <p className="text-sm text-muted-foreground">
-                Monte Carlo tree search. Simulates thousands of games to find the optimal play each turn.
+                Monte Carlo tree search. Simulates thousands of games to find the optimal play each
+                turn.
               </p>
             </CardContent>
           </Card>
@@ -139,8 +141,8 @@ export default function BattleHubPage() {
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground">
-                  Run hundreds of AI-vs-AI games to statistically evaluate two teams.
-                  See win rates, average game length, and per-Pokemon performance.
+                  Run hundreds of AI-vs-AI games to statistically evaluate two teams. See win rates,
+                  average game length, and per-Pokemon performance.
                 </p>
               </CardContent>
             </Card>
@@ -155,8 +157,8 @@ export default function BattleHubPage() {
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground">
-                  Browse curated competitive teams by format and archetype.
-                  Use them to battle or benchmark your own teams.
+                  Browse curated competitive teams by format and archetype. Use them to battle or
+                  benchmark your own teams.
                 </p>
               </CardContent>
             </Card>
@@ -173,9 +175,7 @@ export default function BattleHubPage() {
           {loadingBattles ? (
             <p className="text-sm text-muted-foreground">Loading...</p>
           ) : battles.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              No battles yet. Start one above!
-            </p>
+            <p className="text-sm text-muted-foreground">No battles yet. Start one above!</p>
           ) : (
             <div className="space-y-2">
               {battles.map((battle) => (
@@ -189,7 +189,8 @@ export default function BattleHubPage() {
                             {battle.team1Name} vs {battle.team2Name}
                           </div>
                           <div className="text-xs text-muted-foreground">
-                            {battle.formatId} &middot; {battle.turnCount} turns &middot; Winner: {winnerLabel(battle.winnerId, battle.team1Name, battle.team2Name)}
+                            {battle.formatId} &middot; {battle.turnCount} turns &middot; Winner:{" "}
+                            {winnerLabel(battle.winnerId, battle.team1Name, battle.team2Name)}
                           </div>
                         </div>
                       </div>
@@ -205,5 +206,5 @@ export default function BattleHubPage() {
         </div>
       </main>
     </>
-  );
+  )
 }

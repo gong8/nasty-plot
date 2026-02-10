@@ -1,20 +1,20 @@
-"use client";
+"use client"
 
-import { useState, useRef } from "react";
-import Link from "next/link";
-import { useQuery } from "@tanstack/react-query";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { useState, useRef } from "react"
+import Link from "next/link"
+import { useQuery } from "@tanstack/react-query"
+import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Skeleton } from "@/components/ui/skeleton";
-import { PokemonSprite, TypeBadge } from "@nasty-plot/ui";
+} from "@/components/ui/select"
+import { Skeleton } from "@/components/ui/skeleton"
+import { PokemonSprite, TypeBadge } from "@nasty-plot/ui"
 import {
   POKEMON_TYPES,
   type PaginatedResponse,
@@ -22,50 +22,50 @@ import {
   type PokemonType,
   type FormatDefinition,
   type ApiResponse,
-} from "@nasty-plot/core";
+} from "@nasty-plot/core"
 
 function getBaseStatTotal(stats: PokemonSpecies["baseStats"]): number {
-  return stats.hp + stats.atk + stats.def + stats.spa + stats.spd + stats.spe;
+  return stats.hp + stats.atk + stats.def + stats.spa + stats.spd + stats.spe
 }
 
 export default function PokemonBrowserPage() {
-  const [search, setSearch] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [typeFilter, setTypeFilter] = useState<PokemonType | null>(null);
-  const [formatId, setFormatId] = useState<string>("");
-  const [page, setPage] = useState(1);
-  const pageSize = 50;
+  const [search, setSearch] = useState("")
+  const [debouncedSearch, setDebouncedSearch] = useState("")
+  const [typeFilter, setTypeFilter] = useState<PokemonType | null>(null)
+  const [formatId, setFormatId] = useState<string>("")
+  const [page, setPage] = useState(1)
+  const pageSize = 50
 
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   function handleSearchChange(value: string) {
-    setSearch(value);
-    if (timerRef.current) clearTimeout(timerRef.current);
+    setSearch(value)
+    if (timerRef.current) clearTimeout(timerRef.current)
     timerRef.current = setTimeout(() => {
-      setDebouncedSearch(value);
-      setPage(1);
-    }, 300);
+      setDebouncedSearch(value)
+      setPage(1)
+    }, 300)
   }
 
   // Fetch formats for the selector
   const { data: formatsData } = useQuery<ApiResponse<FormatDefinition[]>>({
     queryKey: ["formats"],
     queryFn: () => fetch("/api/formats").then((r) => r.json()),
-  });
+  })
 
   // Fetch Pokemon with all filters
-  const params = new URLSearchParams();
-  if (debouncedSearch) params.set("search", debouncedSearch);
-  if (typeFilter) params.set("type", typeFilter);
-  if (formatId) params.set("format", formatId);
-  params.set("page", String(page));
-  params.set("pageSize", String(pageSize));
+  const params = new URLSearchParams()
+  if (debouncedSearch) params.set("search", debouncedSearch)
+  if (typeFilter) params.set("type", typeFilter)
+  if (formatId) params.set("format", formatId)
+  params.set("page", String(page))
+  params.set("pageSize", String(pageSize))
 
   const { data: pokemonData, isLoading } = useQuery<PaginatedResponse<PokemonSpecies>>({
     queryKey: ["pokemon", debouncedSearch, typeFilter, formatId, page],
     queryFn: () => fetch(`/api/pokemon?${params}`).then((r) => r.json()),
-  });
+  })
 
-  const totalPages = pokemonData ? Math.ceil(pokemonData.total / pageSize) : 0;
+  const totalPages = pokemonData ? Math.ceil(pokemonData.total / pageSize) : 0
 
   return (
     <div className="flex flex-col">
@@ -85,8 +85,8 @@ export default function PokemonBrowserPage() {
           <Select
             value={formatId}
             onValueChange={(val) => {
-              setFormatId(val === "all" ? "" : val);
-              setPage(1);
+              setFormatId(val === "all" ? "" : val)
+              setPage(1)
             }}
           >
             <SelectTrigger className="w-48">
@@ -112,8 +112,8 @@ export default function PokemonBrowserPage() {
                 : "bg-muted text-muted-foreground hover:opacity-80"
             }`}
             onClick={() => {
-              setTypeFilter(null);
-              setPage(1);
+              setTypeFilter(null)
+              setPage(1)
             }}
           >
             All
@@ -125,8 +125,8 @@ export default function PokemonBrowserPage() {
               size="sm"
               className={typeFilter !== null && typeFilter !== type ? "opacity-40" : ""}
               onClick={() => {
-                setTypeFilter(typeFilter === type ? null : type);
-                setPage(1);
+                setTypeFilter(typeFilter === type ? null : type)
+                setPage(1)
               }}
             />
           ))}
@@ -203,5 +203,5 @@ export default function PokemonBrowserPage() {
         )}
       </main>
     </div>
-  );
+  )
 }

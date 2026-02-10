@@ -1,34 +1,34 @@
-"use client";
+"use client"
 
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { Search } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { TYPE_COLORS, type PokemonSpecies, type PokemonType } from "@nasty-plot/core";
+import { useState } from "react"
+import { useQuery } from "@tanstack/react-query"
+import { Search } from "lucide-react"
+import { Input } from "@/components/ui/input"
+import { Badge } from "@/components/ui/badge"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { TYPE_COLORS, type PokemonSpecies, type PokemonType } from "@nasty-plot/core"
 
 interface PokemonSearchPanelProps {
-  onSelect: (pokemon: PokemonSpecies) => void;
-  formatId?: string;
+  onSelect: (pokemon: PokemonSpecies) => void
+  formatId?: string
 }
 
 export function PokemonSearchPanel({ onSelect, formatId }: PokemonSearchPanelProps) {
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState("")
 
   const { data: results = [], isLoading } = useQuery<PokemonSpecies[]>({
     queryKey: ["pokemon-search", search, formatId],
     queryFn: async () => {
-      if (!search || search.length < 2) return [];
-      let url = `/api/pokemon?search=${encodeURIComponent(search)}`;
-      if (formatId) url += `&format=${encodeURIComponent(formatId)}`;
-      const res = await fetch(url);
-      if (!res.ok) return [];
-      const json = await res.json();
-      return json.data ?? [];
+      if (!search || search.length < 2) return []
+      let url = `/api/pokemon?search=${encodeURIComponent(search)}`
+      if (formatId) url += `&format=${encodeURIComponent(formatId)}`
+      const res = await fetch(url)
+      if (!res.ok) return []
+      const json = await res.json()
+      return json.data ?? []
     },
     enabled: search.length >= 2,
-  });
+  })
 
   return (
     <div className="flex flex-col gap-3">
@@ -42,22 +42,13 @@ export function PokemonSearchPanel({ onSelect, formatId }: PokemonSearchPanelPro
         />
       </div>
       <ScrollArea className="h-[300px]">
-        {isLoading && (
-          <p className="text-sm text-muted-foreground p-4 text-center">
-            Searching...
-          </p>
-        )}
+        {isLoading && <p className="text-sm text-muted-foreground p-4 text-center">Searching...</p>}
         {!isLoading && search.length >= 2 && results.length === 0 && (
-          <p className="text-sm text-muted-foreground p-4 text-center">
-            No Pokemon found
-          </p>
+          <p className="text-sm text-muted-foreground p-4 text-center">No Pokemon found</p>
         )}
         <div className="flex flex-col gap-1">
           {results.map((pokemon) => {
-            const bst = Object.values(pokemon.baseStats).reduce(
-              (a, b) => a + b,
-              0
-            );
+            const bst = Object.values(pokemon.baseStats).reduce((a, b) => a + b, 0)
             return (
               <button
                 key={pokemon.id}
@@ -68,9 +59,7 @@ export function PokemonSearchPanel({ onSelect, formatId }: PokemonSearchPanelPro
                   {pokemon.id.slice(0, 3)}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium truncate">
-                    {pokemon.name}
-                  </div>
+                  <div className="text-sm font-medium truncate">{pokemon.name}</div>
                   <div className="flex gap-1 mt-0.5">
                     {pokemon.types.map((t: PokemonType) => (
                       <Badge
@@ -83,14 +72,12 @@ export function PokemonSearchPanel({ onSelect, formatId }: PokemonSearchPanelPro
                     ))}
                   </div>
                 </div>
-                <span className="text-xs text-muted-foreground shrink-0">
-                  BST {bst}
-                </span>
+                <span className="text-xs text-muted-foreground shrink-0">BST {bst}</span>
               </button>
-            );
+            )
           })}
         </div>
       </ScrollArea>
     </div>
-  );
+  )
 }

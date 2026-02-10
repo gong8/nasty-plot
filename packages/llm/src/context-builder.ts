@@ -1,4 +1,4 @@
-import type { TeamData, UsageStatsEntry, PokemonSpecies } from "@nasty-plot/core";
+import type { TeamData, UsageStatsEntry, PokemonSpecies } from "@nasty-plot/core"
 
 export function buildTeamContext(teamData: TeamData): string {
   const lines: string[] = [
@@ -6,73 +6,66 @@ export function buildTeamContext(teamData: TeamData): string {
     `Format: ${teamData.formatId}`,
     `Slots filled: ${teamData.slots.length}/6`,
     "",
-  ];
+  ]
 
   for (const slot of teamData.slots) {
-    const species = slot.species;
-    const typesStr = species?.types.join("/") ?? "Unknown";
-    const movesStr = slot.moves.filter(Boolean).join(", ") || "None";
+    const species = slot.species
+    const typesStr = species?.types.join("/") ?? "Unknown"
+    const movesStr = slot.moves.filter(Boolean).join(", ") || "None"
     const evEntries = Object.entries(slot.evs)
       .filter(([, v]) => v > 0)
       .map(([k, v]) => `${v} ${k.toUpperCase()}`)
-      .join(" / ");
+      .join(" / ")
 
-    lines.push(`### Slot ${slot.position}: ${species?.name ?? slot.pokemonId}`);
-    lines.push(`- Type: ${typesStr}`);
-    lines.push(`- Ability: ${slot.ability}`);
-    lines.push(`- Item: ${slot.item}`);
-    lines.push(`- Nature: ${slot.nature}`);
-    if (slot.teraType) lines.push(`- Tera Type: ${slot.teraType}`);
-    lines.push(`- EVs: ${evEntries || "None"}`);
-    lines.push(`- Moves: ${movesStr}`);
+    lines.push(`### Slot ${slot.position}: ${species?.name ?? slot.pokemonId}`)
+    lines.push(`- Type: ${typesStr}`)
+    lines.push(`- Ability: ${slot.ability}`)
+    lines.push(`- Item: ${slot.item}`)
+    lines.push(`- Nature: ${slot.nature}`)
+    if (slot.teraType) lines.push(`- Tera Type: ${slot.teraType}`)
+    lines.push(`- EVs: ${evEntries || "None"}`)
+    lines.push(`- Moves: ${movesStr}`)
     if (species?.baseStats) {
-      const bst = Object.values(species.baseStats).reduce((a, b) => a + b, 0);
+      const bst = Object.values(species.baseStats).reduce((a, b) => a + b, 0)
       lines.push(
-        `- Base Stats: ${species.baseStats.hp}/${species.baseStats.atk}/${species.baseStats.def}/${species.baseStats.spa}/${species.baseStats.spd}/${species.baseStats.spe} (BST: ${bst})`
-      );
+        `- Base Stats: ${species.baseStats.hp}/${species.baseStats.atk}/${species.baseStats.def}/${species.baseStats.spa}/${species.baseStats.spd}/${species.baseStats.spe} (BST: ${bst})`,
+      )
     }
-    lines.push("");
+    lines.push("")
   }
 
   // Type coverage summary
   if (teamData.slots.length > 0) {
-    const allTypes = teamData.slots
-      .filter((s) => s.species)
-      .flatMap((s) => s.species!.types);
-    const uniqueTypes = [...new Set(allTypes)];
-    lines.push(`### Team Type Composition`);
-    lines.push(`Types represented: ${uniqueTypes.join(", ")}`);
-    lines.push("");
+    const allTypes = teamData.slots.filter((s) => s.species).flatMap((s) => s.species!.types)
+    const uniqueTypes = [...new Set(allTypes)]
+    lines.push(`### Team Type Composition`)
+    lines.push(`Types represented: ${uniqueTypes.join(", ")}`)
+    lines.push("")
   }
 
-  return lines.join("\n");
+  return lines.join("\n")
 }
 
-export function buildMetaContext(
-  formatId: string,
-  topPokemon: UsageStatsEntry[]
-): string {
+export function buildMetaContext(formatId: string, topPokemon: UsageStatsEntry[]): string {
   const lines: string[] = [
     `## Meta Overview: ${formatId}`,
     `Top ${topPokemon.length} Pokemon by usage:`,
     "",
-  ];
+  ]
 
   for (const entry of topPokemon) {
-    const name = entry.pokemonName ?? entry.pokemonId;
-    lines.push(
-      `${entry.rank}. ${name} - ${entry.usagePercent.toFixed(2)}% usage`
-    );
+    const name = entry.pokemonName ?? entry.pokemonId
+    lines.push(`${entry.rank}. ${name} - ${entry.usagePercent.toFixed(2)}% usage`)
   }
 
-  return lines.join("\n");
+  return lines.join("\n")
 }
 
 export function buildPokemonContext(pokemonId: string, species: PokemonSpecies): string {
-  const bst = Object.values(species.baseStats).reduce((a, b) => a + b, 0);
+  const bst = Object.values(species.baseStats).reduce((a, b) => a + b, 0)
   const abilities = Object.entries(species.abilities)
     .map(([slot, name]) => (slot === "H" ? `${name} (Hidden)` : name))
-    .join(", ");
+    .join(", ")
 
   return [
     `## Currently Viewing: ${species.name}`,
@@ -83,52 +76,54 @@ export function buildPokemonContext(pokemonId: string, species: PokemonSpecies):
     "",
   ]
     .filter(Boolean)
-    .join("\n");
+    .join("\n")
 }
 
 export interface GuidedBuilderContext {
-  step: string;
-  teamSize: number;
-  currentBuildSlot: number;
-  slotSummaries: string[];
-  formatId: string;
+  step: string
+  teamSize: number
+  currentBuildSlot: number
+  slotSummaries: string[]
+  formatId: string
 }
 
 export interface PageContextData {
-  pageType: string;
-  contextSummary: string;
-  teamId?: string;
-  pokemonId?: string;
-  formatId?: string;
-  guidedBuilder?: GuidedBuilderContext;
+  pageType: string
+  contextSummary: string
+  teamId?: string
+  pokemonId?: string
+  formatId?: string
+  guidedBuilder?: GuidedBuilderContext
 }
 
 export function buildPageContextPrompt(context: PageContextData): string {
-  if (!context.contextSummary && !context.guidedBuilder) return "";
+  if (!context.contextSummary && !context.guidedBuilder) return ""
 
-  const lines: string[] = [];
+  const lines: string[] = []
 
   if (context.contextSummary) {
-    lines.push(`## Current Page Context\n${context.contextSummary}`);
+    lines.push(`## Current Page Context\n${context.contextSummary}`)
   }
 
   if (context.guidedBuilder) {
-    const gb = context.guidedBuilder;
-    lines.push(`## Guided Team Builder`);
-    lines.push(`Step: ${gb.step} | Format: ${gb.formatId} | Team size: ${gb.teamSize}/6`);
+    const gb = context.guidedBuilder
+    lines.push(`## Guided Team Builder`)
+    lines.push(`Step: ${gb.step} | Format: ${gb.formatId} | Team size: ${gb.teamSize}/6`)
     if (gb.step === "build") {
-      lines.push(`Currently filling slot ${gb.currentBuildSlot}`);
+      lines.push(`Currently filling slot ${gb.currentBuildSlot}`)
     }
     if (gb.slotSummaries.length > 0) {
-      lines.push(`\nCurrent team:`);
+      lines.push(`\nCurrent team:`)
       gb.slotSummaries.forEach((s, i) => {
-        lines.push(`${i + 1}. ${s}`);
-      });
+        lines.push(`${i + 1}. ${s}`)
+      })
     }
-    lines.push(`\nThe user is building a team step-by-step in the guided builder. Help them with their current decision.`);
+    lines.push(
+      `\nThe user is building a team step-by-step in the guided builder. Help them with their current decision.`,
+    )
   }
 
-  return "\n" + lines.join("\n") + "\n";
+  return "\n" + lines.join("\n") + "\n"
 }
 
 export function buildPlanModePrompt(): string {
@@ -146,5 +141,5 @@ As you complete each step, output:
 <step_update index="0" status="complete"/>
 
 For simple questions, answer directly without a plan.
-`;
+`
 }

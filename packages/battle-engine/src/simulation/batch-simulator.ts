@@ -1,58 +1,62 @@
-import { runAutomatedBattle, type SingleBattleResult } from "./automated-battle-manager";
-import { RandomAI } from "../ai/random-ai";
-import { GreedyAI } from "../ai/greedy-ai";
-import { HeuristicAI } from "../ai/heuristic-ai";
-import { MCTSAI } from "../ai/mcts-ai";
-import type { AIPlayer, AIDifficulty, BattleFormat } from "../types";
+import { runAutomatedBattle, type SingleBattleResult } from "./automated-battle-manager"
+import { RandomAI } from "../ai/random-ai"
+import { GreedyAI } from "../ai/greedy-ai"
+import { HeuristicAI } from "../ai/heuristic-ai"
+import { MCTSAI } from "../ai/mcts-ai"
+import type { AIPlayer, AIDifficulty, BattleFormat } from "../types"
 
 export interface BatchSimConfig {
-  formatId: string;
-  gameType: BattleFormat;
-  team1Paste: string;
-  team2Paste: string;
-  team1Name?: string;
-  team2Name?: string;
-  aiDifficulty: AIDifficulty;
-  totalGames: number;
+  formatId: string
+  gameType: BattleFormat
+  team1Paste: string
+  team2Paste: string
+  team1Name?: string
+  team2Name?: string
+  aiDifficulty: AIDifficulty
+  totalGames: number
   /** Max concurrent battles. Default: 4 */
-  concurrency?: number;
+  concurrency?: number
 }
 
 export interface PokemonStats {
-  pokemonId: string;
-  name: string;
-  totalKOs: number;
-  totalFaints: number;
-  gamesAppeared: number;
+  pokemonId: string
+  name: string
+  totalKOs: number
+  totalFaints: number
+  gamesAppeared: number
 }
 
 export interface BatchAnalytics {
-  team1WinRate: number;
-  team2WinRate: number;
-  drawRate: number;
-  avgTurnCount: number;
-  minTurnCount: number;
-  maxTurnCount: number;
+  team1WinRate: number
+  team2WinRate: number
+  drawRate: number
+  avgTurnCount: number
+  minTurnCount: number
+  maxTurnCount: number
   /** Per-Pokemon statistics */
-  pokemonStats: PokemonStats[];
+  pokemonStats: PokemonStats[]
   /** Turn count distribution (turn → count) */
-  turnDistribution: Record<number, number>;
+  turnDistribution: Record<number, number>
 }
 
 export interface BatchSimProgress {
-  completed: number;
-  total: number;
-  team1Wins: number;
-  team2Wins: number;
-  draws: number;
+  completed: number
+  total: number
+  team1Wins: number
+  team2Wins: number
+  draws: number
 }
 
 function createAI(difficulty: AIDifficulty): AIPlayer {
   switch (difficulty) {
-    case "random": return new RandomAI();
-    case "greedy": return new GreedyAI();
-    case "heuristic": return new HeuristicAI();
-    case "expert": return new MCTSAI({ maxIterations: 2000, maxTimeMs: 1000 });
+    case "random":
+      return new RandomAI()
+    case "greedy":
+      return new GreedyAI()
+    case "heuristic":
+      return new HeuristicAI()
+    case "expert":
+      return new MCTSAI({ maxIterations: 2000, maxTimeMs: 1000 })
   }
 }
 
@@ -66,21 +70,21 @@ export async function runBatchSimulation(
   config: BatchSimConfig,
   onProgress?: (progress: BatchSimProgress) => void,
 ): Promise<{ results: SingleBattleResult[]; analytics: BatchAnalytics }> {
-  const concurrency = config.concurrency ?? 4;
-  const results: SingleBattleResult[] = [];
-  let team1Wins = 0;
-  let team2Wins = 0;
-  let draws = 0;
-  let completed = 0;
+  const concurrency = config.concurrency ?? 4
+  const results: SingleBattleResult[] = []
+  let team1Wins = 0
+  let team2Wins = 0
+  let draws = 0
+  let completed = 0
 
   // Simple concurrency limiter
-  const queue: Promise<void>[] = [];
-  let active = 0;
+  const queue: Promise<void>[] = []
+  let active = 0
 
   const runOne = async (index: number) => {
     // Each game gets fresh AI instances
-    const ai1 = createAI(config.aiDifficulty);
-    const ai2 = createAI(config.aiDifficulty);
+    const ai1 = createAI(config.aiDifficulty)
+    const ai2 = createAI(config.aiDifficulty)
 
     try {
       const result = await runAutomatedBattle({
@@ -93,45 +97,47 @@ export async function runBatchSimulation(
         ai1,
         ai2,
         maxTurns: 300,
-      });
+      })
 
-      results[index] = result;
+      results[index] = result
 
-      if (result.winner === "p1") team1Wins++;
-      else if (result.winner === "p2") team2Wins++;
-      else draws++;
+      if (result.winner === "p1") team1Wins++
+      else if (result.winner === "p2") team2Wins++
+      else draws++
     } catch (err) {
-      console.error(`[BatchSim] Game ${index} failed:`, err);
-      draws++; // Count failures as draws
+      console.error(`[BatchSim] Game ${index} failed:`, err)
+      draws++ // Count failures as draws
     }
 
-    completed++;
+    completed++
     onProgress?.({
       completed,
       total: config.totalGames,
       team1Wins,
       team2Wins,
       draws,
-    });
-  };
+    })
+  }
 
   // Run games with concurrency limit
   for (let i = 0; i < config.totalGames; i++) {
-    const p = runOne(i).then(() => { active--; });
-    queue.push(p);
-    active++;
+    const p = runOne(i).then(() => {
+      active--
+    })
+    queue.push(p)
+    active++
 
     if (active >= concurrency) {
-      await Promise.race(queue.filter(Boolean));
+      await Promise.race(queue.filter(Boolean))
     }
   }
 
-  await Promise.all(queue);
+  await Promise.all(queue)
 
-  const validResults = results.filter(Boolean);
-  const analytics = computeAnalytics(validResults, config.totalGames, team1Wins, team2Wins, draws);
+  const validResults = results.filter(Boolean)
+  const analytics = computeAnalytics(validResults, config.totalGames, team1Wins, team2Wins, draws)
 
-  return { results: validResults, analytics };
+  return { results: validResults, analytics }
 }
 
 function computeAnalytics(
@@ -141,37 +147,44 @@ function computeAnalytics(
   team2Wins: number,
   draws: number,
 ): BatchAnalytics {
-  const turnCounts = results.map((r) => r.turnCount);
-  const avgTurnCount = turnCounts.length > 0
-    ? Math.round(turnCounts.reduce((a, b) => a + b, 0) / turnCounts.length)
-    : 0;
+  const turnCounts = results.map((r) => r.turnCount)
+  const avgTurnCount =
+    turnCounts.length > 0
+      ? Math.round(turnCounts.reduce((a, b) => a + b, 0) / turnCounts.length)
+      : 0
 
   // Turn distribution
-  const turnDistribution: Record<number, number> = {};
+  const turnDistribution: Record<number, number> = {}
   for (const tc of turnCounts) {
     // Bucket by 5s for cleaner charts
-    const bucket = Math.floor(tc / 5) * 5;
-    turnDistribution[bucket] = (turnDistribution[bucket] || 0) + 1;
+    const bucket = Math.floor(tc / 5) * 5
+    turnDistribution[bucket] = (turnDistribution[bucket] || 0) + 1
   }
 
   // Per-Pokemon stats (from final states)
-  const pokemonStatsMap = new Map<string, PokemonStats>();
+  const pokemonStatsMap = new Map<string, PokemonStats>()
 
   for (const result of results) {
-    const state = result.finalState;
+    const state = result.finalState
 
     for (const side of [state.sides.p1, state.sides.p2]) {
       for (const pokemon of side.team) {
-        const key = pokemon.speciesId || pokemon.name;
-        if (!key) continue;
+        const key = pokemon.speciesId || pokemon.name
+        if (!key) continue
 
-        let stats = pokemonStatsMap.get(key);
+        let stats = pokemonStatsMap.get(key)
         if (!stats) {
-          stats = { pokemonId: key, name: pokemon.name, totalKOs: 0, totalFaints: 0, gamesAppeared: 0 };
-          pokemonStatsMap.set(key, stats);
+          stats = {
+            pokemonId: key,
+            name: pokemon.name,
+            totalKOs: 0,
+            totalFaints: 0,
+            gamesAppeared: 0,
+          }
+          pokemonStatsMap.set(key, stats)
         }
-        stats.gamesAppeared++;
-        if (pokemon.fainted) stats.totalFaints++;
+        stats.gamesAppeared++
+        if (pokemon.fainted) stats.totalFaints++
       }
     }
   }
@@ -185,5 +198,5 @@ function computeAnalytics(
     maxTurnCount: turnCounts.length > 0 ? Math.max(...turnCounts) : 0,
     pokemonStats: [...pokemonStatsMap.values()],
     turnDistribution,
-  };
+  }
 }

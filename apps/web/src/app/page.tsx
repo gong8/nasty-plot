@@ -1,6 +1,6 @@
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import Link from "next/link"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 
 export default function Home() {
   return (
@@ -18,7 +18,8 @@ export default function Home() {
             Build Competitive Pokemon Teams
           </h2>
           <p className="text-lg text-muted-foreground">
-            Your war room for Scarlet/Violet. Usage data, damage rolls, matchup analysis, and AI-powered teambuilding.
+            Your war room for Scarlet/Violet. Usage data, damage rolls, matchup analysis, and
+            AI-powered teambuilding.
           </p>
           <p className="text-sm text-muted-foreground italic">
             Every great team starts with a nasty plot. Pecharunt approves.
@@ -28,7 +29,9 @@ export default function Home() {
               <Button size="lg">Build a Team</Button>
             </Link>
             <Link href="/pokemon">
-              <Button size="lg" variant="outline">Browse Pokemon</Button>
+              <Button size="lg" variant="outline">
+                Browse Pokemon
+              </Button>
             </Link>
           </div>
         </div>
@@ -41,8 +44,8 @@ export default function Home() {
             </CardHeader>
             <CardContent>
               <p className="text-sm text-muted-foreground">
-                Build for any competitive format with legality checks
-                and tier-specific usage data baked in.
+                Build for any competitive format with legality checks and tier-specific usage data
+                baked in.
               </p>
             </CardContent>
           </Card>
@@ -54,8 +57,8 @@ export default function Home() {
             </CardHeader>
             <CardContent>
               <p className="text-sm text-muted-foreground">
-                Run damage rolls, view matchup matrices against meta
-                threats, and spot coverage gaps before they cost you a game.
+                Run damage rolls, view matchup matrices against meta threats, and spot coverage gaps
+                before they cost you a game.
               </p>
             </CardContent>
           </Card>
@@ -67,13 +70,13 @@ export default function Home() {
             </CardHeader>
             <CardContent>
               <p className="text-sm text-muted-foreground">
-                Teammate recommendations driven by usage data, type coverage,
-                and synergy scoring — with reasoning you can learn from.
+                Teammate recommendations driven by usage data, type coverage, and synergy scoring —
+                with reasoning you can learn from.
               </p>
             </CardContent>
           </Card>
         </div>
       </main>
     </div>
-  );
+  )
 }

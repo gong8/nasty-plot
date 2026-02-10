@@ -45,6 +45,7 @@ the canonical representation of a team throughout the system.
 ### Two Builder Modes
 
 **Guided Builder** (`/teams/[teamId]/guided`)
+
 - Step-by-step slot filling with recommendations at each stage.
 - `getRecommendations(teamId)` from `packages/recommendations/src/composite-recommender.ts` runs
   after each slot addition, combining usage-based and coverage-based signals.
@@ -52,11 +53,13 @@ the canonical representation of a team throughout the system.
 - The system suggests what to add next based on what the team is missing.
 
 **Freeform Builder** (`/teams/[teamId]`)
+
 - Showdown paste import via `importShowdownPaste()` from `packages/teams/src/import-export.service.ts`.
 - Manual Pokemon search, move selection, EV/IV editing.
 - Full control, no hand-holding.
 
 Both modes write through the same service layer:
+
 - `createTeam()`, `addSlot()`, `updateSlot()`, `removeSlot()` from `packages/teams/src/team.service.ts`
 - Both produce identical `TeamSlotData` -- the difference is the UX journey, not the data.
 
@@ -64,12 +67,12 @@ Both modes write through the same service layer:
 
 As Pokemon are added, the analysis package evaluates the team in progress:
 
-| Analysis | Function | File |
-|----------|----------|------|
-| Type coverage (offensive + defensive) | `analyzeTypeCoverage(slots)` | `packages/analysis/src/coverage.service.ts` |
-| Threat identification vs meta | `identifyThreats(slots, formatId)` | `packages/analysis/src/threat.service.ts` |
-| Synergy scoring (0-100) | `calculateSynergy(slots)` | `packages/analysis/src/synergy.service.ts` |
-| Full orchestrated analysis | `analyzeTeam(teamId)` | `packages/analysis/src/analysis.service.ts` |
+| Analysis                              | Function                           | File                                        |
+| ------------------------------------- | ---------------------------------- | ------------------------------------------- |
+| Type coverage (offensive + defensive) | `analyzeTypeCoverage(slots)`       | `packages/analysis/src/coverage.service.ts` |
+| Threat identification vs meta         | `identifyThreats(slots, formatId)` | `packages/analysis/src/threat.service.ts`   |
+| Synergy scoring (0-100)               | `calculateSynergy(slots)`          | `packages/analysis/src/synergy.service.ts`  |
+| Full orchestrated analysis            | `analyzeTeam(teamId)`              | `packages/analysis/src/analysis.service.ts` |
 
 **Coverage analysis** counts how many team members can hit each type super-effectively (offensive)
 and how many resist each attacking type (defensive). It flags uncovered types and shared weaknesses
@@ -80,6 +83,7 @@ checks STAB type effectiveness against the team, and assigns threat levels (high
 based on a weighted score of type coverage exploitation and usage percentage.
 
 **Synergy scoring** is a 0-100 composite of four components:
+
 - Defensive complementarity (35 pts max) -- do teammates cover each other's weaknesses?
 - Offensive breadth (25 pts) -- how many of the 18 types can the team hit SE?
 - Speed diversity (20 pts) -- a mix of fast and slow Pokemon, not all clumped.
@@ -116,6 +120,7 @@ The chat system (`packages/llm/`) integrates into the build stage via context in
   is in the app (team editor, Pokemon detail, damage calc, etc.).
 
 Typical build-stage LLM interactions:
+
 - "What should my 6th Pokemon be?"
 - "Is running Scarf Garchomp worth it in this team?"
 - "What EV spread should I use for defensive Corviknight?"
@@ -127,6 +132,7 @@ with data: `get_pokemon`, `get_smogon_sets`, `suggest_teammates`, `analyze_team_
 ### Sample Teams
 
 Pre-built sample teams (`packages/teams/src/sample-team.service.ts`) provide starting points:
+
 - `listSampleTeams({ formatId, archetype, search })` filters by format and archetype (Rain, Sun, HO, Balance, etc.)
 - `createSampleTeam()` / `importSampleTeamsFromPastes()` for bulk import from Showdown pastes.
 - Users can load a sample team, then fork and customize it.
@@ -153,6 +159,7 @@ Testing means putting the team into battles and observing what happens. Two mode
 The user plays against an AI opponent in a live battle at `/battle/live`.
 
 **Battle Manager** (`packages/battle-engine/src/battle-manager.ts`)
+
 - `BattleManager` class orchestrates everything via `@pkmn/sim`'s `BattleStream`.
 - Handles team preview, lead selection, turn-by-turn move/switch submission.
 - Maintains a normalized `BattleState` (`packages/battle-engine/src/types.ts`, lines 95-116) that
@@ -161,23 +168,25 @@ The user plays against an AI opponent in a live battle at `/battle/live`.
 
 **AI Opponents** -- four difficulty tiers:
 
-| Tier | Class | Strategy |
-|------|-------|----------|
-| Random | `RandomAI` | Legal random moves. Baseline noise. |
-| Greedy | `GreedyAI` | Picks the move that deals the most immediate damage. No switching. |
-| Heuristic | `HeuristicAI` | Type matchups, switching logic, status awareness, hazard play. |
-| Expert | `MCTSAI` | Monte Carlo Tree Search with DUCT (Decoupled UCT) for simultaneous moves. |
+| Tier      | Class         | Strategy                                                                  |
+| --------- | ------------- | ------------------------------------------------------------------------- |
+| Random    | `RandomAI`    | Legal random moves. Baseline noise.                                       |
+| Greedy    | `GreedyAI`    | Picks the move that deals the most immediate damage. No switching.        |
+| Heuristic | `HeuristicAI` | Type matchups, switching logic, status awareness, hazard play.            |
+| Expert    | `MCTSAI`      | Monte Carlo Tree Search with DUCT (Decoupled UCT) for simultaneous moves. |
 
 All implement the `AIPlayer` interface (`packages/battle-engine/src/types.ts`, lines 218-225):
+
 ```typescript
 interface AIPlayer {
-  readonly difficulty: AIDifficulty;
-  chooseAction(state: BattleState, actions: BattleActionSet): Promise<BattleAction>;
-  chooseLeads(teamSize: number, gameType: BattleFormat): number[];
+  readonly difficulty: AIDifficulty
+  chooseAction(state: BattleState, actions: BattleActionSet): Promise<BattleAction>
+  chooseLeads(teamSize: number, gameType: BattleFormat): number[]
 }
 ```
 
 **MCTS Expert AI** (`packages/battle-engine/src/ai/mcts-ai.ts`)
+
 - Uses `Battle.fromJSON()` to clone the actual `@pkmn/sim` battle state.
 - Runs UCB1 selection independently for each player (DUCT handles simultaneous moves).
 - Random rollouts up to configurable depth, then static evaluation via `evaluatePosition()`.
@@ -185,6 +194,7 @@ interface AIPlayer {
 - Default config: 10000 iterations, 5000ms time limit, exploration constant 0.7, rollout depth 4.
 
 **Battle Flow:**
+
 1. `BattleManager.start()` -- writes format, player teams to `BattleStream`.
 2. Team Preview phase -- user picks lead order, AI picks via `chooseLeads()`.
 3. Battle phase -- each turn: user submits action, AI responds, `processOutput()` updates state.
@@ -196,30 +206,34 @@ interface AIPlayer {
 At `/battle/simulate`, run N games automatically between two teams.
 
 **Automated Battle Manager** (`packages/battle-engine/src/simulation/automated-battle-manager.ts`)
+
 - `runAutomatedBattle(config)` runs a single game with two AI players, no delays, no UI callbacks.
 - Returns `SingleBattleResult`: winner, turn count, protocol log, final state snapshot, per-turn actions.
 
 **Batch Simulator** (`packages/battle-engine/src/simulation/batch-simulator.ts`)
+
 - `runBatchSimulation(config, onProgress)` runs `totalGames` games with a configurable concurrency limit (default: 4).
 - Each game gets fresh AI instances via `createAI(difficulty)`.
 - Progress callback fires after each game with `BatchSimProgress`: completed/total, wins for each side, draws.
 
 **`BatchSimConfig`:**
+
 ```typescript
 interface BatchSimConfig {
-  formatId: string;
-  gameType: BattleFormat;        // "singles" | "doubles"
-  team1Paste: string;            // Showdown paste format
-  team2Paste: string;
-  team1Name?: string;
-  team2Name?: string;
-  aiDifficulty: AIDifficulty;   // Both sides use the same AI tier
-  totalGames: number;
-  concurrency?: number;          // Default: 4
+  formatId: string
+  gameType: BattleFormat // "singles" | "doubles"
+  team1Paste: string // Showdown paste format
+  team2Paste: string
+  team1Name?: string
+  team2Name?: string
+  aiDifficulty: AIDifficulty // Both sides use the same AI tier
+  totalGames: number
+  concurrency?: number // Default: 4
 }
 ```
 
 **`BatchAnalytics`** output:
+
 - `team1WinRate`, `team2WinRate`, `drawRate` -- percentages.
 - `avgTurnCount`, `minTurnCount`, `maxTurnCount` -- game length distribution.
 - `pokemonStats: PokemonStats[]` -- per-Pokemon KO counts, faint counts, appearances.
@@ -228,6 +242,7 @@ interface BatchSimConfig {
 ### Target Meta Integration (Planned)
 
 Not yet implemented, but the intended extension:
+
 - Define a "target meta" -- either from usage data or a custom list of threats.
 - Auto-generate representative opponent teams from the meta.
 - Simulate your team against the meta, not just a single opponent.
@@ -264,6 +279,7 @@ After running a batch simulation, `BatchAnalytics` gives the big picture:
 For individual battles, the replay and evaluation engines provide turn-level insight.
 
 **Replay Engine** (`packages/battle-engine/src/replay/replay-engine.ts`)
+
 - `ReplayEngine` takes a raw `@pkmn/sim` protocol log and reconstructs `ReplayFrame`s.
 - Each frame captures: turn number, deep-cloned `BattleState`, log entries for that turn,
   and win probability for team 1.
@@ -272,14 +288,15 @@ For individual battles, the replay and evaluation engines provide turn-level ins
 
 ```typescript
 interface ReplayFrame {
-  turnNumber: number;
-  state: BattleState;           // Deep clone at this turn boundary
-  entries: BattleLogEntry[];    // Events during this turn
-  winProbTeam1: number | null;  // Win probability for p1, 0-100
+  turnNumber: number
+  state: BattleState // Deep clone at this turn boundary
+  entries: BattleLogEntry[] // Events during this turn
+  winProbTeam1: number | null // Win probability for p1, 0-100
 }
 ```
 
 **Position Evaluator** (`packages/battle-engine/src/ai/evaluator.ts`)
+
 - `evaluatePosition(state, perspective)` returns a score in [-1, +1].
 - Seven weighted features:
   1. HP remaining differential (weight: 1024)
@@ -293,12 +310,14 @@ interface ReplayFrame {
 - Returns `EvalResult` with score, raw score, and feature breakdown for UI display.
 
 **Win Probability** (`packages/battle-engine/src/ai/win-probability.ts`)
+
 - `estimateWinProbability(state)` maps the evaluator's [-1, +1] score through an S-curve:
   `50 + 50 * sign(s) * |s|^0.85` to produce a [0, 100] win percentage.
 - `winProbabilityDelta(before, after)` calculates the swing between two states and flags
   turns with > 20% swing as "critical."
 
 **Hint Engine** (`packages/battle-engine/src/ai/hint-engine.ts`)
+
 - `generateHints(state, actions, perspective)` scores all legal actions at the current position.
 - Damaging moves scored via `@smogon/calc` -- actual damage percentages, KO chances, priority bonuses.
 - Status moves scored by heuristic: hazards (30-40 pts), status infliction (25-45 pts),
@@ -308,17 +327,18 @@ interface ReplayFrame {
 - Each action classified relative to the best option:
 
 | Gap from Best | Classification |
-|---------------|---------------|
-| 0 | best |
-| 1-5 | good |
-| 6-15 | neutral |
-| 16-30 | inaccuracy |
-| 31-60 | mistake |
-| 61+ | blunder |
+| ------------- | -------------- |
+| 0             | best           |
+| 1-5           | good           |
+| 6-15          | neutral        |
+| 16-30         | inaccuracy     |
+| 31-60         | mistake        |
+| 61+           | blunder        |
 
 This classification is inspired by chess engine annotations (Stockfish-style).
 
 **LLM Commentary** (`packages/llm/src/battle-context-builder.ts`)
+
 - `buildTurnCommentaryContext(state, entries, team1Name, team2Name)` generates a prompt
   for turn-by-turn AI commentary: battle state summary, this turn's events, request for
   2-3 sentence analysis.
@@ -331,16 +351,16 @@ This classification is inspired by chess engine annotations (Stockfish-style).
 
 No battles needed -- pure team composition analysis:
 
-| Dimension | What It Answers | Function |
-|-----------|----------------|----------|
-| Offensive coverage | Which types can we hit SE? Which are uncovered? | `analyzeTypeCoverage(slots)` |
-| Defensive coverage | Which types do we resist? Where are the holes? | `analyzeTypeCoverage(slots)` |
-| Shared weaknesses | Are 2+ Pokemon weak to the same type? | `analyzeTypeCoverage(slots)` |
-| Threat identification | Which meta Pokemon exploit our weaknesses? | `identifyThreats(slots, formatId)` |
-| Speed tiers | What outspeeds what? | `calculateSpeedTiers(slots)` in `analysis.service.ts` |
-| Synergy score | How well do the Pokemon complement each other? | `calculateSynergy(slots)` |
-| Damage matchups | Exact damage calcs against specific threats | `calculateMatchupMatrix(teamSlots, threatIds, formatId)` |
-| Suggestions | Plain-English advice from analysis results | `generateSuggestions()` in `analysis.service.ts` |
+| Dimension             | What It Answers                                 | Function                                                 |
+| --------------------- | ----------------------------------------------- | -------------------------------------------------------- |
+| Offensive coverage    | Which types can we hit SE? Which are uncovered? | `analyzeTypeCoverage(slots)`                             |
+| Defensive coverage    | Which types do we resist? Where are the holes?  | `analyzeTypeCoverage(slots)`                             |
+| Shared weaknesses     | Are 2+ Pokemon weak to the same type?           | `analyzeTypeCoverage(slots)`                             |
+| Threat identification | Which meta Pokemon exploit our weaknesses?      | `identifyThreats(slots, formatId)`                       |
+| Speed tiers           | What outspeeds what?                            | `calculateSpeedTiers(slots)` in `analysis.service.ts`    |
+| Synergy score         | How well do the Pokemon complement each other?  | `calculateSynergy(slots)`                                |
+| Damage matchups       | Exact damage calcs against specific threats     | `calculateMatchupMatrix(teamSlots, threatIds, formatId)` |
+| Suggestions           | Plain-English advice from analysis results      | `generateSuggestions()` in `analysis.service.ts`         |
 
 The `analyzeTeam(teamId)` orchestrator in `packages/analysis/src/analysis.service.ts` runs all
 of these and returns a unified `TeamAnalysis` object.
@@ -375,6 +395,7 @@ Small, precise changes to address specific weaknesses identified in analysis:
   offensive coverage.
 
 The damage calculator (`packages/damage-calc/src/calc.service.ts`) validates these changes:
+
 - `calculateDamage(input)` for specific attacker/defender/move combinations.
 - `calculateMatchupMatrix(teamSlots, threatIds, formatId)` to see how the change ripples
   across the threat landscape.
@@ -382,6 +403,7 @@ The damage calculator (`packages/damage-calc/src/calc.service.ts`) validates the
 ### Wholesale Replacement
 
 When a Pokemon is the problem, not its set:
+
 - Identify the underperformer from batch sim `PokemonStats` (high faint count, low KO count).
 - Use `getRecommendations(teamId)` to find replacements that fill the same role or cover
   the gap the removed Pokemon leaves.
@@ -431,23 +453,22 @@ A concrete example of the loop in action.
 **BUILD stage:**
 
 Start with the rain core:
+
 1. **Pelipper** -- Drizzle ability sets rain. Utility support (U-turn, Defog, Roost).
 2. **Barraskewda** -- Swift Swim sweeper. Liquidation, Flip Turn, Close Combat, Aqua Jet.
 
 At this point, `analyzeTypeCoverage()` flags:
+
 - Uncovered types: Ground, Dragon (no SE coverage against them)
 - Shared weakness: Electric (both are weak)
 
-`getRecommendations(teamId)` suggests teammates. We pick:
-3. **Ferrothorn** -- resists Electric, sets Stealth Rock, Leech Seed staller.
-4. **Zapdos** -- immune to Ground, checks Fighting types, Volt Switch momentum.
-5. **Excadrill** -- Rapid Spin hazard removal, Steel-type coverage.
-6. **Toxapex** -- Defensive anchor, Regenerator, Haze for setup sweepers.
+`getRecommendations(teamId)` suggests teammates. We pick: 3. **Ferrothorn** -- resists Electric, sets Stealth Rock, Leech Seed staller. 4. **Zapdos** -- immune to Ground, checks Fighting types, Volt Switch momentum. 5. **Excadrill** -- Rapid Spin hazard removal, Steel-type coverage. 6. **Toxapex** -- Defensive anchor, Regenerator, Haze for setup sweepers.
 
 `calculateSynergy(slots)` returns 62/100. Decent but not great -- Excadrill doesn't benefit
 from rain and overlaps in role with Ferrothorn.
 
 `identifyThreats(slots, "gen9ou")` flags:
+
 - **Rillaboom** (high) -- Grass STAB hits Pelipper, Barraskewda, Toxapex SE. Grassy Surge
   weakens rain-boosted Water moves.
 - **Amoonguss** (medium) -- Grass/Poison resists Water, Spore shuts down sweepers.
@@ -469,6 +490,7 @@ runBatchSimulation({
 ```
 
 **Results:** `BatchAnalytics` shows:
+
 - Win rate: 48% (below break-even)
 - Excadrill: 89 games appeared, 54 faints, 12 KOs. Worst performer.
 - Barraskewda: 89 games appeared, 31 faints, 47 KOs. Star performer.
@@ -477,6 +499,7 @@ runBatchSimulation({
 **ANALYZE stage:**
 
 Replay critical losses with `ReplayEngine`. Pattern emerges:
+
 - Grass-types (Rillaboom, Amoonguss) consistently wall the team.
 - Excadrill doesn't synergize with rain (Sand Rush is useless in rain).
 - Win probability graphs show sharp drops when Rillaboom enters.
@@ -490,14 +513,16 @@ or "mistake" in most Grass-type matchups -- no SE coverage against them.
 
 Problem identified: Excadrill doesn't belong on this team.
 
-*Fork the team* (planned -- currently done manually by creating a new team).
+_Fork the team_ (planned -- currently done manually by creating a new team).
 
 Changes:
+
 1. **Replace Excadrill with Iron Bundle** -- Ice/Water typing. Benefits from rain (Water moves
    boosted). Ice coverage handles Grass-types (Rillaboom, Amoonguss). Freeze-Dry for Water/Ground types.
 2. **Swap Toxapex's Scald for Ice Beam** -- extra Grass coverage from the defensive slot.
 
 Re-run analysis:
+
 - `analyzeTypeCoverage()` -- Grass is no longer an uncovered offensive type.
 - `calculateSynergy(slots)` jumps to 71/100.
 - `calculateDamage()` confirms: Iron Bundle Freeze-Dry OHKOs standard Rillaboom (252 SpA, Life Orb).
@@ -507,6 +532,7 @@ Re-run analysis:
 Run another 100 games, same conditions.
 
 **Results:**
+
 - Win rate: 57% (up from 48%).
 - Iron Bundle: 91 games appeared, 29 faints, 43 KOs. Massive improvement over Excadrill.
 - Against Rillaboom specifically: Iron Bundle KOs Rillaboom 89% of the time.
@@ -671,16 +697,16 @@ How data moves between packages during one full cycle of the loop.
 
 Each stage of the loop maps to specific pages and components:
 
-| Stage | Primary Page | Key Components |
-|-------|-------------|----------------|
-| BUILD (guided) | `/teams/[teamId]/guided` | `PokemonSearchPanel`, `SlotEditor`, `ItemCombobox` |
-| BUILD (freeform) | `/teams/[teamId]` | `SlotEditor`, Showdown paste import |
-| TEST (play) | `/battle/live` | `BattleView`, `MoveSelector`, `TeamPreview` |
-| TEST (simulate) | `/battle/simulate` | Batch config form, progress bar |
+| Stage            | Primary Page                | Key Components                                     |
+| ---------------- | --------------------------- | -------------------------------------------------- |
+| BUILD (guided)   | `/teams/[teamId]/guided`    | `PokemonSearchPanel`, `SlotEditor`, `ItemCombobox` |
+| BUILD (freeform) | `/teams/[teamId]`           | `SlotEditor`, Showdown paste import                |
+| TEST (play)      | `/battle/live`              | `BattleView`, `MoveSelector`, `TeamPreview`        |
+| TEST (simulate)  | `/battle/simulate`          | Batch config form, progress bar                    |
 | ANALYZE (replay) | `/battle/replay/[battleId]` | `ReplayControls`, `WinProbabilityGraph`, `EvalBar` |
-| ANALYZE (hints) | `/battle/live` | `HintPanel`, `CommentaryPanel` |
-| ANALYZE (static) | `/teams/[teamId]` | Coverage matrix, threat list, synergy gauge |
-| TWEAK | `/teams/[teamId]` | `SlotEditor`, recommendations panel |
+| ANALYZE (hints)  | `/battle/live`              | `HintPanel`, `CommentaryPanel`                     |
+| ANALYZE (static) | `/teams/[teamId]`           | Coverage matrix, threat list, synergy gauge        |
+| TWEAK            | `/teams/[teamId]`           | `SlotEditor`, recommendations panel                |
 
 The chat sidebar (`ChatSidebar`, `ChatPanel`) is available on every page, providing
 LLM assistance at any point in the loop.
@@ -691,14 +717,14 @@ LLM assistance at any point in the loop.
 
 The loop is only as good as the weakest link. Here's where each connection is today:
 
-| Connection | Status | Mechanism |
-|------------|--------|-----------|
-| BUILD -> TEST | Working | Export team paste, configure battle, start sim |
-| TEST -> ANALYZE | Working | Protocol log -> ReplayEngine, BatchAnalytics |
-| ANALYZE -> TWEAK | Partially manual | User reads analysis, makes changes by hand |
-| TWEAK -> BUILD | Working | `updateSlot()` / `addSlot()` -- same team editor |
-| Fork/Compare | Planned | Team versioning, side-by-side sim comparison |
-| LLM integration | Working | Chat available at all stages, context-aware |
+| Connection       | Status           | Mechanism                                        |
+| ---------------- | ---------------- | ------------------------------------------------ |
+| BUILD -> TEST    | Working          | Export team paste, configure battle, start sim   |
+| TEST -> ANALYZE  | Working          | Protocol log -> ReplayEngine, BatchAnalytics     |
+| ANALYZE -> TWEAK | Partially manual | User reads analysis, makes changes by hand       |
+| TWEAK -> BUILD   | Working          | `updateSlot()` / `addSlot()` -- same team editor |
+| Fork/Compare     | Planned          | Team versioning, side-by-side sim comparison     |
+| LLM integration  | Working          | Chat available at all stages, context-aware      |
 
 The planned team versioning system is the piece that makes TWEAK -> BUILD seamless:
 fork before changing, compare variants quantitatively, merge the winner. Without it,

@@ -15,17 +15,20 @@ This document defines four user personas, maps their journeys through the produc
 **Background:** Casey plays Pokemon casually -- they've finished Scarlet and Violet, bred a few Pokemon, maybe watched a YouTube video about competitive. They've heard of Smogon but find it intimidating. Terms like "OU," "252/252/4 spread," and "pivot" are foreign.
 
 **Goals:**
+
 - Build their first competitive team without feeling lost
-- Understand *why* certain Pokemon and moves are considered good
+- Understand _why_ certain Pokemon and moves are considered good
 - Win some battles and feel like they're learning, not just losing
 
 **Pain Points:**
+
 - Information overload. A typical Smogon analysis page assumes knowledge Casey doesn't have.
 - No sense of where to start. "Pick a Pokemon" is paralyzing when there are 400+ options.
 - Doesn't understand EVs, IVs, or natures -- and doesn't want to until they need to.
 - Jargon everywhere: "hazard control," "momentum," "breaking," "walling."
 
 **How Casey uses Nasty Plot:**
+
 - Starts with the **guided builder**, which walks them through team construction step by step: pick a format, choose a core, fill roles.
 - Imports a **sample team** to learn from rather than building from scratch.
 - Reads **simplified analysis**: "Your team is weak to Ground-type moves" rather than "You have 4/6 Pokemon with Ground weakness and no viable Ground-immune switch-in with offensive pressure."
@@ -34,6 +37,7 @@ This document defines four user personas, maps their journeys through the produc
 - Asks **Pecharunt** questions in plain language: "Why is this Pokemon good?" and gets answers without assumed knowledge.
 
 **Casey's first session might look like:**
+
 1. Open Nasty Plot, land on the home page
 2. Click "Build a Team" and choose Guided mode
 3. Pick OU because the tooltip says "The most popular competitive format"
@@ -53,18 +57,21 @@ This document defines four user personas, maps their journeys through the produc
 **Background:** Jordan has been playing on Showdown for a while. They can build a team, know the common threats, and understand type matchups intuitively. They've hit a plateau around 1300-1400 Elo and can't figure out what separates them from the next level.
 
 **Goals:**
+
 - Break through their skill ceiling
-- Understand *why* their team loses specific matchups, not just *that* it does
+- Understand _why_ their team loses specific matchups, not just _that_ it does
 - Learn to read opponents and predict switches
 - Iterate on teams systematically instead of rebuilding from scratch every time
 
 **Pain Points:**
+
 - Can identify problems ("I always lose to Rain teams") but not solutions
 - Rebuilds teams constantly instead of iterating on what works
 - Doesn't use damage calc enough -- plays on vibes instead of numbers
 - No structured way to review their games and spot patterns
 
 **How Jordan uses Nasty Plot:**
+
 - Uses the **freeform builder** exclusively. They know what they want; they just need the tools.
 - **Imports and exports Showdown paste** constantly -- Nasty Plot and Showdown are used side by side.
 - Runs **post-game review** after losses. The win probability graph shows them exactly where the game turned. "Oh, I was actually winning until turn 14 when I switched Garchomp into Zapdos."
@@ -74,6 +81,7 @@ This document defines four user personas, maps their journeys through the produc
 - Uses **recommendations** to find Pokemon that patch specific weaknesses rather than browsing randomly.
 
 **Jordan's typical workflow:**
+
 1. Paste their current team from Showdown into Nasty Plot
 2. Run the analysis -- see the full coverage matrix and threat list
 3. Notice a Ground weakness they hadn't considered
@@ -93,18 +101,21 @@ This document defines four user personas, maps their journeys through the produc
 **Background:** Alex is a tournament player or high-ladder grinder (1700+ Elo). They have deep meta knowledge, understand set optimization, and can predict opponents' teams from Team Preview. They don't need to learn competitive Pokemon -- they need tools that keep up with their pace.
 
 **Goals:**
+
 - Find marginal advantages through precise optimization
 - Test team variants efficiently without playing 50 manual games
 - Prepare for specific tournament metas (what will the top 16 bring?)
 - Maximize win rate across a large sample, not just individual games
 
 **Pain Points:**
+
 - Manual testing is painfully slow. Playing 50 games to validate a 4 EV change is absurd.
 - No good way to compare team variants head-to-head with statistical significance
 - Meta shifts between tournament rounds -- what worked in Swiss may not work in top cut
 - EV optimization is guesswork without precise damage thresholds
 
 **How Alex uses Nasty Plot:**
+
 - Lives in the **freeform builder** but relies heavily on **team versioning**: fork a team, make a change, compare both versions.
 - Runs **batch simulations** (100+ games) to validate changes with statistical confidence. "Version A wins 58% against the meta; Version B wins 61%. The difference is the Slowking EV spread."
 - Defines **meta profiles** -- weighted distributions of what they expect to face. "In my tournament bracket, expect 30% Stall, 25% Rain, 20% Sun, 25% Balance."
@@ -114,6 +125,7 @@ This document defines four user personas, maps their journeys through the produc
 - Asks **Pecharunt** for deep analysis: "Switching to 252 Def Bold Slowking with Regenerator gives you a Heatran counter that doesn't sacrifice your Water immunity -- your current Toxapex trades that for Toxic stall, which underperforms against Heavy-Duty Boots users in the current meta."
 
 **Alex's tournament prep workflow:**
+
 1. Build their base team in freeform mode
 2. Fork the team into 3 variants (anti-stall, anti-rain, generalist)
 3. Define a meta profile matching the expected tournament field
@@ -134,18 +146,21 @@ This document defines four user personas, maps their journeys through the produc
 **Background:** Sam is a programmer who builds Pokemon tools, contributes to open-source projects, or wants to automate competitive analysis. They might be building a custom AI, a team rating bot, or a meta analysis dashboard. They care about APIs, type safety, and clean interfaces.
 
 **Goals:**
+
 - Programmatic access to the battle engine, analysis tools, and Pokemon data
 - Build custom tools on top of Nasty Plot's packages
 - Automate team testing and meta analysis
 - Potentially contribute to the project
 
 **Pain Points:**
+
 - Most Pokemon tools have no programmatic interface -- it's all web UIs
 - Undocumented APIs and inconsistent data formats
 - Can't script simulations or batch operations
 - Building from `@pkmn/*` directly is possible but requires significant glue code
 
 **How Sam uses Nasty Plot:**
+
 - Uses the **MCP server** to integrate Nasty Plot's capabilities into Claude workflows (24 tools, 5 resources covering data queries, analysis, team CRUD, and meta recommendations).
 - Imports **packages directly** as ESM modules with full TypeScript types: `@nasty-plot/core` for domain types, `@nasty-plot/battle-engine` for simulation, `@nasty-plot/damage-calc` for calculations.
 - Uses the **battle engine API** to run automated battles: create a `BattleManager`, attach AI players, simulate hundreds of games.
@@ -154,6 +169,7 @@ This document defines four user personas, maps their journeys through the produc
 - Reads `CLAUDE.md` and `docs/` to understand the architecture before diving in.
 
 **Sam's integration workflow:**
+
 1. Clone the repo, run `pnpm install`
 2. Read `CLAUDE.md` for architecture overview
 3. Import `@nasty-plot/battle-engine` into their project
@@ -175,7 +191,7 @@ Nasty Plot organizes its features into four experience layers. These are not acc
 
 This layer is about removing friction. Casey shouldn't need to understand the meta to build a viable team, and they shouldn't need to know damage formulas to win a battle.
 
-- **Guided team builder** walks through team construction step by step: choose a format, pick a starting core, fill coverage roles. Each step explains the *why*.
+- **Guided team builder** walks through team construction step by step: choose a format, pick a starting core, fill coverage roles. Each step explains the _why_.
 - **Sample teams** provide pre-built, tested teams to start from. Casey can modify them rather than building from zero.
 - **Simplified analysis dashboard** shows 3-4 key metrics: type weaknesses, offensive coverage gaps, and an overall "team health" indicator. No coverage matrices or threat indices.
 - **Contextual tooltips** explain jargon on hover: "OU (OverUsed) is the most popular competitive format. It includes the strongest non-banned Pokemon."
@@ -239,7 +255,7 @@ The four layers are guidelines, not gates. The entire system is governed by five
 
 ### 1. Not Gated
 
-Users self-select their depth. There is no "unlock Level 2" gatekeeping, no experience points, no forced tutorials. Casey can open the freeform builder on day one. Alex can use the guided builder if they want a quick team. The layers describe *defaults and emphasis*, not access control.
+Users self-select their depth. There is no "unlock Level 2" gatekeeping, no experience points, no forced tutorials. Casey can open the freeform builder on day one. Alex can use the guided builder if they want a quick team. The layers describe _defaults and emphasis_, not access control.
 
 ### 2. Discoverable
 
@@ -254,6 +270,7 @@ Features appear when they're relevant. The "Fork Team" button appears after you'
 The AI assistant's language complexity scales with demonstrated user behavior. If Casey asks "what Pokemon should I use?", Pecharunt suggests a sample team with a simple explanation. If Alex asks the same question, Pecharunt references usage stats, meta trends, and specific set optimizations. The signal is the user's vocabulary and question depth, not an explicit setting.
 
 Pecharunt calibration signals:
+
 - **Vocabulary used:** "strong Pokemon" (L0) vs. "wallbreaker for the current OU meta" (L2)
 - **Question specificity:** "Is this team good?" (L0) vs. "Does this EV spread let Slowking survive Heatran's Magma Storm?" (L2)
 - **Feature usage:** guided builder users get simpler language; batch sim users get expert language
@@ -269,33 +286,33 @@ Every simplification has a path to the full version. The simplified analysis has
 
 This table maps features to personas and their experience layers. "Primary" means the feature is central to that persona's workflow. "Available" means visible and usable but not emphasized. "API" means accessible programmatically rather than through the web UI.
 
-| Feature | Casey (L0) | Jordan (L1) | Alex (L2) | Sam (L3) | Implemented? |
-|---|---|---|---|---|---|
-| Guided builder | Primary | Available | Available | -- | Yes |
-| Freeform builder | Available | Primary | Primary | -- | Yes |
-| Paste import/export | -- | Primary | Primary | API | Yes |
-| Sample teams browser | Primary | Available | Available | API | Yes |
-| Type coverage analysis | Simplified | Full | Full | API | Yes |
-| Threat identification | Simplified | Full | Full | API | Yes |
-| Synergy scoring | -- | Available | Full | API | Yes |
-| Damage calculator | -- | Standard | Full (field conditions) | API | Yes |
-| Matchup matrix | -- | Available | Primary | API | Yes |
-| Recommendations | Auto-suggested | On demand | On demand | API | Yes |
-| Battle vs AI (4 tiers) | Greedy default | All tiers | All tiers | Programmatic | Yes |
-| Move hints/classification | Always on | Toggleable | Toggleable | -- | Yes |
-| Win probability | -- | Post-game | Live + post-game | API | Yes |
-| Set predictor (Bayesian) | -- | -- | Available | API | Yes |
-| Battle replay viewer | -- | Available | Primary | API | Yes |
-| Batch simulation | -- | -- | Primary | API | Yes |
-| Battle commentary (LLM) | Available | Available | Available | -- | Yes |
-| Post-game review | -- | Basic (graph) | Full (classification) | -- | Partial |
-| Team versioning | -- | -- | Primary | API | Not yet |
-| Meta profiles | -- | -- | Primary | API | Not yet |
-| Replay move classification | -- | Basic | Full | API | Not yet |
-| EV optimization | -- | -- | Available | API | Not yet |
-| MCP server (24 tools) | -- | -- | -- | Primary | Yes |
-| Package APIs (14 packages) | -- | -- | -- | Primary | Yes |
-| REST API | -- | -- | -- | Primary | Yes |
+| Feature                    | Casey (L0)     | Jordan (L1)   | Alex (L2)               | Sam (L3)     | Implemented? |
+| -------------------------- | -------------- | ------------- | ----------------------- | ------------ | ------------ |
+| Guided builder             | Primary        | Available     | Available               | --           | Yes          |
+| Freeform builder           | Available      | Primary       | Primary                 | --           | Yes          |
+| Paste import/export        | --             | Primary       | Primary                 | API          | Yes          |
+| Sample teams browser       | Primary        | Available     | Available               | API          | Yes          |
+| Type coverage analysis     | Simplified     | Full          | Full                    | API          | Yes          |
+| Threat identification      | Simplified     | Full          | Full                    | API          | Yes          |
+| Synergy scoring            | --             | Available     | Full                    | API          | Yes          |
+| Damage calculator          | --             | Standard      | Full (field conditions) | API          | Yes          |
+| Matchup matrix             | --             | Available     | Primary                 | API          | Yes          |
+| Recommendations            | Auto-suggested | On demand     | On demand               | API          | Yes          |
+| Battle vs AI (4 tiers)     | Greedy default | All tiers     | All tiers               | Programmatic | Yes          |
+| Move hints/classification  | Always on      | Toggleable    | Toggleable              | --           | Yes          |
+| Win probability            | --             | Post-game     | Live + post-game        | API          | Yes          |
+| Set predictor (Bayesian)   | --             | --            | Available               | API          | Yes          |
+| Battle replay viewer       | --             | Available     | Primary                 | API          | Yes          |
+| Batch simulation           | --             | --            | Primary                 | API          | Yes          |
+| Battle commentary (LLM)    | Available      | Available     | Available               | --           | Yes          |
+| Post-game review           | --             | Basic (graph) | Full (classification)   | --           | Partial      |
+| Team versioning            | --             | --            | Primary                 | API          | Not yet      |
+| Meta profiles              | --             | --            | Primary                 | API          | Not yet      |
+| Replay move classification | --             | Basic         | Full                    | API          | Not yet      |
+| EV optimization            | --             | --            | Available               | API          | Not yet      |
+| MCP server (24 tools)      | --             | --            | --                      | Primary      | Yes          |
+| Package APIs (14 packages) | --             | --            | --                      | Primary      | Yes          |
+| REST API                   | --             | --            | --                      | Primary      | Yes          |
 
 "--" means the feature is not the primary audience for that persona, but access is never blocked.
 
@@ -363,11 +380,11 @@ The experience layers imply a UI that adapts without mode-switching:
 
 Pecharunt is the connective tissue across all layers. Its ability to adapt tone and depth is critical:
 
-| Layer | Example Response to "Is my team good?" |
-|---|---|
-| L0 | "Your team looks solid! You have good type coverage and a mix of attackers and defenders. One thing to watch: you don't have a great answer to Ground-type moves. Consider adding a Flying-type or a Pokemon with Levitate." |
-| L1 | "Your team has decent offensive coverage but you're missing a Ground immunity. You're running 3 Pokemon weak to Earthquake with no safe switch-in. Consider Zapdos or Rotom-Wash -- both check Ground-types while adding to your team's offensive profile." |
-| L2 | "Your current build has a structural Ground weakness -- Garchomp, Heatran, and Kingambit are all hit super effectively with no Levitate or Flying-type to pivot into. In the current OU meta, Landorus-T appears on 34% of teams, making this exploitable. Zapdos-Therian with Intimidate patches this while threatening Garchomp variants. Running 252 HP / 168 Def lets it survive +1 Stone Edge from Garchomp 94% of the time." |
+| Layer | Example Response to "Is my team good?"                                                                                                                                                                                                                                                                                                                                                                                             |
+| ----- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| L0    | "Your team looks solid! You have good type coverage and a mix of attackers and defenders. One thing to watch: you don't have a great answer to Ground-type moves. Consider adding a Flying-type or a Pokemon with Levitate."                                                                                                                                                                                                       |
+| L1    | "Your team has decent offensive coverage but you're missing a Ground immunity. You're running 3 Pokemon weak to Earthquake with no safe switch-in. Consider Zapdos or Rotom-Wash -- both check Ground-types while adding to your team's offensive profile."                                                                                                                                                                        |
+| L2    | "Your current build has a structural Ground weakness -- Garchomp, Heatran, and Kingambit are all hit super effectively with no Levitate or Flying-type to pivot into. In the current OU meta, Landorus-T appears on 34% of teams, making this exploitable. Zapdos-Therian with Intimidate patches this while threatening Garchomp variants. Running 252 HP / 168 Def lets it survive +1 Stone Edge from Garchomp 94% of the time." |
 
 ### Content Strategy
 
@@ -384,16 +401,16 @@ Each persona needs different content:
 
 How we know each persona is being served well:
 
-| Persona | Success Signal |
-|---|---|
-| Casey | Completes guided builder flow. Plays 3+ battles in first week. Returns after day 1. |
-| Jordan | Imports a paste. Uses post-game review. Iterates on the same team (not just creating new ones). |
-| Alex | Runs batch simulations. Uses team versioning. Session length > 30 minutes. |
-| Sam | Successfully imports a package. Makes API calls. Opens a PR or files an issue. |
+| Persona | Success Signal                                                                                  |
+| ------- | ----------------------------------------------------------------------------------------------- |
+| Casey   | Completes guided builder flow. Plays 3+ battles in first week. Returns after day 1.             |
+| Jordan  | Imports a paste. Uses post-game review. Iterates on the same team (not just creating new ones). |
+| Alex    | Runs batch simulations. Uses team versioning. Session length > 30 minutes.                      |
+| Sam     | Successfully imports a package. Makes API calls. Opens a PR or files an issue.                  |
 
-| Persona | Failure Signal |
-|---|---|
-| Casey | Abandons guided builder midway. Never plays a battle. Doesn't return. |
-| Jordan | Only imports but never uses analysis. Doesn't review games. Creates many teams, finishes none. |
-| Alex | Doesn't trust batch sim results. Falls back to manual testing on Showdown. |
-| Sam | Can't figure out package structure. Gives up on API integration. |
+| Persona | Failure Signal                                                                                 |
+| ------- | ---------------------------------------------------------------------------------------------- |
+| Casey   | Abandons guided builder midway. Never plays a battle. Doesn't return.                          |
+| Jordan  | Only imports but never uses analysis. Doesn't review games. Creates many teams, finishes none. |
+| Alex    | Doesn't trust batch sim results. Falls back to manual testing on Showdown.                     |
+| Sam     | Can't figure out package structure. Gives up on API integration.                               |

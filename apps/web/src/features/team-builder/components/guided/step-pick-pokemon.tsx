@@ -1,39 +1,39 @@
-"use client";
+"use client"
 
-import { useState } from "react";
-import { Sparkles, Search, ChevronDown, ChevronUp } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
-import { Skeleton } from "@/components/ui/skeleton";
-import { cn } from "@/lib/utils";
+import { useState } from "react"
+import { Sparkles, Search, ChevronDown, ChevronUp } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Separator } from "@/components/ui/separator"
+import { Skeleton } from "@/components/ui/skeleton"
+import { cn } from "@/lib/utils"
 import type {
   Recommendation,
   TeamAnalysis,
   UsageStatsEntry,
   PokemonSpecies,
   PokemonType,
-} from "@nasty-plot/core";
-import { PokemonSearchPanel } from "../pokemon-search-panel";
-import { RecommendationCard } from "./recommendation-card";
-import { RoleSuggestionBanner } from "./role-suggestion-banner";
-import { SimplifiedAnalysis } from "./simplified-analysis";
-import type { GuidedPokemonPick } from "../../hooks/use-guided-builder";
+} from "@nasty-plot/core"
+import { PokemonSearchPanel } from "../pokemon-search-panel"
+import { RecommendationCard } from "./recommendation-card"
+import { RoleSuggestionBanner } from "./role-suggestion-banner"
+import { SimplifiedAnalysis } from "./simplified-analysis"
+import type { GuidedPokemonPick } from "../../hooks/use-guided-builder"
 
 interface StepPickPokemonProps {
   /** "lead" for slot 1, "build" for slots 2-6 */
-  mode: "lead" | "build";
-  slotNumber: number; // 1-6
-  recommendations: Recommendation[];
-  isLoadingRecommendations: boolean;
-  usageData: UsageStatsEntry[];
-  isLoadingUsage: boolean;
-  analysis: TeamAnalysis | null;
-  isLoadingAnalysis: boolean;
-  filledSlotCount: number;
-  allSelectedIds: Set<string>;
-  formatId?: string;
-  onPick: (pick: GuidedPokemonPick) => void;
-  onSkip?: () => void;
+  mode: "lead" | "build"
+  slotNumber: number // 1-6
+  recommendations: Recommendation[]
+  isLoadingRecommendations: boolean
+  usageData: UsageStatsEntry[]
+  isLoadingUsage: boolean
+  analysis: TeamAnalysis | null
+  isLoadingAnalysis: boolean
+  filledSlotCount: number
+  allSelectedIds: Set<string>
+  formatId?: string
+  onPick: (pick: GuidedPokemonPick) => void
+  onSkip?: () => void
 }
 
 export function StepPickPokemon({
@@ -51,14 +51,12 @@ export function StepPickPokemon({
   onPick,
   onSkip,
 }: StepPickPokemonProps) {
-  const [showManualSearch, setShowManualSearch] = useState(false);
+  const [showManualSearch, setShowManualSearch] = useState(false)
 
-  const isLead = mode === "lead";
+  const isLead = mode === "lead"
 
   // Filter recommendations to exclude already-selected Pokemon
-  const filteredRecs = recommendations.filter(
-    (r) => !allSelectedIds.has(r.pokemonId)
-  );
+  const filteredRecs = recommendations.filter((r) => !allSelectedIds.has(r.pokemonId))
 
   // Fallback: if no recommendations, use top usage data
   const fallbackPicks: Recommendation[] =
@@ -73,15 +71,15 @@ export function StepPickPokemon({
             reasons: [
               {
                 type: "usage" as const,
-                description: `${(u.usagePercent).toFixed(1)}% usage in this format`,
+                description: `${u.usagePercent.toFixed(1)}% usage in this format`,
                 weight: 1,
               },
             ],
           }))
-      : [];
+      : []
 
-  const displayRecs = filteredRecs.length > 0 ? filteredRecs : fallbackPicks;
-  const isLoading = isLoadingRecommendations || (filteredRecs.length === 0 && isLoadingUsage);
+  const displayRecs = filteredRecs.length > 0 ? filteredRecs : fallbackPicks
+  const isLoading = isLoadingRecommendations || (filteredRecs.length === 0 && isLoadingUsage)
 
   const handleManualSelect = (pokemon: PokemonSpecies) => {
     onPick({
@@ -89,19 +87,19 @@ export function StepPickPokemon({
       pokemonName: pokemon.name,
       types: pokemon.types as PokemonType[],
       num: pokemon.num,
-    });
-  };
+    })
+  }
 
   const handleRecPick = (rec: Recommendation) => {
-    const usage = usageData.find((u) => u.pokemonId === rec.pokemonId);
+    const usage = usageData.find((u) => u.pokemonId === rec.pokemonId)
     onPick({
       pokemonId: rec.pokemonId,
       pokemonName: rec.pokemonName,
       types: usage?.types ?? [],
       usagePercent: usage?.usagePercent,
       num: usage?.num,
-    });
-  };
+    })
+  }
 
   return (
     <div className="space-y-4">
@@ -149,13 +147,8 @@ export function StepPickPokemon({
                     key={rec.pokemonId}
                     pokemonId={rec.pokemonId}
                     pokemonName={rec.pokemonName}
-                    types={
-                      usageData.find((u) => u.pokemonId === rec.pokemonId)
-                        ?.types ?? []
-                    }
-                    num={
-                      usageData.find((u) => u.pokemonId === rec.pokemonId)?.num
-                    }
+                    types={usageData.find((u) => u.pokemonId === rec.pokemonId)?.types ?? []}
+                    num={usageData.find((u) => u.pokemonId === rec.pokemonId)?.num}
                     score={rec.score}
                     reasons={rec.reasons}
                     onPick={() => handleRecPick(rec)}
@@ -165,8 +158,7 @@ export function StepPickPokemon({
               </div>
             ) : (
               <p className="text-sm text-muted-foreground py-4 text-center">
-                No recommendations available. Use the search below to find a
-                Pokemon.
+                No recommendations available. Use the search below to find a Pokemon.
               </p>
             )}
           </div>
@@ -178,7 +170,7 @@ export function StepPickPokemon({
               onClick={() => setShowManualSearch((prev) => !prev)}
               className={cn(
                 "flex items-center gap-2 w-full text-left text-sm font-medium py-2 px-3 rounded-lg transition-colors",
-                "hover:bg-accent text-muted-foreground hover:text-foreground"
+                "hover:bg-accent text-muted-foreground hover:text-foreground",
               )}
             >
               <Search className="h-4 w-4" />
@@ -191,10 +183,7 @@ export function StepPickPokemon({
             </button>
             {showManualSearch && (
               <div className="mt-3 rounded-lg border p-4">
-                <PokemonSearchPanel
-                  onSelect={handleManualSelect}
-                  formatId={formatId}
-                />
+                <PokemonSearchPanel onSelect={handleManualSelect} formatId={formatId} />
               </div>
             )}
           </div>
@@ -219,5 +208,5 @@ export function StepPickPokemon({
         </div>
       </div>
     </div>
-  );
+  )
 }

@@ -1,4 +1,5 @@
 # Session: Guided Builder Reimagine
+
 **Date:** 2026-02-10
 **Duration context:** Long (continued from a previous session that ran out of context)
 
@@ -48,6 +49,7 @@
 ## Files changed
 
 ### New files (10)
+
 - `apps/web/src/features/team-builder/components/guided/step-start.tsx`
 - `apps/web/src/features/team-builder/components/guided/step-pick-pokemon.tsx`
 - `apps/web/src/features/team-builder/components/guided/step-customize-sets.tsx`
@@ -60,10 +62,12 @@
 - `apps/web/src/features/team-builder/components/guided/ask-pecharunt-button.tsx`
 
 ### Full rewrites (2)
+
 - `apps/web/src/features/team-builder/hooks/use-guided-builder.ts`
 - `apps/web/src/features/team-builder/components/guided-builder.tsx`
 
 ### Modified (7)
+
 - `apps/web/src/app/teams/[teamId]/guided/page.tsx` — wider container, formatId prop, removed header freeform button
 - `apps/web/src/app/teams/new/page.tsx` — guided mode description text
 - `packages/llm/src/context-builder.ts` — `GuidedBuilderContext`, enhanced `buildPageContextPrompt()`

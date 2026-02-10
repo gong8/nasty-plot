@@ -1,15 +1,15 @@
-"use client";
+"use client"
 
-import { useState } from "react";
-import Link from "next/link";
-import { ChevronDown, ChevronRight } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { PokemonSprite } from "@nasty-plot/ui";
-import type { LineageNode } from "@nasty-plot/core";
+import { useState } from "react"
+import Link from "next/link"
+import { ChevronDown, ChevronRight } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
+import { PokemonSprite } from "@nasty-plot/ui"
+import type { LineageNode } from "@nasty-plot/core"
 
 interface LineageTreeProps {
-  tree: LineageNode;
-  currentTeamId: string;
+  tree: LineageNode
+  currentTeamId: string
 }
 
 export function LineageTree({ tree, currentTeamId }: LineageTreeProps) {
@@ -17,7 +17,7 @@ export function LineageTree({ tree, currentTeamId }: LineageTreeProps) {
     <div className="space-y-1">
       <TreeNode node={tree} currentTeamId={currentTeamId} depth={0} />
     </div>
-  );
+  )
 }
 
 function TreeNode({
@@ -25,21 +25,19 @@ function TreeNode({
   currentTeamId,
   depth,
 }: {
-  node: LineageNode;
-  currentTeamId: string;
-  depth: number;
+  node: LineageNode
+  currentTeamId: string
+  depth: number
 }) {
-  const [expanded, setExpanded] = useState(depth <= 4);
-  const isCurrent = node.teamId === currentTeamId;
-  const hasChildren = node.children.length > 0;
+  const [expanded, setExpanded] = useState(depth <= 4)
+  const isCurrent = node.teamId === currentTeamId
+  const hasChildren = node.children.length > 0
 
   return (
     <div>
       <div
         className={`flex items-center gap-2 py-1.5 px-2 rounded-md text-sm ${
-          isCurrent
-            ? "bg-primary/10 border border-primary/30"
-            : "hover:bg-muted/50"
+          isCurrent ? "bg-primary/10 border border-primary/30" : "hover:bg-muted/50"
         } ${node.isArchived ? "opacity-50" : ""}`}
         style={{ paddingLeft: `${depth * 20 + 8}px` }}
       >
@@ -60,9 +58,7 @@ function TreeNode({
         )}
 
         {/* Tree connector line */}
-        {depth > 0 && (
-          <span className="text-muted-foreground text-xs">|--</span>
-        )}
+        {depth > 0 && <span className="text-muted-foreground text-xs">|--</span>}
 
         {/* Team name */}
         <Link
@@ -124,5 +120,5 @@ function TreeNode({
           />
         ))}
     </div>
-  );
+  )
 }

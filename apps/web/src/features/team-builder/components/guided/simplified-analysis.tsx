@@ -1,57 +1,53 @@
-"use client";
+"use client"
 
-import {
-  type TeamAnalysis,
-  POKEMON_TYPES,
-  type PokemonType,
-} from "@nasty-plot/core";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { TypeBadge } from "@nasty-plot/ui";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Progress } from "@/components/ui/progress";
-import { Shield, Swords, Gauge, AlertTriangle } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { type TeamAnalysis, POKEMON_TYPES, type PokemonType } from "@nasty-plot/core"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { TypeBadge } from "@nasty-plot/ui"
+import { Skeleton } from "@/components/ui/skeleton"
+import { Progress } from "@/components/ui/progress"
+import { Shield, Swords, Gauge, AlertTriangle } from "lucide-react"
+import { cn } from "@/lib/utils"
 
 interface SimplifiedAnalysisProps {
-  analysis: TeamAnalysis | null;
-  isLoading: boolean;
-  filledSlotCount: number;
+  analysis: TeamAnalysis | null
+  isLoading: boolean
+  filledSlotCount: number
 }
 
 function getTypeCoverageStatus(
   type: PokemonType,
-  analysis: TeamAnalysis
+  analysis: TeamAnalysis,
 ): "covered" | "weakness" | "neutral" {
-  const isCovered = analysis.coverage.offensive[type] > 0;
-  const isWeakness = analysis.coverage.sharedWeaknesses.includes(type);
+  const isCovered = analysis.coverage.offensive[type] > 0
+  const isWeakness = analysis.coverage.sharedWeaknesses.includes(type)
 
-  if (isWeakness) return "weakness";
-  if (isCovered) return "covered";
-  return "neutral";
+  if (isWeakness) return "weakness"
+  if (isCovered) return "covered"
+  return "neutral"
 }
 
 function getThreatLevelColor(level: "high" | "medium" | "low"): string {
   switch (level) {
     case "high":
-      return "bg-red-500/15 text-red-400 border-red-500/30";
+      return "bg-red-500/15 text-red-400 border-red-500/30"
     case "medium":
-      return "bg-yellow-500/15 text-yellow-400 border-yellow-500/30";
+      return "bg-yellow-500/15 text-yellow-400 border-yellow-500/30"
     case "low":
-      return "bg-green-500/15 text-green-400 border-green-500/30";
+      return "bg-green-500/15 text-green-400 border-green-500/30"
   }
 }
 
 function getSynergyColor(score: number): string {
-  if (score < 30) return "bg-red-500";
-  if (score <= 60) return "bg-yellow-500";
-  return "bg-green-500";
+  if (score < 30) return "bg-red-500"
+  if (score <= 60) return "bg-yellow-500"
+  return "bg-green-500"
 }
 
 function getSynergyLabel(score: number): string {
-  if (score < 30) return "Weak";
-  if (score <= 60) return "Moderate";
-  return "Strong";
+  if (score < 30) return "Weak"
+  if (score <= 60) return "Moderate"
+  return "Strong"
 }
 
 export function SimplifiedAnalysis({
@@ -62,11 +58,9 @@ export function SimplifiedAnalysis({
   if (filledSlotCount === 0 && !isLoading) {
     return (
       <div className="flex items-center justify-center rounded-lg border border-dashed p-8">
-        <p className="text-sm text-muted-foreground">
-          Add Pokemon to see analysis
-        </p>
+        <p className="text-sm text-muted-foreground">Add Pokemon to see analysis</p>
       </div>
-    );
+    )
   }
 
   if (isLoading) {
@@ -78,16 +72,14 @@ export function SimplifiedAnalysis({
         <Skeleton className="h-24 w-full rounded-lg" />
         <Skeleton className="h-16 w-full rounded-lg" />
       </div>
-    );
+    )
   }
 
   if (!analysis) {
-    return null;
+    return null
   }
 
-  const coveredCount = POKEMON_TYPES.filter(
-    (t) => analysis.coverage.offensive[t] > 0
-  ).length;
+  const coveredCount = POKEMON_TYPES.filter((t) => analysis.coverage.offensive[t] > 0).length
 
   return (
     <div className="space-y-3">
@@ -107,7 +99,7 @@ export function SimplifiedAnalysis({
         <CardContent className="px-4 py-0">
           <div className="grid grid-cols-6 gap-1.5">
             {POKEMON_TYPES.map((type) => {
-              const status = getTypeCoverageStatus(type, analysis);
+              const status = getTypeCoverageStatus(type, analysis)
               return (
                 <TypeBadge
                   key={type}
@@ -117,10 +109,10 @@ export function SimplifiedAnalysis({
                     "text-[8px] min-w-0 px-1 py-0.5",
                     status === "covered" && "opacity-100 ring-1 ring-green-400/50",
                     status === "weakness" && "opacity-100 ring-1 ring-red-400/50",
-                    status === "neutral" && "opacity-40"
+                    status === "neutral" && "opacity-40",
                   )}
                 />
-              );
+              )
             })}
           </div>
           <div className="mt-2 flex items-center gap-3 text-[10px] text-muted-foreground">
@@ -158,9 +150,7 @@ export function SimplifiedAnalysis({
                 >
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-medium truncate">
-                        {threat.pokemonName}
-                      </span>
+                      <span className="text-xs font-medium truncate">{threat.pokemonName}</span>
                       <span className="text-[10px] text-muted-foreground shrink-0">
                         {threat.usagePercent.toFixed(1)}%
                       </span>
@@ -173,7 +163,7 @@ export function SimplifiedAnalysis({
                     variant="outline"
                     className={cn(
                       "shrink-0 text-[10px] px-1.5 py-0 border",
-                      getThreatLevelColor(threat.threatLevel)
+                      getThreatLevelColor(threat.threatLevel),
                     )}
                   >
                     {threat.threatLevel}
@@ -199,10 +189,8 @@ export function SimplifiedAnalysis({
                   className={cn(
                     "font-semibold",
                     analysis.synergyScore < 30 && "text-red-400",
-                    analysis.synergyScore >= 30 &&
-                      analysis.synergyScore <= 60 &&
-                      "text-yellow-400",
-                    analysis.synergyScore > 60 && "text-green-400"
+                    analysis.synergyScore >= 30 && analysis.synergyScore <= 60 && "text-yellow-400",
+                    analysis.synergyScore > 60 && "text-green-400",
                   )}
                 >
                   {analysis.synergyScore}
@@ -215,14 +203,11 @@ export function SimplifiedAnalysis({
           </CardHeader>
           <CardContent className="px-4 py-0">
             <div className="relative">
-              <Progress
-                value={analysis.synergyScore}
-                className="h-2"
-              />
+              <Progress value={analysis.synergyScore} className="h-2" />
               <div
                 className={cn(
                   "absolute inset-0 h-2 rounded-full transition-all",
-                  getSynergyColor(analysis.synergyScore)
+                  getSynergyColor(analysis.synergyScore),
                 )}
                 style={{
                   width: `${analysis.synergyScore}%`,
@@ -247,18 +232,11 @@ export function SimplifiedAnalysis({
               {[...analysis.speedTiers]
                 .sort((a, b) => b.speed - a.speed)
                 .map((entry) => (
-                  <div
-                    key={entry.pokemonId}
-                    className="flex items-center justify-between text-xs"
-                  >
-                    <span className="truncate text-muted-foreground">
-                      {entry.pokemonName}
-                    </span>
+                  <div key={entry.pokemonId} className="flex items-center justify-between text-xs">
+                    <span className="truncate text-muted-foreground">{entry.pokemonName}</span>
                     <span className="shrink-0 ml-2 font-mono text-[11px] font-medium">
                       {entry.speed}
-                      {entry.boosted && (
-                        <span className="text-yellow-400 ml-0.5">+</span>
-                      )}
+                      {entry.boosted && <span className="text-yellow-400 ml-0.5">+</span>}
                     </span>
                   </div>
                 ))}
@@ -271,9 +249,7 @@ export function SimplifiedAnalysis({
       {analysis.suggestions.length > 0 && (
         <Card className="gap-3 py-3">
           <CardHeader className="px-4 py-0">
-            <CardTitle className="text-xs text-muted-foreground">
-              Suggestions
-            </CardTitle>
+            <CardTitle className="text-xs text-muted-foreground">Suggestions</CardTitle>
           </CardHeader>
           <CardContent className="px-4 py-0">
             <ul className="space-y-1.5">
@@ -291,5 +267,5 @@ export function SimplifiedAnalysis({
         </Card>
       )}
     </div>
-  );
+  )
 }

@@ -1,24 +1,24 @@
-"use client";
+"use client"
 
-import { useState, useCallback, useRef, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { MessageSquare, Loader2 } from "lucide-react";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import type { BattleState, BattleLogEntry } from "@nasty-plot/battle-engine";
+import { useState, useCallback, useRef, useEffect } from "react"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { MessageSquare, Loader2 } from "lucide-react"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import type { BattleState, BattleLogEntry } from "@nasty-plot/battle-engine"
 
 interface CommentaryPanelProps {
-  state: BattleState;
-  recentEntries: BattleLogEntry[];
-  team1Name?: string;
-  team2Name?: string;
-  className?: string;
+  state: BattleState
+  recentEntries: BattleLogEntry[]
+  team1Name?: string
+  team2Name?: string
+  className?: string
   /** Pre-loaded commentary from DB (turn → text) */
-  initialCommentary?: Record<number, string>;
+  initialCommentary?: Record<number, string>
   /** Called after commentary finishes streaming for a turn */
-  onCommentaryGenerated?: (turn: number, text: string) => void;
+  onCommentaryGenerated?: (turn: number, text: string) => void
   /** When true, automatically fetch commentary at end of each turn */
-  autoMode?: boolean;
+  autoMode?: boolean
 }
 
 export function CommentaryPanel({
@@ -31,45 +31,43 @@ export function CommentaryPanel({
   onCommentaryGenerated,
   autoMode = false,
 }: CommentaryPanelProps) {
-  const [comments, setComments] = useState<Record<number, string>>(
-    initialCommentary ?? {},
-  );
-  const [isLoading, setIsLoading] = useState(false);
-  const [currentText, setCurrentText] = useState("");
-  const [streamingTurn, setStreamingTurn] = useState<number | null>(null);
-  const abortRef = useRef<AbortController | null>(null);
-  const lastAutoTurnRef = useRef<number>(0);
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const [comments, setComments] = useState<Record<number, string>>(initialCommentary ?? {})
+  const [isLoading, setIsLoading] = useState(false)
+  const [currentText, setCurrentText] = useState("")
+  const [streamingTurn, setStreamingTurn] = useState<number | null>(null)
+  const abortRef = useRef<AbortController | null>(null)
+  const lastAutoTurnRef = useRef<number>(0)
+  const scrollRef = useRef<HTMLDivElement>(null)
 
   // Sync when initialCommentary prop changes (e.g. replay frame navigation)
   useEffect(() => {
     if (initialCommentary) {
-      setComments((prev) => ({ ...prev, ...initialCommentary }));
+      setComments((prev) => ({ ...prev, ...initialCommentary }))
     }
-  }, [initialCommentary]);
+  }, [initialCommentary])
 
   // Auto-scroll to bottom when new content appears
   useEffect(() => {
     if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight
     }
-  }, [comments, currentText]);
+  }, [comments, currentText])
 
   const fetchCommentary = useCallback(
     async (turnNumber?: number) => {
-      if (isLoading) return;
+      if (isLoading) return
 
-      const turn = turnNumber ?? state.turn;
+      const turn = turnNumber ?? state.turn
       // Skip if we already have commentary for this turn
-      if (comments[turn]) return;
+      if (comments[turn]) return
 
-      setIsLoading(true);
-      setCurrentText("");
-      setStreamingTurn(turn);
+      setIsLoading(true)
+      setCurrentText("")
+      setStreamingTurn(turn)
 
-      abortRef.current?.abort();
-      const controller = new AbortController();
-      abortRef.current = controller;
+      abortRef.current?.abort()
+      const controller = new AbortController()
+      abortRef.current = controller
 
       try {
         const res = await fetch("/api/battles/commentary", {
@@ -83,30 +81,30 @@ export function CommentaryPanel({
             team2Name,
           }),
           signal: controller.signal,
-        });
+        })
 
-        if (!res.ok || !res.body) throw new Error("Failed to fetch commentary");
+        if (!res.ok || !res.body) throw new Error("Failed to fetch commentary")
 
-        const reader = res.body.getReader();
-        const decoder = new TextDecoder();
-        let text = "";
+        const reader = res.body.getReader()
+        const decoder = new TextDecoder()
+        let text = ""
 
         while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
+          const { done, value } = await reader.read()
+          if (done) break
 
-          const chunk = decoder.decode(value, { stream: true });
-          const lines = chunk.split("\n");
+          const chunk = decoder.decode(value, { stream: true })
+          const lines = chunk.split("\n")
 
           for (const line of lines) {
             if (line.startsWith("data: ")) {
-              const data = line.slice(6);
-              if (data === "[DONE]") break;
+              const data = line.slice(6)
+              if (data === "[DONE]") break
               try {
-                const parsed = JSON.parse(data);
+                const parsed = JSON.parse(data)
                 if (parsed.content) {
-                  text += parsed.content;
-                  setCurrentText(text);
+                  text += parsed.content
+                  setCurrentText(text)
                 }
               } catch {
                 // Skip invalid JSON
@@ -116,53 +114,53 @@ export function CommentaryPanel({
         }
 
         if (text) {
-          setComments((prev) => ({ ...prev, [turn]: text }));
-          onCommentaryGenerated?.(turn, text);
+          setComments((prev) => ({ ...prev, [turn]: text }))
+          onCommentaryGenerated?.(turn, text)
         }
       } catch (err) {
         if (err instanceof Error && err.name !== "AbortError") {
-          console.error("[Commentary]", err);
+          console.error("[Commentary]", err)
         }
       } finally {
-        setIsLoading(false);
-        setCurrentText("");
-        setStreamingTurn(null);
+        setIsLoading(false)
+        setCurrentText("")
+        setStreamingTurn(null)
       }
     },
     [state, recentEntries, team1Name, team2Name, isLoading, comments, onCommentaryGenerated],
-  );
+  )
 
   // Auto-commentary: trigger when turn changes and autoMode is on
   useEffect(() => {
-    if (!autoMode) return;
-    if (state.turn <= 0 || recentEntries.length === 0) return;
-    if (state.turn === lastAutoTurnRef.current) return;
+    if (!autoMode) return
+    if (state.turn <= 0 || recentEntries.length === 0) return
+    if (state.turn === lastAutoTurnRef.current) return
     if (comments[state.turn]) {
-      lastAutoTurnRef.current = state.turn;
-      return;
+      lastAutoTurnRef.current = state.turn
+      return
     }
 
-    lastAutoTurnRef.current = state.turn;
+    lastAutoTurnRef.current = state.turn
     // Small delay so the log entries are fully populated
     const timer = setTimeout(() => {
-      fetchCommentary(state.turn);
-    }, 500);
+      fetchCommentary(state.turn)
+    }, 500)
 
-    return () => clearTimeout(timer);
-  }, [autoMode, state.turn, recentEntries.length, comments, fetchCommentary]);
+    return () => clearTimeout(timer)
+  }, [autoMode, state.turn, recentEntries.length, comments, fetchCommentary])
 
   useEffect(() => {
     return () => {
-      abortRef.current?.abort();
-    };
-  }, []);
+      abortRef.current?.abort()
+    }
+  }, [])
 
-  const hasCurrent = comments[state.turn] != null;
+  const hasCurrent = comments[state.turn] != null
 
   // Build sorted list of turns with commentary
   const sortedTurns = Object.keys(comments)
     .map(Number)
-    .sort((a, b) => a - b);
+    .sort((a, b) => a - b)
 
   return (
     <Card className={className}>
@@ -179,9 +177,7 @@ export function CommentaryPanel({
             disabled={isLoading || recentEntries.length === 0 || hasCurrent}
             className="h-7 text-xs"
           >
-            {isLoading ? (
-              <Loader2 className="h-3 w-3 animate-spin mr-1" />
-            ) : null}
+            {isLoading ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : null}
             {hasCurrent ? "Analyzed" : "Analyze Turn"}
           </Button>
         )}
@@ -203,9 +199,7 @@ export function CommentaryPanel({
           )}
           {sortedTurns.map((turn) => (
             <div key={turn} className="mb-3">
-              <span className="text-xs font-medium text-muted-foreground">
-                Turn {turn}
-              </span>
+              <span className="text-xs font-medium text-muted-foreground">Turn {turn}</span>
               <p className="text-sm mt-0.5">{comments[turn]}</p>
             </div>
           ))}
@@ -223,5 +217,5 @@ export function CommentaryPanel({
         </ScrollArea>
       </CardContent>
     </Card>
-  );
+  )
 }

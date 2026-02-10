@@ -1,42 +1,54 @@
-"use client";
+"use client"
 
-import { useState, useEffect, useCallback, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { Trash2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import { Slider } from "@/components/ui/slider";
-import { Separator } from "@/components/ui/separator";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { useState, useEffect, useCallback, useMemo } from "react"
+import { useQuery } from "@tanstack/react-query"
+import { Trash2 } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Badge } from "@/components/ui/badge"
+import { Slider } from "@/components/ui/slider"
+import { Separator } from "@/components/ui/separator"
+import { ScrollArea } from "@/components/ui/scroll-area"
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@/components/ui/select"
 import {
-  NATURE_DATA, TYPE_COLORS, STAT_LABELS, STAT_COLORS,
-  MAX_TOTAL_EVS, MAX_SINGLE_EV,
-  POKEMON_TYPES, NATURES, STATS,
-  calculateAllStats, getTotalEvs,
-  type NatureName, type PokemonSpecies, type PokemonType,
-  type StatName, type StatsTable, type TeamSlotData, type TeamSlotInput,
-} from "@nasty-plot/core";
-import { PokemonSprite } from "@nasty-plot/ui";
-import { PokemonSearchPanel } from "./pokemon-search-panel";
-import { ItemCombobox } from "./item-combobox";
+  NATURE_DATA,
+  TYPE_COLORS,
+  STAT_LABELS,
+  STAT_COLORS,
+  MAX_TOTAL_EVS,
+  MAX_SINGLE_EV,
+  POKEMON_TYPES,
+  NATURES,
+  STATS,
+  calculateAllStats,
+  getTotalEvs,
+  type NatureName,
+  type PokemonSpecies,
+  type PokemonType,
+  type StatName,
+  type StatsTable,
+  type TeamSlotData,
+  type TeamSlotInput,
+} from "@nasty-plot/core"
+import { PokemonSprite } from "@nasty-plot/ui"
+import { PokemonSearchPanel } from "./pokemon-search-panel"
+import { ItemCombobox } from "./item-combobox"
 
 interface SlotEditorProps {
-  slot: TeamSlotData | null;
-  teamId: string;
-  nextPosition: number;
-  onSave: (data: TeamSlotInput) => void;
-  onRemove: () => void;
-  isNew?: boolean;
-  formatId?: string;
+  slot: TeamSlotData | null
+  teamId: string
+  nextPosition: number
+  onSave: (data: TeamSlotInput) => void
+  onRemove: () => void
+  isNew?: boolean
+  formatId?: string
 }
 
 export function SlotEditor({
@@ -48,135 +60,123 @@ export function SlotEditor({
   isNew = false,
   formatId,
 }: SlotEditorProps) {
-  const [pokemonId, setPokemonId] = useState(slot?.pokemonId ?? "");
-  const [nickname, setNickname] = useState(slot?.nickname ?? "");
-  const [ability, setAbility] = useState(slot?.ability ?? "");
-  const [item, setItem] = useState(slot?.item ?? "");
-  const [nature, setNature] = useState<NatureName>(slot?.nature ?? "Hardy");
-  const [teraType, setTeraType] = useState<PokemonType | undefined>(
-    slot?.teraType
-  );
-  const [level, setLevel] = useState(slot?.level ?? 100);
+  const [pokemonId, setPokemonId] = useState(slot?.pokemonId ?? "")
+  const [nickname, setNickname] = useState(slot?.nickname ?? "")
+  const [ability, setAbility] = useState(slot?.ability ?? "")
+  const [item, setItem] = useState(slot?.item ?? "")
+  const [nature, setNature] = useState<NatureName>(slot?.nature ?? "Hardy")
+  const [teraType, setTeraType] = useState<PokemonType | undefined>(slot?.teraType)
+  const [level, setLevel] = useState(slot?.level ?? 100)
   const [moves, setMoves] = useState<[string, string?, string?, string?]>(
-    slot?.moves ?? ["", undefined, undefined, undefined]
-  );
+    slot?.moves ?? ["", undefined, undefined, undefined],
+  )
   const [evs, setEvs] = useState<StatsTable>(
-    slot?.evs ?? { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 }
-  );
+    slot?.evs ?? { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 },
+  )
   const [ivs, setIvs] = useState<StatsTable>(
-    slot?.ivs ?? { hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31 }
-  );
+    slot?.ivs ?? { hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31 },
+  )
 
   // Reset form when slot changes
   useEffect(() => {
-    setPokemonId(slot?.pokemonId ?? "");
-    setNickname(slot?.nickname ?? "");
-    setAbility(slot?.ability ?? "");
-    setItem(slot?.item ?? "");
-    setNature(slot?.nature ?? "Hardy");
-    setTeraType(slot?.teraType);
-    setLevel(slot?.level ?? 100);
-    setMoves(slot?.moves ?? ["", undefined, undefined, undefined]);
-    setEvs(
-      slot?.evs ?? { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 }
-    );
-    setIvs(
-      slot?.ivs ?? { hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31 }
-    );
-  }, [slot]);
+    setPokemonId(slot?.pokemonId ?? "")
+    setNickname(slot?.nickname ?? "")
+    setAbility(slot?.ability ?? "")
+    setItem(slot?.item ?? "")
+    setNature(slot?.nature ?? "Hardy")
+    setTeraType(slot?.teraType)
+    setLevel(slot?.level ?? 100)
+    setMoves(slot?.moves ?? ["", undefined, undefined, undefined])
+    setEvs(slot?.evs ?? { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 })
+    setIvs(slot?.ivs ?? { hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31 })
+  }, [slot])
 
   // Fetch pokemon species data for the selected pokemonId
   const { data: speciesData } = useQuery<PokemonSpecies>({
     queryKey: ["pokemon", pokemonId],
     queryFn: async () => {
-      const res = await fetch(`/api/pokemon/${pokemonId}`);
-      if (!res.ok) throw new Error("Not found");
-      const json = await res.json();
-      return json.data;
+      const res = await fetch(`/api/pokemon/${pokemonId}`)
+      if (!res.ok) throw new Error("Not found")
+      const json = await res.json()
+      return json.data
     },
     enabled: !!pokemonId,
-  });
+  })
 
   // Fetch Mega form preview when item changes
   const { data: megaForm } = useQuery<PokemonSpecies | null>({
     queryKey: ["mega-form", pokemonId, item],
     queryFn: async () => {
       const res = await fetch(
-        `/api/pokemon/${pokemonId}/mega-form?item=${encodeURIComponent(item)}`
-      );
-      if (!res.ok) return null;
-      const json = await res.json();
-      return json.data ?? null;
+        `/api/pokemon/${pokemonId}/mega-form?item=${encodeURIComponent(item)}`,
+      )
+      if (!res.ok) return null
+      const json = await res.json()
+      return json.data ?? null
     },
     enabled: !!pokemonId && !!item,
-  });
+  })
 
   // Fetch learnset for move search
   const { data: learnset = [] } = useQuery<string[]>({
     queryKey: ["learnset", pokemonId, formatId],
     queryFn: async () => {
-      let url = `/api/pokemon/${pokemonId}/learnset`;
-      if (formatId) url += `?format=${encodeURIComponent(formatId)}`;
-      const res = await fetch(url);
-      if (!res.ok) return [];
-      const json = await res.json();
-      const moves = json.data ?? [];
-      return moves.map((m: { name: string }) => m.name);
+      let url = `/api/pokemon/${pokemonId}/learnset`
+      if (formatId) url += `?format=${encodeURIComponent(formatId)}`
+      const res = await fetch(url)
+      if (!res.ok) return []
+      const json = await res.json()
+      const moves = json.data ?? []
+      return moves.map((m: { name: string }) => m.name)
     },
     enabled: !!pokemonId,
-  });
+  })
 
   const abilities = useMemo(() => {
-    if (!speciesData?.abilities) return [];
-    return Object.values(speciesData.abilities);
-  }, [speciesData]);
+    if (!speciesData?.abilities) return []
+    return Object.values(speciesData.abilities)
+  }, [speciesData])
 
   // Calculated stats
   const calculatedStats = useMemo(() => {
-    if (!speciesData) return null;
-    return calculateAllStats(speciesData.baseStats, ivs, evs, level, nature);
-  }, [speciesData, ivs, evs, level, nature]);
+    if (!speciesData) return null
+    return calculateAllStats(speciesData.baseStats, ivs, evs, level, nature)
+  }, [speciesData, ivs, evs, level, nature])
 
-  const evTotal = getTotalEvs(evs);
-  const evRemaining = MAX_TOTAL_EVS - evTotal;
+  const evTotal = getTotalEvs(evs)
+  const evRemaining = MAX_TOTAL_EVS - evTotal
 
-  const handleEvChange = useCallback(
-    (stat: StatName, value: number) => {
-      setEvs((prev) => {
-        const currentOther = getTotalEvs(prev) - prev[stat];
-        const maxForStat = Math.min(MAX_SINGLE_EV, MAX_TOTAL_EVS - currentOther);
-        const clamped = Math.min(value, maxForStat);
-        return { ...prev, [stat]: clamped };
-      });
-    },
-    []
-  );
+  const handleEvChange = useCallback((stat: StatName, value: number) => {
+    setEvs((prev) => {
+      const currentOther = getTotalEvs(prev) - prev[stat]
+      const maxForStat = Math.min(MAX_SINGLE_EV, MAX_TOTAL_EVS - currentOther)
+      const clamped = Math.min(value, maxForStat)
+      return { ...prev, [stat]: clamped }
+    })
+  }, [])
 
   const handleIvChange = useCallback((stat: StatName, value: number) => {
-    const clamped = Math.max(0, Math.min(31, value));
-    setIvs((prev) => ({ ...prev, [stat]: clamped }));
-  }, []);
+    const clamped = Math.max(0, Math.min(31, value))
+    setIvs((prev) => ({ ...prev, [stat]: clamped }))
+  }, [])
 
-  const handleMoveChange = useCallback(
-    (index: number, value: string) => {
-      setMoves((prev) => {
-        const next = [...prev] as [string, string?, string?, string?];
-        next[index] = value || (index === 0 ? "" : undefined);
-        return next;
-      });
-    },
-    []
-  );
+  const handleMoveChange = useCallback((index: number, value: string) => {
+    setMoves((prev) => {
+      const next = [...prev] as [string, string?, string?, string?]
+      next[index] = value || (index === 0 ? "" : undefined)
+      return next
+    })
+  }, [])
 
   const handlePokemonSelect = useCallback((pokemon: PokemonSpecies) => {
-    setPokemonId(pokemon.id);
-    setNickname("");
+    setPokemonId(pokemon.id)
+    setNickname("")
     // Reset slot-specific data when changing Pokemon
-    const firstAbility = Object.values(pokemon.abilities)[0] ?? "";
-    setAbility(firstAbility);
-    setMoves(["", undefined, undefined, undefined]);
-    setTeraType(pokemon.types[0]);
-  }, []);
+    const firstAbility = Object.values(pokemon.abilities)[0] ?? ""
+    setAbility(firstAbility)
+    setMoves(["", undefined, undefined, undefined])
+    setTeraType(pokemon.types[0])
+  }, [])
 
   const handleSave = () => {
     onSave({
@@ -191,8 +191,8 @@ export function SlotEditor({
       moves,
       evs,
       ivs,
-    });
-  };
+    })
+  }
 
   // If no pokemon selected, show search
   if (!pokemonId) {
@@ -201,10 +201,10 @@ export function SlotEditor({
         <h3 className="font-semibold text-lg">Select a Pokemon</h3>
         <PokemonSearchPanel onSelect={handlePokemonSelect} formatId={formatId} />
       </div>
-    );
+    )
   }
 
-  const natureData = NATURE_DATA[nature];
+  const natureData = NATURE_DATA[nature]
 
   return (
     <ScrollArea className="h-full">
@@ -220,9 +220,7 @@ export function SlotEditor({
               </div>
             )}
             <div>
-              <div className="font-semibold">
-                {speciesData?.name ?? pokemonId}
-              </div>
+              <div className="font-semibold">{speciesData?.name ?? pokemonId}</div>
               <div className="flex gap-1 mt-0.5">
                 {speciesData?.types?.map((t: PokemonType) => (
                   <Badge
@@ -240,7 +238,7 @@ export function SlotEditor({
             variant="ghost"
             size="sm"
             onClick={() => {
-              setPokemonId("");
+              setPokemonId("")
             }}
           >
             Change
@@ -294,9 +292,7 @@ export function SlotEditor({
             {/* Mega Form Preview */}
             {megaForm && (
               <div className="rounded-md border border-primary/30 bg-primary/5 p-3 space-y-2">
-                <div className="text-xs font-semibold text-primary">
-                  Mega Evolution Preview
-                </div>
+                <div className="text-xs font-semibold text-primary">Mega Evolution Preview</div>
                 <div className="flex items-center gap-2">
                   {megaForm.num ? (
                     <PokemonSprite pokemonId={megaForm.id} num={megaForm.num} size={32} />
@@ -343,15 +339,15 @@ export function SlotEditor({
                 </SelectTrigger>
                 <SelectContent>
                   {NATURES.map((n) => {
-                    const nd = NATURE_DATA[n];
+                    const nd = NATURE_DATA[n]
                     const label = nd.plus
                       ? `${n} (+${STAT_LABELS[nd.plus]}/-${STAT_LABELS[nd.minus!]})`
-                      : `${n} (Neutral)`;
+                      : `${n} (Neutral)`
                     return (
                       <SelectItem key={n} value={n}>
                         {label}
                       </SelectItem>
-                    );
+                    )
                   })}
                 </SelectContent>
               </Select>
@@ -406,9 +402,7 @@ export function SlotEditor({
                 <Label>EVs</Label>
                 <span
                   className={`text-xs ${
-                    evRemaining < 0
-                      ? "text-destructive font-medium"
-                      : "text-muted-foreground"
+                    evRemaining < 0 ? "text-destructive font-medium" : "text-muted-foreground"
                   }`}
                 >
                   {evTotal} / {MAX_TOTAL_EVS} ({evRemaining} remaining)
@@ -417,10 +411,7 @@ export function SlotEditor({
               {STATS.map((stat) => (
                 <div key={stat} className="space-y-1">
                   <div className="flex items-center justify-between">
-                    <span
-                      className="text-xs font-medium"
-                      style={{ color: STAT_COLORS[stat] }}
-                    >
+                    <span className="text-xs font-medium" style={{ color: STAT_COLORS[stat] }}>
                       {STAT_LABELS[stat]}
                     </span>
                     <span className="text-xs tabular-nums">{evs[stat]}</span>
@@ -444,10 +435,7 @@ export function SlotEditor({
               <div className="grid grid-cols-3 gap-2">
                 {STATS.map((stat) => (
                   <div key={stat} className="space-y-1">
-                    <span
-                      className="text-xs font-medium"
-                      style={{ color: STAT_COLORS[stat] }}
-                    >
+                    <span className="text-xs font-medium" style={{ color: STAT_COLORS[stat] }}>
                       {STAT_LABELS[stat]}
                     </span>
                     <Input
@@ -455,9 +443,7 @@ export function SlotEditor({
                       min={0}
                       max={31}
                       value={ivs[stat]}
-                      onChange={(e) =>
-                        handleIvChange(stat, parseInt(e.target.value, 10) || 0)
-                      }
+                      onChange={(e) => handleIvChange(stat, parseInt(e.target.value, 10) || 0)}
                       className="h-8 text-center"
                     />
                   </div>
@@ -473,19 +459,11 @@ export function SlotEditor({
                 <Label>Calculated Stats</Label>
                 <div className="grid grid-cols-3 gap-2">
                   {STATS.map((stat) => (
-                    <div
-                      key={stat}
-                      className="rounded-md border p-2 text-center"
-                    >
-                      <div
-                        className="text-xs font-medium"
-                        style={{ color: STAT_COLORS[stat] }}
-                      >
+                    <div key={stat} className="rounded-md border p-2 text-center">
+                      <div className="text-xs font-medium" style={{ color: STAT_COLORS[stat] }}>
                         {STAT_LABELS[stat]}
                       </div>
-                      <div className="text-lg font-bold tabular-nums">
-                        {calculatedStats[stat]}
-                      </div>
+                      <div className="text-lg font-bold tabular-nums">{calculatedStats[stat]}</div>
                     </div>
                   ))}
                 </div>
@@ -509,7 +487,7 @@ export function SlotEditor({
         </div>
       </div>
     </ScrollArea>
-  );
+  )
 }
 
 // --- Move Input with simple filtering ---
@@ -521,36 +499,36 @@ function MoveInput({
   selectedMoves,
   onChange,
 }: {
-  index: number;
-  value: string;
-  learnset: string[];
-  selectedMoves: [string, string?, string?, string?];
-  onChange: (val: string) => void;
+  index: number
+  value: string
+  learnset: string[]
+  selectedMoves: [string, string?, string?, string?]
+  onChange: (val: string) => void
 }) {
-  const [search, setSearch] = useState("");
-  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("")
+  const [open, setOpen] = useState(false)
 
   // Moves already picked in other slots (exclude current slot's value)
   const otherMoves = useMemo(() => {
-    const others = new Set<string>();
+    const others = new Set<string>()
     for (let i = 0; i < 4; i++) {
       if (i !== index && selectedMoves[i]) {
-        others.add(selectedMoves[i]!.toLowerCase());
+        others.add(selectedMoves[i]!.toLowerCase())
       }
     }
-    return others;
-  }, [selectedMoves, index]);
+    return others
+  }, [selectedMoves, index])
 
   const filtered = useMemo(() => {
-    let moves = learnset.filter((m) => !otherMoves.has(m.toLowerCase()));
+    let moves = learnset.filter((m) => !otherMoves.has(m.toLowerCase()))
     if (search) {
-      const lower = search.toLowerCase();
-      moves = moves.filter((m) => m.toLowerCase().includes(lower));
+      const lower = search.toLowerCase()
+      moves = moves.filter((m) => m.toLowerCase().includes(lower))
     }
-    return moves.slice(0, 20);
-  }, [search, learnset, otherMoves]);
+    return moves.slice(0, 20)
+  }, [search, learnset, otherMoves])
 
-  const isDuplicate = value && otherMoves.has(value.toLowerCase());
+  const isDuplicate = value && otherMoves.has(value.toLowerCase())
 
   return (
     <div className="relative">
@@ -558,22 +536,20 @@ function MoveInput({
         placeholder={`Move ${index + 1}`}
         value={open ? search : value}
         onChange={(e) => {
-          setSearch(e.target.value);
-          if (!open) setOpen(true);
+          setSearch(e.target.value)
+          if (!open) setOpen(true)
         }}
         onFocus={() => {
-          setSearch(value);
-          setOpen(true);
+          setSearch(value)
+          setOpen(true)
         }}
         onBlur={() => {
           // Delay to allow click
-          setTimeout(() => setOpen(false), 150);
+          setTimeout(() => setOpen(false), 150)
         }}
         className={isDuplicate ? "border-destructive" : ""}
       />
-      {isDuplicate && (
-        <p className="text-[10px] text-destructive mt-0.5">Duplicate move</p>
-      )}
+      {isDuplicate && <p className="text-[10px] text-destructive mt-0.5">Duplicate move</p>}
       {open && filtered.length > 0 && (
         <div className="absolute z-50 mt-1 w-full rounded-md border bg-popover shadow-md max-h-[150px] overflow-y-auto">
           {filtered.map((move) => (
@@ -581,10 +557,10 @@ function MoveInput({
               key={move}
               className="w-full px-3 py-1.5 text-sm text-left hover:bg-accent transition-colors"
               onMouseDown={(e) => {
-                e.preventDefault();
-                onChange(move);
-                setSearch(move);
-                setOpen(false);
+                e.preventDefault()
+                onChange(move)
+                setSearch(move)
+                setOpen(false)
               }}
             >
               {move}
@@ -593,5 +569,5 @@ function MoveInput({
         </div>
       )}
     </div>
-  );
+  )
 }

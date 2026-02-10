@@ -19,23 +19,23 @@ The current chat system lives exclusively on `/chat` as a standalone page and is
 
 ## Summary of Decisions
 
-| Decision | Choice |
-|----------|--------|
-| LLM engine | Claude CLI subprocess only (drop OpenAI SDK path) |
-| Sidebar style | Push content (like Cursor) |
-| Sidebar width | Resizable by user (drag edge, 300-600px) |
-| Navigation behavior | Same session persists, context updates silently |
-| `/chat` page | Becomes the sidebar in expanded full-width mode |
-| Chat history (full page) | Left sidebar with session list |
-| Chat history (popout) | Session switcher panel inside sidebar |
-| Session titles | LLM-generated from first message |
-| Tool display | Collapsible cards with input/output |
-| Plan mode | Auto for complex tasks (LLM decides), parsed from CLI stream |
-| Retry/regenerate | Button on last assistant message |
-| Stop generation | Abort button during streaming |
-| Agent actions | Post-execution notify (CLI executes freely, UI shows what was done) |
-| Open trigger | FAB button + Cmd/Ctrl+L keyboard shortcut |
-| Shortcut | Cmd/Ctrl+L |
+| Decision                 | Choice                                                              |
+| ------------------------ | ------------------------------------------------------------------- |
+| LLM engine               | Claude CLI subprocess only (drop OpenAI SDK path)                   |
+| Sidebar style            | Push content (like Cursor)                                          |
+| Sidebar width            | Resizable by user (drag edge, 300-600px)                            |
+| Navigation behavior      | Same session persists, context updates silently                     |
+| `/chat` page             | Becomes the sidebar in expanded full-width mode                     |
+| Chat history (full page) | Left sidebar with session list                                      |
+| Chat history (popout)    | Session switcher panel inside sidebar                               |
+| Session titles           | LLM-generated from first message                                    |
+| Tool display             | Collapsible cards with input/output                                 |
+| Plan mode                | Auto for complex tasks (LLM decides), parsed from CLI stream        |
+| Retry/regenerate         | Button on last assistant message                                    |
+| Stop generation          | Abort button during streaming                                       |
+| Agent actions            | Post-execution notify (CLI executes freely, UI shows what was done) |
+| Open trigger             | FAB button + Cmd/Ctrl+L keyboard shortcut                           |
+| Shortcut                 | Cmd/Ctrl+L                                                          |
 
 ---
 
@@ -75,6 +75,7 @@ The current chat system lives exclusively on `/chat` as a standalone page and is
 ### Files to Modify
 
 6. **`apps/web/src/app/layout.tsx`** -- Wrap children in `ChatProvider` + `AppShell`
+
    ```
    <Providers>
      <ChatProvider>
@@ -99,11 +100,13 @@ The current chat system lives exclusively on `/chat` as a standalone page and is
 ### Key Implementation Detail
 
 The push effect uses `margin-right` with CSS transition:
+
 ```css
 .app-main {
   transition: margin-right 200ms ease-in-out;
 }
 ```
+
 The sidebar is `position: fixed` so it doesn't participate in the flow -- the margin creates the space. During resize drag, use `requestAnimationFrame` for smooth updates.
 
 ---
@@ -130,11 +133,11 @@ The sidebar is `position: fixed` so it doesn't participate in the flow -- the ma
 ### Files to Create
 
 9. **`apps/web/src/features/chat/components/chat-session-list.tsx`** -- Session list panel
-    - Scrollable list of sessions, sorted by `updatedAt` desc
-    - Each item: title (or "New Chat"), relative timestamp, delete button
-    - "New Chat" button at top
-    - In full-page mode: persistent left panel (~260px wide)
-    - In sidebar mode: collapsible panel toggled by a history icon button
+   - Scrollable list of sessions, sorted by `updatedAt` desc
+   - Each item: title (or "New Chat"), relative timestamp, delete button
+   - "New Chat" button at top
+   - In full-page mode: persistent left panel (~260px wide)
+   - In sidebar mode: collapsible panel toggled by a history icon button
 
 10. **`apps/web/src/features/chat/hooks/use-chat-sessions.ts`** -- TanStack Query hook
     - `useQuery` for listing sessions
@@ -177,14 +180,14 @@ The sidebar is `position: fixed` so it doesn't participate in the flow -- the ma
     - `getDisallowedMcpTools(pageType)` -- returns MCP tool names to add to `--disallowedTools`
     - Tool filter mapping:
 
-    | Page | dataQuery | analysis | teamCrud | metaRecs |
-    |------|-----------|----------|----------|----------|
-    | `/teams/[teamId]` | all | all | all | all |
-    | `/pokemon/[id]` | yes | yes | no | no |
-    | `/pokemon` | yes | no | no | yes |
-    | `/damage-calc` | yes | yes | no | no |
-    | `/battle/live` | yes | yes | no | no |
-    | Home/other/chat | all | all | all | all |
+    | Page              | dataQuery | analysis | teamCrud | metaRecs |
+    | ----------------- | --------- | -------- | -------- | -------- |
+    | `/teams/[teamId]` | all       | all      | all      | all      |
+    | `/pokemon/[id]`   | yes       | yes      | no       | no       |
+    | `/pokemon`        | yes       | no       | no       | yes      |
+    | `/damage-calc`    | yes       | yes      | no       | no       |
+    | `/battle/live`    | yes       | yes      | no       | no       |
+    | Home/other/chat   | all       | all      | all      | all      |
 
 18. **`packages/llm/src/context-builder.ts`** -- Add new context builders:
     - `buildPokemonContext(pokemonId, species)` -- for `/pokemon/[id]`
@@ -216,6 +219,7 @@ The sidebar is `position: fixed` so it doesn't participate in the flow -- the ma
 The CLI outputs `stream-json` format. We enhance `cli-chat.ts` to emit richer typed SSE events by parsing more of the stream-json output:
 
 24. **`packages/llm/src/sse-events.ts`** (new) -- Typed SSE event definitions:
+
     ```typescript
     type SSEEvent =
       | { type: "content"; content: string }
@@ -295,6 +299,7 @@ The CLI outputs `stream-json` format. We enhance `cli-chat.ts` to emit richer ty
 ### Stop Generation -- How It Works with CLI
 
 The Claude CLI runs as a subprocess (`spawn("claude", ...)`). To stop:
+
 1. **Client:** `AbortController.abort()` -> fetch connection closes
 2. **Server:** `req.signal` fires abort -> passed to `streamCliChat()`
 3. **cli-chat.ts:** on abort signal, calls `proc.kill('SIGTERM')` on the subprocess
@@ -318,6 +323,7 @@ The Claude CLI runs as a subprocess (`spawn("claude", ...)`). To stop:
 ### Design: CLI-Specific Approach
 
 Since the Claude CLI handles the tool loop internally, we **cannot intercept tool calls before execution**. Instead:
+
 - **Plan mode:** Add XML format instructions to the system prompt. Parse `<plan>` / `<step_update>` tags from the CLI's content stream. Convert to SSE plan events.
 - **Write tool notifications:** When we see a `tool_use` block for a write tool (add_pokemon, update_set, etc.), emit an `action_notify` event. The UI shows a "Pecharunt did X" card with details. No pre-confirmation -- the CLI already executed it.
 
@@ -350,6 +356,7 @@ Since the Claude CLI handles the tool loop internally, we **cannot intercept too
     - Add plan mode + notification instructions to the system prompt (appended to temp file)
 
     System prompt additions (written to `system-prompt.txt`):
+
     ```
     ## Planning
     For complex multi-step tasks (building a team, comprehensive analysis, multi-pokemon comparison),
@@ -472,7 +479,9 @@ Write tool actions already executed -- notification is post-hoc.
 ```
 
 ### Key Difference from OpenAI Path
+
 The CLI handles the entire agent loop. We **cannot** intercept tool calls. We can only:
+
 - **Observe** what tools are being called (from `assistant` message `tool_use` blocks)
 - **Notify** the user after write tools execute (post-hoc `action_notify`)
 - **Filter** which tools are available via `--disallowedTools` flag (before the CLI starts)
@@ -497,6 +506,7 @@ The CLI handles the entire agent loop. We **cannot** intercept tool calls. We ca
 ## Verification
 
 After each phase, verify:
+
 1. **Phase 1:** Sidebar opens/closes with Cmd+L and FAB. Push animation is smooth. All pages render correctly without their own SiteHeader.
 2. **Phase 2:** Can create, switch, delete sessions. Titles auto-generate. Session list renders in both sidebar and full-page modes.
 3. **Phase 3:** Chat context changes when navigating. Tool sets differ by page. System prompt includes page-relevant data.

@@ -1,9 +1,9 @@
-import { prisma } from "@nasty-plot/db";
+import { prisma } from "@nasty-plot/db"
 
 const DEFAULT_THRESHOLDS: Record<string, number> = {
   "smogon-stats": 30,
   "smogon-sets": 7,
-};
+}
 
 /**
  * Check if a data source for a specific format is stale (needs refresh).
@@ -12,21 +12,21 @@ const DEFAULT_THRESHOLDS: Record<string, number> = {
 export async function isStale(
   source: string,
   formatId: string,
-  thresholdDays?: number
+  thresholdDays?: number,
 ): Promise<boolean> {
-  const threshold = thresholdDays ?? DEFAULT_THRESHOLDS[source] ?? 7;
+  const threshold = thresholdDays ?? DEFAULT_THRESHOLDS[source] ?? 7
 
   const log = await prisma.dataSyncLog.findUnique({
     where: { source_formatId: { source, formatId } },
-  });
+  })
 
-  if (!log) return true;
-  if (log.status === "error") return true;
+  if (!log) return true
+  if (log.status === "error") return true
 
-  const ageMs = Date.now() - log.lastSynced.getTime();
-  const ageDays = ageMs / (1000 * 60 * 60 * 24);
+  const ageMs = Date.now() - log.lastSynced.getTime()
+  const ageDays = ageMs / (1000 * 60 * 60 * 24)
 
-  return ageDays > threshold;
+  return ageDays > threshold
 }
 
 /**
@@ -37,12 +37,12 @@ export async function getDataStatus(): Promise<
 > {
   const logs = await prisma.dataSyncLog.findMany({
     orderBy: [{ source: "asc" }, { formatId: "asc" }],
-  });
+  })
 
   return logs.map((log) => ({
     source: log.source,
     formatId: log.formatId,
     lastSynced: log.lastSynced,
     status: log.status,
-  }));
+  }))
 }

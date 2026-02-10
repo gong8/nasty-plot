@@ -1,4 +1,5 @@
 # Session: Data Pipeline Perfection
+
 **Date:** 2026-02-10
 **Duration context:** Long (continued from guided-builder-reimagine session that ran out of context)
 
@@ -45,6 +46,7 @@
 ## Files changed
 
 ### Modified
+
 - `packages/analysis/package.json` — added `@nasty-plot/formats` dependency
 - `packages/core/src/types.ts` — added `smogonStatsId` and `pkmnSetsId` to `FormatDefinition`
 - `packages/formats/src/data/format-definitions.ts` — added `smogonStatsId` for VGC/BSS/BSD, `pkmnSetsId` for BSD
@@ -68,7 +70,7 @@
 
 ## Tech notes
 
-- **Smogon stats URL pattern:** `https://www.smogon.com/stats/{YYYY}-{MM}/chaos/{formatId}-{rating}.json`. Only OU has `-1695.json`; others use `-1630.json` or lower. The `resolveYearMonth()` function probes 6 months * 4 ratings = 24 HEAD requests maximum.
+- **Smogon stats URL pattern:** `https://www.smogon.com/stats/{YYYY}-{MM}/chaos/{formatId}-{rating}.json`. Only OU has `-1695.json`; others use `-1630.json` or lower. The `resolveYearMonth()` function probes 6 months \* 4 ratings = 24 HEAD requests maximum.
 - **pkmn.cc sets URL pattern:** `https://data.pkmn.cc/sets/{formatId}.json`. Uses different IDs: VGC is `gen9vgc2025`, BSD is `gen9doublesou`, BSS is `gen9battlestadiumsingles`.
 - **`fetchUsageStats` new signature:** `fetchUsageStats(formatId, options?: { smogonStatsId?: string; year?: number; month?: number })` — breaking change from positional args. All callers (seed CLI, seed API route, tests) were updated.
 - **`fetchSmogonSets` new signature:** `fetchSmogonSets(formatId, options?: { pkmnSetsId?: string })` — uses override ID to fetch from pkmn.cc when format name differs.

@@ -1,22 +1,22 @@
-"use client";
+"use client"
 
-import { Check } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
-import { TypeBadge, PokemonSprite } from "@nasty-plot/ui";
-import type { PokemonType, UsageStatsEntry } from "@nasty-plot/core";
-import type { GuidedPokemonPick } from "../hooks/use-guided-builder";
+import { Check } from "lucide-react"
+import { Card, CardContent } from "@/components/ui/card"
+import { cn } from "@/lib/utils"
+import { TypeBadge, PokemonSprite } from "@nasty-plot/ui"
+import type { PokemonType, UsageStatsEntry } from "@nasty-plot/core"
+import type { GuidedPokemonPick } from "../hooks/use-guided-builder"
 
 interface CorePickerProps {
-  pokemon: UsageStatsEntry[];
-  selected: GuidedPokemonPick[];
-  onToggle: (pokemon: GuidedPokemonPick) => void;
-  maxPicks?: number;
+  pokemon: UsageStatsEntry[]
+  selected: GuidedPokemonPick[]
+  onToggle: (pokemon: GuidedPokemonPick) => void
+  maxPicks?: number
 }
 
 export function CorePicker({ pokemon, selected, onToggle, maxPicks = 3 }: CorePickerProps) {
-  const selectedIds = new Set(selected.map((p) => p.pokemonId));
-  const atMax = selected.length >= maxPicks;
+  const selectedIds = new Set(selected.map((p) => p.pokemonId))
+  const atMax = selected.length >= maxPicks
 
   return (
     <div className="space-y-4">
@@ -42,11 +42,11 @@ export function CorePicker({ pokemon, selected, onToggle, maxPicks = 3 }: CorePi
       {/* Pokemon grid */}
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
         {pokemon.map((p) => {
-          const isSelected = selectedIds.has(p.pokemonId);
-          const disabled = !isSelected && atMax;
-          const displayName = p.pokemonName || p.pokemonId;
-          const types: PokemonType[] = p.types ?? ["Normal"];
-          const dexNum = p.num ?? 0;
+          const isSelected = selectedIds.has(p.pokemonId)
+          const disabled = !isSelected && atMax
+          const displayName = p.pokemonName || p.pokemonId
+          const types: PokemonType[] = p.types ?? ["Normal"]
+          const dexNum = p.num ?? 0
 
           return (
             <Card
@@ -55,16 +55,16 @@ export function CorePicker({ pokemon, selected, onToggle, maxPicks = 3 }: CorePi
                 "cursor-pointer transition-all",
                 isSelected && "ring-2 ring-primary bg-primary/5",
                 disabled && "opacity-50 cursor-not-allowed",
-                !isSelected && !disabled && "hover:shadow-md hover:border-primary/50"
+                !isSelected && !disabled && "hover:shadow-md hover:border-primary/50",
               )}
               onClick={() => {
-                if (disabled) return;
+                if (disabled) return
                 onToggle({
                   pokemonId: p.pokemonId,
                   pokemonName: displayName,
                   types,
                   usagePercent: p.usagePercent,
-                });
+                })
               }}
             >
               <CardContent className="relative flex flex-col items-center gap-1 p-3">
@@ -93,9 +93,9 @@ export function CorePicker({ pokemon, selected, onToggle, maxPicks = 3 }: CorePi
                 </span>
               </CardContent>
             </Card>
-          );
+          )
         })}
       </div>
     </div>
-  );
+  )
 }

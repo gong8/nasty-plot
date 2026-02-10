@@ -1,14 +1,14 @@
-"use client";
+"use client"
 
-import { usePathname } from "next/navigation";
-import { useChatSidebar } from "@/features/chat/context/chat-provider";
+import { usePathname } from "next/navigation"
+import { useChatSidebar } from "@/features/chat/context/chat-provider"
 
 export function ChatFab() {
-  const pathname = usePathname();
-  const { toggleSidebar, isOpen } = useChatSidebar();
+  const pathname = usePathname()
+  const { toggleSidebar, isOpen } = useChatSidebar()
 
   // Hide on /chat page (full-page mode) and when sidebar is open
-  if (pathname === "/chat" || isOpen) return null;
+  if (pathname === "/chat" || isOpen) return null
 
   return (
     <button
@@ -24,5 +24,5 @@ export function ChatFab() {
         className="pixelated"
       />
     </button>
-  );
+  )
 }

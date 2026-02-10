@@ -39,12 +39,14 @@ Agent -> MCP client discovers 24 tools -> converts to OpenAI function schema ->
 ```
 
 At startup, the chat service:
+
 1. Opens an MCP client connection to `localhost:3001`
 2. Calls `listTools()` to get all 24 tool definitions (names, descriptions, Zod schemas)
 3. Converts them to OpenAI function-calling format (Zod -> JSON Schema is straightforward)
 4. Passes them to the LLM with each request
 
 When the LLM wants to call a tool:
+
 1. The chat service receives the tool call from the streaming response
 2. Instead of a switch/case, it forwards the call to the MCP server via `callTool(name, args)`
 3. MCP server executes it (hitting API routes as it already does)

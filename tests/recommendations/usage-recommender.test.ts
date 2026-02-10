@@ -1,4 +1,4 @@
-import { getUsageBasedRecommendations } from "@nasty-plot/recommendations";
+import { getUsageBasedRecommendations } from "@nasty-plot/recommendations"
 
 // ---------------------------------------------------------------------------
 // Mocks
@@ -10,7 +10,7 @@ vi.mock("@nasty-plot/db", () => ({
       findMany: vi.fn(),
     },
   },
-}));
+}))
 
 vi.mock("@pkmn/dex", () => ({
   Dex: {
@@ -25,13 +25,13 @@ vi.mock("@pkmn/dex", () => ({
       get: vi.fn(),
     },
   },
-}));
+}))
 
-import { prisma } from "@nasty-plot/db";
-import { Dex } from "@pkmn/dex";
+import { prisma } from "@nasty-plot/db"
+import { Dex } from "@pkmn/dex"
 
-const mockCorrFindMany = prisma.teammateCorr.findMany as ReturnType<typeof vi.fn>;
-const mockSpeciesGet = Dex.species.get as ReturnType<typeof vi.fn>;
+const mockCorrFindMany = prisma.teammateCorr.findMany as ReturnType<typeof vi.fn>
+const mockSpeciesGet = Dex.species.get as ReturnType<typeof vi.fn>
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -41,7 +41,7 @@ function mockSpecies(id: string) {
   return {
     exists: true,
     name: id.charAt(0).toUpperCase() + id.slice(1),
-  };
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -50,34 +50,34 @@ function mockSpecies(id: string) {
 
 describe("getUsageBasedRecommendations", () => {
   beforeEach(() => {
-    vi.clearAllMocks();
-  });
+    vi.clearAllMocks()
+  })
 
   // -----------------------------------------------------------------------
   // Empty inputs
   // -----------------------------------------------------------------------
 
   it("returns empty array when teamPokemonIds is empty", async () => {
-    const result = await getUsageBasedRecommendations([], "gen9ou");
-    expect(result).toEqual([]);
-    expect(mockCorrFindMany).not.toHaveBeenCalled();
-  });
+    const result = await getUsageBasedRecommendations([], "gen9ou")
+    expect(result).toEqual([])
+    expect(mockCorrFindMany).not.toHaveBeenCalled()
+  })
 
   it("returns empty array when no correlations exist", async () => {
-    mockCorrFindMany.mockResolvedValue([]);
+    mockCorrFindMany.mockResolvedValue([])
 
-    const result = await getUsageBasedRecommendations(["pikachu"], "gen9ou");
-    expect(result).toEqual([]);
-  });
+    const result = await getUsageBasedRecommendations(["pikachu"], "gen9ou")
+    expect(result).toEqual([])
+  })
 
   // -----------------------------------------------------------------------
   // Prisma query
   // -----------------------------------------------------------------------
 
   it("queries prisma with correct filters", async () => {
-    mockCorrFindMany.mockResolvedValue([]);
+    mockCorrFindMany.mockResolvedValue([])
 
-    await getUsageBasedRecommendations(["garchomp", "heatran"], "gen9ou");
+    await getUsageBasedRecommendations(["garchomp", "heatran"], "gen9ou")
 
     expect(mockCorrFindMany).toHaveBeenCalledWith({
       where: {
@@ -86,8 +86,8 @@ describe("getUsageBasedRecommendations", () => {
         pokemonBId: { notIn: ["garchomp", "heatran"] },
       },
       orderBy: { correlationPercent: "desc" },
-    });
-  });
+    })
+  })
 
   // -----------------------------------------------------------------------
   // Score calculation
@@ -98,59 +98,53 @@ describe("getUsageBasedRecommendations", () => {
       mockCorrFindMany.mockResolvedValue([
         { pokemonAId: "garchomp", pokemonBId: "heatran", correlationPercent: 30 },
         { pokemonAId: "corviknight", pokemonBId: "heatran", correlationPercent: 25 },
-      ]);
+      ])
 
       mockSpeciesGet.mockImplementation((id: string) => {
-        if (id === "heatran") return mockSpecies("heatran");
-        if (id === "garchomp") return mockSpecies("garchomp");
-        if (id === "corviknight") return mockSpecies("corviknight");
-        return { exists: false };
-      });
+        if (id === "heatran") return mockSpecies("heatran")
+        if (id === "garchomp") return mockSpecies("garchomp")
+        if (id === "corviknight") return mockSpecies("corviknight")
+        return { exists: false }
+      })
 
-      const result = await getUsageBasedRecommendations(
-        ["garchomp", "corviknight"],
-        "gen9ou"
-      );
+      const result = await getUsageBasedRecommendations(["garchomp", "corviknight"], "gen9ou")
 
-      const heatranRec = result.find((r) => r.pokemonId === "heatran");
-      expect(heatranRec).toBeDefined();
-      expect(heatranRec!.score).toBe(55);
-    });
+      const heatranRec = result.find((r) => r.pokemonId === "heatran")
+      expect(heatranRec).toBeDefined()
+      expect(heatranRec!.score).toBe(55)
+    })
 
     it("caps score at 100", async () => {
       mockCorrFindMany.mockResolvedValue([
         { pokemonAId: "mon1", pokemonBId: "superMon", correlationPercent: 80 },
         { pokemonAId: "mon2", pokemonBId: "superMon", correlationPercent: 90 },
-      ]);
+      ])
 
       mockSpeciesGet.mockImplementation((id: string) => {
-        return mockSpecies(id);
-      });
+        return mockSpecies(id)
+      })
 
-      const result = await getUsageBasedRecommendations(
-        ["mon1", "mon2"],
-        "gen9ou"
-      );
+      const result = await getUsageBasedRecommendations(["mon1", "mon2"], "gen9ou")
 
-      const rec = result.find((r) => r.pokemonId === "superMon");
-      expect(rec).toBeDefined();
-      expect(rec!.score).toBe(100);
-    });
+      const rec = result.find((r) => r.pokemonId === "superMon")
+      expect(rec).toBeDefined()
+      expect(rec!.score).toBe(100)
+    })
 
     it("calculates score as avgCorrelation * 2 rounded", async () => {
       mockCorrFindMany.mockResolvedValue([
         { pokemonAId: "garchomp", pokemonBId: "clefable", correlationPercent: 15 },
-      ]);
+      ])
 
-      mockSpeciesGet.mockImplementation((id: string) => mockSpecies(id));
+      mockSpeciesGet.mockImplementation((id: string) => mockSpecies(id))
 
-      const result = await getUsageBasedRecommendations(["garchomp"], "gen9ou");
+      const result = await getUsageBasedRecommendations(["garchomp"], "gen9ou")
 
-      const rec = result.find((r) => r.pokemonId === "clefable");
-      expect(rec).toBeDefined();
-      expect(rec!.score).toBe(30);
-    });
-  });
+      const rec = result.find((r) => r.pokemonId === "clefable")
+      expect(rec).toBeDefined()
+      expect(rec!.score).toBe(30)
+    })
+  })
 
   // -----------------------------------------------------------------------
   // Reasons
@@ -160,20 +154,20 @@ describe("getUsageBasedRecommendations", () => {
     it("includes usage reasons with partner names", async () => {
       mockCorrFindMany.mockResolvedValue([
         { pokemonAId: "garchomp", pokemonBId: "heatran", correlationPercent: 25.5 },
-      ]);
+      ])
 
-      mockSpeciesGet.mockImplementation((id: string) => mockSpecies(id));
+      mockSpeciesGet.mockImplementation((id: string) => mockSpecies(id))
 
-      const result = await getUsageBasedRecommendations(["garchomp"], "gen9ou");
+      const result = await getUsageBasedRecommendations(["garchomp"], "gen9ou")
 
-      expect(result).toHaveLength(1);
-      const rec = result[0];
-      expect(rec.reasons).toHaveLength(1);
-      expect(rec.reasons[0].type).toBe("usage");
-      expect(rec.reasons[0].description).toContain("Garchomp");
-      expect(rec.reasons[0].description).toContain("25.5%");
-      expect(rec.reasons[0].weight).toBe(25.5);
-    });
+      expect(result).toHaveLength(1)
+      const rec = result[0]
+      expect(rec.reasons).toHaveLength(1)
+      expect(rec.reasons[0].type).toBe("usage")
+      expect(rec.reasons[0].description).toContain("Garchomp")
+      expect(rec.reasons[0].description).toContain("25.5%")
+      expect(rec.reasons[0].weight).toBe(25.5)
+    })
 
     it("limits reasons to top 3", async () => {
       mockCorrFindMany.mockResolvedValue([
@@ -182,37 +176,34 @@ describe("getUsageBasedRecommendations", () => {
         { pokemonAId: "c", pokemonBId: "target", correlationPercent: 20 },
         { pokemonAId: "d", pokemonBId: "target", correlationPercent: 15 },
         { pokemonAId: "e", pokemonBId: "target", correlationPercent: 10 },
-      ]);
+      ])
 
-      mockSpeciesGet.mockImplementation((id: string) => mockSpecies(id));
+      mockSpeciesGet.mockImplementation((id: string) => mockSpecies(id))
 
-      const result = await getUsageBasedRecommendations(
-        ["a", "b", "c", "d", "e"],
-        "gen9ou"
-      );
+      const result = await getUsageBasedRecommendations(["a", "b", "c", "d", "e"], "gen9ou")
 
-      const rec = result.find((r) => r.pokemonId === "target");
-      expect(rec).toBeDefined();
-      expect(rec!.reasons.length).toBeLessThanOrEqual(3);
-    });
+      const rec = result.find((r) => r.pokemonId === "target")
+      expect(rec).toBeDefined()
+      expect(rec!.reasons.length).toBeLessThanOrEqual(3)
+    })
 
     it("uses pokemonAId as fallback name when species doesn't exist", async () => {
       mockCorrFindMany.mockResolvedValue([
         { pokemonAId: "fakemon", pokemonBId: "target", correlationPercent: 20 },
-      ]);
+      ])
 
       mockSpeciesGet.mockImplementation((id: string) => {
-        if (id === "target") return mockSpecies("target");
-        return { exists: false };
-      });
+        if (id === "target") return mockSpecies("target")
+        return { exists: false }
+      })
 
-      const result = await getUsageBasedRecommendations(["fakemon"], "gen9ou");
+      const result = await getUsageBasedRecommendations(["fakemon"], "gen9ou")
 
       if (result.length > 0) {
-        expect(result[0].reasons[0].description).toContain("fakemon");
+        expect(result[0].reasons[0].description).toContain("fakemon")
       }
-    });
-  });
+    })
+  })
 
   // -----------------------------------------------------------------------
   // Sorting and limiting
@@ -223,44 +214,44 @@ describe("getUsageBasedRecommendations", () => {
       { pokemonAId: "garchomp", pokemonBId: "heatran", correlationPercent: 30 },
       { pokemonAId: "garchomp", pokemonBId: "clefable", correlationPercent: 10 },
       { pokemonAId: "garchomp", pokemonBId: "rotom", correlationPercent: 20 },
-    ]);
+    ])
 
-    mockSpeciesGet.mockImplementation((id: string) => mockSpecies(id));
+    mockSpeciesGet.mockImplementation((id: string) => mockSpecies(id))
 
-    const result = await getUsageBasedRecommendations(["garchomp"], "gen9ou");
+    const result = await getUsageBasedRecommendations(["garchomp"], "gen9ou")
 
     for (let i = 1; i < result.length; i++) {
-      expect(result[i - 1].score).toBeGreaterThanOrEqual(result[i].score);
+      expect(result[i - 1].score).toBeGreaterThanOrEqual(result[i].score)
     }
-  });
+  })
 
   it("respects the limit parameter", async () => {
     const correlations = Array.from({ length: 20 }, (_, i) => ({
       pokemonAId: "garchomp",
       pokemonBId: `mon-${i}`,
       correlationPercent: 20 - i,
-    }));
+    }))
 
-    mockCorrFindMany.mockResolvedValue(correlations);
-    mockSpeciesGet.mockImplementation((id: string) => mockSpecies(id));
+    mockCorrFindMany.mockResolvedValue(correlations)
+    mockSpeciesGet.mockImplementation((id: string) => mockSpecies(id))
 
-    const result = await getUsageBasedRecommendations(["garchomp"], "gen9ou", 5);
-    expect(result.length).toBeLessThanOrEqual(5);
-  });
+    const result = await getUsageBasedRecommendations(["garchomp"], "gen9ou", 5)
+    expect(result.length).toBeLessThanOrEqual(5)
+  })
 
   it("uses default limit of 10", async () => {
     const correlations = Array.from({ length: 20 }, (_, i) => ({
       pokemonAId: "garchomp",
       pokemonBId: `mon-${i}`,
       correlationPercent: 20 - i * 0.5,
-    }));
+    }))
 
-    mockCorrFindMany.mockResolvedValue(correlations);
-    mockSpeciesGet.mockImplementation((id: string) => mockSpecies(id));
+    mockCorrFindMany.mockResolvedValue(correlations)
+    mockSpeciesGet.mockImplementation((id: string) => mockSpecies(id))
 
-    const result = await getUsageBasedRecommendations(["garchomp"], "gen9ou");
-    expect(result.length).toBeLessThanOrEqual(10);
-  });
+    const result = await getUsageBasedRecommendations(["garchomp"], "gen9ou")
+    expect(result.length).toBeLessThanOrEqual(10)
+  })
 
   // -----------------------------------------------------------------------
   // Species validation
@@ -270,45 +261,45 @@ describe("getUsageBasedRecommendations", () => {
     mockCorrFindMany.mockResolvedValue([
       { pokemonAId: "garchomp", pokemonBId: "fakemon", correlationPercent: 50 },
       { pokemonAId: "garchomp", pokemonBId: "heatran", correlationPercent: 30 },
-    ]);
+    ])
 
     mockSpeciesGet.mockImplementation((id: string) => {
-      if (id === "fakemon") return { exists: false };
-      return mockSpecies(id);
-    });
+      if (id === "fakemon") return { exists: false }
+      return mockSpecies(id)
+    })
 
-    const result = await getUsageBasedRecommendations(["garchomp"], "gen9ou");
+    const result = await getUsageBasedRecommendations(["garchomp"], "gen9ou")
 
-    const ids = result.map((r) => r.pokemonId);
-    expect(ids).not.toContain("fakemon");
-    expect(ids).toContain("heatran");
-  });
+    const ids = result.map((r) => r.pokemonId)
+    expect(ids).not.toContain("fakemon")
+    expect(ids).toContain("heatran")
+  })
 
   it("skips recommended Pokemon when species is null/undefined", async () => {
     mockCorrFindMany.mockResolvedValue([
       { pokemonAId: "garchomp", pokemonBId: "nullmon", correlationPercent: 40 },
-    ]);
+    ])
 
     mockSpeciesGet.mockImplementation((id: string) => {
-      if (id === "nullmon") return null;
-      return mockSpecies(id);
-    });
+      if (id === "nullmon") return null
+      return mockSpecies(id)
+    })
 
-    const result = await getUsageBasedRecommendations(["garchomp"], "gen9ou");
-    expect(result).toHaveLength(0);
-  });
+    const result = await getUsageBasedRecommendations(["garchomp"], "gen9ou")
+    expect(result).toHaveLength(0)
+  })
 
   it("returns empty array when all correlated species are non-existent", async () => {
     mockCorrFindMany.mockResolvedValue([
       { pokemonAId: "garchomp", pokemonBId: "fake1", correlationPercent: 50 },
       { pokemonAId: "garchomp", pokemonBId: "fake2", correlationPercent: 40 },
-    ]);
+    ])
 
-    mockSpeciesGet.mockImplementation(() => ({ exists: false }));
+    mockSpeciesGet.mockImplementation(() => ({ exists: false }))
 
-    const result = await getUsageBasedRecommendations(["garchomp"], "gen9ou");
-    expect(result).toEqual([]);
-  });
+    const result = await getUsageBasedRecommendations(["garchomp"], "gen9ou")
+    expect(result).toEqual([])
+  })
 
   // -----------------------------------------------------------------------
   // Return shape
@@ -317,22 +308,22 @@ describe("getUsageBasedRecommendations", () => {
   it("returns correctly shaped Recommendation objects", async () => {
     mockCorrFindMany.mockResolvedValue([
       { pokemonAId: "garchomp", pokemonBId: "heatran", correlationPercent: 25 },
-    ]);
+    ])
 
-    mockSpeciesGet.mockImplementation((id: string) => mockSpecies(id));
+    mockSpeciesGet.mockImplementation((id: string) => mockSpecies(id))
 
-    const result = await getUsageBasedRecommendations(["garchomp"], "gen9ou");
+    const result = await getUsageBasedRecommendations(["garchomp"], "gen9ou")
 
-    expect(result).toHaveLength(1);
-    const rec = result[0];
-    expect(rec).toHaveProperty("pokemonId", "heatran");
-    expect(rec).toHaveProperty("pokemonName");
-    expect(rec).toHaveProperty("score");
-    expect(rec).toHaveProperty("reasons");
-    expect(typeof rec.pokemonName).toBe("string");
-    expect(typeof rec.score).toBe("number");
-    expect(rec.score).toBeGreaterThanOrEqual(0);
-    expect(rec.score).toBeLessThanOrEqual(100);
-    expect(Array.isArray(rec.reasons)).toBe(true);
-  });
-});
+    expect(result).toHaveLength(1)
+    const rec = result[0]
+    expect(rec).toHaveProperty("pokemonId", "heatran")
+    expect(rec).toHaveProperty("pokemonName")
+    expect(rec).toHaveProperty("score")
+    expect(rec).toHaveProperty("reasons")
+    expect(typeof rec.pokemonName).toBe("string")
+    expect(typeof rec.score).toBe("number")
+    expect(rec.score).toBeGreaterThanOrEqual(0)
+    expect(rec.score).toBeLessThanOrEqual(100)
+    expect(Array.isArray(rec.reasons)).toBe(true)
+  })
+})

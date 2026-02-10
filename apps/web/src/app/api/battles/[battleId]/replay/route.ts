@@ -1,11 +1,11 @@
-import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@nasty-plot/db";
+import { NextRequest, NextResponse } from "next/server"
+import { prisma } from "@nasty-plot/db"
 
 export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ battleId: string }> },
 ) {
-  const { battleId } = await params;
+  const { battleId } = await params
   const battle = await prisma.battle.findUnique({
     where: { id: battleId },
     select: {
@@ -21,11 +21,11 @@ export async function GET(
       createdAt: true,
       turns: { orderBy: { turnNumber: "asc" } },
     },
-  });
+  })
 
   if (!battle) {
-    return NextResponse.json({ error: "Battle not found" }, { status: 404 });
+    return NextResponse.json({ error: "Battle not found" }, { status: 404 })
   }
 
-  return NextResponse.json(battle);
+  return NextResponse.json(battle)
 }

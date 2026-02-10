@@ -1,17 +1,17 @@
-"use client";
+"use client"
 
-import { useTheme } from "next-themes";
-import { Sun, Moon, Monitor } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { useTheme } from "next-themes"
+import { Sun, Moon, Monitor } from "lucide-react"
+import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "@/components/ui/dropdown-menu"
 
 export function ThemeToggle() {
-  const { setTheme } = useTheme();
+  const { setTheme } = useTheme()
 
   return (
     <DropdownMenu modal={false}>
@@ -37,5 +37,5 @@ export function ThemeToggle() {
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
-  );
+  )
 }

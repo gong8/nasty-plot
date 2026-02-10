@@ -1,27 +1,34 @@
-"use client";
+"use client"
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { POKEMON_TYPES, TYPE_COLORS, getTypeEffectiveness, type PokemonType, type TeamSlotData } from "@nasty-plot/core";
-import { cn } from "@/lib/utils";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import {
+  POKEMON_TYPES,
+  TYPE_COLORS,
+  getTypeEffectiveness,
+  type PokemonType,
+  type TeamSlotData,
+} from "@nasty-plot/core"
+import { cn } from "@/lib/utils"
 
 interface WeaknessHeatmapProps {
-  slots: TeamSlotData[];
+  slots: TeamSlotData[]
 }
 
 function getEffectivenessStyle(multiplier: number): {
-  bg: string;
-  text: string;
-  label: string;
+  bg: string
+  text: string
+  label: string
 } {
-  if (multiplier === 0) return { bg: "bg-muted", text: "text-muted-foreground", label: "0x" };
-  if (multiplier === 0.25) return { bg: "bg-green-800/70", text: "text-green-100", label: "\u00BCx" };
-  if (multiplier === 0.5) return { bg: "bg-green-600/50", text: "text-green-100", label: "\u00BDx" };
-  if (multiplier === 1) return { bg: "bg-muted/30", text: "text-muted-foreground", label: "1x" };
-  if (multiplier === 2) return { bg: "bg-red-500/50", text: "text-red-100", label: "2x" };
-  if (multiplier >= 4) return { bg: "bg-red-700/70", text: "text-red-100", label: "4x" };
-  return { bg: "bg-muted/30", text: "text-muted-foreground", label: `${multiplier}x` };
+  if (multiplier === 0) return { bg: "bg-muted", text: "text-muted-foreground", label: "0x" }
+  if (multiplier === 0.25)
+    return { bg: "bg-green-800/70", text: "text-green-100", label: "\u00BCx" }
+  if (multiplier === 0.5) return { bg: "bg-green-600/50", text: "text-green-100", label: "\u00BDx" }
+  if (multiplier === 1) return { bg: "bg-muted/30", text: "text-muted-foreground", label: "1x" }
+  if (multiplier === 2) return { bg: "bg-red-500/50", text: "text-red-100", label: "2x" }
+  if (multiplier >= 4) return { bg: "bg-red-700/70", text: "text-red-100", label: "4x" }
+  return { bg: "bg-muted/30", text: "text-muted-foreground", label: `${multiplier}x` }
 }
 
 export function WeaknessHeatmap({ slots }: WeaknessHeatmapProps) {
@@ -37,7 +44,7 @@ export function WeaknessHeatmap({ slots }: WeaknessHeatmapProps) {
           </p>
         </CardContent>
       </Card>
-    );
+    )
   }
 
   return (
@@ -56,10 +63,7 @@ export function WeaknessHeatmap({ slots }: WeaknessHeatmapProps) {
                   </th>
                   {POKEMON_TYPES.map((type) => (
                     <th key={type} className="p-1 text-center min-w-[38px]">
-                      <span
-                        className="text-[9px] font-bold"
-                        style={{ color: TYPE_COLORS[type] }}
-                      >
+                      <span className="text-[9px] font-bold" style={{ color: TYPE_COLORS[type] }}>
                         {type.slice(0, 3)}
                       </span>
                     </th>
@@ -68,8 +72,8 @@ export function WeaknessHeatmap({ slots }: WeaknessHeatmapProps) {
               </thead>
               <tbody>
                 {slots.map((slot) => {
-                  const pokemonName = slot.species?.name ?? slot.pokemonId;
-                  const types = (slot.species?.types ?? []) as PokemonType[];
+                  const pokemonName = slot.species?.name ?? slot.pokemonId
+                  const types = (slot.species?.types ?? []) as PokemonType[]
 
                   return (
                     <tr key={slot.position} className="border-t">
@@ -82,10 +86,9 @@ export function WeaknessHeatmap({ slots }: WeaknessHeatmapProps) {
                         </div>
                       </td>
                       {POKEMON_TYPES.map((attackType) => {
-                        const multiplier = types.length > 0
-                          ? getTypeEffectiveness(attackType, types)
-                          : 1;
-                        const style = getEffectivenessStyle(multiplier);
+                        const multiplier =
+                          types.length > 0 ? getTypeEffectiveness(attackType, types) : 1
+                        const style = getEffectivenessStyle(multiplier)
 
                         return (
                           <td key={attackType} className="p-0.5">
@@ -95,7 +98,7 @@ export function WeaknessHeatmap({ slots }: WeaknessHeatmapProps) {
                                   className={cn(
                                     "rounded text-center py-1 px-0.5 text-[10px] font-mono cursor-default",
                                     style.bg,
-                                    style.text
+                                    style.text,
                                   )}
                                 >
                                   {style.label}
@@ -108,48 +111,51 @@ export function WeaknessHeatmap({ slots }: WeaknessHeatmapProps) {
                               </TooltipContent>
                             </Tooltip>
                           </td>
-                        );
+                        )
                       })}
                     </tr>
-                  );
+                  )
                 })}
                 {/* Summary row */}
                 <tr className="border-t-2 font-medium">
                   <td className="p-1.5 sticky left-0 bg-card z-10 text-xs">Total</td>
                   {POKEMON_TYPES.map((attackType) => {
-                    let weakCount = 0;
-                    let resistCount = 0;
+                    let weakCount = 0
+                    let resistCount = 0
                     for (const slot of slots) {
-                      const types = (slot.species?.types ?? []) as PokemonType[];
-                      if (types.length === 0) continue;
-                      const eff = getTypeEffectiveness(attackType, types);
-                      if (eff > 1) weakCount++;
-                      if (eff < 1 && eff > 0) resistCount++;
-                      if (eff === 0) resistCount++;
+                      const types = (slot.species?.types ?? []) as PokemonType[]
+                      if (types.length === 0) continue
+                      const eff = getTypeEffectiveness(attackType, types)
+                      if (eff > 1) weakCount++
+                      if (eff < 1 && eff > 0) resistCount++
+                      if (eff === 0) resistCount++
                     }
 
-                    const net = resistCount - weakCount;
-                    let bgClass = "bg-muted/20";
-                    if (weakCount >= 3) bgClass = "bg-red-600/40";
-                    else if (weakCount >= 2 && resistCount === 0) bgClass = "bg-red-500/30";
-                    else if (net > 0) bgClass = "bg-green-500/20";
-                    else if (net < 0) bgClass = "bg-red-400/20";
+                    const net = resistCount - weakCount
+                    let bgClass = "bg-muted/20"
+                    if (weakCount >= 3) bgClass = "bg-red-600/40"
+                    else if (weakCount >= 2 && resistCount === 0) bgClass = "bg-red-500/30"
+                    else if (net > 0) bgClass = "bg-green-500/20"
+                    else if (net < 0) bgClass = "bg-red-400/20"
 
                     return (
                       <td key={attackType} className="p-0.5">
                         <div
-                          className={cn(
-                            "rounded text-center py-1 text-[10px] font-mono",
-                            bgClass
-                          )}
+                          className={cn("rounded text-center py-1 text-[10px] font-mono", bgClass)}
                         >
-                          {weakCount > 0 && <span className="text-red-500 dark:text-red-400">{weakCount}W</span>}
+                          {weakCount > 0 && (
+                            <span className="text-red-500 dark:text-red-400">{weakCount}W</span>
+                          )}
                           {weakCount > 0 && resistCount > 0 && "/"}
-                          {resistCount > 0 && <span className="text-green-600 dark:text-green-400">{resistCount}R</span>}
+                          {resistCount > 0 && (
+                            <span className="text-green-600 dark:text-green-400">
+                              {resistCount}R
+                            </span>
+                          )}
                           {weakCount === 0 && resistCount === 0 && "-"}
                         </div>
                       </td>
-                    );
+                    )
                   })}
                 </tr>
               </tbody>
@@ -159,5 +165,5 @@ export function WeaknessHeatmap({ slots }: WeaknessHeatmapProps) {
         </ScrollArea>
       </CardContent>
     </Card>
-  );
+  )
 }

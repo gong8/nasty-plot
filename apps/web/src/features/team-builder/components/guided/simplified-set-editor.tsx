@@ -1,43 +1,49 @@
-"use client";
+"use client"
 
-import { useState, useCallback, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { ChevronDown, ChevronUp, Info } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import { Slider } from "@/components/ui/slider";
-import { Separator } from "@/components/ui/separator";
+import { useState, useCallback, useMemo } from "react"
+import { useQuery } from "@tanstack/react-query"
+import { ChevronDown, ChevronUp, Info } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Badge } from "@/components/ui/badge"
+import { Slider } from "@/components/ui/slider"
+import { Separator } from "@/components/ui/separator"
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@/components/ui/select"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import {
-  NATURE_DATA, TYPE_COLORS, STAT_LABELS, STAT_COLORS,
-  MAX_TOTAL_EVS, MAX_SINGLE_EV,
-  POKEMON_TYPES, NATURES, STATS,
-  calculateAllStats, getTotalEvs,
-  type NatureName, type PokemonSpecies, type PokemonType,
-  type StatName, type StatsTable, type TeamSlotData,
-} from "@nasty-plot/core";
-import { PokemonSprite, TypeBadge } from "@nasty-plot/ui";
-import { ItemCombobox } from "../item-combobox";
+  NATURE_DATA,
+  TYPE_COLORS,
+  STAT_LABELS,
+  STAT_COLORS,
+  MAX_TOTAL_EVS,
+  MAX_SINGLE_EV,
+  POKEMON_TYPES,
+  NATURES,
+  STATS,
+  calculateAllStats,
+  getTotalEvs,
+  type NatureName,
+  type PokemonSpecies,
+  type PokemonType,
+  type StatName,
+  type StatsTable,
+  type TeamSlotData,
+} from "@nasty-plot/core"
+import { PokemonSprite, TypeBadge } from "@nasty-plot/ui"
+import { ItemCombobox } from "../item-combobox"
 
 interface SimplifiedSetEditorProps {
-  slot: Partial<TeamSlotData>;
-  formatId: string;
-  setInfo?: string; // e.g. "Most popular set, used by 45% of players"
-  onUpdate: (updates: Partial<TeamSlotData>) => void;
+  slot: Partial<TeamSlotData>
+  formatId: string
+  setInfo?: string // e.g. "Most popular set, used by 45% of players"
+  onUpdate: (updates: Partial<TeamSlotData>) => void
 }
 
 export function SimplifiedSetEditor({
@@ -46,85 +52,85 @@ export function SimplifiedSetEditor({
   setInfo,
   onUpdate,
 }: SimplifiedSetEditorProps) {
-  const [showEvs, setShowEvs] = useState(false);
+  const [showEvs, setShowEvs] = useState(false)
 
-  const pokemonId = slot.pokemonId ?? "";
+  const pokemonId = slot.pokemonId ?? ""
 
   // Fetch species data
   const { data: speciesData } = useQuery<PokemonSpecies>({
     queryKey: ["pokemon", pokemonId],
     queryFn: async () => {
-      const res = await fetch(`/api/pokemon/${pokemonId}`);
-      if (!res.ok) throw new Error("Not found");
-      const json = await res.json();
-      return json.data;
+      const res = await fetch(`/api/pokemon/${pokemonId}`)
+      if (!res.ok) throw new Error("Not found")
+      const json = await res.json()
+      return json.data
     },
     enabled: !!pokemonId,
-  });
+  })
 
   // Fetch learnset
   const { data: learnset = [] } = useQuery<string[]>({
     queryKey: ["learnset", pokemonId, formatId],
     queryFn: async () => {
-      let url = `/api/pokemon/${pokemonId}/learnset`;
-      if (formatId) url += `?format=${encodeURIComponent(formatId)}`;
-      const res = await fetch(url);
-      if (!res.ok) return [];
-      const json = await res.json();
-      const moves = json.data ?? [];
-      return moves.map((m: { name: string }) => m.name);
+      let url = `/api/pokemon/${pokemonId}/learnset`
+      if (formatId) url += `?format=${encodeURIComponent(formatId)}`
+      const res = await fetch(url)
+      if (!res.ok) return []
+      const json = await res.json()
+      const moves = json.data ?? []
+      return moves.map((m: { name: string }) => m.name)
     },
     enabled: !!pokemonId,
-  });
+  })
 
   const abilities = useMemo(() => {
-    if (!speciesData?.abilities) return [];
+    if (!speciesData?.abilities) return []
     return Object.entries(speciesData.abilities).map(([slot, name]) => ({
       name,
       isHidden: slot === "H",
-    }));
-  }, [speciesData]);
+    }))
+  }, [speciesData])
 
-  const evs = (slot.evs ?? { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 }) as StatsTable;
-  const ivs = (slot.ivs ?? { hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31 }) as StatsTable;
-  const nature = slot.nature ?? "Hardy";
+  const evs = (slot.evs ?? { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 }) as StatsTable
+  const ivs = (slot.ivs ?? { hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31 }) as StatsTable
+  const nature = slot.nature ?? "Hardy"
 
-  const evTotal = getTotalEvs(evs);
-  const evRemaining = MAX_TOTAL_EVS - evTotal;
+  const evTotal = getTotalEvs(evs)
+  const evRemaining = MAX_TOTAL_EVS - evTotal
 
   const calculatedStats = useMemo(() => {
-    if (!speciesData) return null;
-    return calculateAllStats(speciesData.baseStats, ivs, evs, slot.level ?? 100, nature);
-  }, [speciesData, ivs, evs, slot.level, nature]);
+    if (!speciesData) return null
+    return calculateAllStats(speciesData.baseStats, ivs, evs, slot.level ?? 100, nature)
+  }, [speciesData, ivs, evs, slot.level, nature])
 
   const handleEvChange = useCallback(
     (stat: StatName, value: number) => {
-      const currentOther = getTotalEvs(evs) - evs[stat];
-      const maxForStat = Math.min(MAX_SINGLE_EV, MAX_TOTAL_EVS - currentOther);
-      const clamped = Math.min(value, maxForStat);
-      onUpdate({ evs: { ...evs, [stat]: clamped } as StatsTable });
+      const currentOther = getTotalEvs(evs) - evs[stat]
+      const maxForStat = Math.min(MAX_SINGLE_EV, MAX_TOTAL_EVS - currentOther)
+      const clamped = Math.min(value, maxForStat)
+      onUpdate({ evs: { ...evs, [stat]: clamped } as StatsTable })
     },
-    [evs, onUpdate]
-  );
+    [evs, onUpdate],
+  )
 
   const handleIvChange = useCallback(
     (stat: StatName, value: number) => {
-      const clamped = Math.max(0, Math.min(31, value));
-      onUpdate({ ivs: { ...ivs, [stat]: clamped } as StatsTable });
+      const clamped = Math.max(0, Math.min(31, value))
+      onUpdate({ ivs: { ...ivs, [stat]: clamped } as StatsTable })
     },
-    [ivs, onUpdate]
-  );
+    [ivs, onUpdate],
+  )
 
   const handleMoveChange = useCallback(
     (index: number, value: string) => {
-      const newMoves = [...(slot.moves ?? [""])] as [string, string?, string?, string?];
-      newMoves[index] = value || (index === 0 ? "" : undefined);
-      onUpdate({ moves: newMoves });
+      const newMoves = [...(slot.moves ?? [""])] as [string, string?, string?, string?]
+      newMoves[index] = value || (index === 0 ? "" : undefined)
+      onUpdate({ moves: newMoves })
     },
-    [slot.moves, onUpdate]
-  );
+    [slot.moves, onUpdate],
+  )
 
-  const displayName = speciesData?.name ?? pokemonId;
+  const displayName = speciesData?.name ?? pokemonId
 
   return (
     <div className="space-y-4">
@@ -158,10 +164,7 @@ export function SimplifiedSetEditor({
       {/* Ability */}
       <div className="space-y-1.5">
         <Label className="text-xs">Ability</Label>
-        <Select
-          value={slot.ability || ""}
-          onValueChange={(v) => onUpdate({ ability: v })}
-        >
+        <Select value={slot.ability || ""} onValueChange={(v) => onUpdate({ ability: v })}>
           <SelectTrigger className="h-9">
             <SelectValue placeholder="Select ability" />
           </SelectTrigger>
@@ -169,9 +172,7 @@ export function SimplifiedSetEditor({
             {abilities.map((a) => (
               <SelectItem key={a.name} value={a.name}>
                 {a.name}
-                {a.isHidden && (
-                  <span className="text-muted-foreground ml-1">(Hidden)</span>
-                )}
+                {a.isHidden && <span className="text-muted-foreground ml-1">(Hidden)</span>}
               </SelectItem>
             ))}
           </SelectContent>
@@ -191,24 +192,21 @@ export function SimplifiedSetEditor({
       {/* Nature */}
       <div className="space-y-1.5">
         <Label className="text-xs">Nature</Label>
-        <Select
-          value={nature}
-          onValueChange={(v) => onUpdate({ nature: v as NatureName })}
-        >
+        <Select value={nature} onValueChange={(v) => onUpdate({ nature: v as NatureName })}>
           <SelectTrigger className="h-9">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
             {NATURES.map((n) => {
-              const nd = NATURE_DATA[n];
+              const nd = NATURE_DATA[n]
               const label = nd.plus
                 ? `${n} (+${STAT_LABELS[nd.plus]}/-${STAT_LABELS[nd.minus!]})`
-                : `${n} (Neutral)`;
+                : `${n} (Neutral)`
               return (
                 <SelectItem key={n} value={n}>
                   {label}
                 </SelectItem>
-              );
+              )
             })}
           </SelectContent>
         </Select>
@@ -263,15 +261,10 @@ export function SimplifiedSetEditor({
           <div className="grid grid-cols-3 gap-1.5">
             {STATS.map((stat) => (
               <div key={stat} className="rounded-md border p-1.5 text-center">
-                <div
-                  className="text-[10px] font-medium"
-                  style={{ color: STAT_COLORS[stat] }}
-                >
+                <div className="text-[10px] font-medium" style={{ color: STAT_COLORS[stat] }}>
                   {STAT_LABELS[stat]}
                 </div>
-                <div className="text-sm font-bold tabular-nums">
-                  {calculatedStats[stat]}
-                </div>
+                <div className="text-sm font-bold tabular-nums">{calculatedStats[stat]}</div>
               </div>
             ))}
           </div>
@@ -302,9 +295,7 @@ export function SimplifiedSetEditor({
               <Label className="text-xs">EVs</Label>
               <span
                 className={`text-[10px] ${
-                  evRemaining < 0
-                    ? "text-destructive font-medium"
-                    : "text-muted-foreground"
+                  evRemaining < 0 ? "text-destructive font-medium" : "text-muted-foreground"
                 }`}
               >
                 {evTotal} / {MAX_TOTAL_EVS} ({evRemaining} remaining)
@@ -313,10 +304,7 @@ export function SimplifiedSetEditor({
             {STATS.map((stat) => (
               <div key={stat} className="space-y-0.5">
                 <div className="flex items-center justify-between">
-                  <span
-                    className="text-[10px] font-medium"
-                    style={{ color: STAT_COLORS[stat] }}
-                  >
+                  <span className="text-[10px] font-medium" style={{ color: STAT_COLORS[stat] }}>
                     {STAT_LABELS[stat]}
                   </span>
                   <span className="text-[10px] tabular-nums">{evs[stat]}</span>
@@ -340,10 +328,7 @@ export function SimplifiedSetEditor({
             <div className="grid grid-cols-3 gap-2">
               {STATS.map((stat) => (
                 <div key={stat} className="space-y-0.5">
-                  <span
-                    className="text-[10px] font-medium"
-                    style={{ color: STAT_COLORS[stat] }}
-                  >
+                  <span className="text-[10px] font-medium" style={{ color: STAT_COLORS[stat] }}>
                     {STAT_LABELS[stat]}
                   </span>
                   <Input
@@ -351,9 +336,7 @@ export function SimplifiedSetEditor({
                     min={0}
                     max={31}
                     value={ivs[stat]}
-                    onChange={(e) =>
-                      handleIvChange(stat, parseInt(e.target.value, 10) || 0)
-                    }
+                    onChange={(e) => handleIvChange(stat, parseInt(e.target.value, 10) || 0)}
                     className="h-7 text-center text-xs"
                   />
                 </div>
@@ -363,7 +346,7 @@ export function SimplifiedSetEditor({
         </div>
       )}
     </div>
-  );
+  )
 }
 
 // --- Move Input with autocomplete ---
@@ -375,36 +358,36 @@ function MoveInput({
   selectedMoves,
   onChange,
 }: {
-  index: number;
-  value: string;
-  learnset: string[];
-  selectedMoves: [string, string?, string?, string?];
-  onChange: (val: string) => void;
+  index: number
+  value: string
+  learnset: string[]
+  selectedMoves: [string, string?, string?, string?]
+  onChange: (val: string) => void
 }) {
-  const [search, setSearch] = useState("");
-  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("")
+  const [open, setOpen] = useState(false)
 
   // Moves already picked in other slots (exclude current slot's value)
   const otherMoves = useMemo(() => {
-    const others = new Set<string>();
+    const others = new Set<string>()
     for (let i = 0; i < 4; i++) {
       if (i !== index && selectedMoves[i]) {
-        others.add(selectedMoves[i]!.toLowerCase());
+        others.add(selectedMoves[i]!.toLowerCase())
       }
     }
-    return others;
-  }, [selectedMoves, index]);
+    return others
+  }, [selectedMoves, index])
 
   const filtered = useMemo(() => {
-    let moves = learnset.filter((m) => !otherMoves.has(m.toLowerCase()));
+    let moves = learnset.filter((m) => !otherMoves.has(m.toLowerCase()))
     if (search) {
-      const lower = search.toLowerCase();
-      moves = moves.filter((m) => m.toLowerCase().includes(lower));
+      const lower = search.toLowerCase()
+      moves = moves.filter((m) => m.toLowerCase().includes(lower))
     }
-    return moves.slice(0, 20);
-  }, [search, learnset, otherMoves]);
+    return moves.slice(0, 20)
+  }, [search, learnset, otherMoves])
 
-  const isDuplicate = value && otherMoves.has(value.toLowerCase());
+  const isDuplicate = value && otherMoves.has(value.toLowerCase())
 
   return (
     <div className="relative">
@@ -412,21 +395,19 @@ function MoveInput({
         placeholder={`Move ${index + 1}`}
         value={open ? search : value}
         onChange={(e) => {
-          setSearch(e.target.value);
-          if (!open) setOpen(true);
+          setSearch(e.target.value)
+          if (!open) setOpen(true)
         }}
         onFocus={() => {
-          setSearch(value);
-          setOpen(true);
+          setSearch(value)
+          setOpen(true)
         }}
         onBlur={() => {
-          setTimeout(() => setOpen(false), 150);
+          setTimeout(() => setOpen(false), 150)
         }}
         className={`h-8 text-sm ${isDuplicate ? "border-destructive" : ""}`}
       />
-      {isDuplicate && (
-        <p className="text-[10px] text-destructive mt-0.5">Duplicate move</p>
-      )}
+      {isDuplicate && <p className="text-[10px] text-destructive mt-0.5">Duplicate move</p>}
       {open && filtered.length > 0 && (
         <div className="absolute z-50 mt-1 w-full rounded-md border bg-popover shadow-md max-h-[150px] overflow-y-auto">
           {filtered.map((move) => (
@@ -434,10 +415,10 @@ function MoveInput({
               key={move}
               className="w-full px-3 py-1.5 text-sm text-left hover:bg-accent transition-colors"
               onMouseDown={(e) => {
-                e.preventDefault();
-                onChange(move);
-                setSearch(move);
-                setOpen(false);
+                e.preventDefault()
+                onChange(move)
+                setSearch(move)
+                setOpen(false)
               }}
             >
               {move}
@@ -446,5 +427,5 @@ function MoveInput({
         </div>
       )}
     </div>
-  );
+  )
 }

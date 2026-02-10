@@ -6,21 +6,21 @@
 
 Competitive Pokemon has a dirty secret: it might be impossible to explain.
 
-Not impossible to play -- millions of people play on Pokemon Showdown every day. Not impossible to win -- top players consistently outperform the field, tournament after tournament, which means skill is real and learnable. But impossible to *explain* in the way that chess or Go or poker have been explained, systematized, and taught through structured tools.
+Not impossible to play -- millions of people play on Pokemon Showdown every day. Not impossible to win -- top players consistently outperform the field, tournament after tournament, which means skill is real and learnable. But impossible to _explain_ in the way that chess or Go or poker have been explained, systematized, and taught through structured tools.
 
 Consider the numbers. There are over 900 Pokemon. Each can learn dozens of moves from a pool of 300+. Each carries one of hundreds of abilities, holds one of hundreds of items, picks one of 25 natures, distributes 510 effort values across six stats in increments of 4, and optionally Terastallizes into any of 18 types. A team is six of these. The combinatorial space isn't just large -- it's estimated at roughly 6 times 10 to the 218th power possible teams. That number is so vast it makes the number of atoms in the observable universe look like pocket change.
 
-Chess has approximately 10 to the 120th possible games. Chess also has Lichess. It has Stockfish, a superhuman engine that evaluates 70 million positions per second and explains, move by move, whether you played well or poorly. It has opening databases going back centuries. It has endgame tablebases that have *solved* every position with seven or fewer pieces on the board. It has structured learning paths that take you from "the horsey moves in an L" to grandmaster preparation in a continuous, well-lit staircase.
+Chess has approximately 10 to the 120th possible games. Chess also has Lichess. It has Stockfish, a superhuman engine that evaluates 70 million positions per second and explains, move by move, whether you played well or poorly. It has opening databases going back centuries. It has endgame tablebases that have _solved_ every position with seven or fewer pieces on the board. It has structured learning paths that take you from "the horsey moves in an L" to grandmaster preparation in a continuous, well-lit staircase.
 
 Pokemon has Showdown.
 
-Showdown is a masterpiece of engineering -- a faithful battle simulator that lets you play the game without owning the cartridge. It is the *battlefield*. But it is not the *war room*. It doesn't teach you why you lost. It doesn't help you build a team. It doesn't simulate a thousand games overnight while you sleep and tell you that your team has a 37% win rate against rain and you should probably do something about that. It gives you the sword and the arena and says "good luck."
+Showdown is a masterpiece of engineering -- a faithful battle simulator that lets you play the game without owning the cartridge. It is the _battlefield_. But it is not the _war room_. It doesn't teach you why you lost. It doesn't help you build a team. It doesn't simulate a thousand games overnight while you sleep and tell you that your team has a 37% win rate against rain and you should probably do something about that. It gives you the sword and the arena and says "good luck."
 
 The knowledge that separates a beginner from a top player is scattered across a dozen sources. Smogon forums, where analysis posts from 2014 might still be the best thing written about a particular archetype. YouTube videos that are brilliant but unsearchable -- you can't ctrl-F a YouTube video to find the moment where someone explains why Landorus-Therian is the glue that holds balance teams together. Discord servers where the advice is real-time but ephemeral, scrolling past before you can absorb it. Word of mouth in tournament lobbies, the kind of knowledge that lives in people's heads and dies when they stop playing.
 
-And even the tools that do exist -- damage calculators, usage statistics, set recommendations -- show you *what* without explaining *how to think*. A damage calculator tells you that Earthquake from Great Tusk does 78-92% to Heatran. It does not tell you whether that matters right now, in this position, on this turn, given what your opponent might do. Usage statistics tell you that 47% of Gholdengo run Nasty Plot. They don't tell you what that means for your team-building decisions, or how to play around it when you see Gholdengo on the opponent's team preview.
+And even the tools that do exist -- damage calculators, usage statistics, set recommendations -- show you _what_ without explaining _how to think_. A damage calculator tells you that Earthquake from Great Tusk does 78-92% to Heatran. It does not tell you whether that matters right now, in this position, on this turn, given what your opponent might do. Usage statistics tell you that 47% of Gholdengo run Nasty Plot. They don't tell you what that means for your team-building decisions, or how to play around it when you see Gholdengo on the opponent's team preview.
 
-The gap is not in information. The gap is in *understanding*.
+The gap is not in information. The gap is in _understanding_.
 
 ---
 
@@ -38,7 +38,7 @@ Whimsicott uses Tailwind on turn 1. It does zero damage. On the surface, it look
 
 Stealth Rock on turn 2 doesn't look dramatic either. The opponent's Volcarona is at full health in the back, waiting for its moment. But now, every time Volcarona switches in, it loses 50% of its HP to rocks. It can never safely enter the battle. An entire win condition has been neutralized by a single move that happened fifteen turns ago. The opponent's plan was to sweep with Volcarona. That plan is dead, and they might not even realize it yet.
 
-Long-term planning is the pillar that separates someone who plays Pokemon from someone who *competes* at Pokemon. Beginners pick the move that does the most damage right now. Veterans pick the move that makes the last five turns of the game impossible to lose.
+Long-term planning is the pillar that separates someone who plays Pokemon from someone who _competes_ at Pokemon. Beginners pick the move that does the most damage right now. Veterans pick the move that makes the last five turns of the game impossible to lose.
 
 ### Simultaneous Action Selection
 
@@ -66,9 +66,9 @@ And then there's the bluff dimension. Bringing a set that nobody expects, specif
 
 Damage in Pokemon is not deterministic. Every attack deals between 85% and 100% of its calculated damage, uniformly distributed across 16 rolls. Stone Edge has 80% accuracy. Focus Blast has 70%. Critical hits occur 4.17% of the time and ignore defensive boosts. Scald has a 30% chance to burn. Body Slam has a 30% chance to paralyze. King's Rock flinch chance stacks with Serene Grace.
 
-A single turn can produce hundreds of distinct outcomes. Your Garchomp uses Earthquake on their Heatran. The damage rolls between 78% and 92%. If they're at 85% health, some rolls KO and some don't. If you don't KO, they use Earth Power back, which rolls between 65% and 77%. If *they* don't KO, you finish with another Earthquake, which again rolls. But there's a 4.17% chance either attack crits, which changes everything. And a 10% chance Earth Power drops your Special Defense, which matters if they switch to a special attacker next.
+A single turn can produce hundreds of distinct outcomes. Your Garchomp uses Earthquake on their Heatran. The damage rolls between 78% and 92%. If they're at 85% health, some rolls KO and some don't. If you don't KO, they use Earth Power back, which rolls between 65% and 77%. If _they_ don't KO, you finish with another Earthquake, which again rolls. But there's a 4.17% chance either attack crits, which changes everything. And a 10% chance Earth Power drops your Special Defense, which matters if they switch to a special attacker next.
 
-The "skyscraper of outcomes" -- a single turn can branch into hundreds of possible game states depending on damage rolls, accuracy checks, critical hit rolls, and secondary effect procs. Good players don't just consider the best case. They reason about *expected value*. Is Stone Edge the right play? It does more damage than Rock Slide, but Rock Slide never misses. If you need the KO to win the game, the 20% miss chance on Stone Edge means you lose the game 1 in 5 times you choose it. Rock Slide does less damage but you hit every time. The right play depends on whether you can afford the risk -- and that calculation depends on the entire game state, not just this turn.
+The "skyscraper of outcomes" -- a single turn can branch into hundreds of possible game states depending on damage rolls, accuracy checks, critical hit rolls, and secondary effect procs. Good players don't just consider the best case. They reason about _expected value_. Is Stone Edge the right play? It does more damage than Rock Slide, but Rock Slide never misses. If you need the KO to win the game, the 20% miss chance on Stone Edge means you lose the game 1 in 5 times you choose it. Rock Slide does less damage but you hit every time. The right play depends on whether you can afford the risk -- and that calculation depends on the entire game state, not just this turn.
 
 The best players manage probability the way poker players manage pot odds. They don't gamble. They put themselves in positions where the math is on their side so consistently that variance washes out over enough games. They don't need to get lucky. They need to play enough games that luck doesn't matter.
 
@@ -100,13 +100,13 @@ Nobody should be gated from the full power of the tool. But nobody should be ove
 
 ### Respect for Complexity
 
-It is tempting to oversimplify. To say "just use OU sample teams" or "just pick the highest usage Pokemon" or "just click the recommended moves." And sometimes that's fine -- sometimes you just want to play, not study. But Nasty Plot is built on the belief that competitive Pokemon is *genuinely complex*, and that complexity is what makes it beautiful.
+It is tempting to oversimplify. To say "just use OU sample teams" or "just pick the highest usage Pokemon" or "just click the recommended moves." And sometimes that's fine -- sometimes you just want to play, not study. But Nasty Plot is built on the belief that competitive Pokemon is _genuinely complex_, and that complexity is what makes it beautiful.
 
-The goal is not to make competitive Pokemon easy. Easy means shallow, and shallow means boring. The goal is to make it *tractable*. To give you tools that let you engage with the real complexity without drowning in it. To surface the patterns and structures that experienced players see intuitively but can't always articulate.
+The goal is not to make competitive Pokemon easy. Easy means shallow, and shallow means boring. The goal is to make it _tractable_. To give you tools that let you engage with the real complexity without drowning in it. To surface the patterns and structures that experienced players see intuitively but can't always articulate.
 
 A damage calculator that just shows numbers is a lookup table. A damage calculator that shows you "this is a 2HKO, which means Heatran has to switch, which means your opponent is forced to bring in their Water-type, which you can predict and hit with Thunderbolt on the switch" -- that's a tool for understanding.
 
-We will never hide the complexity. We will never round off the sharp edges. We will build tools that help you *see* the complexity for what it is: a beautiful, deep game that rewards careful thought.
+We will never hide the complexity. We will never round off the sharp edges. We will build tools that help you _see_ the complexity for what it is: a beautiful, deep game that rewards careful thought.
 
 ### Simulation Over Intuition
 
@@ -146,7 +146,7 @@ This is not a tool for beginners that experts tolerate. It's not a tool for expe
 
 Nasty Plot is two things at once: a useful tool for competitive Pokemon, and a learning artifact for software engineering.
 
-Every design decision is documented. The architecture is explained. The session notes capture not just what was built but *why* it was built that way, what alternatives were considered, and what tradeoffs were made. The codebase is a case study in building a complex, data-driven application with modern tools: TypeScript, monorepo architecture, battle simulation, AI opponents, LLM integration, and more.
+Every design decision is documented. The architecture is explained. The session notes capture not just what was built but _why_ it was built that way, what alternatives were considered, and what tradeoffs were made. The codebase is a case study in building a complex, data-driven application with modern tools: TypeScript, monorepo architecture, battle simulation, AI opponents, LLM integration, and more.
 
 This dual purpose is intentional. The best way to learn to build software is to build software that matters to you. The best way to build software that matters is to build it for a community you belong to. Nasty Plot is built by a competitive Pokemon player, for competitive Pokemon players, using software engineering as the medium.
 
@@ -188,19 +188,19 @@ Your team has a history. Not just "the team I'm using now" but "the team I start
 
 Version control for teams. Branch, compare, merge. See the diff between two versions of your team. See how win rates changed when you made a specific swap. Understand which changes actually made you better and which were lateral moves.
 
-This isn't just record-keeping. It's a tool for learning. When you can see the evolution of your team over time, you start to understand *why* certain changes worked. You build intuition not from guessing but from evidence.
+This isn't just record-keeping. It's a tool for learning. When you can see the evolution of your team over time, you start to understand _why_ certain changes worked. You build intuition not from guessing but from evidence.
 
 ### Meta Awareness
 
 You can't build a team in a vacuum. You build for a metagame -- the set of Pokemon, sets, and strategies that you expect to face. And the metagame changes. What was dominant last month might be niche this month. What was niche might be rising.
 
-Nasty Plot integrates usage statistics, set distribution data, and teammate correlations directly into the building process. Not as a wall of numbers in a separate tab, but as context woven into every decision. When you're choosing your fifth team member, you see not just "Pokemon that cover your remaining weaknesses" but "Pokemon that cover your remaining weaknesses *and* handle the threats that are currently popular in OU."
+Nasty Plot integrates usage statistics, set distribution data, and teammate correlations directly into the building process. Not as a wall of numbers in a separate tab, but as context woven into every decision. When you're choosing your fifth team member, you see not just "Pokemon that cover your remaining weaknesses" but "Pokemon that cover your remaining weaknesses _and_ handle the threats that are currently popular in OU."
 
 Define what you expect to face. Simulate against it. Adapt. The meta is a moving target, and your tools should move with it.
 
 ### Battle Training
 
-Playing on the ladder teaches you to play. But it doesn't teach you to *review*.
+Playing on the ladder teaches you to play. But it doesn't teach you to _review_.
 
 After a battle in Nasty Plot, you get a win probability graph that shows, turn by turn, who was winning. You see the moment where a 70% win position became a 30% win position. You see the critical turn -- the one where you clicked Stone Edge instead of switching to your Fairy-type, and the miss cost you the game. You see the turn where the engine recommended a different play and explains why.
 
@@ -214,7 +214,7 @@ Not just play. Study. Drill. Improve. Repeat.
 
 The AI assistant is not a gimmick. It's the connective tissue that ties every feature together.
 
-Pecharunt has context. It knows your team. It knows the format. It knows the metagame. It knows what page you're on and what you're trying to do. Ask it a question while building your team and it answers in the context of *your* team, not in generic terms. Ask it during a battle and it considers *this* game state, not some hypothetical.
+Pecharunt has context. It knows your team. It knows the format. It knows the metagame. It knows what page you're on and what you're trying to do. Ask it a question while building your team and it answers in the context of _your_ team, not in generic terms. Ask it during a battle and it considers _this_ game state, not some hypothetical.
 
 For newcomers, Pecharunt is a patient teacher. It explains concepts simply, builds understanding layer by layer, and never assumes knowledge you don't have. "Stealth Rock is a move that places sharp stones on the opponent's side. Every time they switch a Pokemon in, it takes damage based on its Rock-type weakness. This is powerful because it punishes switching, and competitive Pokemon involves a lot of switching."
 
@@ -262,7 +262,7 @@ The name fits. The role fits. And for anyone who knows the lore, the wink is int
 
 Competitive Pokemon might be impossible to explain in a single video, a single article, or a single conversation. The five pillars interact in ways that defy linear explanation. Long-term planning depends on probability management. Simultaneous action selection depends on imperfect information. Imperfect information depends on team building. Team building depends on everything.
 
-But it's not impossible to *learn*. People learn it every day -- through playing, through reading, through watching, through discussion. The problem has never been that the knowledge doesn't exist. The problem is that the knowledge has no home. No single place where it all comes together, where the tools teach the concepts and the concepts inform the tools.
+But it's not impossible to _learn_. People learn it every day -- through playing, through reading, through watching, through discussion. The problem has never been that the knowledge doesn't exist. The problem is that the knowledge has no home. No single place where it all comes together, where the tools teach the concepts and the concepts inform the tools.
 
 That's what Nasty Plot is for.
 

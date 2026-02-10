@@ -1,8 +1,10 @@
 # Session: Chat Sidebar Polish & Bug Fixes
+
 **Date:** 2026-02-10
 **Duration context:** Medium (continuation of the chat sidebar overhaul session, focused on bug fixes and polish)
 
 ## What was accomplished
+
 - **Completed Phase 5 (Plan Mode)**: Integrated `StreamParser` into `cli-chat.ts` to pipe content deltas through XML tag parser, added plan event handlers (`plan_start`, `plan_step_update`) in `use-chat-stream.ts`, wired `ChatPlanDisplay` into `ChatPanel`, added `planSteps` to hook return value and reset logic
 - **Completed Phase 6 (Full-Page Chat)**: Added `ChatSessionList` to sidebar full-page mode, added collapsible history panel toggle in sidebar mode — then **disabled full-page mode** by user request (code preserved, just unreachable)
 - **Plan audit**: Ran comprehensive audit of all 6 phases against the original plan, identified and fixed 6 gaps
@@ -22,6 +24,7 @@
 - **Removed damage-calc page**: Deleted `apps/web/src/app/damage-calc/` directory and nav link
 
 ## Key decisions & rationale
+
 - **Sidebar above header (`z-[60]`, `top-0`)**: User wanted the agent chat to be dominant — sidebar spans full viewport height and overlays the header area
 - **Header pushes with content**: Header and main are both inside the margin-right wrapper so the topbar shifts left when sidebar opens
 - **`modal={false}` on dropdowns**: Radix modal dropdowns add `padding-right`/`overflow:hidden` to body, causing layout shifts when sidebar is open
@@ -31,6 +34,7 @@
 - **Damage-calc page removed**: User considered it useless as a standalone page. Package and API routes preserved (used by chat agent)
 
 ## Bugs found & fixed
+
 - **Nested `<button>` hydration error**: `ChatSessionList` had `<button>` (delete) inside `<button>` (session row). Fixed with `<div role="button" tabIndex={0}>` + keyboard handler
 - **SSR hydration mismatch**: `ChatProvider.getInitialState()` branched on `typeof window` — server rendered `isOpen:false`, client read `isOpen:true` from localStorage. Fixed with SSR-safe initial state + `HYDRATE` action in `useEffect`
 - **Scrolling broken**: Radix `ScrollArea` ref was on root element, not the scrollable viewport. `scrollTop`/`scrollHeight` had no effect. Fixed with native `div` + `scrollIntoView`
@@ -40,6 +44,7 @@
 - **`stream-parser.ts` regex flag**: `/s` flag requires ES2018 target. Replaced with ES5-compatible pattern
 
 ## Pitfalls & gotchas encountered
+
 - **Radix ScrollArea is not a simple scroll container**: The `ref` gives you the root wrapper, not the scrollable `Viewport` child. For programmatic scroll control, use a native div
 - **Radix modal dropdowns manipulate body styles**: `DropdownMenu` defaults to `modal={true}` which adds `padding-right`/`overflow:hidden` to prevent background scroll — this causes layout shifts when you have fixed sidebars
 - **CSS transitions fire on any value change**: `transition-[margin-right]` transitions ALL margin-right changes including hydration, theme changes, and resizes — not just intentional open/close. Need to gate the transition class
@@ -48,6 +53,7 @@
 ## Files changed
 
 ### Modified
+
 - `apps/web/src/features/chat/context/chat-provider.tsx` — SSR-safe initial state, HYDRATE action
 - `apps/web/src/components/app-shell.tsx` — header inside push wrapper, conditional transition, removed full-page chat branch
 - `apps/web/src/components/chat-sidebar.tsx` — `top-0 z-[60]`, history toggle, fullPage with session list
@@ -67,11 +73,13 @@
 - `apps/web/src/app/battle/replay/[battleId]/page.tsx` — removed SiteHeader
 
 ### Deleted
+
 - `apps/web/src/app/damage-calc/page.tsx`
 - `apps/web/src/app/damage-calc/loading.tsx`
 - `apps/web/src/app/damage-calc/error.tsx`
 
 ## Known issues & next steps
+
 - **LLM-based title generation**: Still uses heuristic (sentence boundaries). Could spawn a lightweight Claude CLI call for better titles
 - **`session_meta` SSE event not emitted from server**: Title is generated after stream starts; no way to inject into the flowing SSE stream. Relies on query invalidation instead
 - **`openai-client.ts` still exported from `llm/index.ts`**: `getOpenAI` and `MODEL` exports remain. Could clean up if nothing else uses them
@@ -80,6 +88,7 @@
 - **Damage-calc API routes still exist**: Routes at `/api/damage-calc` and the `@nasty-plot/damage-calc` package are still present (used by chat agent MCP tools)
 
 ## Tech notes
+
 - **Z-index stack**: Header `z-50` < Sidebar `z-[60]` < Dropdown portals `z-[70]`
 - **Hydration pattern**: For any client state that reads localStorage, always initialize with SSR-safe defaults and hydrate in `useEffect`. Never branch on `typeof window` in initial state
 - **Radix dropdown `modal` prop**: Default `true` causes body style manipulation. Use `modal={false}` when layout has fixed sidebars to avoid shifts

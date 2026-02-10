@@ -1,19 +1,22 @@
 # Session: Pecharunt Chat Sidebar & LLM UX Overhaul
+
 **Date:** 2026-02-10
 **Duration context:** Long (multi-phase feature implementation across 6 phases, spanning 2 context windows)
 
 ## What was accomplished
 
 ### Phase 1: App Shell & Push Sidebar
+
 - Created `ChatProvider` context with `useReducer` — manages sidebar open/close, width (persisted to localStorage), active session ID
 - Created `AppShell` component that renders `SiteHeader` once, manages `margin-right` push animation, registers `Cmd/Ctrl+L` shortcut
 - Created `ChatSidebar` with fixed positioning, resize handle (300-600px clamped), close button, collapsible history panel
 - Created `ChatSidebarResizeHandle` with pointer events and `requestAnimationFrame` for smooth drag
 - Created `ChatFab` (floating action button) with Pecharunt sprite, hidden on `/chat` and when sidebar is open
-- Removed `<SiteHeader />` from all 12 page components (home, chat, pokemon, teams, damage-calc, battle/*, etc.)
+- Removed `<SiteHeader />` from all 12 page components (home, chat, pokemon, teams, damage-calc, battle/\*, etc.)
 - Wrapped root layout in `ChatProvider > PageContextProvider > AppShell`
 
 ### Phase 2: Session Management & Chat History
+
 - Added `title String?` field to `ChatSession` Prisma model, ran migration `add_chat_session_title`
 - Added `title` to `ChatSessionData` in `@nasty-plot/core` types
 - Created `updateSession`, `deleteSession`, `deleteLastAssistantMessage` in `chat-session.service.ts`
@@ -22,6 +25,7 @@
 - Added `PUT`/`DELETE` handlers to `/api/chat/sessions/[id]` route
 
 ### Phase 3: Page-Aware Context System
+
 - Created `PageContextProvider` — route-aware context using `usePathname()`, extracts teamId/pokemonId/formatId, fetches data via TanStack Query
 - Created `tool-context.ts` — maps page types to allowed MCP tool categories, `getDisallowedMcpTools()` returns tools to block per page
 - Created `sse-events.ts` — typed SSE event union (content, tool_start/end/error, action_notify, plan_start/step_update, session_meta, error, done)
@@ -29,6 +33,7 @@
 - Enhanced `context-builder.ts` with `buildPokemonContext`, `buildPageContextPrompt`, `buildPlanModePrompt`
 
 ### Phase 4: Enhanced Chat UX
+
 - Rewrote `cli-chat.ts` — typed SSE events, `AbortSignal` support (kills subprocess with SIGTERM), tool labels, action notifications, disallowed MCP tools
 - Simplified `chat.service.ts` to CLI-only (removed OpenAI code path), accepts signal + context
 - Created `ChatMessage` with `react-markdown` + `remark-gfm` + `react-syntax-highlighter` (vscDarkPlus theme), copy-to-clipboard on code blocks
@@ -40,16 +45,19 @@
 - Updated `/api/chat/route.ts` — context passthrough, regenerate flag, abort signal, fire-and-forget title generation, stream tee for save
 
 ### Phase 5: Plan Mode & Notifications
+
 - Created `StreamParser` — stateful XML tag parser for `<plan>`, `<step>`, `<step_update>` tags in streaming content
 - Integrated `StreamParser` into `cli-chat.ts` content delta pipeline — strips plan XML, emits plan SSE events
 - Created `ChatPlanDisplay` — checklist UI with status indicators (pending/active/complete/skipped)
 - Added plan event handlers in `use-chat-stream` hook
 
 ### Phase 6: Full-Page Chat (kept but disabled)
+
 - Full-page mode code preserved in `ChatSidebar` (`fullPage` prop) but disabled in `AppShell`
 - `/chat` route auto-opens sidebar and shows a landing page
 
 ### Audit & Fixes (final pass)
+
 - Removed SiteHeader from 2 remaining battle pages (`simulate`, `replay/[battleId]`)
 - Installed `@tailwindcss/typography` plugin for proper prose rendering
 - Removed OpenAI SDK import from `chat.service.ts`, replaced with local `MODEL` const
@@ -85,6 +93,7 @@
 ## Files changed
 
 ### Created
+
 - `apps/web/src/features/chat/context/chat-provider.tsx`
 - `apps/web/src/features/chat/context/page-context-provider.tsx`
 - `apps/web/src/components/app-shell.tsx`
@@ -106,6 +115,7 @@
 - `prisma/migrations/20260210052610_add_chat_session_title/`
 
 ### Modified
+
 - `apps/web/src/app/layout.tsx`
 - `apps/web/src/app/globals.css` (added typography plugin)
 - `apps/web/src/app/chat/page.tsx`

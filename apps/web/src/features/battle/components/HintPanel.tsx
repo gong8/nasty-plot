@@ -1,14 +1,14 @@
-"use client";
+"use client"
 
-import { cn } from "@/lib/utils";
-import type { MoveHint, MoveClassification } from "@nasty-plot/battle-engine";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Lightbulb } from "lucide-react";
+import { cn } from "@/lib/utils"
+import type { MoveHint, MoveClassification } from "@nasty-plot/battle-engine"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Lightbulb } from "lucide-react"
 
 interface HintPanelProps {
-  hints: MoveHint[];
-  onSelectHint?: (hint: MoveHint) => void;
-  className?: string;
+  hints: MoveHint[]
+  onSelectHint?: (hint: MoveHint) => void
+  className?: string
 }
 
 const classColors: Record<MoveClassification, string> = {
@@ -18,7 +18,7 @@ const classColors: Record<MoveClassification, string> = {
   inaccuracy: "bg-orange-500/15 text-orange-600 border-orange-500/30",
   mistake: "bg-red-500/15 text-red-600 border-red-500/30",
   blunder: "bg-red-700/15 text-red-700 border-red-700/30",
-};
+}
 
 const classLabels: Record<MoveClassification, string> = {
   best: "Best",
@@ -27,10 +27,10 @@ const classLabels: Record<MoveClassification, string> = {
   inaccuracy: "Inaccuracy",
   mistake: "Mistake",
   blunder: "Blunder",
-};
+}
 
 export function HintPanel({ hints, onSelectHint, className }: HintPanelProps) {
-  if (hints.length === 0) return null;
+  if (hints.length === 0) return null
 
   return (
     <Card className={cn("", className)}>
@@ -59,5 +59,5 @@ export function HintPanel({ hints, onSelectHint, className }: HintPanelProps) {
         ))}
       </CardContent>
     </Card>
-  );
+  )
 }

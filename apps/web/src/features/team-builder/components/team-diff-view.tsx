@@ -1,12 +1,12 @@
-"use client";
+"use client"
 
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { PokemonSprite } from "@nasty-plot/ui";
-import type { TeamDiff, SlotChange, TeamSlotData } from "@nasty-plot/core";
+import { Badge } from "@/components/ui/badge"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { PokemonSprite } from "@nasty-plot/ui"
+import type { TeamDiff, SlotChange, TeamSlotData } from "@nasty-plot/core"
 
 interface TeamDiffViewProps {
-  diff: TeamDiff;
+  diff: TeamDiff
 }
 
 export function TeamDiffView({ diff }: TeamDiffViewProps) {
@@ -36,9 +36,7 @@ export function TeamDiffView({ diff }: TeamDiffViewProps) {
             </Badge>
           )}
           {diff.summary.slotsUnchanged > 0 && (
-            <Badge variant="secondary">
-              {diff.summary.slotsUnchanged} unchanged
-            </Badge>
+            <Badge variant="secondary">{diff.summary.slotsUnchanged} unchanged</Badge>
           )}
         </div>
       </div>
@@ -50,20 +48,12 @@ export function TeamDiffView({ diff }: TeamDiffViewProps) {
 
       {/* Added Slots */}
       {diff.added.map((slot) => (
-        <SlotRow
-          key={`added-${slot.pokemonId}-${slot.position}`}
-          slot={slot}
-          type="added"
-        />
+        <SlotRow key={`added-${slot.pokemonId}-${slot.position}`} slot={slot} type="added" />
       ))}
 
       {/* Removed Slots */}
       {diff.removed.map((slot) => (
-        <SlotRow
-          key={`removed-${slot.pokemonId}-${slot.position}`}
-          slot={slot}
-          type="removed"
-        />
+        <SlotRow key={`removed-${slot.pokemonId}-${slot.position}`} slot={slot} type="removed" />
       ))}
 
       {/* Unchanged */}
@@ -77,14 +67,16 @@ export function TeamDiffView({ diff }: TeamDiffViewProps) {
           <CardContent className="py-2">
             <div className="flex gap-2 flex-wrap">
               {diff.unchanged.map((id) => (
-                <Badge key={id} variant="secondary">{id}</Badge>
+                <Badge key={id} variant="secondary">
+                  {id}
+                </Badge>
               ))}
             </div>
           </CardContent>
         </Card>
       )}
     </div>
-  );
+  )
 }
 
 function ChangedSlotRow({ change }: { change: SlotChange }) {
@@ -111,17 +103,11 @@ function ChangedSlotRow({ change }: { change: SlotChange }) {
         </div>
       </CardContent>
     </Card>
-  );
+  )
 }
 
-function SlotRow({
-  slot,
-  type,
-}: {
-  slot: TeamSlotData;
-  type: "added" | "removed";
-}) {
-  const isAdded = type === "added";
+function SlotRow({ slot, type }: { slot: TeamSlotData; type: "added" | "removed" }) {
+  const isAdded = type === "added"
   return (
     <Card className={isAdded ? "border-green-500/30" : "border-red-500/30"}>
       <CardHeader className="py-3">
@@ -153,5 +139,5 @@ function SlotRow({
         </div>
       </CardContent>
     </Card>
-  );
+  )
 }

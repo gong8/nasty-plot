@@ -1,20 +1,20 @@
-"use client";
+"use client"
 
-import { cn } from "@/lib/utils";
-import type { BattleActionSet, BattlePokemon } from "@nasty-plot/battle-engine";
-import { TypeBadge } from "@nasty-plot/ui";
-import { Button } from "@/components/ui/button";
-import { HealthBar } from "./HealthBar";
-import { BattleSprite } from "./PokemonSprite";
-import { ArrowLeft } from "lucide-react";
+import { cn } from "@/lib/utils"
+import type { BattleActionSet, BattlePokemon } from "@nasty-plot/battle-engine"
+import { TypeBadge } from "@nasty-plot/ui"
+import { Button } from "@/components/ui/button"
+import { HealthBar } from "./HealthBar"
+import { BattleSprite } from "./PokemonSprite"
+import { ArrowLeft } from "lucide-react"
 
 interface SwitchMenuProps {
-  actions: BattleActionSet;
-  onSwitch: (pokemonIndex: number) => void;
-  onBack?: () => void;
+  actions: BattleActionSet
+  onSwitch: (pokemonIndex: number) => void
+  onBack?: () => void
   /** Full team data for showing types and moves */
-  team?: BattlePokemon[];
-  className?: string;
+  team?: BattlePokemon[]
+  className?: string
 }
 
 const STATUS_LABELS: Record<string, string> = {
@@ -24,7 +24,7 @@ const STATUS_LABELS: Record<string, string> = {
   frz: "FRZ",
   psn: "PSN",
   tox: "TOX",
-};
+}
 
 const STATUS_COLORS: Record<string, string> = {
   brn: "text-red-500 bg-red-500/10",
@@ -33,14 +33,15 @@ const STATUS_COLORS: Record<string, string> = {
   frz: "text-cyan-400 bg-cyan-400/10",
   psn: "text-purple-500 bg-purple-500/10",
   tox: "text-purple-600 dark:text-purple-400 bg-purple-600/10 dark:bg-purple-400/15",
-};
+}
 
 export function SwitchMenu({ actions, onSwitch, onBack, team, className }: SwitchMenuProps) {
   /** Find team data for a switch option by species */
   function getTeamPokemon(speciesId: string): BattlePokemon | undefined {
     return team?.find(
-      (p) => p.speciesId === speciesId || p.name.toLowerCase().replace(/[^a-z0-9]/g, "") === speciesId
-    );
+      (p) =>
+        p.speciesId === speciesId || p.name.toLowerCase().replace(/[^a-z0-9]/g, "") === speciesId,
+    )
   }
 
   return (
@@ -59,7 +60,7 @@ export function SwitchMenu({ actions, onSwitch, onBack, team, className }: Switc
 
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
         {actions.switches.map((sw) => {
-          const pokemon = getTeamPokemon(sw.speciesId);
+          const pokemon = getTeamPokemon(sw.speciesId)
           return (
             <button
               key={sw.index}
@@ -69,15 +70,10 @@ export function SwitchMenu({ actions, onSwitch, onBack, team, className }: Switc
                 "flex items-center gap-2 px-2 py-1.5 rounded-lg border",
                 "transition-colors hover:bg-accent text-left",
                 "disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent",
-                sw.fainted && "line-through"
+                sw.fainted && "line-through",
               )}
             >
-              <BattleSprite
-                speciesId={sw.speciesId}
-                side="front"
-                fainted={sw.fainted}
-                size={36}
-              />
+              <BattleSprite speciesId={sw.speciesId} side="front" fainted={sw.fainted} size={36} />
 
               <div className="flex-1 min-w-0 space-y-0.5">
                 {/* Name + status */}
@@ -87,7 +83,7 @@ export function SwitchMenu({ actions, onSwitch, onBack, team, className }: Switc
                     <span
                       className={cn(
                         "text-[9px] px-1 rounded font-semibold shrink-0",
-                        STATUS_COLORS[sw.status] || "text-muted-foreground"
+                        STATUS_COLORS[sw.status] || "text-muted-foreground",
                       )}
                     >
                       {STATUS_LABELS[sw.status] || sw.status.toUpperCase()}
@@ -105,17 +101,12 @@ export function SwitchMenu({ actions, onSwitch, onBack, team, className }: Switc
                 )}
 
                 {/* HP bar */}
-                <HealthBar
-                  hp={sw.hp}
-                  maxHp={sw.maxHp}
-                  showText={false}
-                  className="w-full"
-                />
+                <HealthBar hp={sw.hp} maxHp={sw.maxHp} showText={false} className="w-full" />
               </div>
             </button>
-          );
+          )
         })}
       </div>
     </div>
-  );
+  )
 }

@@ -1,33 +1,26 @@
-"use client";
+"use client"
 
-import {
-  Shield,
-  Swords,
-  Zap,
-  Gauge,
-  TriangleAlert,
-  Eraser,
-} from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
-import { TypeBadge, PokemonSprite } from "@nasty-plot/ui";
-import type { PokemonType, UsageStatsEntry } from "@nasty-plot/core";
-import type { GuidedPokemonPick } from "../hooks/use-guided-builder";
+import { Shield, Swords, Zap, Gauge, TriangleAlert, Eraser } from "lucide-react"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { cn } from "@/lib/utils"
+import { TypeBadge, PokemonSprite } from "@nasty-plot/ui"
+import type { PokemonType, UsageStatsEntry } from "@nasty-plot/core"
+import type { GuidedPokemonPick } from "../hooks/use-guided-builder"
 
 interface RoleDefinition {
-  id: string;
-  label: string;
-  description: string;
-  icon: string;
+  id: string
+  label: string
+  description: string
+  icon: string
 }
 
 interface RoleSelectorProps {
-  role: RoleDefinition;
-  candidates: UsageStatsEntry[];
-  selected: GuidedPokemonPick | null;
-  onSelect: (pokemon: GuidedPokemonPick | null) => void;
-  disabledIds: Set<string>;
+  role: RoleDefinition
+  candidates: UsageStatsEntry[]
+  selected: GuidedPokemonPick | null
+  onSelect: (pokemon: GuidedPokemonPick | null) => void
+  disabledIds: Set<string>
 }
 
 const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -37,15 +30,15 @@ const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   gauge: Gauge,
   "triangle-alert": TriangleAlert,
   eraser: Eraser,
-};
+}
 
 // Role-specific filtering: pick candidates that match the role
 function filterForRole(
   candidates: UsageStatsEntry[],
   roleId: string,
-  disabledIds: Set<string>
+  disabledIds: Set<string>,
 ): UsageStatsEntry[] {
-  const available = candidates.filter((c) => !disabledIds.has(c.pokemonId));
+  const available = candidates.filter((c) => !disabledIds.has(c.pokemonId))
 
   const roleTypeAffinity: Record<string, PokemonType[]> = {
     "physical-wall": ["Steel", "Ground", "Rock"],
@@ -55,18 +48,18 @@ function filterForRole(
     "speed-control": ["Electric", "Flying", "Dragon"],
     "hazard-setter": ["Ground", "Rock", "Steel"],
     "hazard-removal": ["Flying", "Normal", "Water"],
-  };
+  }
 
-  const preferred = roleTypeAffinity[roleId] ?? [];
+  const preferred = roleTypeAffinity[roleId] ?? []
 
   const scored = available.map((c) => {
-    const types: PokemonType[] = c.types ?? [];
-    const typeBonus = types.some((t) => preferred.includes(t)) ? 10 : 0;
-    return { ...c, score: typeBonus + c.usagePercent };
-  });
+    const types: PokemonType[] = c.types ?? []
+    const typeBonus = types.some((t) => preferred.includes(t)) ? 10 : 0
+    return { ...c, score: typeBonus + c.usagePercent }
+  })
 
-  scored.sort((a, b) => b.score - a.score);
-  return scored.slice(0, 5);
+  scored.sort((a, b) => b.score - a.score)
+  return scored.slice(0, 5)
 }
 
 export function RoleSelector({
@@ -76,8 +69,8 @@ export function RoleSelector({
   onSelect,
   disabledIds,
 }: RoleSelectorProps) {
-  const Icon = ICON_MAP[role.icon] ?? Shield;
-  const filtered = filterForRole(candidates, role.id, disabledIds);
+  const Icon = ICON_MAP[role.icon] ?? Shield
+  const filtered = filterForRole(candidates, role.id, disabledIds)
 
   return (
     <Card>
@@ -96,9 +89,9 @@ export function RoleSelector({
       <CardContent className="pt-0">
         <div className="flex flex-wrap gap-2">
           {filtered.map((c) => {
-            const name = c.pokemonName || c.pokemonId;
-            const types: PokemonType[] = c.types ?? ["Normal"];
-            const isSelected = selected?.pokemonId === c.pokemonId;
+            const name = c.pokemonName || c.pokemonId
+            const types: PokemonType[] = c.types ?? ["Normal"]
+            const isSelected = selected?.pokemonId === c.pokemonId
 
             return (
               <button
@@ -107,14 +100,20 @@ export function RoleSelector({
                   "flex items-center gap-2 rounded-lg border px-3 py-2 text-left transition-all",
                   isSelected
                     ? "border-primary bg-primary/5 ring-1 ring-primary"
-                    : "border-border hover:border-primary/50 hover:bg-accent"
+                    : "border-border hover:border-primary/50 hover:bg-accent",
                 )}
-                onClick={() => onSelect(isSelected ? null : {
-                  pokemonId: c.pokemonId,
-                  pokemonName: name,
-                  types,
-                  usagePercent: c.usagePercent,
-                })}
+                onClick={() =>
+                  onSelect(
+                    isSelected
+                      ? null
+                      : {
+                          pokemonId: c.pokemonId,
+                          pokemonName: name,
+                          types,
+                          usagePercent: c.usagePercent,
+                        },
+                  )
+                }
               >
                 {c.num ? (
                   <PokemonSprite pokemonId={c.pokemonId} num={c.num} size={32} />
@@ -132,7 +131,7 @@ export function RoleSelector({
                   </div>
                 </div>
               </button>
-            );
+            )
           })}
           {filtered.length === 0 && (
             <p className="text-xs text-muted-foreground py-2">
@@ -142,5 +141,5 @@ export function RoleSelector({
         </div>
       </CardContent>
     </Card>
-  );
+  )
 }

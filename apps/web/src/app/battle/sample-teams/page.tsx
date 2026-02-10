@@ -1,32 +1,32 @@
-"use client";
+"use client"
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
+import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
+import { Button } from "@/components/ui/button"
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { SampleTeamCard } from "@/features/battle/components/SampleTeamCard";
-import { ArrowLeft, Search } from "lucide-react";
-import Link from "next/link";
+} from "@/components/ui/select"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { SampleTeamCard } from "@/features/battle/components/SampleTeamCard"
+import { ArrowLeft, Search } from "lucide-react"
+import Link from "next/link"
 
 interface SampleTeam {
-  id: string;
-  name: string;
-  formatId: string;
-  archetype: string | null;
-  source: string | null;
-  sourceUrl: string | null;
-  paste: string;
-  pokemonIds: string;
-  isActive: boolean;
-  createdAt: string;
+  id: string
+  name: string
+  formatId: string
+  archetype: string | null
+  source: string | null
+  sourceUrl: string | null
+  paste: string
+  pokemonIds: string
+  isActive: boolean
+  createdAt: string
 }
 
 const FORMAT_OPTIONS = [
@@ -36,7 +36,7 @@ const FORMAT_OPTIONS = [
   { value: "gen9vgc2024regh", label: "VGC 2024 Reg H" },
   { value: "gen9monotype", label: "Gen 9 Monotype" },
   { value: "gen9doublesou", label: "Gen 9 Doubles OU" },
-];
+]
 
 const ARCHETYPE_OPTIONS = [
   { value: "all", label: "All Archetypes" },
@@ -49,46 +49,46 @@ const ARCHETYPE_OPTIONS = [
   { value: "sun", label: "Sun" },
   { value: "sand", label: "Sand" },
   { value: "trick-room", label: "Trick Room" },
-];
+]
 
 export default function SampleTeamsPage() {
-  const router = useRouter();
-  const [teams, setTeams] = useState<SampleTeam[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [formatId, setFormatId] = useState("all");
-  const [archetype, setArchetype] = useState("all");
-  const [search, setSearch] = useState("");
+  const router = useRouter()
+  const [teams, setTeams] = useState<SampleTeam[]>([])
+  const [loading, setLoading] = useState(true)
+  const [formatId, setFormatId] = useState("all")
+  const [archetype, setArchetype] = useState("all")
+  const [search, setSearch] = useState("")
 
   useEffect(() => {
     const fetchTeams = async () => {
-      setLoading(true);
+      setLoading(true)
       try {
-        const params = new URLSearchParams();
-        if (formatId && formatId !== "all") params.set("formatId", formatId);
-        if (archetype && archetype !== "all") params.set("archetype", archetype);
-        if (search) params.set("search", search);
+        const params = new URLSearchParams()
+        if (formatId && formatId !== "all") params.set("formatId", formatId)
+        if (archetype && archetype !== "all") params.set("archetype", archetype)
+        if (search) params.set("search", search)
 
-        const res = await fetch(`/api/sample-teams?${params.toString()}`);
+        const res = await fetch(`/api/sample-teams?${params.toString()}`)
         if (res.ok) {
-          const data = await res.json();
-          setTeams(data);
+          const data = await res.json()
+          setTeams(data)
         }
       } catch {
         // Failed to fetch
       } finally {
-        setLoading(false);
+        setLoading(false)
       }
-    };
+    }
 
-    fetchTeams();
-  }, [formatId, archetype, search]);
+    fetchTeams()
+  }, [formatId, archetype, search])
 
   const handleUseInBattle = (paste: string) => {
     const params = new URLSearchParams({
       samplePaste: btoa(encodeURIComponent(paste)),
-    });
-    router.push(`/battle/new?${params.toString()}`);
-  };
+    })
+    router.push(`/battle/new?${params.toString()}`)
+  }
 
   return (
     <main className="container mx-auto p-4 max-w-5xl">
@@ -155,10 +155,7 @@ export default function SampleTeamsPage() {
       {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {Array.from({ length: 6 }).map((_, i) => (
-            <div
-              key={i}
-              className="h-48 rounded-xl border bg-muted/50 animate-pulse"
-            />
+            <div key={i} className="h-48 rounded-xl border bg-muted/50 animate-pulse" />
           ))}
         </div>
       ) : teams.length === 0 ? (
@@ -183,5 +180,5 @@ export default function SampleTeamsPage() {
         </div>
       )}
     </main>
-  );
+  )
 }

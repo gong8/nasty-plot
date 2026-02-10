@@ -1,33 +1,26 @@
-"use client";
+"use client"
 
-import { Button } from "@/components/ui/button";
-import { Slider } from "@/components/ui/slider";
-import {
-  SkipBack,
-  SkipForward,
-  ChevronLeft,
-  ChevronRight,
-  Play,
-  Pause,
-} from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button"
+import { Slider } from "@/components/ui/slider"
+import { SkipBack, SkipForward, ChevronLeft, ChevronRight, Play, Pause } from "lucide-react"
+import { cn } from "@/lib/utils"
 
 interface ReplayControlsProps {
-  currentFrame: number;
-  totalFrames: number;
-  isPlaying: boolean;
-  speed: number;
-  onFirst: () => void;
-  onPrev: () => void;
-  onNext: () => void;
-  onLast: () => void;
-  onTogglePlay: () => void;
-  onSeek: (frame: number) => void;
-  onSpeedChange: (speed: number) => void;
-  className?: string;
+  currentFrame: number
+  totalFrames: number
+  isPlaying: boolean
+  speed: number
+  onFirst: () => void
+  onPrev: () => void
+  onNext: () => void
+  onLast: () => void
+  onTogglePlay: () => void
+  onSeek: (frame: number) => void
+  onSpeedChange: (speed: number) => void
+  className?: string
 }
 
-const SPEEDS = [1, 2, 4];
+const SPEEDS = [1, 2, 4]
 
 export function ReplayControls({
   currentFrame,
@@ -95,5 +88,5 @@ export function ReplayControls({
         </div>
       </div>
     </div>
-  );
+  )
 }

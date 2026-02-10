@@ -1,38 +1,33 @@
-"use client";
+"use client"
 
-import { useState, useCallback } from "react";
-import { cn } from "@/lib/utils";
-import { TYPE_COLORS, type PokemonType } from "@nasty-plot/core";
-import type { BattleActionSet, BattleFormat } from "@nasty-plot/battle-engine";
-import { Button } from "@/components/ui/button";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { ArrowLeftRight, Sparkles, Target, Swords, Wand2, Circle } from "lucide-react";
+import { useState, useCallback } from "react"
+import { cn } from "@/lib/utils"
+import { TYPE_COLORS, type PokemonType } from "@nasty-plot/core"
+import type { BattleActionSet, BattleFormat } from "@nasty-plot/battle-engine"
+import { Button } from "@/components/ui/button"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { ArrowLeftRight, Sparkles, Target, Swords, Wand2, Circle } from "lucide-react"
 
 /** Move targets that require the player to pick a specific target slot in doubles */
-const TARGETABLE_MOVE_TARGETS = new Set(["normal", "any", "adjacentFoe"]);
+const TARGETABLE_MOVE_TARGETS = new Set(["normal", "any", "adjacentFoe"])
 
 const CATEGORY_ICONS = {
   Physical: Swords,
   Special: Wand2,
   Status: Circle,
-} as const;
+} as const
 
 interface MoveSelectorProps {
-  actions: BattleActionSet;
-  onMoveSelect: (moveIndex: number, tera?: boolean, targetSlot?: number) => void;
-  onSwitchClick: () => void;
-  canTera: boolean;
-  teraType?: PokemonType;
+  actions: BattleActionSet
+  onMoveSelect: (moveIndex: number, tera?: boolean, targetSlot?: number) => void
+  onSwitchClick: () => void
+  canTera: boolean
+  teraType?: PokemonType
   /** Battle format — doubles enables target selection for single-target moves */
-  format?: BattleFormat;
+  format?: BattleFormat
   /** Which active slot this selector is for in doubles (0 or 1) */
-  activeSlot?: number;
-  className?: string;
+  activeSlot?: number
+  className?: string
 }
 
 export function MoveSelector({
@@ -46,74 +41,74 @@ export function MoveSelector({
   className,
 }: MoveSelectorProps) {
   /** Index (0-based) of the move pending target selection, or null */
-  const [pendingMoveIndex, setPendingMoveIndex] = useState<number | null>(null);
+  const [pendingMoveIndex, setPendingMoveIndex] = useState<number | null>(null)
   /** Whether the pending move should also terastallize */
-  const [pendingTera, setPendingTera] = useState(false);
+  const [pendingTera, setPendingTera] = useState(false)
   /** Per-move tera toggle state: which move index has tera enabled */
-  const [teraOnMove, setTeraOnMove] = useState<number | null>(null);
+  const [teraOnMove, setTeraOnMove] = useState<number | null>(null)
 
-  const isDoubles = format === "doubles";
+  const isDoubles = format === "doubles"
 
   const needsTargetSelection = useCallback(
     (moveTarget: string): boolean => {
-      return isDoubles && TARGETABLE_MOVE_TARGETS.has(moveTarget);
+      return isDoubles && TARGETABLE_MOVE_TARGETS.has(moveTarget)
     },
     [isDoubles],
-  );
+  )
 
   const handleMoveClick = useCallback(
     (zeroIndex: number) => {
-      const move = actions.moves[zeroIndex];
-      if (!move || move.disabled) return;
+      const move = actions.moves[zeroIndex]
+      if (!move || move.disabled) return
 
-      const useTera = teraOnMove === zeroIndex;
+      const useTera = teraOnMove === zeroIndex
 
       if (needsTargetSelection(move.target)) {
-        setPendingMoveIndex(zeroIndex);
-        setPendingTera(useTera);
+        setPendingMoveIndex(zeroIndex)
+        setPendingTera(useTera)
       } else {
-        onMoveSelect(zeroIndex + 1, useTera || undefined);
-        setTeraOnMove(null);
+        onMoveSelect(zeroIndex + 1, useTera || undefined)
+        setTeraOnMove(null)
       }
     },
     [actions.moves, needsTargetSelection, onMoveSelect, teraOnMove],
-  );
+  )
 
   const handleTargetSelect = useCallback(
     (targetSlot: number) => {
-      if (pendingMoveIndex === null) return;
-      onMoveSelect(pendingMoveIndex + 1, pendingTera || undefined, targetSlot);
-      setPendingMoveIndex(null);
-      setPendingTera(false);
-      setTeraOnMove(null);
+      if (pendingMoveIndex === null) return
+      onMoveSelect(pendingMoveIndex + 1, pendingTera || undefined, targetSlot)
+      setPendingMoveIndex(null)
+      setPendingTera(false)
+      setTeraOnMove(null)
     },
     [pendingMoveIndex, pendingTera, onMoveSelect],
-  );
+  )
 
   const cancelTargetSelection = useCallback(() => {
-    setPendingMoveIndex(null);
-    setPendingTera(false);
-  }, []);
+    setPendingMoveIndex(null)
+    setPendingTera(false)
+  }, [])
 
   const toggleTeraOnMove = useCallback((moveIndex: number) => {
-    setTeraOnMove((prev) => (prev === moveIndex ? null : moveIndex));
-  }, []);
+    setTeraOnMove((prev) => (prev === moveIndex ? null : moveIndex))
+  }, [])
 
   if (actions.forceSwitch) {
-    return null; // SwitchMenu handles forced switches
+    return null // SwitchMenu handles forced switches
   }
 
   // Build the list of available targets for the pending move
-  const targetOptions: { label: string; slot: number }[] = [];
+  const targetOptions: { label: string; slot: number }[] = []
   if (pendingMoveIndex !== null && isDoubles) {
-    const move = actions.moves[pendingMoveIndex];
+    const move = actions.moves[pendingMoveIndex]
     if (move) {
-      const target = move.target;
-      targetOptions.push({ label: "Left Foe", slot: -1 });
-      targetOptions.push({ label: "Right Foe", slot: -2 });
+      const target = move.target
+      targetOptions.push({ label: "Left Foe", slot: -1 })
+      targetOptions.push({ label: "Right Foe", slot: -2 })
       if (target === "any") {
-        const allySlot = activeSlot === 0 ? 2 : 1;
-        targetOptions.push({ label: "Ally", slot: allySlot });
+        const allySlot = activeSlot === 0 ? 2 : 1
+        targetOptions.push({ label: "Ally", slot: allySlot })
       }
     }
   }
@@ -123,11 +118,11 @@ export function MoveSelector({
       <TooltipProvider>
         <div className="grid grid-cols-2 gap-2">
           {actions.moves.map((move, i) => {
-            const color = TYPE_COLORS[move.type] || "#A8A878";
-            const isDamaging = move.category !== "Status" && move.basePower > 0;
-            const isPending = pendingMoveIndex === i;
-            const isTeraActive = teraOnMove === i;
-            const CategoryIcon = CATEGORY_ICONS[move.category] || Circle;
+            const color = TYPE_COLORS[move.type] || "#A8A878"
+            const isDamaging = move.category !== "Status" && move.basePower > 0
+            const isPending = pendingMoveIndex === i
+            const isTeraActive = teraOnMove === i
+            const CategoryIcon = CATEGORY_ICONS[move.category] || Circle
 
             return (
               <div key={move.id} className="relative">
@@ -164,9 +159,7 @@ export function MoveSelector({
                       {/* Stats row: Category icon, BP, Accuracy, Type */}
                       <div className="flex items-center gap-1.5 mt-1 text-[10px] opacity-80">
                         <CategoryIcon className="h-3 w-3 shrink-0" />
-                        {isDamaging && (
-                          <span className="font-mono">{move.basePower} BP</span>
-                        )}
+                        {isDamaging && <span className="font-mono">{move.basePower} BP</span>}
                         <span className="font-mono">
                           {move.accuracy === true ? "—" : `${move.accuracy}%`}
                         </span>
@@ -179,21 +172,21 @@ export function MoveSelector({
                           role="button"
                           tabIndex={0}
                           onClick={(e) => {
-                            e.stopPropagation();
-                            toggleTeraOnMove(i);
+                            e.stopPropagation()
+                            toggleTeraOnMove(i)
                           }}
                           onKeyDown={(e) => {
                             if (e.key === "Enter" || e.key === " ") {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              toggleTeraOnMove(i);
+                              e.preventDefault()
+                              e.stopPropagation()
+                              toggleTeraOnMove(i)
                             }
                           }}
                           className={cn(
                             "absolute top-1 right-1 p-0.5 rounded-sm transition-all cursor-pointer",
                             isTeraActive
                               ? "bg-pink-500/80 text-white"
-                              : "bg-black/20 text-white/50 hover:text-white/80"
+                              : "bg-black/20 text-white/50 hover:text-white/80",
                           )}
                           title={`Tera ${teraType}`}
                         >
@@ -252,7 +245,7 @@ export function MoveSelector({
                   </div>
                 )}
               </div>
-            );
+            )
           })}
         </div>
       </TooltipProvider>
@@ -277,5 +270,5 @@ export function MoveSelector({
         </Button>
       </div>
     </div>
-  );
+  )
 }

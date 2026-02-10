@@ -10,13 +10,9 @@ export {
   clearSlots,
   reorderSlots,
   domainSlotToDb,
-} from "./team.service";
-export { validateTeam } from "./validation.service";
-export {
-  importShowdownPaste,
-  importIntoTeam,
-  exportShowdownPaste,
-} from "./import-export.service";
+} from "./team.service"
+export { validateTeam } from "./validation.service"
+export { importShowdownPaste, importIntoTeam, exportShowdownPaste } from "./import-export.service"
 export {
   createSampleTeam,
   listSampleTeams,
@@ -24,8 +20,8 @@ export {
   deleteSampleTeam,
   importSampleTeamsFromPastes,
   extractPokemonIds,
-} from "./sample-team.service";
-export type { SampleTeamData } from "./sample-team.service";
+} from "./sample-team.service"
+export type { SampleTeamData } from "./sample-team.service"
 export {
   forkTeam,
   compareTeams,
@@ -34,7 +30,7 @@ export {
   getTeamHistory,
   archiveTeam,
   restoreTeam,
-} from "./version.service";
+} from "./version.service"
 export type {
   TeamDiff,
   SlotChange,
@@ -44,4 +40,4 @@ export type {
   MergeOptions,
   ForkOptions,
   LineageNode,
-} from "@nasty-plot/core";
+} from "@nasty-plot/core"

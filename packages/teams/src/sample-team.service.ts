@@ -1,33 +1,33 @@
-import { prisma } from "@nasty-plot/db";
-import { parseShowdownPaste } from "@nasty-plot/core";
+import { prisma } from "@nasty-plot/db"
+import { parseShowdownPaste } from "@nasty-plot/core"
 
 export interface SampleTeamData {
-  id: string;
-  name: string;
-  formatId: string;
-  archetype: string | null;
-  source: string | null;
-  sourceUrl: string | null;
-  paste: string;
-  pokemonIds: string;
-  isActive: boolean;
-  createdAt: Date;
+  id: string
+  name: string
+  formatId: string
+  archetype: string | null
+  source: string | null
+  sourceUrl: string | null
+  paste: string
+  pokemonIds: string
+  isActive: boolean
+  createdAt: Date
 }
 
 export function extractPokemonIds(paste: string): string[] {
-  const parsed = parseShowdownPaste(paste);
-  return parsed.map((p) => p.pokemonId).filter(Boolean) as string[];
+  const parsed = parseShowdownPaste(paste)
+  return parsed.map((p) => p.pokemonId).filter(Boolean) as string[]
 }
 
 export async function createSampleTeam(input: {
-  name: string;
-  formatId: string;
-  paste: string;
-  archetype?: string;
-  source?: string;
-  sourceUrl?: string;
+  name: string
+  formatId: string
+  paste: string
+  archetype?: string
+  source?: string
+  sourceUrl?: string
 }): Promise<SampleTeamData> {
-  const pokemonIds = extractPokemonIds(input.paste).join(",");
+  const pokemonIds = extractPokemonIds(input.paste).join(",")
   return prisma.sampleTeam.create({
     data: {
       name: input.name,
@@ -38,42 +38,40 @@ export async function createSampleTeam(input: {
       sourceUrl: input.sourceUrl || null,
       pokemonIds,
     },
-  });
+  })
 }
 
 export async function listSampleTeams(filters?: {
-  formatId?: string;
-  archetype?: string;
-  search?: string;
+  formatId?: string
+  archetype?: string
+  search?: string
 }): Promise<SampleTeamData[]> {
-  const where: Record<string, unknown> = { isActive: true };
-  if (filters?.formatId) where.formatId = filters.formatId;
-  if (filters?.archetype) where.archetype = filters.archetype;
+  const where: Record<string, unknown> = { isActive: true }
+  if (filters?.formatId) where.formatId = filters.formatId
+  if (filters?.archetype) where.archetype = filters.archetype
   if (filters?.search) {
     where.OR = [
       { name: { contains: filters.search } },
       { pokemonIds: { contains: filters.search } },
-    ];
+    ]
   }
-  return prisma.sampleTeam.findMany({ where, orderBy: { createdAt: "desc" } });
+  return prisma.sampleTeam.findMany({ where, orderBy: { createdAt: "desc" } })
 }
 
-export async function getSampleTeam(
-  id: string
-): Promise<SampleTeamData | null> {
-  return prisma.sampleTeam.findUnique({ where: { id } });
+export async function getSampleTeam(id: string): Promise<SampleTeamData | null> {
+  return prisma.sampleTeam.findUnique({ where: { id } })
 }
 
 export async function deleteSampleTeam(id: string): Promise<void> {
-  await prisma.sampleTeam.delete({ where: { id } });
+  await prisma.sampleTeam.delete({ where: { id } })
 }
 
 export async function importSampleTeamsFromPastes(
   pastes: { name: string; paste: string; archetype?: string }[],
   formatId: string,
-  source?: string
+  source?: string,
 ): Promise<SampleTeamData[]> {
-  const results: SampleTeamData[] = [];
+  const results: SampleTeamData[] = []
   for (const entry of pastes) {
     const team = await createSampleTeam({
       name: entry.name,
@@ -81,8 +79,8 @@ export async function importSampleTeamsFromPastes(
       paste: entry.paste,
       archetype: entry.archetype,
       source,
-    });
-    results.push(team);
+    })
+    results.push(team)
   }
-  return results;
+  return results
 }

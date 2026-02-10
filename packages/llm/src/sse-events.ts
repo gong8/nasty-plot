@@ -8,4 +8,4 @@ export type SSEEvent =
   | { type: "plan_step_update"; stepIndex: number; status: "active" | "complete" | "skipped" }
   | { type: "session_meta"; sessionId: string; title?: string }
   | { type: "error"; error: string }
-  | { type: "done" };
+  | { type: "done" }

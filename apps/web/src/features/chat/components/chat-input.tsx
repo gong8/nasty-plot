@@ -1,19 +1,19 @@
-"use client";
+"use client"
 
-import { useRef, useEffect } from "react";
-import { Send, Square, RefreshCw } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
+import { useRef, useEffect } from "react"
+import { Send, Square, RefreshCw } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Textarea } from "@/components/ui/textarea"
 
 interface ChatInputProps {
-  onSend: (message: string) => void;
-  onStop: () => void;
-  onRetry: () => void;
-  isStreaming: boolean;
-  hasMessages: boolean;
-  lastMessageIsAssistant: boolean;
-  pendingInput?: string | null;
-  onClearPendingInput?: () => void;
+  onSend: (message: string) => void
+  onStop: () => void
+  onRetry: () => void
+  isStreaming: boolean
+  hasMessages: boolean
+  lastMessageIsAssistant: boolean
+  pendingInput?: string | null
+  onClearPendingInput?: () => void
 }
 
 export function ChatInput({
@@ -26,35 +26,35 @@ export function ChatInput({
   pendingInput,
   onClearPendingInput,
 }: ChatInputProps) {
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const inputRef = useRef("");
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const inputRef = useRef("")
 
   // Pre-fill input when a suggested question is clicked
   useEffect(() => {
     if (pendingInput && textareaRef.current) {
-      textareaRef.current.value = pendingInput;
-      inputRef.current = pendingInput;
-      textareaRef.current.focus();
-      onClearPendingInput?.();
+      textareaRef.current.value = pendingInput
+      inputRef.current = pendingInput
+      textareaRef.current.focus()
+      onClearPendingInput?.()
     }
-  }, [pendingInput, onClearPendingInput]);
+  }, [pendingInput, onClearPendingInput])
 
   const handleSend = () => {
-    const value = textareaRef.current?.value.trim();
-    if (!value || isStreaming) return;
-    onSend(value);
+    const value = textareaRef.current?.value.trim()
+    if (!value || isStreaming) return
+    onSend(value)
     if (textareaRef.current) {
-      textareaRef.current.value = "";
-      inputRef.current = "";
+      textareaRef.current.value = ""
+      inputRef.current = ""
     }
-  };
+  }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
+      e.preventDefault()
+      handleSend()
     }
-  };
+  }
 
   return (
     <div className="border-t border-border p-3">
@@ -76,7 +76,9 @@ export function ChatInput({
       <div className="flex gap-2">
         <Textarea
           ref={textareaRef}
-          onChange={(e) => { inputRef.current = e.target.value; }}
+          onChange={(e) => {
+            inputRef.current = e.target.value
+          }}
           onKeyDown={handleKeyDown}
           placeholder="Ask about team building, sets, damage calcs..."
           className="min-h-[44px] max-h-[120px] resize-none"
@@ -94,15 +96,11 @@ export function ChatInput({
             <Square className="w-4 h-4" />
           </Button>
         ) : (
-          <Button
-            onClick={handleSend}
-            size="icon"
-            className="flex-shrink-0 h-[44px] w-[44px]"
-          >
+          <Button onClick={handleSend} size="icon" className="flex-shrink-0 h-[44px] w-[44px]">
             <Send className="w-4 h-4" />
           </Button>
         )}
       </div>
     </div>
-  );
+  )
 }

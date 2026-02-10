@@ -1,15 +1,11 @@
-"use client";
+"use client"
 
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { X, Search, RotateCcw } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { useState } from "react"
+import { useQuery } from "@tanstack/react-query"
+import { X, Search, RotateCcw } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import {
   Command,
   CommandEmpty,
@@ -17,20 +13,16 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-} from "@/components/ui/command";
-import { PokemonSprite } from "@nasty-plot/ui";
-import type {
-  PaginatedResponse,
-  PokemonSpecies,
-  ApiResponse,
-} from "@nasty-plot/core";
+} from "@/components/ui/command"
+import { PokemonSprite } from "@nasty-plot/ui"
+import type { PaginatedResponse, PokemonSpecies, ApiResponse } from "@nasty-plot/core"
 
-const MAX_OPPONENTS = 15;
+const MAX_OPPONENTS = 15
 
 interface OpponentSelectorProps {
-  selectedIds: string[];
-  onSelectionChange: (ids: string[]) => void;
-  formatId?: string;
+  selectedIds: string[]
+  onSelectionChange: (ids: string[]) => void
+  formatId?: string
 }
 
 export function OpponentSelector({
@@ -38,26 +30,24 @@ export function OpponentSelector({
   onSelectionChange,
   formatId,
 }: OpponentSelectorProps) {
-  const [open, setOpen] = useState(false);
-  const [search, setSearch] = useState("");
+  const [open, setOpen] = useState(false)
+  const [search, setSearch] = useState("")
 
   // Fetch search results for the popover
   const { data: results = [] } = useQuery({
     queryKey: ["pokemon-search", search],
     queryFn: async () => {
-      if (!search || search.length < 2) return [];
-      const formatParam = formatId
-        ? `&format=${encodeURIComponent(formatId)}`
-        : "";
+      if (!search || search.length < 2) return []
+      const formatParam = formatId ? `&format=${encodeURIComponent(formatId)}` : ""
       const res = await fetch(
-        `/api/pokemon?search=${encodeURIComponent(search)}&pageSize=20${formatParam}`
-      );
-      if (!res.ok) return [];
-      const json: PaginatedResponse<PokemonSpecies> = await res.json();
-      return json.data;
+        `/api/pokemon?search=${encodeURIComponent(search)}&pageSize=20${formatParam}`,
+      )
+      if (!res.ok) return []
+      const json: PaginatedResponse<PokemonSpecies> = await res.json()
+      return json.data
     },
     enabled: search.length >= 2,
-  });
+  })
 
   // Fetch details for all selected IDs so we can render chips with names and sprites
   const { data: selectedDetails = [] } = useQuery({
@@ -65,41 +55,39 @@ export function OpponentSelector({
     queryFn: async () => {
       const results = await Promise.all(
         selectedIds.map(async (id) => {
-          const res = await fetch(`/api/pokemon/${id}`);
-          if (!res.ok) return null;
-          const json: ApiResponse<PokemonSpecies> = await res.json();
-          return json.data;
-        })
-      );
-      return results.filter(
-        (r): r is PokemonSpecies => r !== null
-      );
+          const res = await fetch(`/api/pokemon/${id}`)
+          if (!res.ok) return null
+          const json: ApiResponse<PokemonSpecies> = await res.json()
+          return json.data
+        }),
+      )
+      return results.filter((r): r is PokemonSpecies => r !== null)
     },
     enabled: selectedIds.length > 0,
     staleTime: Infinity,
-  });
+  })
 
-  const selectedSet = new Set(selectedIds);
+  const selectedSet = new Set(selectedIds)
 
   // Filter out already-selected Pokemon from search results
-  const filteredResults = results.filter((r) => !selectedSet.has(r.id));
+  const filteredResults = results.filter((r) => !selectedSet.has(r.id))
 
   function addOpponent(id: string) {
-    if (selectedIds.length >= MAX_OPPONENTS) return;
-    if (selectedSet.has(id)) return;
-    onSelectionChange([...selectedIds, id]);
+    if (selectedIds.length >= MAX_OPPONENTS) return
+    if (selectedSet.has(id)) return
+    onSelectionChange([...selectedIds, id])
   }
 
   function removeOpponent(id: string) {
-    onSelectionChange(selectedIds.filter((sid) => sid !== id));
+    onSelectionChange(selectedIds.filter((sid) => sid !== id))
   }
 
   function resetToDefaults() {
-    onSelectionChange([]);
+    onSelectionChange([])
   }
 
   // Build a lookup from selectedDetails for rendering chips in selectedIds order
-  const detailsMap = new Map(selectedDetails.map((d) => [d.id, d]));
+  const detailsMap = new Map(selectedDetails.map((d) => [d.id, d]))
 
   return (
     <div className="flex flex-col gap-2">
@@ -107,17 +95,13 @@ export function OpponentSelector({
       {selectedIds.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
           {selectedIds.map((id) => {
-            const detail = detailsMap.get(id);
+            const detail = detailsMap.get(id)
             return (
               <div
                 key={id}
                 className="flex items-center gap-1.5 rounded-full bg-muted pl-1 pr-2 py-0.5"
               >
-                <PokemonSprite
-                  pokemonId={id}
-                  num={detail?.num ?? 0}
-                  size={24}
-                />
+                <PokemonSprite pokemonId={id} num={detail?.num ?? 0} size={24} />
                 <span className="text-xs">{detail?.name ?? id}</span>
                 <button
                   onClick={() => removeOpponent(id)}
@@ -126,7 +110,7 @@ export function OpponentSelector({
                   <X className="h-3 w-3" />
                 </button>
               </div>
-            );
+            )
           })}
         </div>
       )}
@@ -154,9 +138,7 @@ export function OpponentSelector({
               />
               <CommandList className="max-h-[200px] overflow-y-auto">
                 <CommandEmpty>
-                  {search.length < 2
-                    ? "Type at least 2 characters..."
-                    : "No Pokemon found."}
+                  {search.length < 2 ? "Type at least 2 characters..." : "No Pokemon found."}
                 </CommandEmpty>
                 <CommandGroup>
                   {filteredResults.map((pokemon) => (
@@ -164,9 +146,9 @@ export function OpponentSelector({
                       key={pokemon.id}
                       value={pokemon.id}
                       onSelect={() => {
-                        addOpponent(pokemon.id);
-                        setSearch("");
-                        setOpen(false);
+                        addOpponent(pokemon.id)
+                        setSearch("")
+                        setOpen(false)
                       }}
                     >
                       <PokemonSprite
@@ -204,5 +186,5 @@ export function OpponentSelector({
         </span>
       </div>
     </div>
-  );
+  )
 }

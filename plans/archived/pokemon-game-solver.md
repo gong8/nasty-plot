@@ -1,7 +1,9 @@
 # Pokemon Game Solver - Feature Design Document
 
 ## Vision
+
 A battle simulator + AI solver engine integrated into the Nasty Plot app:
+
 1. **Battle Simulator** - Full Pokemon battles powered by `@pkmn/sim`
 2. **AI Opponents** - Tiered difficulty bots from random to MCTS-powered solver
 3. **Strategic Hints** - Real-time move recommendations with win probability (like chess engine eval bar)
@@ -10,24 +12,25 @@ A battle simulator + AI solver engine integrated into the Nasty Plot app:
 
 ## Design Decisions (Confirmed)
 
-| Decision | Choice | Rationale |
-|----------|--------|-----------|
-| Formats | Singles + Doubles from start | @pkmn/sim handles both |
-| Info modes | Full info + hidden info | Full for analysis, hidden for play |
-| Build order | Full vertical slice (engine + UI + AI) | Complete playable experience first |
-| Sprites | @pkmn/img | Same ecosystem as existing packages |
-| Opponent teams | Real competitive teams + LLM archetype picker | Quality > randomness |
-| Battle UI quality | Showdown-quality | Functional, sprite-based, clean |
-| Multiplayer | AI only (to start) | No networking complexity |
-| AI/Solver engine | Pure algorithmic (MCTS/heuristic) | Not LLM-dependent |
-| LLM role | Optional commentary + strategy advisor (default off) | Preserve API credits |
-| Eval function | Research-based (adapt Foul Play / Percymon) | Proven weights |
+| Decision          | Choice                                               | Rationale                           |
+| ----------------- | ---------------------------------------------------- | ----------------------------------- |
+| Formats           | Singles + Doubles from start                         | @pkmn/sim handles both              |
+| Info modes        | Full info + hidden info                              | Full for analysis, hidden for play  |
+| Build order       | Full vertical slice (engine + UI + AI)               | Complete playable experience first  |
+| Sprites           | @pkmn/img                                            | Same ecosystem as existing packages |
+| Opponent teams    | Real competitive teams + LLM archetype picker        | Quality > randomness                |
+| Battle UI quality | Showdown-quality                                     | Functional, sprite-based, clean     |
+| Multiplayer       | AI only (to start)                                   | No networking complexity            |
+| AI/Solver engine  | Pure algorithmic (MCTS/heuristic)                    | Not LLM-dependent                   |
+| LLM role          | Optional commentary + strategy advisor (default off) | Preserve API credits                |
+| Eval function     | Research-based (adapt Foul Play / Percymon)          | Proven weights                      |
 
 ---
 
 ## Research Summary
 
 ### Battle Engine: `@pkmn/sim`
+
 - Pokemon Showdown's simulator extracted as standalone TypeScript package
 - Handles ALL battle mechanics (turn resolution, abilities, weather, hazards, 1000+ moves, 300+ abilities)
 - Browser-compatible, same ecosystem as our `@pkmn/dex` and `@pkmn/data`
@@ -36,13 +39,13 @@ A battle simulator + AI solver engine integrated into the Nasty Plot app:
 
 ### AI Landscape
 
-| Project | Algorithm | Performance |
-|---------|-----------|-------------|
-| **Foul Play** | MCTS + DUCT (Rust engine) | 71-88% GXE |
-| **Metamon** | Offline RL (80M transformer) | Top 10% of players |
-| **MIT Thesis** | PPO + MCTS (neural guided) | Rank 8, 1693 Elo |
-| **Technical Machine** | Expectiminimax + AB pruning | ~4 turns depth |
-| **PokéChamp** | LLM-based minimax | Expert level |
+| Project               | Algorithm                    | Performance        |
+| --------------------- | ---------------------------- | ------------------ |
+| **Foul Play**         | MCTS + DUCT (Rust engine)    | 71-88% GXE         |
+| **Metamon**           | Offline RL (80M transformer) | Top 10% of players |
+| **MIT Thesis**        | PPO + MCTS (neural guided)   | Rank 8, 1693 Elo   |
+| **Technical Machine** | Expectiminimax + AB pruning  | ~4 turns depth     |
+| **PokéChamp**         | LLM-based minimax            | Expert level       |
 
 **Key insight from Foul Play**: "Set prediction is as important as, if not more important than, accurate and fast search." We have Smogon data for this already!
 
@@ -69,6 +72,7 @@ Defense boosts                | 25     | Survivability
 ```
 
 ### Opponent Team Generation Strategy
+
 1. **Scrape real competitive teams** from Smogon forums/sample teams, store in DB
 2. **Random selection** from stored teams for quick play
 3. **LLM archetype picker** - "Give me a rain team to practice against"
@@ -82,6 +86,7 @@ Defense boosts                | 25     | Survivability
 ### Module Structure
 
 **Planned structure** (full vision):
+
 ```
 src/modules/battle/
 ├── engine/                    # Battle simulation layer
@@ -133,6 +138,7 @@ src/modules/battle/
 ```
 
 **What has been built so far** (Phase 1-3):
+
 ```
 src/modules/battle/
 ├── engine/
@@ -173,6 +179,7 @@ src/app/battle/
 **Note**: The original plan called for `/battle/[id]` but we used `/battle/live` with URL search params instead (simpler, no DB persistence yet). `battle-state.ts` was merged into `types/index.ts`. `battle-stream.ts` was not needed — `battle-manager.ts` uses `BattleStreams.BattleStream` directly.
 
 ### Battle Flow
+
 ```
 1. SETUP (/battle/new)
    ├── Select YOUR team (from saved teams)
@@ -208,11 +215,13 @@ src/app/battle/
 ```
 
 ### State Management
+
 - Battle state in **React context** (not React Query - this is real-time, not API-cached)
 - Persist completed battles to Prisma/SQLite for replay
 - Web Workers for MCTS computation (non-blocking)
 
 ### New Database Models
+
 ```prisma
 model Battle {
   id          String   @id @default(cuid())
@@ -256,6 +265,7 @@ model SampleTeam {
 ```
 
 ### New Routes
+
 ```
 /battle          - Battle hub (list recent battles, start new)
 /battle/new      - Battle setup
@@ -268,6 +278,7 @@ model SampleTeam {
 ## Implementation Phases (Vertical Slice Approach)
 
 ### Phase 1: Engine Foundation (Week 1-2) -- DONE
+
 **Goal**: Battles work programmatically with tests, no UI yet.
 
 - [x] Install `@pkmn/sim` and `@pkmn/img`
@@ -280,6 +291,7 @@ model SampleTeam {
 - [x] Write comprehensive unit tests with Vitest (team-packer: 15 tests, protocol-parser: 33 tests, ai: 13 tests)
 
 ### Phase 2: Battle UI (Week 2-4) -- MOSTLY DONE
+
 **Goal**: Playable battles in the browser (manual control of both sides).
 
 - [x] `/battle/new` setup page with team/format/mode selectors
@@ -298,6 +310,7 @@ model SampleTeam {
 - [x] "Battle" added to site navigation
 
 ### Phase 3: AI Opponents (Week 4-5) -- MOSTLY DONE
+
 **Goal**: Play against bots of varying difficulty.
 
 - [x] Define `AIPlayer` interface: `chooseAction(state, legalMoves) → Action`
@@ -309,6 +322,7 @@ model SampleTeam {
 - [ ] `SetPredictor` using Smogon data (for hidden info mode)
 
 ### Phase 4: Hint System + Evaluation (Week 5-6)
+
 **Goal**: Chess-engine-style analysis during play.
 
 - [ ] `evaluator.ts` position evaluation function (research-based weights)
@@ -320,6 +334,7 @@ model SampleTeam {
 - [ ] Toggle hints on/off (default off for "fair" play)
 
 ### Phase 5: MCTS Solver (Week 6-8)
+
 **Goal**: Expert-level AI using Monte Carlo Tree Search.
 
 - [ ] Basic MCTS implementation with UCB1 selection
@@ -331,6 +346,7 @@ model SampleTeam {
 - [ ] "Expert" difficulty using MCTS
 
 ### Phase 6: Sample Teams + Generation (Week 8-9)
+
 **Goal**: High-quality opponent teams from real competitive data.
 
 - [ ] `SampleTeam` database model + API routes
@@ -341,6 +357,7 @@ model SampleTeam {
 - [ ] Seed script to populate initial competitive teams
 
 ### Phase 7: Batch Simulation + Analytics (Week 9-11)
+
 **Goal**: Run N games between teams and analyze results.
 
 - [ ] `batch-simulator.ts` running automated AI-vs-AI games
@@ -353,6 +370,7 @@ model SampleTeam {
 - [ ] Charts (could use existing charting or add recharts/chart.js)
 
 ### Phase 8: Post-Battle + Replay (Week 11-12)
+
 **Goal**: Review and learn from completed battles.
 
 - [ ] Save battles to database (Battle + BattleTurn models)
@@ -363,6 +381,7 @@ model SampleTeam {
 - [ ] Recent battles list on `/battle`
 
 ### Phase 9: LLM Integration (Week 12-13)
+
 **Goal**: Optional AI commentary and strategic advice.
 
 - [ ] Battle commentary tool for existing OpenAI integration
@@ -372,6 +391,7 @@ model SampleTeam {
 - [ ] Default OFF, toggle in settings (preserves API credits)
 
 ### Phase 10: Polish + Advanced (Week 13+)
+
 - [ ] Tournament mode (round-robin)
 - [ ] Training mode (specific scenarios)
 - [ ] MCP server tools for battle (run battles via Claude)
@@ -393,6 +413,7 @@ These items from Phases 1-3 are not yet done:
 5. **Browser integration testing** — Full end-to-end manual testing (play a battle start to finish).
 
 ## Dependencies
+
 ```json
 {
   "@pkmn/sim": "installed ✅",
@@ -403,11 +424,11 @@ These items from Phases 1-3 are not yet done:
 
 ## Risk Assessment
 
-| Risk | Likelihood | Mitigation |
-|------|------------|------------|
-| @pkmn/sim API complexity | High | Build abstraction layer early, comprehensive tests |
-| Battle UI polish takes too long | Medium | Start functional, polish iteratively |
-| MCTS performance in browser | Medium | Web Workers, configurable depth, fallback to heuristic |
-| Doubles complexity | Medium | Singles-first in UI, doubles reuses same engine |
-| State sync between sim and UI | High | Strong typed protocol parser, unit tests |
-| @pkmn/sim breaking changes | Low | Pin versions, monitor releases |
+| Risk                            | Likelihood | Mitigation                                             |
+| ------------------------------- | ---------- | ------------------------------------------------------ |
+| @pkmn/sim API complexity        | High       | Build abstraction layer early, comprehensive tests     |
+| Battle UI polish takes too long | Medium     | Start functional, polish iteratively                   |
+| MCTS performance in browser     | Medium     | Web Workers, configurable depth, fallback to heuristic |
+| Doubles complexity              | Medium     | Singles-first in UI, doubles reuses same engine        |
+| State sync between sim and UI   | High       | Strong typed protocol parser, unit tests               |
+| @pkmn/sim breaking changes      | Low        | Pin versions, monitor releases                         |

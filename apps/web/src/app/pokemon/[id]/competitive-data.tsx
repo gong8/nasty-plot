@@ -1,8 +1,8 @@
-"use client";
+"use client"
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   Table,
   TableBody,
@@ -10,33 +10,32 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import type { UsageStatsEntry, SmogonSetData } from "@nasty-plot/core";
+} from "@/components/ui/table"
+import type { UsageStatsEntry, SmogonSetData } from "@nasty-plot/core"
 
 interface FormatUsage {
-  formatId: string;
-  formatName: string;
-  stats: UsageStatsEntry | null;
+  formatId: string
+  formatName: string
+  stats: UsageStatsEntry | null
 }
 
 interface CompetitiveDataProps {
-  usageByFormat: FormatUsage[];
-  setsByFormat: { formatId: string; formatName: string; sets: SmogonSetData[] }[];
+  usageByFormat: FormatUsage[]
+  setsByFormat: { formatId: string; formatName: string; sets: SmogonSetData[] }[]
 }
 
 function formatPercent(value: number): string {
-  return `${(value * 100).toFixed(2)}%`;
+  return `${(value * 100).toFixed(2)}%`
 }
 
 function SetCard({ set }: { set: SmogonSetData }) {
-  const evEntries = Object.entries(set.evs).filter(
-    ([, v]) => v !== undefined && v > 0
-  ) as [string, number][];
+  const evEntries = Object.entries(set.evs).filter(([, v]) => v !== undefined && v > 0) as [
+    string,
+    number,
+  ][]
   const ivEntries = set.ivs
-    ? (Object.entries(set.ivs).filter(
-        ([, v]) => v !== undefined && v < 31
-      ) as [string, number][])
-    : [];
+    ? (Object.entries(set.ivs).filter(([, v]) => v !== undefined && v < 31) as [string, number][])
+    : []
 
   return (
     <div className="border rounded-lg p-4 space-y-3">
@@ -74,36 +73,25 @@ function SetCard({ set }: { set: SmogonSetData }) {
       {evEntries.length > 0 && (
         <div className="text-sm">
           <span className="text-muted-foreground">EVs: </span>
-          <span>
-            {evEntries
-              .map(([stat, val]) => `${val} ${stat.toUpperCase()}`)
-              .join(" / ")}
-          </span>
+          <span>{evEntries.map(([stat, val]) => `${val} ${stat.toUpperCase()}`).join(" / ")}</span>
         </div>
       )}
       {ivEntries.length > 0 && (
         <div className="text-sm">
           <span className="text-muted-foreground">IVs: </span>
-          <span>
-            {ivEntries
-              .map(([stat, val]) => `${val} ${stat.toUpperCase()}`)
-              .join(" / ")}
-          </span>
+          <span>{ivEntries.map(([stat, val]) => `${val} ${stat.toUpperCase()}`).join(" / ")}</span>
         </div>
       )}
     </div>
-  );
+  )
 }
 
-export function CompetitiveData({
-  usageByFormat,
-  setsByFormat,
-}: CompetitiveDataProps) {
-  const formatsWithUsage = usageByFormat.filter((f) => f.stats !== null);
-  const formatsWithSets = setsByFormat.filter((f) => f.sets.length > 0);
+export function CompetitiveData({ usageByFormat, setsByFormat }: CompetitiveDataProps) {
+  const formatsWithUsage = usageByFormat.filter((f) => f.stats !== null)
+  const formatsWithSets = setsByFormat.filter((f) => f.sets.length > 0)
 
   if (formatsWithUsage.length === 0 && formatsWithSets.length === 0) {
-    return null;
+    return null
   }
 
   return (
@@ -126,15 +114,11 @@ export function CompetitiveData({
               <TableBody>
                 {formatsWithUsage.map((f) => (
                   <TableRow key={f.formatId}>
-                    <TableCell className="font-medium">
-                      {f.formatName}
-                    </TableCell>
+                    <TableCell className="font-medium">{f.formatName}</TableCell>
                     <TableCell className="text-right">
                       {formatPercent(f.stats!.usagePercent)}
                     </TableCell>
-                    <TableCell className="text-right">
-                      #{f.stats!.rank}
-                    </TableCell>
+                    <TableCell className="text-right">#{f.stats!.rank}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -180,5 +164,5 @@ export function CompetitiveData({
         </Card>
       )}
     </div>
-  );
+  )
 }

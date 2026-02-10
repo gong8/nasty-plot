@@ -1,67 +1,52 @@
-"use client";
+"use client"
 
-import { useState } from "react";
-import { MessageCircle } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
-import { useChatSidebar } from "@/features/chat/context/chat-provider";
-import type { GuidedStep } from "../../hooks/use-guided-builder";
+import { useState } from "react"
+import { MessageCircle } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
+import { useChatSidebar } from "@/features/chat/context/chat-provider"
+import type { GuidedStep } from "../../hooks/use-guided-builder"
 
 const SUGGESTED_QUESTIONS: Record<GuidedStep, string[]> = {
-  start: [
-    "What format should I play?",
-    "Help me choose a team style",
-  ],
-  lead: [
-    "Why is this Pokemon a good lead?",
-    "What team archetype should I build?",
-  ],
+  start: ["What format should I play?", "Help me choose a team style"],
+  lead: ["Why is this Pokemon a good lead?", "What team archetype should I build?"],
   build: [
     "What should my next pick be?",
     "What are my team's weaknesses?",
     "Why this recommendation?",
   ],
-  sets: [
-    "Is this the best set?",
-    "What nature should I run?",
-    "Why this item?",
-  ],
+  sets: ["Is this the best set?", "What nature should I run?", "Why this item?"],
   review: [
     "Is this team competitive?",
     "What are my biggest threats?",
     "How should I play this team?",
   ],
-};
+}
 
 interface AskPecharuntButtonProps {
-  step: GuidedStep;
-  className?: string;
+  step: GuidedStep
+  className?: string
 }
 
 export function AskPecharuntButton({ step, className }: AskPecharuntButtonProps) {
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const { openSidebar } = useChatSidebar();
+  const [showSuggestions, setShowSuggestions] = useState(false)
+  const { openSidebar } = useChatSidebar()
 
-  const questions = SUGGESTED_QUESTIONS[step];
+  const questions = SUGGESTED_QUESTIONS[step]
 
   function handleMainClick() {
-    openSidebar();
-    setShowSuggestions((prev) => !prev);
+    openSidebar()
+    setShowSuggestions((prev) => !prev)
   }
 
   function handleQuestionClick(question: string) {
-    openSidebar(question);
-    setShowSuggestions(false);
+    openSidebar(question)
+    setShowSuggestions(false)
   }
 
   return (
     <div className={cn("flex flex-col gap-2", className)}>
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={handleMainClick}
-        className="gap-2"
-      >
+      <Button variant="outline" size="sm" onClick={handleMainClick} className="gap-2">
         <img
           src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/1025.png"
           alt="Pecharunt"
@@ -88,5 +73,5 @@ export function AskPecharuntButton({ step, className }: AskPecharuntButtonProps)
         </div>
       )}
     </div>
-  );
+  )
 }

@@ -1,4 +1,4 @@
-export { analyzeTypeCoverage } from "./coverage.service";
-export { identifyThreats } from "./threat.service";
-export { calculateSynergy } from "./synergy.service";
-export { analyzeTeam } from "./analysis.service";
+export { analyzeTypeCoverage } from "./coverage.service"
+export { identifyThreats } from "./threat.service"
+export { calculateSynergy } from "./synergy.service"
+export { analyzeTeam } from "./analysis.service"

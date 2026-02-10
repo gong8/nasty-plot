@@ -17,6 +17,6 @@ export {
   isZCrystal,
   getZCrystalType,
   getSignatureZCrystal,
-} from "./dex.service";
+} from "./dex.service"
 
-export type * from "./types";
+export type * from "./types"

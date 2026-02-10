@@ -1,18 +1,18 @@
-"use client";
+"use client"
 
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, Sparkles } from "lucide-react";
-import { useAddSlot } from "@/features/teams/hooks/use-teams";
-import type { Recommendation } from "@nasty-plot/core";
+import { useQuery, useQueryClient } from "@tanstack/react-query"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { Skeleton } from "@/components/ui/skeleton"
+import { Plus, Sparkles } from "lucide-react"
+import { useAddSlot } from "@/features/teams/hooks/use-teams"
+import type { Recommendation } from "@nasty-plot/core"
 
 interface RecommendationPanelProps {
-  teamId: string;
-  formatId: string;
-  currentSlotCount: number;
+  teamId: string
+  formatId: string
+  currentSlotCount: number
 }
 
 const REASON_COLORS: Record<string, string> = {
@@ -20,15 +20,15 @@ const REASON_COLORS: Record<string, string> = {
   coverage: "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300",
   synergy: "bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300",
   meta: "bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300",
-};
+}
 
 export function RecommendationPanel({
   teamId,
   formatId,
   currentSlotCount,
 }: RecommendationPanelProps) {
-  const queryClient = useQueryClient();
-  const addSlotMut = useAddSlot();
+  const queryClient = useQueryClient()
+  const addSlotMut = useAddSlot()
 
   const { data, isLoading } = useQuery<{ data: Recommendation[] }>({
     queryKey: ["recommendations", teamId, formatId],
@@ -38,22 +38,20 @@ export function RecommendationPanel({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ teamId, formatId, limit: 6 }),
       }).then((r) => {
-        if (!r.ok) throw new Error("Failed to fetch recommendations");
-        return r.json();
+        if (!r.ok) throw new Error("Failed to fetch recommendations")
+        return r.json()
       }),
     enabled: currentSlotCount >= 1 && currentSlotCount <= 5,
-  });
+  })
 
-  const recommendations = data?.data;
+  const recommendations = data?.data
 
   const handleAdd = async (rec: Recommendation) => {
-    const set = rec.suggestedSet;
-    const nextPosition = currentSlotCount + 1;
+    const set = rec.suggestedSet
+    const nextPosition = currentSlotCount + 1
 
     // Build moves array: pick first option from slash options
-    const moves = (set?.moves ?? []).map((m) =>
-      Array.isArray(m) ? m[0] : m
-    );
+    const moves = (set?.moves ?? []).map((m) => (Array.isArray(m) ? m[0] : m))
 
     await addSlotMut.mutateAsync({
       teamId,
@@ -65,12 +63,12 @@ export function RecommendationPanel({
         nature: set?.nature ?? "Adamant",
         teraType: set?.teraType,
         level: 100,
-        moves: [
-          moves[0] ?? "",
-          moves[1],
-          moves[2],
-          moves[3],
-        ] as [string, string?, string?, string?],
+        moves: [moves[0] ?? "", moves[1], moves[2], moves[3]] as [
+          string,
+          string?,
+          string?,
+          string?,
+        ],
         evs: {
           hp: set?.evs?.hp ?? 0,
           atk: set?.evs?.atk ?? 0,
@@ -88,14 +86,14 @@ export function RecommendationPanel({
           spe: set?.ivs?.spe ?? 31,
         },
       },
-    });
+    })
 
     // Invalidate recommendations after adding
-    queryClient.invalidateQueries({ queryKey: ["recommendations", teamId] });
-  };
+    queryClient.invalidateQueries({ queryKey: ["recommendations", teamId] })
+  }
 
   if (currentSlotCount === 0) {
-    return null;
+    return null
   }
 
   if (isLoading) {
@@ -113,7 +111,7 @@ export function RecommendationPanel({
           ))}
         </CardContent>
       </Card>
-    );
+    )
   }
 
   if (!recommendations || recommendations.length === 0) {
@@ -131,7 +129,7 @@ export function RecommendationPanel({
           </p>
         </CardContent>
       </Card>
-    );
+    )
   }
 
   return (
@@ -157,9 +155,7 @@ export function RecommendationPanel({
               {/* Info */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium truncate">
-                    {rec.pokemonName}
-                  </span>
+                  <span className="text-sm font-medium truncate">{rec.pokemonName}</span>
                   <span className="text-xs text-muted-foreground ml-auto shrink-0">
                     {rec.score}/100
                   </span>
@@ -200,5 +196,5 @@ export function RecommendationPanel({
         </div>
       </CardContent>
     </Card>
-  );
+  )
 }

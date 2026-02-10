@@ -1,36 +1,50 @@
-"use client";
+"use client"
 
-import { useState, useCallback } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Slider } from "@/components/ui/slider";
-import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
-import { Separator } from "@/components/ui/separator";
-import { Progress } from "@/components/ui/progress";
-import { ArrowRight, Swords, Shield, Zap } from "lucide-react";
-import { useDamageCalc } from "../hooks/use-damage-calc";
+import { useState, useCallback } from "react"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import {
-  POKEMON_TYPES, NATURES, STATS,
-  STAT_LABELS, STAT_COLORS, TYPE_COLORS, MAX_SINGLE_EV,
-  type PokemonType, type NatureName, type StatsTable, type DamageCalcInput,
-} from "@nasty-plot/core";
-import { cn } from "@/lib/utils";
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { Slider } from "@/components/ui/slider"
+import { Badge } from "@/components/ui/badge"
+import { Switch } from "@/components/ui/switch"
+import { Separator } from "@/components/ui/separator"
+import { Progress } from "@/components/ui/progress"
+import { ArrowRight, Swords, Shield, Zap } from "lucide-react"
+import { useDamageCalc } from "../hooks/use-damage-calc"
+import {
+  POKEMON_TYPES,
+  NATURES,
+  STATS,
+  STAT_LABELS,
+  STAT_COLORS,
+  TYPE_COLORS,
+  MAX_SINGLE_EV,
+  type PokemonType,
+  type NatureName,
+  type StatsTable,
+  type DamageCalcInput,
+} from "@nasty-plot/core"
+import { cn } from "@/lib/utils"
 
 interface PokemonConfig {
-  pokemonId: string;
-  level: number;
-  ability: string;
-  item: string;
-  nature: NatureName;
-  evs: StatsTable;
-  ivs: StatsTable;
-  boosts: StatsTable;
-  teraType: PokemonType | "";
-  status: string;
+  pokemonId: string
+  level: number
+  ability: string
+  item: string
+  nature: NatureName
+  evs: StatsTable
+  ivs: StatsTable
+  boosts: StatsTable
+  teraType: PokemonType | ""
+  status: string
 }
 
 const DEFAULT_CONFIG: PokemonConfig = {
@@ -44,39 +58,57 @@ const DEFAULT_CONFIG: PokemonConfig = {
   boosts: { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 },
   teraType: "",
   status: "",
-};
+}
 
-const WEATHERS = ["None", "Sun", "Rain", "Sand", "Snow", "Harsh Sunshine", "Heavy Rain", "Strong Winds"];
-const TERRAINS = ["None", "Electric", "Grassy", "Misty", "Psychic"];
-const STATUSES = ["None", "Healthy", "Burned", "Paralyzed", "Poisoned", "Badly Poisoned", "Asleep", "Frozen"];
-const BOOST_VALUES = [-6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6];
+const WEATHERS = [
+  "None",
+  "Sun",
+  "Rain",
+  "Sand",
+  "Snow",
+  "Harsh Sunshine",
+  "Heavy Rain",
+  "Strong Winds",
+]
+const TERRAINS = ["None", "Electric", "Grassy", "Misty", "Psychic"]
+const STATUSES = [
+  "None",
+  "Healthy",
+  "Burned",
+  "Paralyzed",
+  "Poisoned",
+  "Badly Poisoned",
+  "Asleep",
+  "Frozen",
+]
+const BOOST_VALUES = [-6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6]
 
 function PokemonPanel({
   label,
   config,
   onChange,
 }: {
-  label: string;
-  config: PokemonConfig;
-  onChange: (config: PokemonConfig) => void;
+  label: string
+  config: PokemonConfig
+  onChange: (config: PokemonConfig) => void
 }) {
   const updateField = <K extends keyof PokemonConfig>(key: K, value: PokemonConfig[K]) => {
-    onChange({ ...config, [key]: value });
-  };
+    onChange({ ...config, [key]: value })
+  }
 
   const updateEv = (stat: keyof StatsTable, value: number) => {
-    onChange({ ...config, evs: { ...config.evs, [stat]: value } });
-  };
+    onChange({ ...config, evs: { ...config.evs, [stat]: value } })
+  }
 
   const updateIv = (stat: keyof StatsTable, value: number) => {
-    onChange({ ...config, ivs: { ...config.ivs, [stat]: value } });
-  };
+    onChange({ ...config, ivs: { ...config.ivs, [stat]: value } })
+  }
 
   const updateBoost = (stat: keyof StatsTable, value: number) => {
-    onChange({ ...config, boosts: { ...config.boosts, [stat]: value } });
-  };
+    onChange({ ...config, boosts: { ...config.boosts, [stat]: value } })
+  }
 
-  const totalEvs = Object.values(config.evs).reduce((a, b) => a + b, 0);
+  const totalEvs = Object.values(config.evs).reduce((a, b) => a + b, 0)
 
   return (
     <Card className="flex-1">
@@ -135,7 +167,10 @@ function PokemonPanel({
         {/* Nature */}
         <div className="space-y-1.5">
           <Label className="text-xs">Nature</Label>
-          <Select value={config.nature} onValueChange={(v) => updateField("nature", v as NatureName)}>
+          <Select
+            value={config.nature}
+            onValueChange={(v) => updateField("nature", v as NatureName)}
+          >
             <SelectTrigger className="h-8 text-xs">
               <SelectValue />
             </SelectTrigger>
@@ -152,12 +187,17 @@ function PokemonPanel({
         {/* Tera Type */}
         <div className="space-y-1.5">
           <Label className="text-xs">Tera Type</Label>
-          <Select value={config.teraType || "none"} onValueChange={(v) => updateField("teraType", v === "none" ? "" : v as PokemonType)}>
+          <Select
+            value={config.teraType || "none"}
+            onValueChange={(v) => updateField("teraType", v === "none" ? "" : (v as PokemonType))}
+          >
             <SelectTrigger className="h-8 text-xs">
               <SelectValue placeholder="None" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="none" className="text-xs">None</SelectItem>
+              <SelectItem value="none" className="text-xs">
+                None
+              </SelectItem>
               {POKEMON_TYPES.map((t) => (
                 <SelectItem key={t} value={t} className="text-xs">
                   {t}
@@ -170,7 +210,10 @@ function PokemonPanel({
         {/* Status */}
         <div className="space-y-1.5">
           <Label className="text-xs">Status</Label>
-          <Select value={config.status || "None"} onValueChange={(v) => updateField("status", v === "None" ? "" : v)}>
+          <Select
+            value={config.status || "None"}
+            onValueChange={(v) => updateField("status", v === "None" ? "" : v)}
+          >
             <SelectTrigger className="h-8 text-xs">
               <SelectValue />
             </SelectTrigger>
@@ -190,7 +233,9 @@ function PokemonPanel({
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <Label className="text-xs font-medium">EVs</Label>
-            <span className={cn("text-xs", totalEvs > 510 ? "text-red-500" : "text-muted-foreground")}>
+            <span
+              className={cn("text-xs", totalEvs > 510 ? "text-red-500" : "text-muted-foreground")}
+            >
               {totalEvs}/510
             </span>
           </div>
@@ -212,7 +257,9 @@ function PokemonPanel({
                 min={0}
                 max={252}
                 value={config.evs[stat]}
-                onChange={(e) => updateEv(stat, Math.min(252, Math.max(0, parseInt(e.target.value) || 0)))}
+                onChange={(e) =>
+                  updateEv(stat, Math.min(252, Math.max(0, parseInt(e.target.value) || 0)))
+                }
                 className="w-14 h-7 text-xs text-center"
               />
             </div>
@@ -251,25 +298,25 @@ function PokemonPanel({
         </div>
       </CardContent>
     </Card>
-  );
+  )
 }
 
 export function DamageCalculator() {
-  const [attacker, setAttacker] = useState<PokemonConfig>({ ...DEFAULT_CONFIG });
-  const [defender, setDefender] = useState<PokemonConfig>({ ...DEFAULT_CONFIG });
-  const [moveName, setMoveName] = useState("");
-  const [weather, setWeather] = useState("None");
-  const [terrain, setTerrain] = useState("None");
-  const [isReflect, setIsReflect] = useState(false);
-  const [isLightScreen, setIsLightScreen] = useState(false);
-  const [isAuroraVeil, setIsAuroraVeil] = useState(false);
-  const [isCritical, setIsCritical] = useState(false);
-  const [isDoubles, setIsDoubles] = useState(false);
+  const [attacker, setAttacker] = useState<PokemonConfig>({ ...DEFAULT_CONFIG })
+  const [defender, setDefender] = useState<PokemonConfig>({ ...DEFAULT_CONFIG })
+  const [moveName, setMoveName] = useState("")
+  const [weather, setWeather] = useState("None")
+  const [terrain, setTerrain] = useState("None")
+  const [isReflect, setIsReflect] = useState(false)
+  const [isLightScreen, setIsLightScreen] = useState(false)
+  const [isAuroraVeil, setIsAuroraVeil] = useState(false)
+  const [isCritical, setIsCritical] = useState(false)
+  const [isDoubles, setIsDoubles] = useState(false)
 
-  const { mutate: calculate, data: result, isPending, error } = useDamageCalc();
+  const { mutate: calculate, data: result, isPending, error } = useDamageCalc()
 
   const handleCalculate = useCallback(() => {
-    if (!attacker.pokemonId || !defender.pokemonId || !moveName) return;
+    if (!attacker.pokemonId || !defender.pokemonId || !moveName) return
 
     const input: DamageCalcInput = {
       attacker: {
@@ -306,18 +353,30 @@ export function DamageCalculator() {
         isCritical,
         isDoubles,
       },
-    };
+    }
 
-    calculate(input);
-  }, [attacker, defender, moveName, weather, terrain, isReflect, isLightScreen, isAuroraVeil, isCritical, isDoubles, calculate]);
+    calculate(input)
+  }, [
+    attacker,
+    defender,
+    moveName,
+    weather,
+    terrain,
+    isReflect,
+    isLightScreen,
+    isAuroraVeil,
+    isCritical,
+    isDoubles,
+    calculate,
+  ])
 
   const getKoColor = (koChance: string) => {
-    if (koChance.includes("OHKO")) return "text-red-600 dark:text-red-400";
-    if (koChance.includes("2HKO")) return "text-orange-600 dark:text-orange-400";
-    if (koChance.includes("3HKO")) return "text-yellow-600 dark:text-yellow-400";
-    if (koChance.includes("4HKO")) return "text-green-600 dark:text-green-400";
-    return "text-muted-foreground";
-  };
+    if (koChance.includes("OHKO")) return "text-red-600 dark:text-red-400"
+    if (koChance.includes("2HKO")) return "text-orange-600 dark:text-orange-400"
+    if (koChance.includes("3HKO")) return "text-yellow-600 dark:text-yellow-400"
+    if (koChance.includes("4HKO")) return "text-green-600 dark:text-green-400"
+    return "text-muted-foreground"
+  }
 
   return (
     <div className="space-y-4">
@@ -357,7 +416,9 @@ export function DamageCalculator() {
                       </SelectTrigger>
                       <SelectContent>
                         {WEATHERS.map((w) => (
-                          <SelectItem key={w} value={w} className="text-xs">{w}</SelectItem>
+                          <SelectItem key={w} value={w} className="text-xs">
+                            {w}
+                          </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -371,7 +432,9 @@ export function DamageCalculator() {
                       </SelectTrigger>
                       <SelectContent>
                         {TERRAINS.map((t) => (
-                          <SelectItem key={t} value={t} className="text-xs">{t}</SelectItem>
+                          <SelectItem key={t} value={t} className="text-xs">
+                            {t}
+                          </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -381,23 +444,43 @@ export function DamageCalculator() {
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
                     <Label className="text-[10px]">Reflect</Label>
-                    <Switch checked={isReflect} onCheckedChange={setIsReflect} className="scale-75" />
+                    <Switch
+                      checked={isReflect}
+                      onCheckedChange={setIsReflect}
+                      className="scale-75"
+                    />
                   </div>
                   <div className="flex items-center justify-between">
                     <Label className="text-[10px]">Light Screen</Label>
-                    <Switch checked={isLightScreen} onCheckedChange={setIsLightScreen} className="scale-75" />
+                    <Switch
+                      checked={isLightScreen}
+                      onCheckedChange={setIsLightScreen}
+                      className="scale-75"
+                    />
                   </div>
                   <div className="flex items-center justify-between">
                     <Label className="text-[10px]">Aurora Veil</Label>
-                    <Switch checked={isAuroraVeil} onCheckedChange={setIsAuroraVeil} className="scale-75" />
+                    <Switch
+                      checked={isAuroraVeil}
+                      onCheckedChange={setIsAuroraVeil}
+                      className="scale-75"
+                    />
                   </div>
                   <div className="flex items-center justify-between">
                     <Label className="text-[10px]">Critical Hit</Label>
-                    <Switch checked={isCritical} onCheckedChange={setIsCritical} className="scale-75" />
+                    <Switch
+                      checked={isCritical}
+                      onCheckedChange={setIsCritical}
+                      className="scale-75"
+                    />
                   </div>
                   <div className="flex items-center justify-between">
                     <Label className="text-[10px]">Doubles</Label>
-                    <Switch checked={isDoubles} onCheckedChange={setIsDoubles} className="scale-75" />
+                    <Switch
+                      checked={isDoubles}
+                      onCheckedChange={setIsDoubles}
+                      className="scale-75"
+                    />
                   </div>
                 </div>
               </div>
@@ -446,7 +529,12 @@ export function DamageCalculator() {
                 </div>
 
                 {/* KO Chance */}
-                <div className={cn("text-sm font-semibold text-center py-1", getKoColor(result.koChance))}>
+                <div
+                  className={cn(
+                    "text-sm font-semibold text-center py-1",
+                    getKoColor(result.koChance),
+                  )}
+                >
                   {result.koChance}
                 </div>
 
@@ -473,5 +561,5 @@ export function DamageCalculator() {
         <PokemonPanel label="Defender" config={defender} onChange={setDefender} />
       </div>
     </div>
-  );
+  )
 }

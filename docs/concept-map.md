@@ -4,12 +4,12 @@ This document maps Aaron Traylor's five pillars of competitive Pokemon mastery t
 
 **Status legend:**
 
-| Status | Meaning |
-|--------|---------|
-| Exists | Working in the codebase today |
+| Status  | Meaning                               |
+| ------- | ------------------------------------- |
+| Exists  | Working in the codebase today         |
 | Partial | Code exists but incomplete or limited |
-| Planned | In roadmap or plan files |
-| Future | Aspirational, not yet scoped |
+| Planned | In roadmap or plan files              |
+| Future  | Aspirational, not yet scoped          |
 
 ---
 
@@ -19,25 +19,25 @@ This document maps Aaron Traylor's five pillars of competitive Pokemon mastery t
 
 ### Feature Map
 
-| Concept | Feature | Package / Key File | Status |
-|---------|---------|-------------------|--------|
-| Position evaluation | Weighted evaluator scores HP, alive count, hazards, status, matchup, screens | `packages/battle-engine/src/ai/evaluator.ts` | Exists |
-| Hazard value weights | SR: 200, Spikes: 150/layer, T-Spikes: 100/layer, Web: 120 | `packages/battle-engine/src/ai/evaluator.ts` (lines 34-37) | Exists |
-| Screen & Tailwind value | Reflect/Light Screen: 64, Aurora Veil: 80, Tailwind: 50 | `packages/battle-engine/src/ai/evaluator.ts` (lines 38-41) | Exists |
-| Status condition value | Burn/Toxic: 120, Paralysis: 100, Sleep: 110, Freeze: 110, Poison: 80 | `packages/battle-engine/src/ai/evaluator.ts` (lines 42-47) | Exists |
-| Win probability tracking | Maps evaluator score to win % via S-curve: `50 + 50 * sign(s) * |s|^0.85` | `packages/battle-engine/src/ai/win-probability.ts` | Exists |
-| Critical turn detection | Flags turns with >20% win probability swing | `packages/battle-engine/src/ai/win-probability.ts:winProbabilityDelta()` | Exists |
-| Win probability graph | Visual win % over time in replay/live battle | `apps/web/src/features/battle/components/WinProbabilityGraph.tsx` | Exists |
-| Eval bar (engine bar) | Chess-style evaluation bar showing position advantage | `apps/web/src/features/battle/components/EvalBar.tsx` | Exists |
-| Replay engine | Reconstructs battle state from protocol log, builds per-turn frames | `packages/battle-engine/src/replay/replay-engine.ts` | Exists |
-| Replay controls | Scrub through turns, step forward/back, auto-play | `apps/web/src/features/battle/components/ReplayControls.tsx` | Exists |
-| Battle log | Color-coded entries for moves, damage, status, faints, hazards | `apps/web/src/features/battle/components/BattleLog.tsx` | Exists |
-| Setup move scoring | Hint engine scores Swords Dance, Nasty Plot, Calm Mind based on HP and matchup | `packages/battle-engine/src/ai/hint-engine.ts` (lines 169-172) | Exists |
-| Recovery move scoring | Hint engine scores Roost, Recover etc. higher when HP is low | `packages/battle-engine/src/ai/hint-engine.ts` (lines 175-179) | Exists |
-| Hazard-aware switching | Switch score penalized by own-side hazards (SR: -10, Spikes: -5/layer, Web: -5) | `packages/battle-engine/src/ai/hint-engine.ts` (lines 219-222) | Exists |
-| Sacrificial play teaching | Explain why a sacrifice preserves a win condition | -- | Future |
-| Win condition identification | Detect which Pokemon is the team's sweeper/breaker/wincon | -- | Future |
-| Multi-turn plan display | Show the AI's intended sequence of plays (not just next move) | -- | Future |
+| Concept                      | Feature                                                                         | Package / Key File                                                       | Status |
+| ---------------------------- | ------------------------------------------------------------------------------- | ------------------------------------------------------------------------ | ------ | -------------------------------------------------- | ------ |
+| Position evaluation          | Weighted evaluator scores HP, alive count, hazards, status, matchup, screens    | `packages/battle-engine/src/ai/evaluator.ts`                             | Exists |
+| Hazard value weights         | SR: 200, Spikes: 150/layer, T-Spikes: 100/layer, Web: 120                       | `packages/battle-engine/src/ai/evaluator.ts` (lines 34-37)               | Exists |
+| Screen & Tailwind value      | Reflect/Light Screen: 64, Aurora Veil: 80, Tailwind: 50                         | `packages/battle-engine/src/ai/evaluator.ts` (lines 38-41)               | Exists |
+| Status condition value       | Burn/Toxic: 120, Paralysis: 100, Sleep: 110, Freeze: 110, Poison: 80            | `packages/battle-engine/src/ai/evaluator.ts` (lines 42-47)               | Exists |
+| Win probability tracking     | Maps evaluator score to win % via S-curve: `50 + 50 _ sign(s) _                 | s                                                                        | ^0.85` | `packages/battle-engine/src/ai/win-probability.ts` | Exists |
+| Critical turn detection      | Flags turns with >20% win probability swing                                     | `packages/battle-engine/src/ai/win-probability.ts:winProbabilityDelta()` | Exists |
+| Win probability graph        | Visual win % over time in replay/live battle                                    | `apps/web/src/features/battle/components/WinProbabilityGraph.tsx`        | Exists |
+| Eval bar (engine bar)        | Chess-style evaluation bar showing position advantage                           | `apps/web/src/features/battle/components/EvalBar.tsx`                    | Exists |
+| Replay engine                | Reconstructs battle state from protocol log, builds per-turn frames             | `packages/battle-engine/src/replay/replay-engine.ts`                     | Exists |
+| Replay controls              | Scrub through turns, step forward/back, auto-play                               | `apps/web/src/features/battle/components/ReplayControls.tsx`             | Exists |
+| Battle log                   | Color-coded entries for moves, damage, status, faints, hazards                  | `apps/web/src/features/battle/components/BattleLog.tsx`                  | Exists |
+| Setup move scoring           | Hint engine scores Swords Dance, Nasty Plot, Calm Mind based on HP and matchup  | `packages/battle-engine/src/ai/hint-engine.ts` (lines 169-172)           | Exists |
+| Recovery move scoring        | Hint engine scores Roost, Recover etc. higher when HP is low                    | `packages/battle-engine/src/ai/hint-engine.ts` (lines 175-179)           | Exists |
+| Hazard-aware switching       | Switch score penalized by own-side hazards (SR: -10, Spikes: -5/layer, Web: -5) | `packages/battle-engine/src/ai/hint-engine.ts` (lines 219-222)           | Exists |
+| Sacrificial play teaching    | Explain why a sacrifice preserves a win condition                               | --                                                                       | Future |
+| Win condition identification | Detect which Pokemon is the team's sweeper/breaker/wincon                       | --                                                                       | Future |
+| Multi-turn plan display      | Show the AI's intended sequence of plays (not just next move)                   | --                                                                       | Future |
 
 ### Implementation Notes
 
@@ -53,24 +53,24 @@ The win probability module maps this normalized score to a percentage, and `winP
 
 ### Feature Map
 
-| Concept | Feature | Package / Key File | Status |
-|---------|---------|-------------------|--------|
-| DUCT algorithm | Decoupled UCT for simultaneous-move games; maintains independent per-player UCB1 statistics | `packages/battle-engine/src/ai/mcts-ai.ts` | Exists |
-| MCTS configuration | 10K iterations, 5s time limit, 0.7 exploration, depth-4 rollouts (defaults) | `packages/battle-engine/src/ai/mcts-types.ts` (`DEFAULT_MCTS_CONFIG`) | Exists |
-| DUCT tree structure | `DUCTNode` with separate `p1Stats` / `p2Stats` maps + joint action statistics | `packages/battle-engine/src/ai/mcts-types.ts` | Exists |
-| UCB1 selection | Exploration-exploitation balance per player, unvisited actions prioritized | `packages/battle-engine/src/ai/mcts-ai.ts:selectUCB1()` | Exists |
-| Battle cloning | Deep-clone `@pkmn/sim` Battle for MCTS rollouts | `packages/battle-engine/src/ai/battle-cloner.ts` | Exists |
-| Hint engine | Ranks all legal moves by estimated value, shows best/good/neutral/inaccuracy/mistake/blunder | `packages/battle-engine/src/ai/hint-engine.ts` | Exists |
-| Move classification | Gap-based: best (0), good (<=5), neutral (<=15), inaccuracy (<=30), mistake (<=60), blunder (>60) | `packages/battle-engine/src/ai/hint-engine.ts:classifyGap()` | Exists |
-| Hint panel UI | Displays ranked moves with classification badges and explanations | `apps/web/src/features/battle/components/HintPanel.tsx` | Exists |
-| Greedy AI | Always picks highest-damage move; baseline opponent | `packages/battle-engine/src/ai/greedy-ai.ts` | Exists |
-| Heuristic AI | Type matchup awareness, situational status/hazard/recovery moves, switching logic | `packages/battle-engine/src/ai/heuristic-ai.ts` | Exists |
-| Random AI | Uniform random move selection; floor opponent | `packages/battle-engine/src/ai/random-ai.ts` | Exists |
-| Move selector UI | Shows available moves with type badges, PP, disabled state | `apps/web/src/features/battle/components/MoveSelector.tsx` | Exists |
-| Switch menu UI | Shows bench Pokemon with HP, status, and type info for switch decisions | `apps/web/src/features/battle/components/SwitchMenu.tsx` | Exists |
-| Game theory matrix display | Visual payoff matrix showing outcomes for each move pair | -- | Future |
-| Nash equilibrium calculator | Compute mixed strategy Nash equilibria for simplified move matrices | -- | Future |
-| Prediction reasoning | Show why the AI expects a particular opponent action | -- | Future |
+| Concept                     | Feature                                                                                           | Package / Key File                                                    | Status |
+| --------------------------- | ------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- | ------ |
+| DUCT algorithm              | Decoupled UCT for simultaneous-move games; maintains independent per-player UCB1 statistics       | `packages/battle-engine/src/ai/mcts-ai.ts`                            | Exists |
+| MCTS configuration          | 10K iterations, 5s time limit, 0.7 exploration, depth-4 rollouts (defaults)                       | `packages/battle-engine/src/ai/mcts-types.ts` (`DEFAULT_MCTS_CONFIG`) | Exists |
+| DUCT tree structure         | `DUCTNode` with separate `p1Stats` / `p2Stats` maps + joint action statistics                     | `packages/battle-engine/src/ai/mcts-types.ts`                         | Exists |
+| UCB1 selection              | Exploration-exploitation balance per player, unvisited actions prioritized                        | `packages/battle-engine/src/ai/mcts-ai.ts:selectUCB1()`               | Exists |
+| Battle cloning              | Deep-clone `@pkmn/sim` Battle for MCTS rollouts                                                   | `packages/battle-engine/src/ai/battle-cloner.ts`                      | Exists |
+| Hint engine                 | Ranks all legal moves by estimated value, shows best/good/neutral/inaccuracy/mistake/blunder      | `packages/battle-engine/src/ai/hint-engine.ts`                        | Exists |
+| Move classification         | Gap-based: best (0), good (<=5), neutral (<=15), inaccuracy (<=30), mistake (<=60), blunder (>60) | `packages/battle-engine/src/ai/hint-engine.ts:classifyGap()`          | Exists |
+| Hint panel UI               | Displays ranked moves with classification badges and explanations                                 | `apps/web/src/features/battle/components/HintPanel.tsx`               | Exists |
+| Greedy AI                   | Always picks highest-damage move; baseline opponent                                               | `packages/battle-engine/src/ai/greedy-ai.ts`                          | Exists |
+| Heuristic AI                | Type matchup awareness, situational status/hazard/recovery moves, switching logic                 | `packages/battle-engine/src/ai/heuristic-ai.ts`                       | Exists |
+| Random AI                   | Uniform random move selection; floor opponent                                                     | `packages/battle-engine/src/ai/random-ai.ts`                          | Exists |
+| Move selector UI            | Shows available moves with type badges, PP, disabled state                                        | `apps/web/src/features/battle/components/MoveSelector.tsx`            | Exists |
+| Switch menu UI              | Shows bench Pokemon with HP, status, and type info for switch decisions                           | `apps/web/src/features/battle/components/SwitchMenu.tsx`              | Exists |
+| Game theory matrix display  | Visual payoff matrix showing outcomes for each move pair                                          | --                                                                    | Future |
+| Nash equilibrium calculator | Compute mixed strategy Nash equilibria for simplified move matrices                               | --                                                                    | Future |
+| Prediction reasoning        | Show why the AI expects a particular opponent action                                              | --                                                                    | Future |
 
 ### Implementation Notes
 
@@ -88,22 +88,22 @@ The four AI difficulty levels form a progression: Random (uniform) -> Greedy (ma
 
 ### Feature Map
 
-| Concept | Feature | Package / Key File | Status |
-|---------|---------|-------------------|--------|
-| Set predictor | Bayesian belief tracking: initializes from Smogon sets with uniform prior | `packages/battle-engine/src/ai/set-predictor.ts` | Exists |
-| Move observation updates | Observing a move multiplies non-matching set probabilities by 0.01 (near-zero) | `packages/battle-engine/src/ai/set-predictor.ts:updateFromObservation()` | Exists |
-| Item observation updates | Revealed item eliminates sets with different items | `packages/battle-engine/src/ai/set-predictor.ts:updateFromObservation()` | Exists |
-| Ability observation updates | Revealed ability eliminates sets with different abilities | `packages/battle-engine/src/ai/set-predictor.ts:updateFromObservation()` | Exists |
-| Probability re-normalization | After each observation, probabilities re-normalized to sum to 1 | `packages/battle-engine/src/ai/set-predictor.ts` (lines 86-88) | Exists |
-| Set sampling | Weighted random sampling from posterior distribution for MCTS determinization | `packages/battle-engine/src/ai/set-predictor.ts:sampleSet()` | Exists |
-| Smogon sets database | Per-format recommended movesets stored in DB, fetched via API | `SmogonSet` model, `GET /api/pokemon/[id]/sets` | Exists |
-| Team Preview UI | Shows opponent's 6 Pokemon before battle, player selects lead order | `apps/web/src/features/battle/components/TeamPreview.tsx` | Exists |
-| Usage statistics | Monthly usage percentages per format, stored and queryable | `UsageStats` model, `packages/smogon-data/` | Exists |
-| Teammate correlations | Pair-wise correlation data: "If X is on a team, Y appears N% of the time" | `TeammateCorr` model, `packages/smogon-data/` | Exists |
-| Protocol parser (info reveal) | Parses `|move|`, `|-item|`, `|-ability|` protocol lines to detect reveals | `packages/battle-engine/src/protocol-parser.ts` | Exists |
-| Opponent set display | Show predicted remaining sets for opponent Pokemon based on observations | -- | Planned |
-| Deduction walkthrough | Step-by-step display: "They used X, so it's probably Y set because..." | -- | Future |
-| Team Preview puzzle mode | Practice deducing opponent strategy from 6-Pokemon preview alone | -- | Future |
+| Concept                       | Feature                                                                        | Package / Key File                                                       | Status  |
+| ----------------------------- | ------------------------------------------------------------------------------ | ------------------------------------------------------------------------ | ------- | ----- | ---- | -------- | ---------------------------------- | ----------------------------------------------- | ------ |
+| Set predictor                 | Bayesian belief tracking: initializes from Smogon sets with uniform prior      | `packages/battle-engine/src/ai/set-predictor.ts`                         | Exists  |
+| Move observation updates      | Observing a move multiplies non-matching set probabilities by 0.01 (near-zero) | `packages/battle-engine/src/ai/set-predictor.ts:updateFromObservation()` | Exists  |
+| Item observation updates      | Revealed item eliminates sets with different items                             | `packages/battle-engine/src/ai/set-predictor.ts:updateFromObservation()` | Exists  |
+| Ability observation updates   | Revealed ability eliminates sets with different abilities                      | `packages/battle-engine/src/ai/set-predictor.ts:updateFromObservation()` | Exists  |
+| Probability re-normalization  | After each observation, probabilities re-normalized to sum to 1                | `packages/battle-engine/src/ai/set-predictor.ts` (lines 86-88)           | Exists  |
+| Set sampling                  | Weighted random sampling from posterior distribution for MCTS determinization  | `packages/battle-engine/src/ai/set-predictor.ts:sampleSet()`             | Exists  |
+| Smogon sets database          | Per-format recommended movesets stored in DB, fetched via API                  | `SmogonSet` model, `GET /api/pokemon/[id]/sets`                          | Exists  |
+| Team Preview UI               | Shows opponent's 6 Pokemon before battle, player selects lead order            | `apps/web/src/features/battle/components/TeamPreview.tsx`                | Exists  |
+| Usage statistics              | Monthly usage percentages per format, stored and queryable                     | `UsageStats` model, `packages/smogon-data/`                              | Exists  |
+| Teammate correlations         | Pair-wise correlation data: "If X is on a team, Y appears N% of the time"      | `TeammateCorr` model, `packages/smogon-data/`                            | Exists  |
+| Protocol parser (info reveal) | Parses `                                                                       | move                                                                     | `, `    | -item | `, ` | -ability | ` protocol lines to detect reveals | `packages/battle-engine/src/protocol-parser.ts` | Exists |
+| Opponent set display          | Show predicted remaining sets for opponent Pokemon based on observations       | --                                                                       | Planned |
+| Deduction walkthrough         | Step-by-step display: "They used X, so it's probably Y set because..."         | --                                                                       | Future  |
+| Team Preview puzzle mode      | Practice deducing opponent strategy from 6-Pokemon preview alone               | --                                                                       | Future  |
 
 ### Implementation Notes
 
@@ -121,25 +121,25 @@ The data pipeline (`packages/smogon-data/`) seeds the database with Smogon usage
 
 ### Feature Map
 
-| Concept | Feature | Package / Key File | Status |
-|---------|---------|-------------------|--------|
-| Damage calculator | `@smogon/calc` wrapper with full EV/IV/nature/item/ability/field support | `packages/damage-calc/src/calc.service.ts` | Exists |
-| 16 damage rolls | `flattenDamage()` preserves all 16 roll values from `@smogon/calc` output | `packages/damage-calc/src/calc.service.ts:flattenDamage()` | Exists |
-| KO chance strings | "guaranteed OHKO", "possible 2HKO", "5+ hits to KO" from min/max damage rolls | `packages/damage-calc/src/calc.service.ts:deriveKoChance()` | Exists |
-| Damage description | Full calc string: "252 Atk Great Tusk Headlong Rush vs 0/4 Iron Valiant: 85.2-100.3%" | `packages/damage-calc/src/calc.service.ts` (via `result.desc()`) | Exists |
-| Matchup matrix | Team-vs-threats grid: best move + max damage % + KO chance for every pair | `packages/damage-calc/src/calc.service.ts:calculateMatchupMatrix()` | Exists |
-| Damage calc page | Interactive UI for running calcs with EV/move/field selectors | `apps/web/src/app/damage-calc/page.tsx` | Planned |
-| Win probability estimation | Evaluator score mapped to win % through S-curve (not pure expected value) | `packages/battle-engine/src/ai/win-probability.ts:scoreToProbability()` | Exists |
-| Hint engine KO bonuses | Guaranteed KO: +80 score, partial KO: +40 + (chance * 40) | `packages/battle-engine/src/ai/hint-engine.ts` (lines 88-98) | Exists |
-| Priority move bonus | +20 score when opponent <30% HP and move has positive priority | `packages/battle-engine/src/ai/hint-engine.ts` (lines 101-104) | Exists |
-| Accuracy in move data | Move accuracy stored in `MoveData` type, available throughout the stack | `packages/core/src/types.ts` | Exists |
-| Field conditions | Weather, terrain, screens, Trick Room affect damage calculations | `packages/damage-calc/src/calc.service.ts:buildField()` | Exists |
-| Status effect on calc | Burn halves attack, paralysis quarters speed, etc. integrated into calc | `packages/damage-calc/src/calc.service.ts:toCalcStatus()` | Exists |
-| Crit detection in battle | Protocol parser flags `|-crit|` events for log and commentary | `packages/battle-engine/src/protocol-parser.ts` | Exists |
-| Super effective detection | Protocol parser flags `|-supereffective|` events | `packages/battle-engine/src/protocol-parser.ts` | Exists |
-| EV optimization teaching | Explain why specific EV spreads hit benchmarks (survive X, outspeed Y) | -- | Future |
-| Risk/reward analysis | Show expected value of risky plays (Focus Blast vs Thunderbolt) | -- | Future |
-| Damage roll visualization | Show the 16-value distribution as a histogram, highlight KO threshold | -- | Future |
+| Concept                    | Feature                                                                               | Package / Key File                                                      | Status                          |
+| -------------------------- | ------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- | ------------------------------- | ----------------------------------------------- | ------ |
+| Damage calculator          | `@smogon/calc` wrapper with full EV/IV/nature/item/ability/field support              | `packages/damage-calc/src/calc.service.ts`                              | Exists                          |
+| 16 damage rolls            | `flattenDamage()` preserves all 16 roll values from `@smogon/calc` output             | `packages/damage-calc/src/calc.service.ts:flattenDamage()`              | Exists                          |
+| KO chance strings          | "guaranteed OHKO", "possible 2HKO", "5+ hits to KO" from min/max damage rolls         | `packages/damage-calc/src/calc.service.ts:deriveKoChance()`             | Exists                          |
+| Damage description         | Full calc string: "252 Atk Great Tusk Headlong Rush vs 0/4 Iron Valiant: 85.2-100.3%" | `packages/damage-calc/src/calc.service.ts` (via `result.desc()`)        | Exists                          |
+| Matchup matrix             | Team-vs-threats grid: best move + max damage % + KO chance for every pair             | `packages/damage-calc/src/calc.service.ts:calculateMatchupMatrix()`     | Exists                          |
+| Damage calc page           | Interactive UI for running calcs with EV/move/field selectors                         | `apps/web/src/app/damage-calc/page.tsx`                                 | Planned                         |
+| Win probability estimation | Evaluator score mapped to win % through S-curve (not pure expected value)             | `packages/battle-engine/src/ai/win-probability.ts:scoreToProbability()` | Exists                          |
+| Hint engine KO bonuses     | Guaranteed KO: +80 score, partial KO: +40 + (chance \* 40)                            | `packages/battle-engine/src/ai/hint-engine.ts` (lines 88-98)            | Exists                          |
+| Priority move bonus        | +20 score when opponent <30% HP and move has positive priority                        | `packages/battle-engine/src/ai/hint-engine.ts` (lines 101-104)          | Exists                          |
+| Accuracy in move data      | Move accuracy stored in `MoveData` type, available throughout the stack               | `packages/core/src/types.ts`                                            | Exists                          |
+| Field conditions           | Weather, terrain, screens, Trick Room affect damage calculations                      | `packages/damage-calc/src/calc.service.ts:buildField()`                 | Exists                          |
+| Status effect on calc      | Burn halves attack, paralysis quarters speed, etc. integrated into calc               | `packages/damage-calc/src/calc.service.ts:toCalcStatus()`               | Exists                          |
+| Crit detection in battle   | Protocol parser flags `                                                               | -crit                                                                   | ` events for log and commentary | `packages/battle-engine/src/protocol-parser.ts` | Exists |
+| Super effective detection  | Protocol parser flags `                                                               | -supereffective                                                         | ` events                        | `packages/battle-engine/src/protocol-parser.ts` | Exists |
+| EV optimization teaching   | Explain why specific EV spreads hit benchmarks (survive X, outspeed Y)                | --                                                                      | Future                          |
+| Risk/reward analysis       | Show expected value of risky plays (Focus Blast vs Thunderbolt)                       | --                                                                      | Future                          |
+| Damage roll visualization  | Show the 16-value distribution as a histogram, highlight KO threshold                 | --                                                                      | Future                          |
 
 ### Implementation Notes
 
@@ -157,40 +157,41 @@ The matchup matrix (`calculateMatchupMatrix()`) is particularly useful for team 
 
 ### Feature Map
 
-| Concept | Feature | Package / Key File | Status |
-|---------|---------|-------------------|--------|
-| Team CRUD | Create, read, update, delete teams with full slot management | `packages/teams/`, API: `GET/POST /api/teams` | Exists |
-| Team slot management | Add, update, remove Pokemon in positions 1-6 with full set data | `packages/teams/`, API: `GET/POST/PUT/DELETE /api/teams/[teamId]/slots` | Exists |
-| Showdown paste import | Parse standard Showdown format into `TeamSlotData[]` | `packages/core/src/showdown-paste.ts` | Exists |
-| Showdown paste export | Convert team to standard Showdown paste text | `packages/core/src/showdown-paste.ts`, API: `GET /api/teams/[teamId]/export` | Exists |
-| Type coverage analysis | Team-level defensive and offensive type coverage grids | `packages/analysis/src/coverage.service.ts` | Exists |
-| Threat identification | Identify meta threats the team struggles against | `packages/analysis/src/threat.service.ts` | Exists |
-| Synergy scoring | Evaluate type synergy and role complementarity between teammates | `packages/analysis/src/synergy.service.ts` | Exists |
-| Composite analysis | Full team analysis combining coverage, threats, and synergy | `packages/analysis/src/analysis.service.ts` | Exists |
-| Coverage-based recommendations | Suggest Pokemon that patch type coverage gaps | `packages/recommendations/src/coverage-recommender.ts` | Exists |
-| Usage-based recommendations | Suggest Pokemon based on Smogon usage and teammate correlations | `packages/recommendations/src/usage-recommender.ts` | Exists |
-| Composite recommendations | Blend coverage + usage scores for weighted recommendations | `packages/recommendations/src/composite-recommender.ts` | Exists |
-| Teammate correlations | "Pokemon X appears on Y% of teams with Pokemon Z" from usage data | `TeammateCorr` model, `packages/smogon-data/` | Exists |
-| Format definitions | OU, UU, RU, NU, PU, Ubers, VGC — with rule sets and banlists | `packages/formats/src/format.service.ts` | Exists |
-| Legality checking | Validate Pokemon, moves, abilities, items against format rules | `packages/formats/src/format.service.ts` | Exists |
-| Team validation | Full validation: format legality, clause compliance, move legality | `packages/teams/src/validation.service.ts` | Exists |
-| Batch simulation | Run N games between two teams with concurrency and analytics | `packages/battle-engine/src/simulation/batch-simulator.ts` | Exists |
-| Per-Pokemon batch stats | Track KOs, faints, appearances across batch simulations | `packages/battle-engine/src/simulation/batch-simulator.ts:PokemonStats` | Exists |
-| Turn distribution | Histogram of game lengths from batch simulation | `packages/battle-engine/src/simulation/batch-simulator.ts:BatchAnalytics` | Exists |
-| Sample teams | Pre-built reference teams with archetype tags (HO, Balance, Stall, etc.) | `packages/teams/src/sample-team.service.ts` | Exists |
-| Sample team browser | Browse, search, and copy sample teams by format/archetype | `apps/web/src/app/battle/sample-teams/page.tsx` | Exists |
-| Guided builder mode | Step-by-step team building with recommendations at each step | Team `mode: "guided"`, `apps/web/src/app/teams/[teamId]/guided` | Exists |
-| Pokemon browser | Search, filter, and explore all Pokemon with stats and types | `apps/web/src/app/pokemon/page.tsx` | Exists |
-| Pokemon detail page | Full species info: stats, abilities, type matchups, learnset, Smogon sets | `apps/web/src/app/pokemon/[id]/page.tsx` | Exists |
-| Item combobox | Searchable item selector in slot editor | `apps/web/src/features/team-builder/components/item-combobox.tsx` | Exists |
-| Simulate page | Batch simulation setup: pick teams, AI difficulty, game count | `apps/web/src/app/battle/simulate/page.tsx` | Exists |
-| Team versioning | Branch/fork teams to compare variants (A/B testing) | -- | Planned |
-| Meta profile snapshots | Capture meta state at a point in time to track meta shifts | -- | Future |
-| Build constraints | "Build me a team that beats these 5 Pokemon" as a constraint solver | -- | Future |
+| Concept                        | Feature                                                                   | Package / Key File                                                           | Status  |
+| ------------------------------ | ------------------------------------------------------------------------- | ---------------------------------------------------------------------------- | ------- |
+| Team CRUD                      | Create, read, update, delete teams with full slot management              | `packages/teams/`, API: `GET/POST /api/teams`                                | Exists  |
+| Team slot management           | Add, update, remove Pokemon in positions 1-6 with full set data           | `packages/teams/`, API: `GET/POST/PUT/DELETE /api/teams/[teamId]/slots`      | Exists  |
+| Showdown paste import          | Parse standard Showdown format into `TeamSlotData[]`                      | `packages/core/src/showdown-paste.ts`                                        | Exists  |
+| Showdown paste export          | Convert team to standard Showdown paste text                              | `packages/core/src/showdown-paste.ts`, API: `GET /api/teams/[teamId]/export` | Exists  |
+| Type coverage analysis         | Team-level defensive and offensive type coverage grids                    | `packages/analysis/src/coverage.service.ts`                                  | Exists  |
+| Threat identification          | Identify meta threats the team struggles against                          | `packages/analysis/src/threat.service.ts`                                    | Exists  |
+| Synergy scoring                | Evaluate type synergy and role complementarity between teammates          | `packages/analysis/src/synergy.service.ts`                                   | Exists  |
+| Composite analysis             | Full team analysis combining coverage, threats, and synergy               | `packages/analysis/src/analysis.service.ts`                                  | Exists  |
+| Coverage-based recommendations | Suggest Pokemon that patch type coverage gaps                             | `packages/recommendations/src/coverage-recommender.ts`                       | Exists  |
+| Usage-based recommendations    | Suggest Pokemon based on Smogon usage and teammate correlations           | `packages/recommendations/src/usage-recommender.ts`                          | Exists  |
+| Composite recommendations      | Blend coverage + usage scores for weighted recommendations                | `packages/recommendations/src/composite-recommender.ts`                      | Exists  |
+| Teammate correlations          | "Pokemon X appears on Y% of teams with Pokemon Z" from usage data         | `TeammateCorr` model, `packages/smogon-data/`                                | Exists  |
+| Format definitions             | OU, UU, RU, NU, PU, Ubers, VGC — with rule sets and banlists              | `packages/formats/src/format.service.ts`                                     | Exists  |
+| Legality checking              | Validate Pokemon, moves, abilities, items against format rules            | `packages/formats/src/format.service.ts`                                     | Exists  |
+| Team validation                | Full validation: format legality, clause compliance, move legality        | `packages/teams/src/validation.service.ts`                                   | Exists  |
+| Batch simulation               | Run N games between two teams with concurrency and analytics              | `packages/battle-engine/src/simulation/batch-simulator.ts`                   | Exists  |
+| Per-Pokemon batch stats        | Track KOs, faints, appearances across batch simulations                   | `packages/battle-engine/src/simulation/batch-simulator.ts:PokemonStats`      | Exists  |
+| Turn distribution              | Histogram of game lengths from batch simulation                           | `packages/battle-engine/src/simulation/batch-simulator.ts:BatchAnalytics`    | Exists  |
+| Sample teams                   | Pre-built reference teams with archetype tags (HO, Balance, Stall, etc.)  | `packages/teams/src/sample-team.service.ts`                                  | Exists  |
+| Sample team browser            | Browse, search, and copy sample teams by format/archetype                 | `apps/web/src/app/battle/sample-teams/page.tsx`                              | Exists  |
+| Guided builder mode            | Step-by-step team building with recommendations at each step              | Team `mode: "guided"`, `apps/web/src/app/teams/[teamId]/guided`              | Exists  |
+| Pokemon browser                | Search, filter, and explore all Pokemon with stats and types              | `apps/web/src/app/pokemon/page.tsx`                                          | Exists  |
+| Pokemon detail page            | Full species info: stats, abilities, type matchups, learnset, Smogon sets | `apps/web/src/app/pokemon/[id]/page.tsx`                                     | Exists  |
+| Item combobox                  | Searchable item selector in slot editor                                   | `apps/web/src/features/team-builder/components/item-combobox.tsx`            | Exists  |
+| Simulate page                  | Batch simulation setup: pick teams, AI difficulty, game count             | `apps/web/src/app/battle/simulate/page.tsx`                                  | Exists  |
+| Team versioning                | Branch/fork teams to compare variants (A/B testing)                       | --                                                                           | Planned |
+| Meta profile snapshots         | Capture meta state at a point in time to track meta shifts                | --                                                                           | Future  |
+| Build constraints              | "Build me a team that beats these 5 Pokemon" as a constraint solver       | --                                                                           | Future  |
 
 ### Implementation Notes
 
 Team building is powered by the interplay of multiple packages:
+
 - **`teams`** handles persistence and CRUD
 - **`analysis`** evaluates what the team has and lacks
 - **`recommendations`** suggests what to add
@@ -210,29 +211,29 @@ The LLM assistant bridges all five pillars through natural language interaction.
 
 ### Feature Map
 
-| Concept | Feature | Package / Key File | Status |
-|---------|---------|-------------------|--------|
-| Chat service | OpenAI-powered conversational assistant with streaming responses | `packages/llm/src/chat.service.ts` | Exists |
-| Chat session management | Persistent sessions with message history, tied to teams | `packages/llm/src/chat-session.service.ts` | Exists |
-| Team context injection | Automatically injects current team details into system prompt | `packages/llm/src/context-builder.ts:buildTeamContext()` | Exists |
-| Meta context injection | Injects top-N usage stats for the team's format into prompt | `packages/llm/src/context-builder.ts:buildMetaContext()` | Exists |
-| Pokemon context injection | Injects species details when user is viewing a Pokemon page | `packages/llm/src/context-builder.ts:buildPokemonContext()` | Exists |
-| Page-aware context | Determines context from current page route (team editor, battle, etc.) | `packages/llm/src/context-builder.ts:buildPageContextPrompt()` | Exists |
-| Battle context builder | Generates turn-by-turn commentary prompts from battle state | `packages/llm/src/battle-context-builder.ts:buildTurnCommentaryContext()` | Exists |
-| Post-battle analysis | Summarizes key moments, KOs, turning points after battle ends | `packages/llm/src/battle-context-builder.ts:buildPostBattleContext()` | Exists |
-| Turn-specific analysis | Deep analysis of a specific turn: was the play optimal? alternatives? | `packages/llm/src/battle-context-builder.ts:buildTurnAnalysisContext()` | Exists |
-| Plan mode | LLM generates step-by-step plans for complex tasks, tracks step completion | `packages/llm/src/context-builder.ts:buildPlanModePrompt()` | Exists |
-| Stream parser | Detects `<plan>`, `<step>`, `<step_update>` XML tags in streaming content | `packages/llm/src/stream-parser.ts:StreamParser` | Exists |
-| SSE events | Typed event system: content, tool_start/end, plan_start/step_update, errors | `packages/llm/src/sse-events.ts` | Exists |
-| Tool context filtering | Restricts available MCP tools based on current page (team editor vs battle) | `packages/llm/src/tool-context.ts` | Exists |
-| MCP server | 24 tools across 4 categories: data query (7), analysis (6), team CRUD (6), meta recs (5) | `packages/mcp-server/` | Exists |
-| MCP resources | 5 static resources: type chart, formats, natures, stat formulas, viability | `packages/mcp-server/src/resources/` | Exists |
-| Chat UI components | Message display, input, tool call visualization, plan display, session list | `apps/web/src/features/chat/components/` | Exists |
-| Chat FAB | Floating action button for quick access to chat from any page | `apps/web/src/components/chat-fab.tsx` | Exists |
-| Chat sidebar | Resizable sidebar chat panel integrated into app shell | `apps/web/src/components/chat-sidebar.tsx` | Exists |
-| Live battle commentary | AI-generated commentary during live battles | `packages/llm/src/battle-context-builder.ts`, `CommentaryPanel.tsx` | Exists |
-| Coaching sessions | Multi-turn coaching: "Why did I lose?" with battle replay context | -- | Planned |
-| Proactive suggestions | LLM notices team weaknesses and suggests fixes without being asked | -- | Future |
+| Concept                   | Feature                                                                                  | Package / Key File                                                        | Status  |
+| ------------------------- | ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- | ------- |
+| Chat service              | OpenAI-powered conversational assistant with streaming responses                         | `packages/llm/src/chat.service.ts`                                        | Exists  |
+| Chat session management   | Persistent sessions with message history, tied to teams                                  | `packages/llm/src/chat-session.service.ts`                                | Exists  |
+| Team context injection    | Automatically injects current team details into system prompt                            | `packages/llm/src/context-builder.ts:buildTeamContext()`                  | Exists  |
+| Meta context injection    | Injects top-N usage stats for the team's format into prompt                              | `packages/llm/src/context-builder.ts:buildMetaContext()`                  | Exists  |
+| Pokemon context injection | Injects species details when user is viewing a Pokemon page                              | `packages/llm/src/context-builder.ts:buildPokemonContext()`               | Exists  |
+| Page-aware context        | Determines context from current page route (team editor, battle, etc.)                   | `packages/llm/src/context-builder.ts:buildPageContextPrompt()`            | Exists  |
+| Battle context builder    | Generates turn-by-turn commentary prompts from battle state                              | `packages/llm/src/battle-context-builder.ts:buildTurnCommentaryContext()` | Exists  |
+| Post-battle analysis      | Summarizes key moments, KOs, turning points after battle ends                            | `packages/llm/src/battle-context-builder.ts:buildPostBattleContext()`     | Exists  |
+| Turn-specific analysis    | Deep analysis of a specific turn: was the play optimal? alternatives?                    | `packages/llm/src/battle-context-builder.ts:buildTurnAnalysisContext()`   | Exists  |
+| Plan mode                 | LLM generates step-by-step plans for complex tasks, tracks step completion               | `packages/llm/src/context-builder.ts:buildPlanModePrompt()`               | Exists  |
+| Stream parser             | Detects `<plan>`, `<step>`, `<step_update>` XML tags in streaming content                | `packages/llm/src/stream-parser.ts:StreamParser`                          | Exists  |
+| SSE events                | Typed event system: content, tool_start/end, plan_start/step_update, errors              | `packages/llm/src/sse-events.ts`                                          | Exists  |
+| Tool context filtering    | Restricts available MCP tools based on current page (team editor vs battle)              | `packages/llm/src/tool-context.ts`                                        | Exists  |
+| MCP server                | 24 tools across 4 categories: data query (7), analysis (6), team CRUD (6), meta recs (5) | `packages/mcp-server/`                                                    | Exists  |
+| MCP resources             | 5 static resources: type chart, formats, natures, stat formulas, viability               | `packages/mcp-server/src/resources/`                                      | Exists  |
+| Chat UI components        | Message display, input, tool call visualization, plan display, session list              | `apps/web/src/features/chat/components/`                                  | Exists  |
+| Chat FAB                  | Floating action button for quick access to chat from any page                            | `apps/web/src/components/chat-fab.tsx`                                    | Exists  |
+| Chat sidebar              | Resizable sidebar chat panel integrated into app shell                                   | `apps/web/src/components/chat-sidebar.tsx`                                | Exists  |
+| Live battle commentary    | AI-generated commentary during live battles                                              | `packages/llm/src/battle-context-builder.ts`, `CommentaryPanel.tsx`       | Exists  |
+| Coaching sessions         | Multi-turn coaching: "Why did I lose?" with battle replay context                        | --                                                                        | Planned |
+| Proactive suggestions     | LLM notices team weaknesses and suggests fixes without being asked                       | --                                                                        | Future  |
 
 ### Implementation Notes
 
@@ -321,14 +322,14 @@ The five pillars converge in the build-test-analyze loop. Here is how a team flo
 
 ### Package Responsibilities by Stage
 
-| Stage | Packages | What Happens |
-|-------|----------|-------------|
-| **BUILD** | `teams`, `analysis`, `recommendations`, `formats`, `pokemon-data`, `smogon-data` | Create team, add Pokemon, get recommendations, validate legality |
-| **TEST** | `battle-engine` (sim, AI players, batch-simulator) | Battle against AI opponents, run batch simulations for statistical results |
+| Stage       | Packages                                                                                            | What Happens                                                                 |
+| ----------- | --------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| **BUILD**   | `teams`, `analysis`, `recommendations`, `formats`, `pokemon-data`, `smogon-data`                    | Create team, add Pokemon, get recommendations, validate legality             |
+| **TEST**    | `battle-engine` (sim, AI players, batch-simulator)                                                  | Battle against AI opponents, run batch simulations for statistical results   |
 | **ANALYZE** | `battle-engine` (evaluator, win-probability, hint-engine, replay-engine), `damage-calc`, `analysis` | Review battle replay, study critical turns, run damage calcs, check coverage |
-| **TWEAK** | `teams`, `damage-calc`, `llm` | Adjust EVs/moves/items based on analysis, ask the LLM for advice |
-| **FORK** | `teams` (planned: versioning) | Branch the team to test a variant without losing the original |
-| **COMPARE** | `battle-engine` (batch-simulator) | Run both variants against the same opponents, compare win rates |
+| **TWEAK**   | `teams`, `damage-calc`, `llm`                                                                       | Adjust EVs/moves/items based on analysis, ask the LLM for advice             |
+| **FORK**    | `teams` (planned: versioning)                                                                       | Branch the team to test a variant without losing the original                |
+| **COMPARE** | `battle-engine` (batch-simulator)                                                                   | Run both variants against the same opponents, compare win rates              |
 
 ---
 
@@ -386,14 +387,14 @@ The five pillars converge in the build-test-analyze loop. Here is how a team flo
 
 ## Summary: Pillar Coverage at a Glance
 
-| Pillar | Exists | Partial | Planned | Future |
-|--------|--------|---------|---------|--------|
-| 1. Long-term Planning | 14 features | 0 | 0 | 3 |
-| 2. Simultaneous Action | 13 features | 0 | 0 | 3 |
-| 3. Imperfect Information | 11 features | 0 | 1 | 2 |
-| 4. Probability Management | 13 features | 0 | 1 | 3 |
-| 5. Team Building (Meta) | 25 features | 0 | 1 | 2 |
-| Cross-Cutting (LLM) | 19 features | 0 | 1 | 1 |
-| **Total** | **95** | **0** | **4** | **14** |
+| Pillar                    | Exists      | Partial | Planned | Future |
+| ------------------------- | ----------- | ------- | ------- | ------ |
+| 1. Long-term Planning     | 14 features | 0       | 0       | 3      |
+| 2. Simultaneous Action    | 13 features | 0       | 0       | 3      |
+| 3. Imperfect Information  | 11 features | 0       | 1       | 2      |
+| 4. Probability Management | 13 features | 0       | 1       | 3      |
+| 5. Team Building (Meta)   | 25 features | 0       | 1       | 2      |
+| Cross-Cutting (LLM)       | 19 features | 0       | 1       | 1      |
+| **Total**                 | **95**      | **0**   | **4**   | **14** |
 
 The codebase has substantial coverage across all five pillars. The strongest areas are team building infrastructure (Pillar 5) and probability management tools (Pillar 4). The primary gaps are in teaching and explanation: the system can evaluate and recommend, but does not yet explain the underlying competitive concepts to the user in a structured educational format. The planned coaching sessions and the future game theory / deduction teaching features would close this gap.

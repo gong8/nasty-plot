@@ -1,4 +1,5 @@
 # Session: Full NatDex Support Implementation
+
 **Date:** 2026-02-10
 **Duration context:** Long — full plan review, clarification questions, 7-phase implementation with parallel agent team
 
@@ -41,44 +42,53 @@
 ## Files changed
 
 ### Core types
+
 - `packages/core/src/types.ts` — Added `isNonstandard` to PokemonSpecies, ItemData, MoveData
 
 ### Data layer
+
 - `packages/pokemon-data/src/dex.service.ts` — Widened filters, added `isNonstandard` to toSpecies/toMove/items, added Mega Stone utilities (isMegaStone, getMegaStonesFor, getMegaForm), Z-Crystal utilities (isZCrystal, getZCrystalType, getSignatureZCrystal)
 - `packages/pokemon-data/src/index.ts` — Exported new functions
 - `packages/pokemon-data/package.json` — Added test script
 - `packages/pokemon-data/vitest.config.ts` — Created (globals: true)
 
 ### Format filtering
+
 - `packages/formats/src/format.service.ts` — Added dexScope filtering, getFormatItems, getFormatMoves, getFormatLearnset
 - `packages/formats/src/index.ts` — Exported new functions
 - `packages/formats/package.json` — Added test script
 - `packages/formats/vitest.config.ts` — Created (globals: true)
 
 ### Validation
+
 - `packages/teams/src/validation.service.ts` — Rewrote to wrap core validation with Mega Stone and Z-Crystal checks
 
 ### API routes
+
 - `apps/web/src/app/api/items/route.ts` — Added `?format=` support
 - `apps/web/src/app/api/pokemon/[id]/learnset/route.ts` — Added `?format=` support
 - `apps/web/src/app/api/pokemon/[id]/mega-form/route.ts` — New route for Mega form preview
 
 ### UI components
+
 - `apps/web/src/features/team-builder/components/pokemon-search-panel.tsx` — Added formatId prop
 - `apps/web/src/features/team-builder/components/slot-editor.tsx` — Added formatId prop threading, Mega form preview UI
 - `apps/web/src/features/team-builder/components/item-combobox.tsx` — Added formatId prop
 - `apps/web/src/app/teams/[teamId]/page.tsx` — Passes formatId to SlotEditor
 
 ### Seed pipeline
+
 - `packages/data-pipeline/src/cli/seed.ts` — Replaced hardcoded FORMATS with FORMAT_DEFINITIONS import
 - `packages/data-pipeline/package.json` — Added @nasty-plot/formats dependency
 
 ### Tests
+
 - `packages/pokemon-data/src/dex.service.test.ts` — Added 39 new tests (NatDex species/items/moves, Mega utilities, Z-Crystal utilities)
 - `packages/formats/src/__tests__/format.service.test.ts` — Added NatDex format mock, 13 new tests (dexScope filtering, item/move filtering, ban checking)
 - `packages/teams/src/__tests__/validation.service.test.ts` — Added pokemon-data mocks, 9 new tests (Mega/Z-Crystal validation)
 
 ### Plan
+
 - `plans/full-showdown-dex-support.md` — Completely rewritten with 7 phases, decisions section, expanded scope
 
 ## Known issues & next steps

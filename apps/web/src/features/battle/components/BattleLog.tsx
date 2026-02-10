@@ -1,43 +1,42 @@
-"use client";
+"use client"
 
-import { useRef, useEffect, useState, useCallback } from "react";
-import { ArrowDown } from "lucide-react";
-import type { BattleLogEntry } from "@nasty-plot/battle-engine";
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
-import { LogEntry } from "./LogEntry";
+import { useRef, useEffect, useState, useCallback } from "react"
+import { ArrowDown } from "lucide-react"
+import type { BattleLogEntry } from "@nasty-plot/battle-engine"
+import { Button } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
+import { LogEntry } from "./LogEntry"
 
 interface BattleLogProps {
-  entries: BattleLogEntry[];
-  className?: string;
+  entries: BattleLogEntry[]
+  className?: string
 }
 
 export function BattleLog({ entries, className }: BattleLogProps) {
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const bottomRef = useRef<HTMLDivElement>(null);
-  const [isAtBottom, setIsAtBottom] = useState(true);
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const bottomRef = useRef<HTMLDivElement>(null)
+  const [isAtBottom, setIsAtBottom] = useState(true)
 
   // Auto-scroll to bottom when new entries arrive (only if user is at bottom)
   useEffect(() => {
     if (isAtBottom && bottomRef.current) {
-      bottomRef.current.scrollIntoView({ behavior: "smooth" });
+      bottomRef.current.scrollIntoView({ behavior: "smooth" })
     }
-  }, [entries.length, isAtBottom]);
+  }, [entries.length, isAtBottom])
 
   const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
-    const target = e.currentTarget;
-    const atBottom =
-      target.scrollHeight - target.scrollTop - target.clientHeight < 40;
-    setIsAtBottom(atBottom);
-  }, []);
+    const target = e.currentTarget
+    const atBottom = target.scrollHeight - target.scrollTop - target.clientHeight < 40
+    setIsAtBottom(atBottom)
+  }, [])
 
   const scrollToBottom = useCallback(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-    setIsAtBottom(true);
-  }, []);
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" })
+    setIsAtBottom(true)
+  }, [])
 
   // Group entries by turn for visual separation
-  let currentTurn = -1;
+  let currentTurn = -1
 
   return (
     <div className={cn("relative flex flex-col h-full", className)}>
@@ -48,14 +47,11 @@ export function BattleLog({ entries, className }: BattleLogProps) {
       >
         <div className="p-2 space-y-0.5">
           {entries.length === 0 && (
-            <p className="text-muted-foreground italic px-2">
-              Battle log will appear here...
-            </p>
+            <p className="text-muted-foreground italic px-2">Battle log will appear here...</p>
           )}
           {entries.map((entry, i) => {
-            const showTurnSeparator =
-              entry.type === "turn" && entry.turn !== currentTurn;
-            if (entry.type === "turn") currentTurn = entry.turn;
+            const showTurnSeparator = entry.type === "turn" && entry.turn !== currentTurn
+            if (entry.type === "turn") currentTurn = entry.turn
 
             return (
               <div key={i}>
@@ -70,7 +66,7 @@ export function BattleLog({ entries, className }: BattleLogProps) {
                 )}
                 {entry.type !== "turn" && <LogEntry entry={entry} />}
               </div>
-            );
+            )
           })}
           <div ref={bottomRef} />
         </div>
@@ -88,5 +84,5 @@ export function BattleLog({ entries, className }: BattleLogProps) {
         </Button>
       )}
     </div>
-  );
+  )
 }

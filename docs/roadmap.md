@@ -10,13 +10,13 @@ Nasty Plot is a Pokemon competitive team building, analysis, and training platfo
 
 ## Milestone Summary
 
-| Milestone | Name | Theme | Status | Dependencies |
-|-----------|------|-------|--------|--------------|
-| M1 | Solid Foundation | Make everything that exists robust and complete | In Progress | None |
-| M2 | The Feedback Loop | Team versioning + batch simulation + meta profiles | Partially Complete | M1 |
-| M3 | Battle Training | Learn from battles, not just play them | Partially Complete | M1, M2 |
-| M4 | The Intelligent Assistant | Pecharunt becomes a real coach | Not Started | M2, M3 |
-| M5 | Community & Scale | From personal tool to platform | Not Started | M1-M4 |
+| Milestone | Name                      | Theme                                              | Status             | Dependencies |
+| --------- | ------------------------- | -------------------------------------------------- | ------------------ | ------------ |
+| M1        | Solid Foundation          | Make everything that exists robust and complete    | In Progress        | None         |
+| M2        | The Feedback Loop         | Team versioning + batch simulation + meta profiles | Partially Complete | M1           |
+| M3        | Battle Training           | Learn from battles, not just play them             | Partially Complete | M1, M2       |
+| M4        | The Intelligent Assistant | Pecharunt becomes a real coach                     | Not Started        | M2, M3       |
+| M5        | Community & Scale         | From personal tool to platform                     | Not Started        | M1-M4        |
 
 ## Dependency Graph
 
@@ -57,32 +57,36 @@ The platform has broad feature coverage but gaps in format support, validation, 
 ### Deliverables
 
 #### National Dex Support
+
 - Extend `@pkmn/dex` usage beyond Gen 9 SV-native Pokemon to include "Past" Pokemon required for NatDex formats
 - Update `packages/pokemon-data/src/dex.service.ts` to support NatDex-aware species lookup
 - Ensure NatDex OU, NatDex UU, and NatDex Monotype format definitions include the full legal Pokemon pool
 - Update learnset lookups to return NatDex-legal moves (moves from prior generations that are legal in NatDex)
 
 #### Complete Format Filtering
+
 - Format-aware legality checks throughout the stack: Pokemon, moves, abilities, items
 - `packages/formats/src/format.service.ts` must expose a unified `isLegal(pokemonId, formatId)` API
 - UI components (Pokemon search, move selector, ability picker, item combobox) filter options by selected format
 - API routes accept an optional `formatId` parameter and return only legal results when provided
 
 #### Validation Completeness
+
 - Implement all standard Smogon clauses in `packages/teams/src/validation.service.ts`:
 
-| Clause | Description | Current Status |
-|--------|-------------|----------------|
-| Species Clause | No duplicate species on a team | Implemented |
-| Sleep Clause | Only one opponent Pokemon may be put to sleep at a time | Not implemented |
-| Evasion Clause | Moves that boost evasion are banned | Not implemented |
-| OHKO Clause | One-hit KO moves (Fissure, Sheer Cold, etc.) are banned | Not implemented |
-| Moody Clause | Pokemon with the Moody ability are banned | Not implemented |
-| Shadow Tag Clause | Pokemon with Shadow Tag are banned (except Gothitelle line in some formats) | Not implemented |
-| Baton Pass Clause | Baton Pass is banned or restricted depending on format | Not implemented |
-| Endless Battle Clause | Prevent infinite loops (Recycle + Leppa Berry + Heal Pulse) | Not implemented |
+| Clause                | Description                                                                 | Current Status  |
+| --------------------- | --------------------------------------------------------------------------- | --------------- |
+| Species Clause        | No duplicate species on a team                                              | Implemented     |
+| Sleep Clause          | Only one opponent Pokemon may be put to sleep at a time                     | Not implemented |
+| Evasion Clause        | Moves that boost evasion are banned                                         | Not implemented |
+| OHKO Clause           | One-hit KO moves (Fissure, Sheer Cold, etc.) are banned                     | Not implemented |
+| Moody Clause          | Pokemon with the Moody ability are banned                                   | Not implemented |
+| Shadow Tag Clause     | Pokemon with Shadow Tag are banned (except Gothitelle line in some formats) | Not implemented |
+| Baton Pass Clause     | Baton Pass is banned or restricted depending on format                      | Not implemented |
+| Endless Battle Clause | Prevent infinite loops (Recycle + Leppa Berry + Heal Pulse)                 | Not implemented |
 
 #### VGC Doubles Support
+
 - 4-pick-2-lead Team Preview UI for VGC format battles
 - Doubles battle field rendering (2v2 active Pokemon per side)
 - Targeting system in move selection (choose which opponent to target)
@@ -90,33 +94,37 @@ The platform has broad feature coverage but gaps in format support, validation, 
 - Doubles-specific analysis: speed control, redirection, Fake Out pressure
 
 #### Damage Preview
+
 - Show damage range on move hover during live battles
 - Integrate `@smogon/calc` inline with the battle UI
 - Display as percentage HP range (e.g., "42-50%") overlaid on the target Pokemon
 
 #### Test Coverage
+
 - Target: 80% line coverage across all packages
 - Priority packages for coverage improvement:
 
-| Package | Current Estimate | Target | Priority |
-|---------|-----------------|--------|----------|
-| `core` | ~60% | 80% | Medium |
-| `teams` | ~50% | 80% | High |
-| `formats` | ~40% | 80% | High |
-| `battle-engine` | ~45% | 80% | High |
-| `analysis` | ~55% | 80% | Medium |
-| `damage-calc` | ~50% | 80% | Medium |
-| `pokemon-data` | ~65% | 80% | Low |
-| `recommendations` | ~40% | 80% | Medium |
-| `llm` | ~35% | 80% | Medium |
+| Package           | Current Estimate | Target | Priority |
+| ----------------- | ---------------- | ------ | -------- |
+| `core`            | ~60%             | 80%    | Medium   |
+| `teams`           | ~50%             | 80%    | High     |
+| `formats`         | ~40%             | 80%    | High     |
+| `battle-engine`   | ~45%             | 80%    | High     |
+| `analysis`        | ~55%             | 80%    | Medium   |
+| `damage-calc`     | ~50%             | 80%    | Medium   |
+| `pokemon-data`    | ~65%             | 80%    | Low      |
+| `recommendations` | ~40%             | 80%    | Medium   |
+| `llm`             | ~35%             | 80%    | Medium   |
 
 #### Error Handling Audit
+
 - Standardize API error responses across all 35 routes
 - Define error response schema: `{ error: string, code?: string, details?: unknown }`
 - Add error boundaries in React for all page-level components
 - Graceful degradation when data is missing (unseeded formats, network failures)
 
 #### Data Pipeline Resilience
+
 - Retry logic for `@pkmn/smogon` data fetches in `packages/data-pipeline/src/cli/seed.ts`
 - Partial failure handling: if one format fails to seed, continue with others
 - Staleness detection improvements: warn when data is older than 30 days
@@ -138,15 +146,15 @@ None. This milestone is purely foundational and can begin immediately.
 
 ### Key New Files/Packages
 
-| File/Path | Purpose |
-|-----------|---------|
-| `packages/formats/src/clauses/` | Directory for individual clause implementations |
-| `packages/formats/src/clauses/sleep-clause.ts` | Sleep Clause validation |
-| `packages/formats/src/clauses/evasion-clause.ts` | Evasion Clause validation |
-| `packages/formats/src/clauses/ohko-clause.ts` | OHKO Clause validation |
-| `packages/formats/src/clauses/baton-pass-clause.ts` | Baton Pass Clause validation |
-| `packages/battle-engine/src/doubles/` | Doubles battle mechanics |
-| `apps/web/src/components/error-boundary.tsx` | Reusable React error boundary |
+| File/Path                                           | Purpose                                         |
+| --------------------------------------------------- | ----------------------------------------------- |
+| `packages/formats/src/clauses/`                     | Directory for individual clause implementations |
+| `packages/formats/src/clauses/sleep-clause.ts`      | Sleep Clause validation                         |
+| `packages/formats/src/clauses/evasion-clause.ts`    | Evasion Clause validation                       |
+| `packages/formats/src/clauses/ohko-clause.ts`       | OHKO Clause validation                          |
+| `packages/formats/src/clauses/baton-pass-clause.ts` | Baton Pass Clause validation                    |
+| `packages/battle-engine/src/doubles/`               | Doubles battle mechanics                        |
+| `apps/web/src/components/error-boundary.tsx`        | Reusable React error boundary                   |
 
 ---
 
@@ -164,31 +172,35 @@ This is the milestone that transforms Nasty Plot from a team editor into a team 
 A lightweight version control system for teams that lets users fork, compare, and merge team variants.
 
 **Data model additions:**
+
 - `Team.parentId` — nullable foreign key to `Team.id`, creates a fork lineage tree
 - New Prisma model or JSON column for tracking the diff between parent and child
 
 **New types** (in `packages/core/src/types.ts` or `packages/teams/src/version.types.ts`):
 
-| Type | Purpose |
-|------|---------|
-| `TeamDiff` | Describes differences between two team versions |
-| `SlotChange` | Per-slot change record (added, removed, modified with field-level diffs) |
-| `MergeDecision` | Per-slot choice during manual merge (pick left, right, or custom) |
-| `LineageNode` | Tree node for lineage visualization (id, name, parentId, children, createdAt) |
+| Type            | Purpose                                                                       |
+| --------------- | ----------------------------------------------------------------------------- |
+| `TeamDiff`      | Describes differences between two team versions                               |
+| `SlotChange`    | Per-slot change record (added, removed, modified with field-level diffs)      |
+| `MergeDecision` | Per-slot choice during manual merge (pick left, right, or custom)             |
+| `LineageNode`   | Tree node for lineage visualization (id, name, parentId, children, createdAt) |
 
 **Operations:**
+
 - **Fork:** Deep copy a team with `parentId` pointing to the original. All slots are duplicated.
 - **Compare:** Given two team IDs, produce a `TeamDiff` by matching slots on `pokemonId` and diffing field-by-field (EV spreads, moves, items, abilities, natures, tera types).
 - **Merge:** UI-driven per-slot merge. For each slot that differs, the user picks which version to keep or manually edits.
 - **Lineage tree:** Recursive query to build the full fork tree from any node.
 
 **New service:** `packages/teams/src/version.service.ts`
+
 - `forkTeam(teamId: string): Promise<Team>`
 - `compareTeams(teamIdA: string, teamIdB: string): Promise<TeamDiff>`
 - `mergeTeams(baseId: string, decisions: MergeDecision[]): Promise<Team>`
 - `getLineageTree(teamId: string): Promise<LineageNode>`
 
 **UI:**
+
 - Fork button on team editor page
 - Side-by-side comparison view (two team grids with diffs highlighted)
 - Merge wizard (step through each differing slot)
@@ -201,20 +213,23 @@ A lightweight version control system for teams that lets users fork, compare, an
 **Remaining work:**
 
 **Progress tracking:**
+
 - SSE (Server-Sent Events) stream from `POST /api/battles/batch`
 - Real-time progress bar (games completed / total)
 - Estimated time remaining
 
 **Results dashboard enhancements:**
+
 - Per-Pokemon performance table:
 
 | Pokemon | Games | KOs | Deaths | Avg Turns Alive | Win Contribution |
-|---------|-------|-----|--------|-----------------|------------------|
+| ------- | ----- | --- | ------ | --------------- | ---------------- |
 
 - Turn distribution histogram (how long do games last?)
 - Most common loss patterns (which opposing Pokemon cause the most trouble?)
 
 **Variant comparison:**
+
 - "Simulate both variants" button when viewing a team comparison (from versioning)
 - Side-by-side results: Team A win rate vs Team B win rate against the same opponent
 - Statistical significance indicator (is the difference meaningful or noise?)
@@ -224,17 +239,20 @@ A lightweight version control system for teams that lets users fork, compare, an
 A meta profile defines the expected opponent field — what Pokemon and sets you expect to face.
 
 **Data model:**
+
 - New model or configuration: `MetaProfile`
   - `id`, `name`, `formatId`
   - `entries`: array of `{ pokemonId, weight, setName? }`
   - Can be auto-generated from usage stats (top N Pokemon) or manually curated
 
 **Auto-generation:**
+
 - "Generate from usage stats" — pull top 20/30/50 Pokemon from `UsageStats` for a format
 - Weights derived from usage percentages
 - Sets pulled from `SmogonSet` table
 
 **Integration points:**
+
 - Batch simulator accepts a meta profile as opponent configuration
 - Analysis endpoints accept a meta profile to scope threat analysis
 - Recommendations consider meta profile when suggesting teammates
@@ -267,30 +285,30 @@ LLM-powered and algorithmic suggestions based on simulation results.
 
 **Already implemented:**
 
-| File/Path | Purpose | Status |
-|-----------|---------|--------|
-| `packages/battle-engine/src/simulation/batch-simulator.ts` | Batch simulation engine | Implemented |
-| `packages/battle-engine/src/simulation/automated-battle-manager.ts` | Automated battle management | Implemented |
-| `apps/web/src/app/battle/simulate/page.tsx` | Batch simulation UI page | Implemented |
-| `apps/web/src/app/battle/sample-teams/page.tsx` | Sample teams browser page | Implemented |
-| `prisma` models: `Battle`, `BattleTurn`, `BatchSimulation`, `SampleTeam` | Battle and simulation data | Implemented |
-| API routes: `/api/battles/*`, `/api/sample-teams/*` | Battle and sample team endpoints | Implemented |
+| File/Path                                                                | Purpose                          | Status      |
+| ------------------------------------------------------------------------ | -------------------------------- | ----------- |
+| `packages/battle-engine/src/simulation/batch-simulator.ts`               | Batch simulation engine          | Implemented |
+| `packages/battle-engine/src/simulation/automated-battle-manager.ts`      | Automated battle management      | Implemented |
+| `apps/web/src/app/battle/simulate/page.tsx`                              | Batch simulation UI page         | Implemented |
+| `apps/web/src/app/battle/sample-teams/page.tsx`                          | Sample teams browser page        | Implemented |
+| `prisma` models: `Battle`, `BattleTurn`, `BatchSimulation`, `SampleTeam` | Battle and simulation data       | Implemented |
+| API routes: `/api/battles/*`, `/api/sample-teams/*`                      | Battle and sample team endpoints | Implemented |
 
 **New files needed:**
 
-| File/Path | Purpose |
-|-----------|---------|
-| `packages/teams/src/version.service.ts` | Fork, compare, merge, lineage operations |
-| `packages/teams/src/version.types.ts` | TeamDiff, SlotChange, MergeDecision, LineageNode types |
-| `packages/teams/src/meta-profile.service.ts` | Meta profile CRUD and auto-generation |
-| `apps/web/src/app/battle/simulate/results/page.tsx` | Simulation results dashboard |
-| `apps/web/src/app/teams/[teamId]/compare/page.tsx` | Side-by-side team comparison |
-| `apps/web/src/app/teams/[teamId]/lineage/page.tsx` | Fork lineage tree view |
-| `apps/web/src/features/battle/components/SimulationProgress.tsx` | Real-time progress tracking |
-| `apps/web/src/features/battle/components/SimulationResults.tsx` | Results dashboard component |
-| `apps/web/src/features/team-builder/components/TeamDiffView.tsx` | Visual diff between two teams |
-| `apps/web/src/features/team-builder/components/MergeWizard.tsx` | Step-by-step merge UI |
-| `prisma/migrations/YYYYMMDD_add_team_versioning/migration.sql` | parentId column, meta profile table |
+| File/Path                                                        | Purpose                                                |
+| ---------------------------------------------------------------- | ------------------------------------------------------ |
+| `packages/teams/src/version.service.ts`                          | Fork, compare, merge, lineage operations               |
+| `packages/teams/src/version.types.ts`                            | TeamDiff, SlotChange, MergeDecision, LineageNode types |
+| `packages/teams/src/meta-profile.service.ts`                     | Meta profile CRUD and auto-generation                  |
+| `apps/web/src/app/battle/simulate/results/page.tsx`              | Simulation results dashboard                           |
+| `apps/web/src/app/teams/[teamId]/compare/page.tsx`               | Side-by-side team comparison                           |
+| `apps/web/src/app/teams/[teamId]/lineage/page.tsx`               | Fork lineage tree view                                 |
+| `apps/web/src/features/battle/components/SimulationProgress.tsx` | Real-time progress tracking                            |
+| `apps/web/src/features/battle/components/SimulationResults.tsx`  | Results dashboard component                            |
+| `apps/web/src/features/team-builder/components/TeamDiffView.tsx` | Visual diff between two teams                          |
+| `apps/web/src/features/team-builder/components/MergeWizard.tsx`  | Step-by-step merge UI                                  |
+| `prisma/migrations/YYYYMMDD_add_team_versioning/migration.sql`   | parentId column, meta profile table                    |
 
 ---
 
@@ -310,31 +328,36 @@ A replay analysis system that grades every move and highlights critical decision
 **Status: Core components implemented.** The replay engine (`packages/battle-engine/src/replay/replay-engine.ts`) provides frame-by-frame navigation. The replay viewer page (`/battle/replay/[battleId]`) is implemented. The hint engine (`packages/battle-engine/src/ai/hint-engine.ts`) classifies moves as best/good/neutral/inaccuracy/mistake/blunder. Win probability estimation (`packages/battle-engine/src/ai/win-probability.ts`) and the evaluator with position scoring (`packages/battle-engine/src/ai/evaluator.ts`) are implemented. The set predictor (`packages/battle-engine/src/ai/set-predictor.ts`) uses Bayesian filtering.
 
 **Remaining replay viewer enhancements:**
+
 - Full battle state visible at each turn (HP bars, status conditions, field conditions, stat boosts)
 - Player's move highlighted with the engine's recommended move shown alongside
 
 **Win probability overlay remaining work:**
+
 - Win probability graph rendered above the replay (component exists at `apps/web/src/features/battle/components/WinProbabilityGraph.tsx`)
 - Synchronized with turn navigation — current turn highlighted on graph
 - Critical turn markers: turns where win probability swung by more than 20% in either direction
 
 **Move grading system (implemented in hint engine):**
+
 - Each player move is classified by comparing it to the engine's evaluation:
 
-| Grade | Definition | Score Gap |
-|-------|-----------|-----------|
-| Best | Matches engine's top choice | 0 |
-| Good | Within 5 points of optimal | 1-5 |
-| Neutral | Minor suboptimality | 6-15 |
-| Inaccuracy | Suboptimal but not losing | 16-30 |
-| Mistake | Significantly hurts position | 31-60 |
-| Blunder | Potentially game-losing | > 60 |
+| Grade      | Definition                   | Score Gap |
+| ---------- | ---------------------------- | --------- |
+| Best       | Matches engine's top choice  | 0         |
+| Good       | Within 5 points of optimal   | 1-5       |
+| Neutral    | Minor suboptimality          | 6-15      |
+| Inaccuracy | Suboptimal but not losing    | 16-30     |
+| Mistake    | Significantly hurts position | 31-60     |
+| Blunder    | Potentially game-losing      | > 60      |
 
 **Remaining move grading work:**
+
 - Summary statistics: accuracy percentage, blunder count, average centipawn-equivalent loss
 - "What would the engine have done?" — show the engine's preferred move and its reasoning at any turn
 
 **Post-game summary:**
+
 - Key turning points listed with explanations
 - Best and worst moves highlighted
 - Overall game quality rating
@@ -344,6 +367,7 @@ A replay analysis system that grades every move and highlights critical decision
 Curated positions where the user must find the best move.
 
 **Puzzle structure:**
+
 - A battle state (positions, HP, status, field conditions, known opponent sets)
 - One correct answer (or a small set of acceptable answers)
 - Difficulty level: Easy (1), Medium (2), Hard (3)
@@ -351,23 +375,25 @@ Curated positions where the user must find the best move.
 
 **Categories:**
 
-| Category | Description | Example |
-|----------|-------------|---------|
-| Offensive | Find the KO or the setup opportunity | "Which move KOs Toxapex after Stealth Rock?" |
-| Defensive | Find the correct switch or protect | "Your opponent will Earthquake — what do you switch to?" |
-| Setup | Identify when to boost or set hazards | "Is it safe to Swords Dance here?" |
-| Prediction | Predict the opponent's action and punish | "They will switch to Heatran — what do you do?" |
-| Endgame | Win a simplified late-game position | "You have Dragapult vs Garchomp + Toxapex at 30% — find the win" |
+| Category   | Description                              | Example                                                          |
+| ---------- | ---------------------------------------- | ---------------------------------------------------------------- |
+| Offensive  | Find the KO or the setup opportunity     | "Which move KOs Toxapex after Stealth Rock?"                     |
+| Defensive  | Find the correct switch or protect       | "Your opponent will Earthquake — what do you switch to?"         |
+| Setup      | Identify when to boost or set hazards    | "Is it safe to Swords Dance here?"                               |
+| Prediction | Predict the opponent's action and punish | "They will switch to Heatran — what do you do?"                  |
+| Endgame    | Win a simplified late-game position      | "You have Dragapult vs Garchomp + Toxapex at 30% — find the win" |
 
 **Target:** At least 20 curated puzzles at launch, covering all 5 categories.
 
 **Puzzle flow:**
+
 1. Present the position with full context
 2. User selects a move (and target in doubles)
 3. Reveal whether correct, show explanation
 4. Track accuracy per category over time
 
 **Puzzle creation tooling:**
+
 - Extract interesting positions from saved replays automatically (turns with high win prob swings)
 - Manual puzzle editor for curated positions
 - Engine validation: verify that the "correct" answer is actually optimal
@@ -377,16 +403,19 @@ Curated positions where the user must find the best move.
 Repetitive practice of specific battle scenarios to build intuition.
 
 **Scenario types:**
+
 - "Practice against [Pokemon]" — face a specific threat repeatedly with different teams
 - "Practice managing [condition]" — weather, terrain, Trick Room, entry hazards
 - "Practice [archetype] vs [archetype]" — hyper offense vs stall, rain vs sun
 
 **Drill mechanics:**
+
 - Scenario sets up a specific game state and opponent behavior
 - User plays through the scenario multiple times
 - Performance tracked: win rate, average turns to win, consistency
 
 **Improvement tracking:**
+
 - Per-category accuracy over time (line chart)
 - Streak tracking (consecutive correct puzzle answers)
 - Weak areas identified ("You struggle with defensive puzzles — practice switching")
@@ -421,36 +450,36 @@ The MCTS Expert AI is fully implemented (`packages/battle-engine/src/ai/mcts-ai.
 
 **Already implemented:**
 
-| File/Path | Purpose | Status |
-|-----------|---------|--------|
-| `packages/battle-engine/src/ai/hint-engine.ts` | Move classification (best/good/neutral/inaccuracy/mistake/blunder) | Implemented |
-| `packages/battle-engine/src/ai/evaluator.ts` | Position scoring and evaluation | Implemented |
-| `packages/battle-engine/src/ai/win-probability.ts` | Win probability estimation | Implemented |
-| `packages/battle-engine/src/ai/set-predictor.ts` | Bayesian set prediction | Implemented |
-| `packages/battle-engine/src/replay/replay-engine.ts` | Frame-by-frame replay navigation | Implemented |
-| `apps/web/src/app/battle/replay/[battleId]/page.tsx` | Replay viewer page | Implemented |
+| File/Path                                            | Purpose                                                            | Status      |
+| ---------------------------------------------------- | ------------------------------------------------------------------ | ----------- |
+| `packages/battle-engine/src/ai/hint-engine.ts`       | Move classification (best/good/neutral/inaccuracy/mistake/blunder) | Implemented |
+| `packages/battle-engine/src/ai/evaluator.ts`         | Position scoring and evaluation                                    | Implemented |
+| `packages/battle-engine/src/ai/win-probability.ts`   | Win probability estimation                                         | Implemented |
+| `packages/battle-engine/src/ai/set-predictor.ts`     | Bayesian set prediction                                            | Implemented |
+| `packages/battle-engine/src/replay/replay-engine.ts` | Frame-by-frame replay navigation                                   | Implemented |
+| `apps/web/src/app/battle/replay/[battleId]/page.tsx` | Replay viewer page                                                 | Implemented |
 
 **New files needed:**
 
-| File/Path | Purpose |
-|-----------|---------|
-| `packages/battle-engine/src/review/` | Post-game review engine directory |
-| `packages/battle-engine/src/review/critical-turns.ts` | Detect high-swing turns from win probability data |
-| `packages/battle-engine/src/review/game-summary.ts` | Generate post-game summary statistics |
-| `packages/battle-engine/src/puzzles/` | Puzzle engine directory |
-| `packages/battle-engine/src/puzzles/puzzle.types.ts` | Puzzle data types |
-| `packages/battle-engine/src/puzzles/puzzle.service.ts` | Puzzle validation and scoring |
-| `packages/battle-engine/src/puzzles/puzzle-extractor.ts` | Extract puzzle candidates from replays |
-| `packages/battle-engine/src/drills/` | Pattern drilling engine |
-| `packages/battle-engine/src/drills/drill.service.ts` | Scenario setup and performance tracking |
-| `apps/web/src/workers/mcts.worker.ts` | MCTS Web Worker |
-| `apps/web/src/app/battle/puzzles/page.tsx` | Puzzle browser |
-| `apps/web/src/app/battle/puzzles/[puzzleId]/page.tsx` | Individual puzzle page |
-| `apps/web/src/app/battle/drills/page.tsx` | Pattern drilling page |
-| `apps/web/src/features/battle/components/MoveGrade.tsx` | Move grade badge component |
-| `apps/web/src/features/battle/components/PostGameSummary.tsx` | Post-game summary panel |
-| `apps/web/src/features/battle/components/PuzzleBoard.tsx` | Puzzle position display and interaction |
-| `prisma/migrations/YYYYMMDD_add_puzzles/migration.sql` | Puzzle and drill tracking tables |
+| File/Path                                                     | Purpose                                           |
+| ------------------------------------------------------------- | ------------------------------------------------- |
+| `packages/battle-engine/src/review/`                          | Post-game review engine directory                 |
+| `packages/battle-engine/src/review/critical-turns.ts`         | Detect high-swing turns from win probability data |
+| `packages/battle-engine/src/review/game-summary.ts`           | Generate post-game summary statistics             |
+| `packages/battle-engine/src/puzzles/`                         | Puzzle engine directory                           |
+| `packages/battle-engine/src/puzzles/puzzle.types.ts`          | Puzzle data types                                 |
+| `packages/battle-engine/src/puzzles/puzzle.service.ts`        | Puzzle validation and scoring                     |
+| `packages/battle-engine/src/puzzles/puzzle-extractor.ts`      | Extract puzzle candidates from replays            |
+| `packages/battle-engine/src/drills/`                          | Pattern drilling engine                           |
+| `packages/battle-engine/src/drills/drill.service.ts`          | Scenario setup and performance tracking           |
+| `apps/web/src/workers/mcts.worker.ts`                         | MCTS Web Worker                                   |
+| `apps/web/src/app/battle/puzzles/page.tsx`                    | Puzzle browser                                    |
+| `apps/web/src/app/battle/puzzles/[puzzleId]/page.tsx`         | Individual puzzle page                            |
+| `apps/web/src/app/battle/drills/page.tsx`                     | Pattern drilling page                             |
+| `apps/web/src/features/battle/components/MoveGrade.tsx`       | Move grade badge component                        |
+| `apps/web/src/features/battle/components/PostGameSummary.tsx` | Post-game summary panel                           |
+| `apps/web/src/features/battle/components/PuzzleBoard.tsx`     | Puzzle position display and interaction           |
+| `prisma/migrations/YYYYMMDD_add_puzzles/migration.sql`        | Puzzle and drill tracking tables                  |
 
 ---
 
@@ -468,6 +497,7 @@ The LLM chat exists but currently operates as a general-purpose Q&A tool. This m
 Real-time and post-battle narration powered by the LLM, grounded in actual battle state.
 
 **Real-time narration:**
+
 - Optional toggle (default OFF to preserve API credits)
 - After each turn, send the battle state delta to the LLM
 - Generate a 1-2 sentence comment: move quality, strategic insight, or prediction
@@ -475,11 +505,13 @@ Real-time and post-battle narration powered by the LLM, grounded in actual battl
 - Display in the existing `CommentaryPanel` component
 
 **Post-battle analysis:**
+
 - LLM reads the full battle log (protocol output) and move grading data from M3
 - Generates a structured analysis: opening assessment, key turning points, endgame execution
 - Actionable advice: "In future games against rain teams, consider leading with your Grass-type"
 
 **Strategic explanations:**
+
 - "Why should I switch here?" — LLM explains based on type matchups, speed tiers, and known opponent sets
 - "What is my opponent likely to do?" — prediction based on common play patterns and set predictor data
 - Accessible from the battle UI via a "Ask Pecharunt" button
@@ -490,23 +522,26 @@ Structured learning paths that adapt to the user's skill level.
 
 **Learning paths:**
 
-| Path | Target Audience | Topics |
-|------|----------------|--------|
-| Fundamentals | Beginners | Type matchups, STAB, stat stages, priority moves, entry hazards |
-| Teambuilding | Intermediate | Role compression, core building, speed tiers, threat coverage |
-| Advanced Play | Experienced | Prediction, momentum, win conditions, endgame theory, risk management |
+| Path          | Target Audience | Topics                                                                |
+| ------------- | --------------- | --------------------------------------------------------------------- |
+| Fundamentals  | Beginners       | Type matchups, STAB, stat stages, priority moves, entry hazards       |
+| Teambuilding  | Intermediate    | Role compression, core building, speed tiers, threat coverage         |
+| Advanced Play | Experienced     | Prediction, momentum, win conditions, endgame theory, risk management |
 
 **Adaptive difficulty:**
+
 - Track puzzle accuracy and battle performance to estimate skill level
 - Pecharunt adjusts explanation depth based on demonstrated knowledge
 - "You already know type matchups well — let's focus on when to sacrifice Pokemon for momentum"
 
 **Contextual questions:**
+
 - During replay review: "Ask about this turn" button that sends the current turn state to the LLM
 - During team building: "Why this EV spread?" button on slot editor
 - During analysis: "Explain this weakness" on threat analysis results
 
 **Session persistence:**
+
 - Coaching progress saved to `ChatSession` with a `type` field distinguishing coaching from free chat
 - Resume coaching sessions where you left off
 - Track concept mastery per learning path
@@ -516,6 +551,7 @@ Structured learning paths that adapt to the user's skill level.
 Automated meta intelligence reports generated from usage statistics.
 
 **Report content:**
+
 - Format-specific (one report per format)
 - Usage trend analysis: rising Pokemon, falling Pokemon, stable core
 - "Surprise picks" — Pokemon with low usage but high win rate
@@ -523,12 +559,14 @@ Automated meta intelligence reports generated from usage statistics.
 - Recommended team adjustments based on meta shifts
 
 **Data sources:**
+
 - `UsageStats` table (monthly snapshots)
 - `TeammateCorr` table (core identification)
 - `CheckCounter` table (threat/counter relationships)
 - Historical comparison when multiple months of data exist
 
 **Generation:**
+
 - On-demand via chat command or button
 - LLM synthesizes the raw data into readable analysis
 - Grounded in real numbers — no hallucinated statistics
@@ -540,12 +578,12 @@ Grow the MCP tool suite to cover new M2-M4 capabilities.
 
 **New tool modules:**
 
-| Module | Tools | Purpose |
-|--------|-------|---------|
-| `battle-tools.ts` | `run_simulation`, `get_replay`, `get_battle_results`, `compare_variants` | Battle simulation and replay access |
-| `version-tools.ts` | `fork_team`, `compare_teams`, `merge_teams`, `get_lineage` | Team versioning operations |
-| `training-tools.ts` | `get_puzzle`, `submit_puzzle_answer`, `start_drill`, `get_training_stats` | Training and puzzle interaction |
-| `meta-tools.ts` | `get_meta_briefing`, `get_trending_pokemon`, `get_meta_profile` | Meta intelligence |
+| Module              | Tools                                                                     | Purpose                             |
+| ------------------- | ------------------------------------------------------------------------- | ----------------------------------- |
+| `battle-tools.ts`   | `run_simulation`, `get_replay`, `get_battle_results`, `compare_variants`  | Battle simulation and replay access |
+| `version-tools.ts`  | `fork_team`, `compare_teams`, `merge_teams`, `get_lineage`                | Team versioning operations          |
+| `training-tools.ts` | `get_puzzle`, `submit_puzzle_answer`, `start_drill`, `get_training_stats` | Training and puzzle interaction     |
+| `meta-tools.ts`     | `get_meta_briefing`, `get_trending_pokemon`, `get_meta_profile`           | Meta intelligence                   |
 
 **Target:** 24 existing tools + ~11 new tools = ~35 total
 
@@ -567,21 +605,21 @@ Grow the MCP tool suite to cover new M2-M4 capabilities.
 
 ### Key New Files/Packages
 
-| File/Path | Purpose |
-|-----------|---------|
-| `packages/llm/src/coaching/` | Coaching session logic |
-| `packages/llm/src/coaching/learning-paths.ts` | Path definitions and progression |
-| `packages/llm/src/coaching/skill-estimator.ts` | Estimate user skill from performance data |
-| `packages/llm/src/coaching/coaching.service.ts` | Coaching session management |
-| `packages/llm/src/meta-briefing.service.ts` | Meta briefing generation from usage data |
-| `packages/mcp-server/src/tools/battle-tools.ts` | Battle simulation MCP tools |
-| `packages/mcp-server/src/tools/version-tools.ts` | Team versioning MCP tools |
-| `packages/mcp-server/src/tools/training-tools.ts` | Puzzle and drill MCP tools |
-| `packages/mcp-server/src/tools/meta-tools.ts` | Meta intelligence MCP tools |
-| `apps/web/src/app/learn/page.tsx` | Learning hub page |
-| `apps/web/src/app/learn/[pathId]/page.tsx` | Individual learning path page |
-| `apps/web/src/features/chat/components/coaching-panel.tsx` | Coaching session UI |
-| `apps/web/src/features/battle/components/AskPecharunt.tsx` | Contextual question button |
+| File/Path                                                  | Purpose                                   |
+| ---------------------------------------------------------- | ----------------------------------------- |
+| `packages/llm/src/coaching/`                               | Coaching session logic                    |
+| `packages/llm/src/coaching/learning-paths.ts`              | Path definitions and progression          |
+| `packages/llm/src/coaching/skill-estimator.ts`             | Estimate user skill from performance data |
+| `packages/llm/src/coaching/coaching.service.ts`            | Coaching session management               |
+| `packages/llm/src/meta-briefing.service.ts`                | Meta briefing generation from usage data  |
+| `packages/mcp-server/src/tools/battle-tools.ts`            | Battle simulation MCP tools               |
+| `packages/mcp-server/src/tools/version-tools.ts`           | Team versioning MCP tools                 |
+| `packages/mcp-server/src/tools/training-tools.ts`          | Puzzle and drill MCP tools                |
+| `packages/mcp-server/src/tools/meta-tools.ts`              | Meta intelligence MCP tools               |
+| `apps/web/src/app/learn/page.tsx`                          | Learning hub page                         |
+| `apps/web/src/app/learn/[pathId]/page.tsx`                 | Individual learning path page             |
+| `apps/web/src/features/chat/components/coaching-panel.tsx` | Coaching session UI                       |
+| `apps/web/src/features/battle/components/AskPecharunt.tsx` | Contextual question button                |
 
 ---
 
@@ -599,6 +637,7 @@ Everything up to M4 serves a single user. This milestone adds the features neede
 Parameterize `Dex.forGen(N)` throughout the codebase instead of hardcoding Gen 9.
 
 **Scope of changes:**
+
 - `packages/pokemon-data/src/dex.service.ts` — all functions accept an optional `generation` parameter
 - `packages/formats/src/format.service.ts` — format definitions include generation metadata
 - `packages/damage-calc/` — `@smogon/calc` already supports multiple gens, needs plumbing
@@ -609,16 +648,16 @@ Parameterize `Dex.forGen(N)` throughout the codebase instead of hardcoding Gen 9
 
 **Target generations:**
 
-| Generation | Era | Priority |
-|------------|-----|----------|
-| Gen 9 | Scarlet/Violet | Already supported |
-| Gen 8 | Sword/Shield | High |
-| Gen 7 | Sun/Moon | Medium |
-| Gen 6 | X/Y | Medium |
-| Gen 5 | Black/White | Low |
-| Gen 4 | Diamond/Pearl | Low |
-| Gen 3 | Ruby/Sapphire | Low |
-| Gen 1-2 | RBY/GSC | Low |
+| Generation | Era            | Priority          |
+| ---------- | -------------- | ----------------- |
+| Gen 9      | Scarlet/Violet | Already supported |
+| Gen 8      | Sword/Shield   | High              |
+| Gen 7      | Sun/Moon       | Medium            |
+| Gen 6      | X/Y            | Medium            |
+| Gen 5      | Black/White    | Low               |
+| Gen 4      | Diamond/Pearl  | Low               |
+| Gen 3      | Ruby/Sapphire  | Low               |
+| Gen 1-2    | RBY/GSC        | Low               |
 
 **Minimum viable:** Gens 6-9 fully supported at launch.
 
@@ -627,6 +666,7 @@ Parameterize `Dex.forGen(N)` throughout the codebase instead of hardcoding Gen 9
 Enable users to share teams publicly and import teams from URLs.
 
 **Features:**
+
 - Public team URLs: `/teams/shared/[shareId]` with a read-only view
 - Share button on team editor generates a shareable link
 - Import from URL: paste a share link to clone the team into your account
@@ -634,12 +674,14 @@ Enable users to share teams publicly and import teams from URLs.
 - Showdown paste import/export already exists — extend to support URL-based sharing
 
 **Data model additions:**
+
 - `Team.shareId` — nullable unique string for public access
 - `Team.isPublic` — boolean flag
 - `Team.description` — optional text field for shared teams
 - `Team.authorName` — display name for attribution
 
 **Community features (stretch):**
+
 - Browse public teams by format
 - Sort by creation date, popularity (view count), or rating
 - Team ratings (upvote/downvote)
@@ -649,6 +691,7 @@ Enable users to share teams publicly and import teams from URLs.
 Real-time battles between two human players.
 
 **Architecture options:**
+
 - **WebSocket server:** dedicated battle server that mediates between two clients
 - **P2P with WebRTC:** direct connection between browsers, server only for matchmaking
 - **Hybrid:** WebSocket for matchmaking and state sync, battle logic runs server-side for anti-cheat
@@ -656,6 +699,7 @@ Real-time battles between two human players.
 **Recommended approach:** WebSocket server (simplest, enables anti-cheat, battle engine already runs server-side).
 
 **Features:**
+
 - Lobby system: create a room, share a code, opponent joins
 - Format selection and team validation before battle starts
 - Real-time battle with the existing battle UI
@@ -664,6 +708,7 @@ Real-time battles between two human players.
 - Battle history: all multiplayer battles saved as replays
 
 **Matchmaking (stretch):**
+
 - Casual queue: match with any available opponent
 - Format-specific queues
 - Skill-based matching (requires rating system)
@@ -674,14 +719,15 @@ Structured competitive events.
 
 **Tournament formats:**
 
-| Format | Description |
-|--------|-------------|
-| Single Elimination | Lose once, you're out |
-| Double Elimination | Two losses to eliminate |
-| Swiss | Fixed rounds, pair by record |
-| Round Robin | Everyone plays everyone |
+| Format             | Description                  |
+| ------------------ | ---------------------------- |
+| Single Elimination | Lose once, you're out        |
+| Double Elimination | Two losses to eliminate      |
+| Swiss              | Fixed rounds, pair by record |
+| Round Robin        | Everyone plays everyone      |
 
 **Features:**
+
 - Tournament creation wizard: format, player count, bracket type
 - Bracket visualization (interactive SVG or canvas)
 - Auto-pairing for Swiss rounds
@@ -690,6 +736,7 @@ Structured competitive events.
 - Tournament history page
 
 **Data model:**
+
 - `Tournament` — id, name, format, bracketType, status, createdAt
 - `TournamentParticipant` — tournamentId, userId/name, teamId, seed
 - `TournamentRound` — tournamentId, roundNumber
@@ -713,25 +760,25 @@ Structured competitive events.
 
 ### Key New Files/Packages
 
-| File/Path | Purpose |
-|-----------|---------|
-| `packages/battle-engine/src/multiplayer/` | Multiplayer battle server |
-| `packages/battle-engine/src/multiplayer/lobby.service.ts` | Room creation, joining, matchmaking |
-| `packages/battle-engine/src/multiplayer/ws-server.ts` | WebSocket server for real-time battles |
-| `packages/battle-engine/src/multiplayer/anti-cheat.ts` | Server-side validation of moves |
-| `packages/tournament/` | New package for tournament logic |
-| `packages/tournament/src/bracket.service.ts` | Bracket generation and advancement |
-| `packages/tournament/src/pairing.service.ts` | Swiss and round-robin pairing algorithms |
-| `packages/tournament/src/tournament.service.ts` | Tournament CRUD and lifecycle |
-| `apps/web/src/app/teams/shared/[shareId]/page.tsx` | Public team view |
-| `apps/web/src/app/battle/multiplayer/page.tsx` | Multiplayer lobby |
-| `apps/web/src/app/battle/multiplayer/[roomId]/page.tsx` | Active multiplayer battle |
-| `apps/web/src/app/tournaments/page.tsx` | Tournament browser |
-| `apps/web/src/app/tournaments/[id]/page.tsx` | Tournament bracket view |
-| `apps/web/src/app/tournaments/new/page.tsx` | Tournament creation wizard |
-| `apps/web/src/features/battle/components/BracketView.tsx` | Bracket visualization component |
-| `apps/web/src/features/battle/components/BattleChat.tsx` | In-battle text chat |
-| `prisma/migrations/YYYYMMDD_add_multiplayer/migration.sql` | Multiplayer and tournament tables |
+| File/Path                                                  | Purpose                                  |
+| ---------------------------------------------------------- | ---------------------------------------- |
+| `packages/battle-engine/src/multiplayer/`                  | Multiplayer battle server                |
+| `packages/battle-engine/src/multiplayer/lobby.service.ts`  | Room creation, joining, matchmaking      |
+| `packages/battle-engine/src/multiplayer/ws-server.ts`      | WebSocket server for real-time battles   |
+| `packages/battle-engine/src/multiplayer/anti-cheat.ts`     | Server-side validation of moves          |
+| `packages/tournament/`                                     | New package for tournament logic         |
+| `packages/tournament/src/bracket.service.ts`               | Bracket generation and advancement       |
+| `packages/tournament/src/pairing.service.ts`               | Swiss and round-robin pairing algorithms |
+| `packages/tournament/src/tournament.service.ts`            | Tournament CRUD and lifecycle            |
+| `apps/web/src/app/teams/shared/[shareId]/page.tsx`         | Public team view                         |
+| `apps/web/src/app/battle/multiplayer/page.tsx`             | Multiplayer lobby                        |
+| `apps/web/src/app/battle/multiplayer/[roomId]/page.tsx`    | Active multiplayer battle                |
+| `apps/web/src/app/tournaments/page.tsx`                    | Tournament browser                       |
+| `apps/web/src/app/tournaments/[id]/page.tsx`               | Tournament bracket view                  |
+| `apps/web/src/app/tournaments/new/page.tsx`                | Tournament creation wizard               |
+| `apps/web/src/features/battle/components/BracketView.tsx`  | Bracket visualization component          |
+| `apps/web/src/features/battle/components/BattleChat.tsx`   | In-battle text chat                      |
+| `prisma/migrations/YYYYMMDD_add_multiplayer/migration.sql` | Multiplayer and tournament tables        |
 
 ---
 
@@ -741,60 +788,60 @@ These concerns span multiple milestones and should be addressed incrementally.
 
 ### Performance
 
-| Concern | Milestone | Approach |
-|---------|-----------|----------|
-| MCTS computation blocking UI | M3 | Web Worker |
-| Batch simulation speed | M2 | Worker threads, progress streaming |
-| Large team lineage queries | M2 | Recursive CTE in Prisma, pagination |
-| Real-time battle latency | M5 | WebSocket, server-side battle engine |
-| Usage data queries | M1 | Database indexes, query optimization |
+| Concern                      | Milestone | Approach                             |
+| ---------------------------- | --------- | ------------------------------------ |
+| MCTS computation blocking UI | M3        | Web Worker                           |
+| Batch simulation speed       | M2        | Worker threads, progress streaming   |
+| Large team lineage queries   | M2        | Recursive CTE in Prisma, pagination  |
+| Real-time battle latency     | M5        | WebSocket, server-side battle engine |
+| Usage data queries           | M1        | Database indexes, query optimization |
 
 ### Data Model Evolution
 
-| Migration | Milestone | Changes | Status |
-|-----------|-----------|---------|--------|
-| Battle infrastructure | M2 | `Battle`, `BattleTurn`, `BatchSimulation`, `SampleTeam` tables | Implemented |
-| Team versioning | M2 | `parentId` on Team, meta profile tables | Not started |
-| Puzzles and drills | M3 | Puzzle, PuzzleAttempt, DrillSession tables | Not started |
-| Coaching | M4 | ChatSession.type field, CoachingProgress table | Not started |
-| Sharing | M5 | Team.shareId, Team.isPublic, Team.description | Not started |
-| Multiplayer | M5 | Tournament, TournamentParticipant, TournamentMatch tables | Not started |
+| Migration             | Milestone | Changes                                                        | Status      |
+| --------------------- | --------- | -------------------------------------------------------------- | ----------- |
+| Battle infrastructure | M2        | `Battle`, `BattleTurn`, `BatchSimulation`, `SampleTeam` tables | Implemented |
+| Team versioning       | M2        | `parentId` on Team, meta profile tables                        | Not started |
+| Puzzles and drills    | M3        | Puzzle, PuzzleAttempt, DrillSession tables                     | Not started |
+| Coaching              | M4        | ChatSession.type field, CoachingProgress table                 | Not started |
+| Sharing               | M5        | Team.shareId, Team.isPublic, Team.description                  | Not started |
+| Multiplayer           | M5        | Tournament, TournamentParticipant, TournamentMatch tables      | Not started |
 
 ### Testing Strategy
 
-| Phase | Focus | Target |
-|-------|-------|--------|
-| M1 | Unit tests for all packages | 80% coverage |
-| M2 | Integration tests for version + simulation flows | Key user journeys |
-| M3 | Battle engine accuracy tests | Move grading correctness |
-| M4 | LLM output validation | Factual accuracy checks |
-| M5 | E2E tests for multiplayer | Connection handling, state sync |
+| Phase | Focus                                            | Target                          |
+| ----- | ------------------------------------------------ | ------------------------------- |
+| M1    | Unit tests for all packages                      | 80% coverage                    |
+| M2    | Integration tests for version + simulation flows | Key user journeys               |
+| M3    | Battle engine accuracy tests                     | Move grading correctness        |
+| M4    | LLM output validation                            | Factual accuracy checks         |
+| M5    | E2E tests for multiplayer                        | Connection handling, state sync |
 
 ---
 
 ## Risk Register
 
-| Risk | Impact | Likelihood | Mitigation |
-|------|--------|------------|------------|
-| `@pkmn/sim` API changes break battle engine | High | Low | Pin versions, integration tests |
-| LLM costs scale with battle commentary | Medium | High | Default OFF, token budgets, caching |
-| WebSocket complexity for multiplayer | High | Medium | Start with lobby-code system, no matchmaking |
-| Multi-gen scope creep | Medium | High | Prioritize Gens 6-9, defer older gens |
-| Puzzle curation bottleneck | Medium | Medium | Auto-extraction from replays, community submissions |
-| SQLite limitations at scale | High | Low | Acceptable for single-user, evaluate PostgreSQL for M5 |
+| Risk                                        | Impact | Likelihood | Mitigation                                             |
+| ------------------------------------------- | ------ | ---------- | ------------------------------------------------------ |
+| `@pkmn/sim` API changes break battle engine | High   | Low        | Pin versions, integration tests                        |
+| LLM costs scale with battle commentary      | Medium | High       | Default OFF, token budgets, caching                    |
+| WebSocket complexity for multiplayer        | High   | Medium     | Start with lobby-code system, no matchmaking           |
+| Multi-gen scope creep                       | Medium | High       | Prioritize Gens 6-9, defer older gens                  |
+| Puzzle curation bottleneck                  | Medium | Medium     | Auto-extraction from replays, community submissions    |
+| SQLite limitations at scale                 | High   | Low        | Acceptable for single-user, evaluate PostgreSQL for M5 |
 
 ---
 
 ## Appendix: Package Growth Projection
 
-| Package | M1 | M2 | M3 | M4 | M5 |
-|---------|----|----|----|----|-----|
-| `core` | Types cleanup | Version types | Puzzle types | Coaching types | Tournament types |
-| `teams` | Validation | version.service | — | — | Sharing |
-| `formats` | Clause system | — | — | — | Multi-gen |
-| `battle-engine` | Doubles | ~~Batch sim UI~~ (done) | ~~Replay, hint engine, evaluator, set predictor, MCTS~~ (done), puzzles, drills, Web Worker | Commentary hooks | Multiplayer |
-| `llm` | — | Optimization suggestions | — | Coaching, meta briefings | — |
-| `mcp-server` | — | — | — | +11 tools | — |
-| `ui` | Error boundaries | Diff views | Grade badges | Coaching panel | Bracket view |
-| `pokemon-data` | NatDex | — | — | — | Multi-gen |
-| `tournament` | — | — | — | — | New package |
+| Package         | M1               | M2                       | M3                                                                                          | M4                       | M5               |
+| --------------- | ---------------- | ------------------------ | ------------------------------------------------------------------------------------------- | ------------------------ | ---------------- |
+| `core`          | Types cleanup    | Version types            | Puzzle types                                                                                | Coaching types           | Tournament types |
+| `teams`         | Validation       | version.service          | —                                                                                           | —                        | Sharing          |
+| `formats`       | Clause system    | —                        | —                                                                                           | —                        | Multi-gen        |
+| `battle-engine` | Doubles          | ~~Batch sim UI~~ (done)  | ~~Replay, hint engine, evaluator, set predictor, MCTS~~ (done), puzzles, drills, Web Worker | Commentary hooks         | Multiplayer      |
+| `llm`           | —                | Optimization suggestions | —                                                                                           | Coaching, meta briefings | —                |
+| `mcp-server`    | —                | —                        | —                                                                                           | +11 tools                | —                |
+| `ui`            | Error boundaries | Diff views               | Grade badges                                                                                | Coaching panel           | Bracket view     |
+| `pokemon-data`  | NatDex           | —                        | —                                                                                           | —                        | Multi-gen        |
+| `tournament`    | —                | —                        | —                                                                                           | —                        | New package      |

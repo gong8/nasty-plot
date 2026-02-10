@@ -1,8 +1,8 @@
-import Link from "next/link";
-import { notFound } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import Link from "next/link"
+import { notFound } from "next/navigation"
+import { ArrowLeft } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   Table,
   TableBody,
@@ -10,64 +10,64 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { getSpecies, getLearnset, getMove } from "@nasty-plot/pokemon-data";
-import { prisma } from "@nasty-plot/db";
-import { getSetsForPokemon } from "@nasty-plot/smogon-data";
-import { StatBar, TypeBadge } from "@nasty-plot/ui";
-import { CompetitiveData } from "./competitive-data";
-import { STATS, type MoveData, type StatName, type UsageStatsEntry } from "@nasty-plot/core";
+} from "@/components/ui/table"
+import { getSpecies, getLearnset, getMove } from "@nasty-plot/pokemon-data"
+import { prisma } from "@nasty-plot/db"
+import { getSetsForPokemon } from "@nasty-plot/smogon-data"
+import { StatBar, TypeBadge } from "@nasty-plot/ui"
+import { CompetitiveData } from "./competitive-data"
+import { STATS, type MoveData, type StatName, type UsageStatsEntry } from "@nasty-plot/core"
 
 const CATEGORY_COLORS: Record<string, string> = {
   Physical: "text-red-500",
   Special: "text-blue-500",
   Status: "text-gray-500",
-};
+}
 
 interface Props {
-  params: Promise<{ id: string }>;
+  params: Promise<{ id: string }>
 }
 
 export default async function PokemonDetailPage({ params }: Props) {
-  const { id } = await params;
-  const species = getSpecies(id);
+  const { id } = await params
+  const species = getSpecies(id)
 
   if (!species) {
-    notFound();
+    notFound()
   }
 
-  const moveIds = await getLearnset(id);
-  const moves: MoveData[] = [];
+  const moveIds = await getLearnset(id)
+  const moves: MoveData[] = []
   for (const moveId of moveIds) {
-    const move = getMove(moveId);
-    if (move) moves.push(move);
+    const move = getMove(moveId)
+    if (move) moves.push(move)
   }
-  moves.sort((a, b) => a.name.localeCompare(b.name));
+  moves.sort((a, b) => a.name.localeCompare(b.name))
 
-  const bst = STATS.reduce((sum, stat) => sum + species.baseStats[stat], 0);
-  const spriteUrl = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${species.num}.png`;
+  const bst = STATS.reduce((sum, stat) => sum + species.baseStats[stat], 0)
+  const spriteUrl = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${species.num}.png`
 
   // Fetch competitive data from DB (non-blocking, graceful on empty DB)
-  const formats = await prisma.format.findMany({ where: { isActive: true } }).catch(() => []);
+  const formats = await prisma.format.findMany({ where: { isActive: true } }).catch(() => [])
 
   const usageByFormat = await Promise.all(
     formats.map(async (f: { id: string; name: string }) => {
       const row = await prisma.usageStats
         .findFirst({ where: { formatId: f.id, pokemonId: id }, orderBy: { year: "desc" } })
-        .catch(() => null);
+        .catch(() => null)
       const stats: UsageStatsEntry | null = row
         ? { pokemonId: row.pokemonId, usagePercent: row.usagePercent, rank: row.rank }
-        : null;
-      return { formatId: f.id, formatName: f.name, stats };
-    })
-  );
+        : null
+      return { formatId: f.id, formatName: f.name, stats }
+    }),
+  )
 
   const setsByFormat = await Promise.all(
     formats.map(async (f: { id: string; name: string }) => {
-      const sets = await getSetsForPokemon(f.id, id).catch(() => []);
-      return { formatId: f.id, formatName: f.name, sets };
-    })
-  );
+      const sets = await getSetsForPokemon(f.id, id).catch(() => [])
+      return { formatId: f.id, formatName: f.name, sets }
+    }),
+  )
 
   return (
     <div className="flex flex-col">
@@ -130,9 +130,7 @@ export default async function PokemonDetailPage({ params }: Props) {
                   {Object.entries(species.abilities).map(([slot, name]) => (
                     <li key={slot} className="text-sm">
                       <span className="font-medium">{name}</span>
-                      {slot === "H" && (
-                        <span className="text-muted-foreground ml-2">(Hidden)</span>
-                      )}
+                      {slot === "H" && <span className="text-muted-foreground ml-2">(Hidden)</span>}
                     </li>
                   ))}
                 </ul>
@@ -143,10 +141,7 @@ export default async function PokemonDetailPage({ params }: Props) {
 
         {/* Competitive Data: Usage stats + Smogon sets */}
         <div className="mt-6">
-          <CompetitiveData
-            usageByFormat={usageByFormat}
-            setsByFormat={setsByFormat}
-          />
+          <CompetitiveData usageByFormat={usageByFormat} setsByFormat={setsByFormat} />
         </div>
 
         {/* Learnset table */}
@@ -174,13 +169,13 @@ export default async function PokemonDetailPage({ params }: Props) {
                       <TypeBadge type={move.type} size="sm" />
                     </TableCell>
                     <TableCell>
-                      <span className={`text-xs font-medium ${CATEGORY_COLORS[move.category] ?? "text-gray-500"}`}>
+                      <span
+                        className={`text-xs font-medium ${CATEGORY_COLORS[move.category] ?? "text-gray-500"}`}
+                      >
                         {move.category}
                       </span>
                     </TableCell>
-                    <TableCell className="text-right">
-                      {move.basePower || "-"}
-                    </TableCell>
+                    <TableCell className="text-right">{move.basePower || "-"}</TableCell>
                     <TableCell className="text-right">
                       {move.accuracy === true ? "-" : `${move.accuracy}%`}
                     </TableCell>
@@ -193,5 +188,5 @@ export default async function PokemonDetailPage({ params }: Props) {
         </Card>
       </main>
     </div>
-  );
+  )
 }

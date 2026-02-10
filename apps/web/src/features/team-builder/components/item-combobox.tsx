@@ -1,15 +1,11 @@
-"use client";
+"use client"
 
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { Check, ChevronsUpDown } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { useState } from "react"
+import { useQuery } from "@tanstack/react-query"
+import { Check, ChevronsUpDown } from "lucide-react"
+import { cn } from "@/lib/utils"
+import { Button } from "@/components/ui/button"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import {
   Command,
   CommandEmpty,
@@ -17,39 +13,39 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-} from "@/components/ui/command";
-import type { ItemData, PaginatedResponse } from "@nasty-plot/core";
+} from "@/components/ui/command"
+import type { ItemData, PaginatedResponse } from "@nasty-plot/core"
 
 interface ItemComboboxProps {
-  value: string;
-  onChange: (value: string) => void;
-  formatId?: string;
+  value: string
+  onChange: (value: string) => void
+  formatId?: string
 }
 
 export function ItemCombobox({ value, onChange, formatId }: ItemComboboxProps) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(false)
 
   const { data: items = [] } = useQuery<ItemData[]>({
     queryKey: ["all-items", formatId],
     queryFn: async () => {
-      const formatParam = formatId ? `&format=${encodeURIComponent(formatId)}` : "";
-      const res = await fetch(`/api/items?pageSize=100&page=1${formatParam}`);
-      if (!res.ok) return [];
-      const json: PaginatedResponse<ItemData> = await res.json();
+      const formatParam = formatId ? `&format=${encodeURIComponent(formatId)}` : ""
+      const res = await fetch(`/api/items?pageSize=100&page=1${formatParam}`)
+      if (!res.ok) return []
+      const json: PaginatedResponse<ItemData> = await res.json()
       // Fetch all pages if needed
-      const allItems = [...json.data];
-      const totalPages = Math.ceil(json.total / json.pageSize);
+      const allItems = [...json.data]
+      const totalPages = Math.ceil(json.total / json.pageSize)
       for (let p = 2; p <= totalPages; p++) {
-        const r = await fetch(`/api/items?pageSize=100&page=${p}${formatParam}`);
+        const r = await fetch(`/api/items?pageSize=100&page=${p}${formatParam}`)
         if (r.ok) {
-          const j: PaginatedResponse<ItemData> = await r.json();
-          allItems.push(...j.data);
+          const j: PaginatedResponse<ItemData> = await r.json()
+          allItems.push(...j.data)
         }
       }
-      return allItems;
+      return allItems
     },
     staleTime: Infinity,
-  });
+  })
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -64,7 +60,12 @@ export function ItemCombobox({ value, onChange, formatId }: ItemComboboxProps) {
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start" side="bottom" avoidCollisions>
+      <PopoverContent
+        className="w-[--radix-popover-trigger-width] p-0"
+        align="start"
+        side="bottom"
+        avoidCollisions
+      >
         <Command>
           <CommandInput placeholder="Search items..." />
           <CommandList className="max-h-[200px] overflow-y-auto">
@@ -73,16 +74,11 @@ export function ItemCombobox({ value, onChange, formatId }: ItemComboboxProps) {
               <CommandItem
                 value="__none__"
                 onSelect={() => {
-                  onChange("");
-                  setOpen(false);
+                  onChange("")
+                  setOpen(false)
                 }}
               >
-                <Check
-                  className={cn(
-                    "mr-2 h-4 w-4",
-                    !value ? "opacity-100" : "opacity-0"
-                  )}
-                />
+                <Check className={cn("mr-2 h-4 w-4", !value ? "opacity-100" : "opacity-0")} />
                 <span className="text-muted-foreground">None</span>
               </CommandItem>
               {items.map((item) => (
@@ -90,14 +86,14 @@ export function ItemCombobox({ value, onChange, formatId }: ItemComboboxProps) {
                   key={item.id}
                   value={item.name}
                   onSelect={() => {
-                    onChange(item.name);
-                    setOpen(false);
+                    onChange(item.name)
+                    setOpen(false)
                   }}
                 >
                   <Check
                     className={cn(
                       "mr-2 h-4 w-4",
-                      value === item.name ? "opacity-100" : "opacity-0"
+                      value === item.name ? "opacity-100" : "opacity-0",
                     )}
                   />
                   <div className="flex flex-col">
@@ -115,5 +111,5 @@ export function ItemCombobox({ value, onChange, formatId }: ItemComboboxProps) {
         </Command>
       </PopoverContent>
     </Popover>
-  );
+  )
 }

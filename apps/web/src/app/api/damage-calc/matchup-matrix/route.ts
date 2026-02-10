@@ -1,61 +1,62 @@
-import { NextRequest, NextResponse } from "next/server";
-import { calculateMatchupMatrix } from "@nasty-plot/damage-calc";
-import { getTeam } from "@nasty-plot/teams";
-import { prisma } from "@nasty-plot/db";
-import type { ApiResponse, MatchupMatrixEntry, ApiError } from "@nasty-plot/core";
+import { NextRequest, NextResponse } from "next/server"
+import { calculateMatchupMatrix } from "@nasty-plot/damage-calc"
+import { getTeam } from "@nasty-plot/teams"
+import { prisma } from "@nasty-plot/db"
+import type { ApiResponse, MatchupMatrixEntry, ApiError } from "@nasty-plot/core"
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
+    const body = await request.json()
     const { teamId, threatIds, formatId } = body as {
-      teamId: string;
-      threatIds?: string[];
-      formatId: string;
-    };
+      teamId: string
+      threatIds?: string[]
+      formatId: string
+    }
 
     if (!teamId || !formatId) {
       return NextResponse.json(
-        { error: "Missing required fields: teamId, formatId", code: "INVALID_INPUT" } satisfies ApiError,
-        { status: 400 }
-      );
+        {
+          error: "Missing required fields: teamId, formatId",
+          code: "INVALID_INPUT",
+        } satisfies ApiError,
+        { status: 400 },
+      )
     }
 
-    const team = await getTeam(teamId);
+    const team = await getTeam(teamId)
 
     if (!team) {
-      return NextResponse.json(
-        { error: "Team not found", code: "NOT_FOUND" } satisfies ApiError,
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Team not found", code: "NOT_FOUND" } satisfies ApiError, {
+        status: 404,
+      })
     }
 
     // Resolve threat IDs: use provided or top usage Pokemon
-    let resolvedThreats = threatIds ?? [];
+    let resolvedThreats = threatIds ?? []
     if (resolvedThreats.length === 0) {
       const usageEntries = await prisma.usageStats.findMany({
         where: { formatId },
         orderBy: { rank: "asc" },
         take: 10,
-      });
-      resolvedThreats = usageEntries.map((e: typeof usageEntries[number]) => e.pokemonId);
+      })
+      resolvedThreats = usageEntries.map((e: (typeof usageEntries)[number]) => e.pokemonId)
     }
 
     if (resolvedThreats.length === 0) {
       return NextResponse.json({
         data: [],
-      } satisfies ApiResponse<MatchupMatrixEntry[][]>);
+      } satisfies ApiResponse<MatchupMatrixEntry[][]>)
     }
 
-    const matrix = calculateMatchupMatrix(team.slots, resolvedThreats, formatId);
+    const matrix = calculateMatchupMatrix(team.slots, resolvedThreats, formatId)
 
     return NextResponse.json({
       data: matrix,
-    } satisfies ApiResponse<MatchupMatrixEntry[][]>);
+    } satisfies ApiResponse<MatchupMatrixEntry[][]>)
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Matrix calculation failed";
-    return NextResponse.json(
-      { error: message, code: "CALC_ERROR" } satisfies ApiError,
-      { status: 500 }
-    );
+    const message = error instanceof Error ? error.message : "Matrix calculation failed"
+    return NextResponse.json({ error: message, code: "CALC_ERROR" } satisfies ApiError, {
+      status: 500,
+    })
   }
 }

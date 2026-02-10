@@ -1,71 +1,56 @@
-import { NextRequest } from "next/server";
-import { getSession, updateSession, deleteSession } from "@nasty-plot/llm";
+import { NextRequest } from "next/server"
+import { getSession, updateSession, deleteSession } from "@nasty-plot/llm"
 
-export async function GET(
-  _req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = await params;
-    const session = await getSession(id);
+    const { id } = await params
+    const session = await getSession(id)
 
     if (!session) {
-      return Response.json(
-        { error: "Session not found", code: "NOT_FOUND" },
-        { status: 404 }
-      );
+      return Response.json({ error: "Session not found", code: "NOT_FOUND" }, { status: 404 })
     }
 
-    return Response.json({ data: session });
+    return Response.json({ data: session })
   } catch (error) {
-    console.error("Get session error:", error);
+    console.error("Get session error:", error)
     return Response.json(
       { error: "Internal server error", code: "INTERNAL_ERROR" },
-      { status: 500 }
-    );
+      { status: 500 },
+    )
   }
 }
 
-export async function PUT(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = await params;
-    const body = await req.json();
-    const { title }: { title?: string } = body;
+    const { id } = await params
+    const body = await req.json()
+    const { title }: { title?: string } = body
 
-    const session = await updateSession(id, { title });
+    const session = await updateSession(id, { title })
     if (!session) {
-      return Response.json(
-        { error: "Session not found", code: "NOT_FOUND" },
-        { status: 404 }
-      );
+      return Response.json({ error: "Session not found", code: "NOT_FOUND" }, { status: 404 })
     }
 
-    return Response.json({ data: session });
+    return Response.json({ data: session })
   } catch (error) {
-    console.error("Update session error:", error);
+    console.error("Update session error:", error)
     return Response.json(
       { error: "Internal server error", code: "INTERNAL_ERROR" },
-      { status: 500 }
-    );
+      { status: 500 },
+    )
   }
 }
 
-export async function DELETE(
-  _req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = await params;
-    await deleteSession(id);
-    return Response.json({ success: true });
+    const { id } = await params
+    await deleteSession(id)
+    return Response.json({ success: true })
   } catch (error) {
-    console.error("Delete session error:", error);
+    console.error("Delete session error:", error)
     return Response.json(
       { error: "Internal server error", code: "INTERNAL_ERROR" },
-      { status: 500 }
-    );
+      { status: 500 },
+    )
   }
 }

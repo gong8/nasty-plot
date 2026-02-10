@@ -94,22 +94,22 @@ pnpm db:push          # Push schema changes without migration (prisma db push)
 
 **Models (14):**
 
-| Model | Purpose | Key Fields |
-|-------|---------|------------|
-| `Format` | Competitive format definitions | `id` (string PK), `name`, `generation`, `gameType`, `isActive` |
-| `UsageStats` | Monthly usage percentages | `formatId`, `pokemonId`, `usagePercent`, `rank`, `year`, `month` |
-| `SmogonSet` | Recommended movesets | `formatId`, `pokemonId`, `setName`, `moves` (JSON), `evs` (JSON), `ivs` (JSON) |
-| `TeammateCorr` | Pokemon pair synergy data | `formatId`, `pokemonAId`, `pokemonBId`, `correlationPercent` |
-| `CheckCounter` | What beats what | `formatId`, `targetId`, `counterId`, `koPercent`, `switchPercent` |
-| `Team` | User teams | `id` (uuid), `name`, `formatId`, `mode` ("freeform"/"guided"), `notes` |
-| `TeamSlot` | Pokemon on a team (1-6) | `pokemonId`, `position`, `ability`, `item`, `nature`, `move1-4`, `evHp/Atk/Def/SpA/SpD/Spe`, `ivHp/Atk/Def/SpA/SpD/Spe` |
-| `DataSyncLog` | Seed job tracking | `source`, `formatId`, `lastSynced`, `status`, `message` |
-| `ChatSession` | LLM chat sessions | `id` (uuid), `teamId`, `title` |
-| `ChatMessage` | Chat messages | `sessionId`, `role`, `content`, `toolCalls` (JSON) |
-| `Battle` | Simulated/played battles | `id` (uuid), `formatId`, `gameType`, `mode`, `aiDifficulty`, `team1Paste`, `team2Paste`, `winnerId`, `turnCount`, `protocolLog`, `batchId` |
-| `BattleTurn` | Individual turn data | `battleId`, `turnNumber`, `team1Action` (JSON), `team2Action` (JSON), `stateSnapshot` (JSON), `winProbTeam1` |
-| `BatchSimulation` | Bulk battle runner | `id` (uuid), `formatId`, `totalGames`, `completedGames`, `team1Wins`, `team2Wins`, `draws`, `status`, `analytics` (JSON) |
-| `SampleTeam` | Example teams for UI | `id` (uuid), `name`, `formatId`, `archetype`, `source`, `sourceUrl`, `paste`, `pokemonIds`, `isActive` |
+| Model             | Purpose                        | Key Fields                                                                                                                                 |
+| ----------------- | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `Format`          | Competitive format definitions | `id` (string PK), `name`, `generation`, `gameType`, `isActive`                                                                             |
+| `UsageStats`      | Monthly usage percentages      | `formatId`, `pokemonId`, `usagePercent`, `rank`, `year`, `month`                                                                           |
+| `SmogonSet`       | Recommended movesets           | `formatId`, `pokemonId`, `setName`, `moves` (JSON), `evs` (JSON), `ivs` (JSON)                                                             |
+| `TeammateCorr`    | Pokemon pair synergy data      | `formatId`, `pokemonAId`, `pokemonBId`, `correlationPercent`                                                                               |
+| `CheckCounter`    | What beats what                | `formatId`, `targetId`, `counterId`, `koPercent`, `switchPercent`                                                                          |
+| `Team`            | User teams                     | `id` (uuid), `name`, `formatId`, `mode` ("freeform"/"guided"), `notes`                                                                     |
+| `TeamSlot`        | Pokemon on a team (1-6)        | `pokemonId`, `position`, `ability`, `item`, `nature`, `move1-4`, `evHp/Atk/Def/SpA/SpD/Spe`, `ivHp/Atk/Def/SpA/SpD/Spe`                    |
+| `DataSyncLog`     | Seed job tracking              | `source`, `formatId`, `lastSynced`, `status`, `message`                                                                                    |
+| `ChatSession`     | LLM chat sessions              | `id` (uuid), `teamId`, `title`                                                                                                             |
+| `ChatMessage`     | Chat messages                  | `sessionId`, `role`, `content`, `toolCalls` (JSON)                                                                                         |
+| `Battle`          | Simulated/played battles       | `id` (uuid), `formatId`, `gameType`, `mode`, `aiDifficulty`, `team1Paste`, `team2Paste`, `winnerId`, `turnCount`, `protocolLog`, `batchId` |
+| `BattleTurn`      | Individual turn data           | `battleId`, `turnNumber`, `team1Action` (JSON), `team2Action` (JSON), `stateSnapshot` (JSON), `winProbTeam1`                               |
+| `BatchSimulation` | Bulk battle runner             | `id` (uuid), `formatId`, `totalGames`, `completedGames`, `team1Wins`, `team2Wins`, `draws`, `status`, `analytics` (JSON)                   |
+| `SampleTeam`      | Example teams for UI           | `id` (uuid), `name`, `formatId`, `archetype`, `source`, `sourceUrl`, `paste`, `pokemonIds`, `isActive`                                     |
 
 **Note:** `TeamSlot` stores EVs/IVs as individual columns (`evHp`, `evAtk`, etc.) and moves as `move1`-`move4` (not arrays).
 
@@ -118,6 +118,7 @@ pnpm db:push          # Push schema changes without migration (prisma db push)
 All routes in `apps/web/src/app/api/`. Convention: routes import service functions from packages, handle HTTP concerns only.
 
 **Teams**
+
 - `GET/POST /api/teams` — list / create
 - `GET/PUT/DELETE /api/teams/[teamId]` — read / update / delete
 - `GET /api/teams/[teamId]/analysis` — full team analysis
@@ -127,6 +128,7 @@ All routes in `apps/web/src/app/api/`. Convention: routes import service functio
 - `PUT/DELETE /api/teams/[teamId]/slots/[position]` — update / remove slot
 
 **Pokemon**
+
 - `GET /api/pokemon` — search/list with pagination
 - `GET /api/pokemon/[id]` — species details
 - `GET /api/pokemon/[id]/learnset` — full learnset
@@ -134,15 +136,18 @@ All routes in `apps/web/src/app/api/`. Convention: routes import service functio
 - `GET /api/pokemon/[id]/mega-form` — mega form data
 
 **Formats & Usage**
+
 - `GET /api/formats` — all formats
 - `GET /api/formats/[id]/pokemon` — legal Pokemon for format
 - `GET /api/formats/[id]/usage` — usage statistics
 
 **Damage Calc**
+
 - `POST /api/damage-calc` — single calculation
 - `POST /api/damage-calc/matchup-matrix` — team vs team matrix
 
 **Battles**
+
 - `GET/POST /api/battles` — list / create battles
 - `GET/DELETE /api/battles/[battleId]` — get / delete battle
 - `GET /api/battles/[battleId]/replay` — replay data
@@ -151,16 +156,19 @@ All routes in `apps/web/src/app/api/`. Convention: routes import service functio
 - `POST /api/battles/commentary` — battle commentary stream
 
 **Sample Teams**
+
 - `GET/POST /api/sample-teams` — list / create sample teams
 - `GET/DELETE /api/sample-teams/[id]` — get / delete sample team
 - `POST /api/sample-teams/import` — import sample team
 
 **Chat**
+
 - `POST /api/chat` — streaming chat response
 - `GET/POST /api/chat/sessions` — list / create sessions
 - `GET/PUT/DELETE /api/chat/sessions/[id]` — get / update / delete session
 
 **Other**
+
 - `GET /api/items` — list items
 - `POST /api/recommend` — Pokemon recommendations for team
 - `POST /api/data/seed` — trigger data seeding
@@ -168,23 +176,23 @@ All routes in `apps/web/src/app/api/`. Convention: routes import service functio
 
 ## App Pages
 
-| Route | Page |
-|-------|------|
-| `/` | Home |
-| `/teams` | Teams list |
-| `/teams/new` | Create team |
-| `/teams/[teamId]` | Team editor |
-| `/teams/[teamId]/guided` | Guided team builder |
-| `/pokemon` | Pokemon browser |
-| `/pokemon/[id]` | Pokemon detail |
-| `/damage-calc` | Damage calculator |
-| `/chat` | LLM chat interface |
-| `/battle` | Battle hub |
-| `/battle/new` | Battle setup |
-| `/battle/live` | Active battle (live sim) |
-| `/battle/simulate` | Battle simulator |
-| `/battle/sample-teams` | Sample teams browser |
-| `/battle/replay/[battleId]` | Battle replay viewer |
+| Route                       | Page                     |
+| --------------------------- | ------------------------ |
+| `/`                         | Home                     |
+| `/teams`                    | Teams list               |
+| `/teams/new`                | Create team              |
+| `/teams/[teamId]`           | Team editor              |
+| `/teams/[teamId]/guided`    | Guided team builder      |
+| `/pokemon`                  | Pokemon browser          |
+| `/pokemon/[id]`             | Pokemon detail           |
+| `/damage-calc`              | Damage calculator        |
+| `/chat`                     | LLM chat interface       |
+| `/battle`                   | Battle hub               |
+| `/battle/new`               | Battle setup             |
+| `/battle/live`              | Active battle (live sim) |
+| `/battle/simulate`          | Battle simulator         |
+| `/battle/sample-teams`      | Sample teams browser     |
+| `/battle/replay/[battleId]` | Battle replay viewer     |
 
 ## Coding Conventions
 
@@ -205,12 +213,12 @@ All routes in `apps/web/src/app/api/`. Convention: routes import service functio
 
 **Tool Modules** (24 tools total, in `src/tools/`):
 
-| Module | Tools | Purpose |
-|--------|-------|---------|
-| `data-query.ts` (7) | `get_pokemon`, `search_pokemon`, `get_moves_by_criteria`, `get_abilities`, `compare_pokemon`, `get_type_matchups`, `get_smogon_sets` | Pokemon data lookup |
-| `analysis.ts` (6) | `analyze_team_coverage`, `find_team_weaknesses`, `get_speed_tiers`, `calculate_damage`, `suggest_counters`, `get_common_cores` | Team analysis |
-| `team-crud.ts` (6) | `create_team`, `get_team`, `list_teams`, `add_pokemon_to_team`, `update_pokemon_set`, `remove_pokemon_from_team` | Team management |
-| `meta-recs.ts` (5) | `get_meta_trends`, `get_format_viability`, `get_usage_stats`, `suggest_teammates`, `suggest_sets` | Meta recommendations |
+| Module              | Tools                                                                                                                                | Purpose              |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------ | -------------------- |
+| `data-query.ts` (7) | `get_pokemon`, `search_pokemon`, `get_moves_by_criteria`, `get_abilities`, `compare_pokemon`, `get_type_matchups`, `get_smogon_sets` | Pokemon data lookup  |
+| `analysis.ts` (6)   | `analyze_team_coverage`, `find_team_weaknesses`, `get_speed_tiers`, `calculate_damage`, `suggest_counters`, `get_common_cores`       | Team analysis        |
+| `team-crud.ts` (6)  | `create_team`, `get_team`, `list_teams`, `add_pokemon_to_team`, `update_pokemon_set`, `remove_pokemon_from_team`                     | Team management      |
+| `meta-recs.ts` (5)  | `get_meta_trends`, `get_format_viability`, `get_usage_stats`, `suggest_teammates`, `suggest_sets`                                    | Meta recommendations |
 
 **Resources** (5, in `src/resources/`): `pokemon://type-chart`, `pokemon://formats`, `pokemon://natures`, `pokemon://stat-formulas`, `pokemon://viability/{formatId}`
 

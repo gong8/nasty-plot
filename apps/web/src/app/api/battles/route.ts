@@ -1,11 +1,11 @@
-import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@nasty-plot/db";
+import { NextRequest, NextResponse } from "next/server"
+import { prisma } from "@nasty-plot/db"
 
 export async function GET(req: NextRequest) {
-  const { searchParams } = new URL(req.url);
-  const page = parseInt(searchParams.get("page") || "1", 10);
-  const limit = parseInt(searchParams.get("limit") || "20", 10);
-  const skip = (page - 1) * limit;
+  const { searchParams } = new URL(req.url)
+  const page = parseInt(searchParams.get("page") || "1", 10)
+  const limit = parseInt(searchParams.get("limit") || "20", 10)
+  const skip = (page - 1) * limit
 
   const [battles, total] = await Promise.all([
     prisma.battle.findMany({
@@ -26,22 +26,34 @@ export async function GET(req: NextRequest) {
       },
     }),
     prisma.battle.count(),
-  ]);
+  ])
 
-  return NextResponse.json({ battles, total, page, limit });
+  return NextResponse.json({ battles, total, page, limit })
 }
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
+    const body = await req.json()
     const {
-      formatId, gameType, mode = "play", aiDifficulty,
-      team1Paste, team1Name, team2Paste, team2Name,
-      team1Id, team2Id, winnerId, turnCount, protocolLog, commentary, turns,
-    } = body;
+      formatId,
+      gameType,
+      mode = "play",
+      aiDifficulty,
+      team1Paste,
+      team1Name,
+      team2Paste,
+      team2Name,
+      team1Id,
+      team2Id,
+      winnerId,
+      turnCount,
+      protocolLog,
+      commentary,
+      turns,
+    } = body
 
     if (!formatId || !team1Paste || !team2Paste || !protocolLog) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+      return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
     }
 
     const battle = await prisma.battle.create({
@@ -60,21 +72,31 @@ export async function POST(req: NextRequest) {
         turnCount: turnCount || 0,
         protocolLog,
         commentary: commentary ? JSON.stringify(commentary) : null,
-        turns: turns?.length ? {
-          create: turns.map((t: { turnNumber: number; team1Action: string; team2Action: string; stateSnapshot: string; winProbTeam1?: number }) => ({
-            turnNumber: t.turnNumber,
-            team1Action: t.team1Action,
-            team2Action: t.team2Action,
-            stateSnapshot: t.stateSnapshot,
-            winProbTeam1: t.winProbTeam1 ?? null,
-          })),
-        } : undefined,
+        turns: turns?.length
+          ? {
+              create: turns.map(
+                (t: {
+                  turnNumber: number
+                  team1Action: string
+                  team2Action: string
+                  stateSnapshot: string
+                  winProbTeam1?: number
+                }) => ({
+                  turnNumber: t.turnNumber,
+                  team1Action: t.team1Action,
+                  team2Action: t.team2Action,
+                  stateSnapshot: t.stateSnapshot,
+                  winProbTeam1: t.winProbTeam1 ?? null,
+                }),
+              ),
+            }
+          : undefined,
       },
-    });
+    })
 
-    return NextResponse.json(battle, { status: 201 });
+    return NextResponse.json(battle, { status: 201 })
   } catch (err) {
-    console.error("[POST /api/battles]", err);
-    return NextResponse.json({ error: "Failed to save battle" }, { status: 500 });
+    console.error("[POST /api/battles]", err)
+    return NextResponse.json({ error: "Failed to save battle" }, { status: 500 })
   }
 }

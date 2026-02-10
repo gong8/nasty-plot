@@ -1,4 +1,4 @@
-import { analyzeTeam } from "@nasty-plot/analysis";
+import { analyzeTeam } from "@nasty-plot/analysis"
 
 // ---------------------------------------------------------------------------
 // Mocks
@@ -13,7 +13,7 @@ vi.mock("@nasty-plot/db", () => ({
       findMany: vi.fn(),
     },
   },
-}));
+}))
 
 vi.mock("@pkmn/dex", () => ({
   Dex: {
@@ -28,39 +28,39 @@ vi.mock("@pkmn/dex", () => ({
       get: vi.fn(),
     },
   },
-}));
+}))
 
 vi.mock("#analysis/coverage.service", () => ({
   analyzeTypeCoverage: vi.fn(),
-}));
+}))
 
 vi.mock("#analysis/threat.service", () => ({
   identifyThreats: vi.fn(),
-}));
+}))
 
 vi.mock("#analysis/synergy.service", () => ({
   calculateSynergy: vi.fn(),
-}));
+}))
 
 vi.mock("@nasty-plot/formats", () => ({
   getFormat: vi.fn().mockReturnValue({
     id: "gen9ou",
     defaultLevel: 100,
   }),
-}));
+}))
 
-import { prisma } from "@nasty-plot/db";
-import { Dex } from "@pkmn/dex";
-import { analyzeTypeCoverage } from "#analysis/coverage.service";
-import { identifyThreats } from "#analysis/threat.service";
-import { calculateSynergy } from "#analysis/synergy.service";
+import { prisma } from "@nasty-plot/db"
+import { Dex } from "@pkmn/dex"
+import { analyzeTypeCoverage } from "#analysis/coverage.service"
+import { identifyThreats } from "#analysis/threat.service"
+import { calculateSynergy } from "#analysis/synergy.service"
 
-const mockTeamFindUnique = prisma.team.findUnique as ReturnType<typeof vi.fn>;
-const mockUsageFindMany = prisma.usageStats.findMany as ReturnType<typeof vi.fn>;
-const mockSpeciesGet = Dex.species.get as ReturnType<typeof vi.fn>;
-const mockCoverage = analyzeTypeCoverage as ReturnType<typeof vi.fn>;
-const mockThreats = identifyThreats as ReturnType<typeof vi.fn>;
-const mockSynergy = calculateSynergy as ReturnType<typeof vi.fn>;
+const mockTeamFindUnique = prisma.team.findUnique as ReturnType<typeof vi.fn>
+const mockUsageFindMany = prisma.usageStats.findMany as ReturnType<typeof vi.fn>
+const mockSpeciesGet = Dex.species.get as ReturnType<typeof vi.fn>
+const mockCoverage = analyzeTypeCoverage as ReturnType<typeof vi.fn>
+const mockThreats = identifyThreats as ReturnType<typeof vi.fn>
+const mockSynergy = calculateSynergy as ReturnType<typeof vi.fn>
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -76,7 +76,7 @@ function makeDbTeam(slots: unknown[] = []) {
     createdAt: new Date(),
     updatedAt: new Date(),
     slots,
-  };
+  }
 }
 
 function makeDbSlot(overrides?: Record<string, unknown>) {
@@ -95,10 +95,20 @@ function makeDbSlot(overrides?: Record<string, unknown>) {
     move2: "Dragon Claw",
     move3: null,
     move4: null,
-    evHp: 0, evAtk: 252, evDef: 0, evSpA: 0, evSpD: 4, evSpe: 252,
-    ivHp: 31, ivAtk: 31, ivDef: 31, ivSpA: 31, ivSpD: 31, ivSpe: 31,
+    evHp: 0,
+    evAtk: 252,
+    evDef: 0,
+    evSpA: 0,
+    evSpD: 4,
+    evSpe: 252,
+    ivHp: 31,
+    ivAtk: 31,
+    ivDef: 31,
+    ivSpA: 31,
+    ivSpD: 31,
+    ivSpe: 31,
     ...overrides,
-  };
+  }
 }
 
 function mockSpeciesData(id: string, types: string[]) {
@@ -110,7 +120,7 @@ function mockSpeciesData(id: string, types: string[]) {
     baseStats: { hp: 108, atk: 130, def: 95, spa: 80, spd: 85, spe: 102 },
     abilities: { "0": "Rough Skin" },
     weightkg: 95,
-  };
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -119,263 +129,222 @@ function mockSpeciesData(id: string, types: string[]) {
 
 describe("analyzeTeam", () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.clearAllMocks()
 
-    mockUsageFindMany.mockResolvedValue([]);
+    mockUsageFindMany.mockResolvedValue([])
     mockCoverage.mockReturnValue({
       offensive: {},
       defensive: {},
       uncoveredTypes: [],
       sharedWeaknesses: [],
-    });
-    mockThreats.mockResolvedValue([]);
-    mockSynergy.mockReturnValue(75);
-  });
+    })
+    mockThreats.mockResolvedValue([])
+    mockSynergy.mockReturnValue(75)
+  })
 
   it("throws when team not found", async () => {
-    mockTeamFindUnique.mockResolvedValue(null);
+    mockTeamFindUnique.mockResolvedValue(null)
 
-    await expect(analyzeTeam("nonexistent")).rejects.toThrow("Team not found");
-  });
+    await expect(analyzeTeam("nonexistent")).rejects.toThrow("Team not found")
+  })
 
   it("returns a TeamAnalysis object", async () => {
-    mockTeamFindUnique.mockResolvedValue(
-      makeDbTeam([makeDbSlot()])
-    );
-    mockSpeciesGet.mockReturnValue(mockSpeciesData("garchomp", ["Dragon", "Ground"]));
+    mockTeamFindUnique.mockResolvedValue(makeDbTeam([makeDbSlot()]))
+    mockSpeciesGet.mockReturnValue(mockSpeciesData("garchomp", ["Dragon", "Ground"]))
 
-    const result = await analyzeTeam("team-1");
+    const result = await analyzeTeam("team-1")
 
-    expect(result).toHaveProperty("coverage");
-    expect(result).toHaveProperty("threats");
-    expect(result).toHaveProperty("synergyScore");
-    expect(result).toHaveProperty("speedTiers");
-    expect(result).toHaveProperty("suggestions");
-  });
+    expect(result).toHaveProperty("coverage")
+    expect(result).toHaveProperty("threats")
+    expect(result).toHaveProperty("synergyScore")
+    expect(result).toHaveProperty("speedTiers")
+    expect(result).toHaveProperty("suggestions")
+  })
 
   it("calls analyzeTypeCoverage with converted slots", async () => {
-    mockTeamFindUnique.mockResolvedValue(
-      makeDbTeam([makeDbSlot()])
-    );
-    mockSpeciesGet.mockReturnValue(mockSpeciesData("garchomp", ["Dragon", "Ground"]));
+    mockTeamFindUnique.mockResolvedValue(makeDbTeam([makeDbSlot()]))
+    mockSpeciesGet.mockReturnValue(mockSpeciesData("garchomp", ["Dragon", "Ground"]))
 
-    await analyzeTeam("team-1");
+    await analyzeTeam("team-1")
 
-    expect(mockCoverage).toHaveBeenCalledTimes(1);
-    const passedSlots = mockCoverage.mock.calls[0][0];
-    expect(passedSlots).toHaveLength(1);
-    expect(passedSlots[0].pokemonId).toBe("garchomp");
-  });
+    expect(mockCoverage).toHaveBeenCalledTimes(1)
+    const passedSlots = mockCoverage.mock.calls[0][0]
+    expect(passedSlots).toHaveLength(1)
+    expect(passedSlots[0].pokemonId).toBe("garchomp")
+  })
 
   it("calls identifyThreats with slots and formatId", async () => {
-    mockTeamFindUnique.mockResolvedValue(
-      makeDbTeam([makeDbSlot()])
-    );
-    mockSpeciesGet.mockReturnValue(mockSpeciesData("garchomp", ["Dragon", "Ground"]));
+    mockTeamFindUnique.mockResolvedValue(makeDbTeam([makeDbSlot()]))
+    mockSpeciesGet.mockReturnValue(mockSpeciesData("garchomp", ["Dragon", "Ground"]))
 
-    await analyzeTeam("team-1");
+    await analyzeTeam("team-1")
 
-    expect(mockThreats).toHaveBeenCalledWith(
-      expect.any(Array),
-      "gen9ou"
-    );
-  });
+    expect(mockThreats).toHaveBeenCalledWith(expect.any(Array), "gen9ou")
+  })
 
   it("calls calculateSynergy with converted slots", async () => {
-    mockTeamFindUnique.mockResolvedValue(
-      makeDbTeam([makeDbSlot()])
-    );
-    mockSpeciesGet.mockReturnValue(mockSpeciesData("garchomp", ["Dragon", "Ground"]));
+    mockTeamFindUnique.mockResolvedValue(makeDbTeam([makeDbSlot()]))
+    mockSpeciesGet.mockReturnValue(mockSpeciesData("garchomp", ["Dragon", "Ground"]))
 
-    await analyzeTeam("team-1");
+    await analyzeTeam("team-1")
 
-    expect(mockSynergy).toHaveBeenCalledTimes(1);
-  });
+    expect(mockSynergy).toHaveBeenCalledTimes(1)
+  })
 
   it("calculates speed tiers", async () => {
-    mockTeamFindUnique.mockResolvedValue(
-      makeDbTeam([makeDbSlot()])
-    );
-    mockSpeciesGet.mockReturnValue(mockSpeciesData("garchomp", ["Dragon", "Ground"]));
+    mockTeamFindUnique.mockResolvedValue(makeDbTeam([makeDbSlot()]))
+    mockSpeciesGet.mockReturnValue(mockSpeciesData("garchomp", ["Dragon", "Ground"]))
 
-    const result = await analyzeTeam("team-1");
+    const result = await analyzeTeam("team-1")
 
-    expect(Array.isArray(result.speedTiers)).toBe(true);
+    expect(Array.isArray(result.speedTiers)).toBe(true)
     if (result.speedTiers.length > 0) {
-      expect(result.speedTiers[0]).toHaveProperty("pokemonId");
-      expect(result.speedTiers[0]).toHaveProperty("speed");
-      expect(result.speedTiers[0]).toHaveProperty("nature");
+      expect(result.speedTiers[0]).toHaveProperty("pokemonId")
+      expect(result.speedTiers[0]).toHaveProperty("speed")
+      expect(result.speedTiers[0]).toHaveProperty("nature")
     }
-  });
+  })
 
   it("generates suggestions based on analysis", async () => {
-    mockTeamFindUnique.mockResolvedValue(
-      makeDbTeam([makeDbSlot()])
-    );
-    mockSpeciesGet.mockReturnValue(mockSpeciesData("garchomp", ["Dragon", "Ground"]));
+    mockTeamFindUnique.mockResolvedValue(makeDbTeam([makeDbSlot()]))
+    mockSpeciesGet.mockReturnValue(mockSpeciesData("garchomp", ["Dragon", "Ground"]))
     mockCoverage.mockReturnValue({
       offensive: {},
       defensive: {},
       uncoveredTypes: ["Fairy", "Steel"],
       sharedWeaknesses: [],
-    });
+    })
 
-    const result = await analyzeTeam("team-1");
+    const result = await analyzeTeam("team-1")
 
-    expect(result.suggestions.length).toBeGreaterThan(0);
-  });
+    expect(result.suggestions.length).toBeGreaterThan(0)
+  })
 
   it("suggests filling team when less than 6 Pokemon", async () => {
-    mockTeamFindUnique.mockResolvedValue(
-      makeDbTeam([makeDbSlot()])
-    );
-    mockSpeciesGet.mockReturnValue(mockSpeciesData("garchomp", ["Dragon", "Ground"]));
+    mockTeamFindUnique.mockResolvedValue(makeDbTeam([makeDbSlot()]))
+    mockSpeciesGet.mockReturnValue(mockSpeciesData("garchomp", ["Dragon", "Ground"]))
 
-    const result = await analyzeTeam("team-1");
+    const result = await analyzeTeam("team-1")
 
-    const fillSuggestion = result.suggestions.find((s: string) =>
-      s.includes("only has")
-    );
-    expect(fillSuggestion).toBeDefined();
-  });
+    const fillSuggestion = result.suggestions.find((s: string) => s.includes("only has"))
+    expect(fillSuggestion).toBeDefined()
+  })
 
   it("handles team with multiple slots", async () => {
     mockTeamFindUnique.mockResolvedValue(
       makeDbTeam([
         makeDbSlot({ position: 1, pokemonId: "garchomp" }),
         makeDbSlot({ position: 2, pokemonId: "heatran", id: 2 }),
-      ])
-    );
+      ]),
+    )
 
     mockSpeciesGet.mockImplementation((id: string) => {
-      if (id === "garchomp") return mockSpeciesData("garchomp", ["Dragon", "Ground"]);
-      if (id === "heatran") return mockSpeciesData("heatran", ["Fire", "Steel"]);
-      return { exists: false };
-    });
+      if (id === "garchomp") return mockSpeciesData("garchomp", ["Dragon", "Ground"])
+      if (id === "heatran") return mockSpeciesData("heatran", ["Fire", "Steel"])
+      return { exists: false }
+    })
 
-    const result = await analyzeTeam("team-1");
+    const result = await analyzeTeam("team-1")
 
-    expect(result).toBeDefined();
-    expect(result.speedTiers.length).toBe(2);
-  });
+    expect(result).toBeDefined()
+    expect(result.speedTiers.length).toBe(2)
+  })
 
   it("suggests addressing shared weaknesses", async () => {
-    mockTeamFindUnique.mockResolvedValue(
-      makeDbTeam([makeDbSlot()])
-    );
-    mockSpeciesGet.mockReturnValue(mockSpeciesData("garchomp", ["Dragon", "Ground"]));
+    mockTeamFindUnique.mockResolvedValue(makeDbTeam([makeDbSlot()]))
+    mockSpeciesGet.mockReturnValue(mockSpeciesData("garchomp", ["Dragon", "Ground"]))
     mockCoverage.mockReturnValue({
       offensive: {},
       defensive: {},
       uncoveredTypes: [],
       sharedWeaknesses: ["Ice", "Fairy"],
-    });
+    })
 
-    const result = await analyzeTeam("team-1");
+    const result = await analyzeTeam("team-1")
 
-    const iceSuggestion = result.suggestions.find((s: string) =>
-      s.includes("weak to Ice")
-    );
-    const fairySuggestion = result.suggestions.find((s: string) =>
-      s.includes("weak to Fairy")
-    );
-    expect(iceSuggestion).toBeDefined();
-    expect(fairySuggestion).toBeDefined();
-  });
+    const iceSuggestion = result.suggestions.find((s: string) => s.includes("weak to Ice"))
+    const fairySuggestion = result.suggestions.find((s: string) => s.includes("weak to Fairy"))
+    expect(iceSuggestion).toBeDefined()
+    expect(fairySuggestion).toBeDefined()
+  })
 
   it("suggests counters for multiple high threats (plural)", async () => {
-    mockTeamFindUnique.mockResolvedValue(
-      makeDbTeam([makeDbSlot()])
-    );
-    mockSpeciesGet.mockReturnValue(mockSpeciesData("garchomp", ["Dragon", "Ground"]));
+    mockTeamFindUnique.mockResolvedValue(makeDbTeam([makeDbSlot()]))
+    mockSpeciesGet.mockReturnValue(mockSpeciesData("garchomp", ["Dragon", "Ground"]))
     mockThreats.mockResolvedValue([
       { pokemonId: "ironValiant", pokemonName: "Iron Valiant", threatLevel: "high" },
       { pokemonId: "greatTusk", pokemonName: "Great Tusk", threatLevel: "high" },
-    ]);
+    ])
 
-    const result = await analyzeTeam("team-1");
+    const result = await analyzeTeam("team-1")
 
-    const threatSuggestion = result.suggestions.find((s: string) =>
-      s.includes("Iron Valiant") && s.includes("Great Tusk")
-    );
-    expect(threatSuggestion).toBeDefined();
-    expect(threatSuggestion).toContain("are");
-    expect(threatSuggestion).toContain("threats");
-  });
+    const threatSuggestion = result.suggestions.find(
+      (s: string) => s.includes("Iron Valiant") && s.includes("Great Tusk"),
+    )
+    expect(threatSuggestion).toBeDefined()
+    expect(threatSuggestion).toContain("are")
+    expect(threatSuggestion).toContain("threats")
+  })
 
   it("suggests counters for a single high threat (singular)", async () => {
-    mockTeamFindUnique.mockResolvedValue(
-      makeDbTeam([makeDbSlot()])
-    );
-    mockSpeciesGet.mockReturnValue(mockSpeciesData("garchomp", ["Dragon", "Ground"]));
+    mockTeamFindUnique.mockResolvedValue(makeDbTeam([makeDbSlot()]))
+    mockSpeciesGet.mockReturnValue(mockSpeciesData("garchomp", ["Dragon", "Ground"]))
     mockThreats.mockResolvedValue([
       { pokemonId: "ironValiant", pokemonName: "Iron Valiant", threatLevel: "high" },
-    ]);
+    ])
 
-    const result = await analyzeTeam("team-1");
+    const result = await analyzeTeam("team-1")
 
-    const threatSuggestion = result.suggestions.find((s: string) =>
-      s.includes("Iron Valiant")
-    );
-    expect(threatSuggestion).toBeDefined();
-    expect(threatSuggestion).toContain("is a");
-    expect(threatSuggestion).not.toContain("threats");
-  });
+    const threatSuggestion = result.suggestions.find((s: string) => s.includes("Iron Valiant"))
+    expect(threatSuggestion).toBeDefined()
+    expect(threatSuggestion).toContain("is a")
+    expect(threatSuggestion).not.toContain("threats")
+  })
 
   it("suggests improving synergy when score is low", async () => {
-    mockTeamFindUnique.mockResolvedValue(
-      makeDbTeam([makeDbSlot()])
-    );
-    mockSpeciesGet.mockReturnValue(mockSpeciesData("garchomp", ["Dragon", "Ground"]));
-    mockSynergy.mockReturnValue(30);
+    mockTeamFindUnique.mockResolvedValue(makeDbTeam([makeDbSlot()]))
+    mockSpeciesGet.mockReturnValue(mockSpeciesData("garchomp", ["Dragon", "Ground"]))
+    mockSynergy.mockReturnValue(30)
 
-    const result = await analyzeTeam("team-1");
+    const result = await analyzeTeam("team-1")
 
-    const synergySuggestion = result.suggestions.find((s: string) =>
-      s.includes("synergy is low")
-    );
-    expect(synergySuggestion).toBeDefined();
-  });
+    const synergySuggestion = result.suggestions.find((s: string) => s.includes("synergy is low"))
+    expect(synergySuggestion).toBeDefined()
+  })
 
   it("does not suggest synergy improvement when score is adequate", async () => {
-    mockTeamFindUnique.mockResolvedValue(
-      makeDbTeam([makeDbSlot()])
-    );
-    mockSpeciesGet.mockReturnValue(mockSpeciesData("garchomp", ["Dragon", "Ground"]));
-    mockSynergy.mockReturnValue(60);
+    mockTeamFindUnique.mockResolvedValue(makeDbTeam([makeDbSlot()]))
+    mockSpeciesGet.mockReturnValue(mockSpeciesData("garchomp", ["Dragon", "Ground"]))
+    mockSynergy.mockReturnValue(60)
 
-    const result = await analyzeTeam("team-1");
+    const result = await analyzeTeam("team-1")
 
-    const synergySuggestion = result.suggestions.find((s: string) =>
-      s.includes("synergy is low")
-    );
-    expect(synergySuggestion).toBeUndefined();
-  });
+    const synergySuggestion = result.suggestions.find((s: string) => s.includes("synergy is low"))
+    expect(synergySuggestion).toBeUndefined()
+  })
 
   it("speed tiers are sorted by speed descending", async () => {
     mockTeamFindUnique.mockResolvedValue(
       makeDbTeam([
         makeDbSlot({ position: 1, pokemonId: "garchomp" }),
         makeDbSlot({ position: 2, pokemonId: "ferrothorn", id: 2 }),
-      ])
-    );
+      ]),
+    )
 
     mockSpeciesGet.mockImplementation((id: string) => {
-      if (id === "garchomp") return mockSpeciesData("garchomp", ["Dragon", "Ground"]);
+      if (id === "garchomp") return mockSpeciesData("garchomp", ["Dragon", "Ground"])
       if (id === "ferrothorn")
         return {
           ...mockSpeciesData("ferrothorn", ["Grass", "Steel"]),
           baseStats: { hp: 74, atk: 94, def: 131, spa: 54, spd: 116, spe: 20 },
-        };
-      return { exists: false };
-    });
+        }
+      return { exists: false }
+    })
 
-    const result = await analyzeTeam("team-1");
+    const result = await analyzeTeam("team-1")
 
     if (result.speedTiers.length >= 2) {
-      expect(result.speedTiers[0].speed).toBeGreaterThanOrEqual(
-        result.speedTiers[1].speed
-      );
+      expect(result.speedTiers[0].speed).toBeGreaterThanOrEqual(result.speedTiers[1].speed)
     }
-  });
-});
+  })
+})

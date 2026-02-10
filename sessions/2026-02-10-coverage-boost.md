@@ -1,8 +1,10 @@
 # Session: Coverage Boost to 95%+
+
 **Date:** 2026-02-10
 **Duration context:** Medium (~20 minutes wall time, heavy parallel agent usage)
 
 ## What was accomplished
+
 - Boosted test coverage across all 11 testable packages using 11 parallel agents via `TeamCreate`
 - Total tests grew from **673 to 1,190** (+517 new tests, +77% increase)
 - Fixed 3 pre-existing test failures before starting coverage work
@@ -10,6 +12,7 @@
 - Created 14 new test files and extended 15 existing test files
 
 ### Coverage results (before -> after stmts%)
+
 - **core:** 86.7% -> 100%
 - **pokemon-data:** 94.6% -> 97.3%
 - **formats:** 79.1% -> 95.5%
@@ -23,6 +26,7 @@
 - **data-pipeline:** 16.0% (unchanged — seed.ts is a CLI entry point)
 
 ## Key decisions & rationale
+
 - **Excluded CLI entry points** (cli-chat.ts, seed.ts) from 95% target — they spawn child processes and aren't meaningfully unit-testable
 - **Excluded type-only files** (sse-events.ts, all types.ts/index.ts) — no runtime code to test
 - **Used parallel agent team** (11 agents) to maximize throughput — each agent owned 1-2 packages and worked independently
@@ -32,19 +36,23 @@
 ## Bugs found & fixed
 
 ### 1. damage-calc: Ferrothorn not available in Gen 9 for @smogon/calc
+
 - **Symptom:** `TypeError: Cannot read properties of undefined (reading 'hp')` in 2 tests
 - **Root cause:** `@smogon/calc` with `@pkmn/data` Gen 9 doesn't include Ferrothorn — it was removed in SV
 - **Fix:** Replaced `ferrothorn` with `corviknight` (Steel/Flying, available in Gen 9) in test fixtures
 
 ### 2. smogon-data: Stale mock for fetchUsageStats test
+
 - **Symptom:** `TypeError: res.json is not a function`
 - **Root cause:** Mock provided `{ ok: true }` (HEAD response) as the first mock, but when year+month are provided, `resolveYearMonth` skips HEAD checks entirely. The actual `fetch(url)` call got the HEAD mock without `.json()`
 - **Fix:** Removed the extra HEAD mock — only provide one mock with `.json()` when year+month are explicit
 
 ### 3. Turbo cache hiding failures
+
 - **Note:** `pnpm test` was cached and showed green even though damage-calc and smogon-data had failures. Running `pnpm exec vitest run` directly in each package directory revealed the actual failures.
 
 ## Pitfalls & gotchas encountered
+
 - **@smogon/calc Gen 9 species availability:** Not all Pokemon that exist in `@pkmn/dex` are available in `@smogon/calc`'s Gen 9 generation. Ferrothorn, for example, fails silently with an undefined baseStats read. Always verify Pokemon work with `new Pokemon(gen, name)` before using in tests.
 - **@pkmn/sim BattleStream mocking:** The BattleStream uses async iterables and a write/read pattern that's complex to mock. The battle-engine-core-tests agent built a class-based mock with externally-resolvable chunks that worked well.
 - **MCTS AI testing:** `mcts-ai.ts` at 19% coverage — the MCTS tree search is deeply coupled to @pkmn/sim's internal battle state serialization/deserialization. Unit testing it requires either real battles or extremely detailed mocks of the battle state shape.
@@ -53,6 +61,7 @@
 ## Files changed
 
 ### New test files (14)
+
 - `packages/core/src/validation.test.ts` (31 tests)
 - `packages/teams/src/__tests__/sample-team.service.test.ts` (19 tests)
 - `packages/llm/src/__tests__/stream-parser.test.ts` (18 tests)
@@ -69,6 +78,7 @@
 - `packages/battle-engine/src/__tests__/batch-simulator.test.ts` (13 tests)
 
 ### Modified test files (15)
+
 - `packages/analysis/src/__tests__/analysis.service.test.ts` (+5 tests)
 - `packages/battle-engine/src/__tests__/ai.test.ts` (+17 tests)
 - `packages/battle-engine/src/__tests__/evaluator-hints.test.ts` (+20 tests)
@@ -86,6 +96,7 @@
 - `packages/teams/src/__tests__/team.service.test.ts` (+6 tests)
 
 ## Known issues & next steps
+
 - **battle-engine mcts-ai.ts (19%):** Needs integration-level tests with real @pkmn/sim battles to meaningfully cover the MCTS search loop
 - **battle-engine heuristic-ai.ts (68%):** Deep battle state analysis functions need more mock scenarios
 - **battle-engine automated-battle-manager.ts (40%):** Async BattleStream interaction is hard to mock — consider integration tests
@@ -93,6 +104,7 @@
 - **damage-calc (94.4%):** 4 unreachable defensive guard clauses prevent reaching 95% without mocking @smogon/calc internals
 
 ## Tech notes
+
 - **Parallel agent strategy:** Used `TeamCreate` + 11 `Task` agents with `subagent_type: "general-purpose"` and `mode: "bypassPermissions"`. Each agent read source files, wrote tests, ran vitest, checked coverage, and iterated until meeting target. This completed in ~10 minutes of wall time.
 - **Coverage command:** `pnpm exec vitest run --coverage --coverage.provider=v8 --coverage.reporter=text --coverage.include='src/**/*.ts' --coverage.exclude='src/**/*.test.ts,src/__tests__/**'`
 - **Turbo caching:** Be aware that `pnpm test` uses turbo caching — after modifying test files, the cached results may not reflect actual state. Run `pnpm exec vitest run` directly in the package directory for accurate results.

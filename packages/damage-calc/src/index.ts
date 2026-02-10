@@ -1,1 +1,1 @@
-export { calculateDamage, calculateMatchupMatrix } from "./calc.service";
+export { calculateDamage, calculateMatchupMatrix } from "./calc.service"

@@ -1,21 +1,17 @@
-"use client";
+"use client"
 
-import { use } from "react";
-import { useRouter } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
-import { useTeam } from "@/features/teams/hooks/use-teams";
-import { GuidedBuilder } from "@/features/team-builder/components/guided-builder";
+import { use } from "react"
+import { useRouter } from "next/navigation"
+import { ArrowLeft } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Skeleton } from "@/components/ui/skeleton"
+import { useTeam } from "@/features/teams/hooks/use-teams"
+import { GuidedBuilder } from "@/features/team-builder/components/guided-builder"
 
-export default function GuidedBuilderPage({
-  params,
-}: {
-  params: Promise<{ teamId: string }>;
-}) {
-  const { teamId } = use(params);
-  const router = useRouter();
-  const teamQuery = useTeam(teamId);
+export default function GuidedBuilderPage({ params }: { params: Promise<{ teamId: string }> }) {
+  const { teamId } = use(params)
+  const router = useRouter()
+  const teamQuery = useTeam(teamId)
 
   if (teamQuery.isLoading) {
     return (
@@ -28,7 +24,7 @@ export default function GuidedBuilderPage({
           ))}
         </div>
       </div>
-    );
+    )
   }
 
   if (teamQuery.error || !teamQuery.data) {
@@ -39,30 +35,22 @@ export default function GuidedBuilderPage({
           <p className="text-muted-foreground mt-2">
             The team you are looking for does not exist or was deleted.
           </p>
-          <Button
-            variant="outline"
-            className="mt-4"
-            onClick={() => router.push("/teams")}
-          >
+          <Button variant="outline" className="mt-4" onClick={() => router.push("/teams")}>
             Back to Teams
           </Button>
         </div>
       </div>
-    );
+    )
   }
 
-  const team = teamQuery.data;
+  const team = teamQuery.data
 
   return (
     <div className="container mx-auto max-w-5xl py-8 px-4 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => router.push(`/teams/${teamId}`)}
-          >
+          <Button variant="ghost" size="icon" onClick={() => router.push(`/teams/${teamId}`)}>
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div>
@@ -72,11 +60,11 @@ export default function GuidedBuilderPage({
             </p>
           </div>
         </div>
-{/* Freeform switch is in the GuidedBuilder footer (saves state before navigating) */}
+        {/* Freeform switch is in the GuidedBuilder footer (saves state before navigating) */}
       </div>
 
       {/* Guided builder wizard */}
       <GuidedBuilder teamId={teamId} formatId={team.formatId} />
     </div>
-  );
+  )
 }

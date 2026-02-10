@@ -1,18 +1,18 @@
-"use client";
+"use client"
 
-import { Sprites } from "@pkmn/img";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Swords } from "lucide-react";
+import { Sprites } from "@pkmn/img"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { Swords } from "lucide-react"
 
 interface SampleTeamCardProps {
-  name: string;
-  pokemonIds: string;
-  archetype: string | null;
-  source: string | null;
-  paste: string;
-  onUse: (paste: string) => void;
+  name: string
+  pokemonIds: string
+  archetype: string | null
+  source: string | null
+  paste: string
+  onUse: (paste: string) => void
 }
 
 export function SampleTeamCard({
@@ -23,7 +23,7 @@ export function SampleTeamCard({
   paste,
   onUse,
 }: SampleTeamCardProps) {
-  const ids = pokemonIds.split(",").filter(Boolean);
+  const ids = pokemonIds.split(",").filter(Boolean)
 
   return (
     <Card>
@@ -45,16 +45,10 @@ export function SampleTeamCard({
             const spriteData = Sprites.getPokemon(id, {
               gen: "gen5ani",
               side: "p2",
-            });
+            })
             return (
-              <div
-                key={id}
-                className="flex flex-col items-center gap-0.5"
-              >
-                <div
-                  className="flex items-center justify-center"
-                  style={{ width: 48, height: 48 }}
-                >
+              <div key={id} className="flex flex-col items-center gap-0.5">
+                <div className="flex items-center justify-center" style={{ width: 48, height: 48 }}>
                   <img
                     src={spriteData.url}
                     alt={id}
@@ -63,14 +57,12 @@ export function SampleTeamCard({
                   />
                 </div>
               </div>
-            );
+            )
           })}
         </div>
 
         <div className="flex items-center justify-between">
-          {source && (
-            <span className="text-xs text-muted-foreground">{source}</span>
-          )}
+          {source && <span className="text-xs text-muted-foreground">{source}</span>}
           {!source && <span />}
           <Button size="sm" className="gap-1.5" onClick={() => onUse(paste)}>
             <Swords className="h-3.5 w-3.5" />
@@ -79,5 +71,5 @@ export function SampleTeamCard({
         </div>
       </CardContent>
     </Card>
-  );
+  )
 }

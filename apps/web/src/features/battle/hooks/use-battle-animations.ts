@@ -1,58 +1,66 @@
-"use client";
+"use client"
 
-import { useState, useEffect, useRef, useCallback } from "react";
-import type { BattleLogEntry, BattleState } from "@nasty-plot/battle-engine";
+import { useState, useEffect, useRef, useCallback } from "react"
+import type { BattleLogEntry, BattleState } from "@nasty-plot/battle-engine"
 
 export interface AnimationEvent {
-  type: string;
-  slotKey?: string; // e.g. "p1-0", "p2-1"
-  side?: "p1" | "p2";
-  cssClass: string;
-  duration: number; // ms
-  moveFlash?: { name: string; side: "p1" | "p2" };
-  effectivenessFlash?: string;
-  damageNumber?: { value: string; side: "p1" | "p2"; slot: number };
+  type: string
+  slotKey?: string // e.g. "p1-0", "p2-1"
+  side?: "p1" | "p2"
+  cssClass: string
+  duration: number // ms
+  textMessage?: string
+  damageNumber?: { value: string; side: "p1" | "p2"; slot: number }
 }
 
 export interface AnimationState {
   /** CSS class per slot, keyed by "p1-0", "p2-0", etc. */
-  slotAnimations: Record<string, string>;
-  /** Currently displayed move name flash */
-  moveFlash: { name: string; side: "p1" | "p2" } | null;
-  /** Currently displayed effectiveness text */
-  effectivenessFlash: string | null;
+  slotAnimations: Record<string, string>
+  /** Current text for the battle text box */
+  textMessage: string | null
   /** Currently displayed damage/heal numbers */
-  damageNumbers: { value: string; side: "p1" | "p2"; slot: number }[];
+  damageNumbers: { value: string; side: "p1" | "p2"; slot: number }[]
   /** Whether any animation is currently playing — gates player input */
-  isAnimating: boolean;
+  isAnimating: boolean
 }
 
 export const INITIAL_ANIMATION_STATE: AnimationState = {
   slotAnimations: {},
-  moveFlash: null,
-  effectivenessFlash: null,
+  textMessage: null,
   damageNumbers: [],
   isAnimating: false,
-};
+}
+
+/**
+ * Compute how long an event should stay on screen:
+ * typing time (15ms/char to match BattleTextBox) + hold time for reading.
+ * Returns at least `minDuration` to ensure sprite animations complete.
+ */
+function textDuration(message: string, minDuration: number, speed: number): number {
+  const CHAR_DELAY = 8 // must match BattleTextBox charDelay base
+  const HOLD_TIME = 1600 // ms to hold text after typing finishes
+  const typingTime = message.length * CHAR_DELAY
+  return Math.max(minDuration, typingTime + HOLD_TIME) / speed
+}
 
 /** Map a log entry to an animation event (or null if no animation). */
-export function logEntryToAnimation(entry: BattleLogEntry): AnimationEvent | null {
-  const side = entry.side;
-  const slotKey = side ? `${side}-0` : undefined; // Default to slot 0 for singles
+export function logEntryToAnimation(
+  entry: BattleLogEntry,
+  speed: number = 1,
+): AnimationEvent | null {
+  const side = entry.side
+  const slotKey = side ? `${side}-0` : undefined // Default to slot 0 for singles
+  const msg = entry.message
 
   switch (entry.type) {
-    case "move": {
-      // Extract move name from message like "Garchomp used Earthquake!"
-      const moveMatch = entry.message.match(/used (.+?)!/);
-      const moveName = moveMatch?.[1] || "";
+    case "move":
       return {
         type: "move",
         side,
         cssClass: "",
-        duration: 300,
-        moveFlash: side ? { name: moveName, side } : undefined,
-      };
-    }
+        duration: textDuration(msg, 600, speed),
+        textMessage: msg,
+      }
 
     case "damage":
       return {
@@ -60,15 +68,16 @@ export function logEntryToAnimation(entry: BattleLogEntry): AnimationEvent | nul
         slotKey,
         side,
         cssClass: "animate-battle-shake",
-        duration: 500,
+        duration: textDuration(msg, 500, speed),
+        textMessage: msg,
         damageNumber: side
           ? {
-              value: extractDamagePercent(entry.message, false),
+              value: extractDamagePercent(msg, false),
               side,
               slot: 0,
             }
           : undefined,
-      };
+      }
 
     case "heal":
       return {
@@ -76,15 +85,16 @@ export function logEntryToAnimation(entry: BattleLogEntry): AnimationEvent | nul
         slotKey,
         side,
         cssClass: "",
-        duration: 300,
+        duration: textDuration(msg, 400, speed),
+        textMessage: msg,
         damageNumber: side
           ? {
-              value: extractDamagePercent(entry.message, true),
+              value: extractDamagePercent(msg, true),
               side,
               slot: 0,
             }
           : undefined,
-      };
+      }
 
     case "faint":
       return {
@@ -92,8 +102,9 @@ export function logEntryToAnimation(entry: BattleLogEntry): AnimationEvent | nul
         slotKey,
         side,
         cssClass: "animate-battle-faint",
-        duration: 800,
-      };
+        duration: textDuration(msg, 800, speed),
+        textMessage: msg,
+      }
 
     case "switch":
       return {
@@ -101,8 +112,9 @@ export function logEntryToAnimation(entry: BattleLogEntry): AnimationEvent | nul
         slotKey,
         side,
         cssClass: "animate-battle-switch-in",
-        duration: 400,
-      };
+        duration: textDuration(msg, 500, speed),
+        textMessage: msg,
+      }
 
     case "tera":
       return {
@@ -110,8 +122,9 @@ export function logEntryToAnimation(entry: BattleLogEntry): AnimationEvent | nul
         slotKey,
         side,
         cssClass: "animate-battle-tera",
-        duration: 600,
-      };
+        duration: textDuration(msg, 600, speed),
+        textMessage: msg,
+      }
 
     case "status":
       return {
@@ -119,8 +132,9 @@ export function logEntryToAnimation(entry: BattleLogEntry): AnimationEvent | nul
         slotKey,
         side,
         cssClass: "animate-battle-status",
-        duration: 300,
-      };
+        duration: textDuration(msg, 500, speed),
+        textMessage: msg,
+      }
 
     case "boost":
       return {
@@ -128,8 +142,9 @@ export function logEntryToAnimation(entry: BattleLogEntry): AnimationEvent | nul
         slotKey,
         side,
         cssClass: "animate-battle-boost",
-        duration: 400,
-      };
+        duration: textDuration(msg, 500, speed),
+        textMessage: msg,
+      }
 
     case "unboost":
       return {
@@ -137,57 +152,142 @@ export function logEntryToAnimation(entry: BattleLogEntry): AnimationEvent | nul
         slotKey,
         side,
         cssClass: "animate-battle-unboost",
-        duration: 400,
-      };
+        duration: textDuration(msg, 500, speed),
+        textMessage: msg,
+      }
 
     case "crit":
       return {
         type: "crit",
         cssClass: "",
-        duration: 800,
-        effectivenessFlash: "Critical hit!",
-      };
+        duration: textDuration(msg, 600, speed),
+        textMessage: msg,
+      }
 
     case "supereffective":
       return {
         type: "supereffective",
         cssClass: "",
-        duration: 800,
-        effectivenessFlash: "It's super effective!",
-      };
+        duration: textDuration(msg, 600, speed),
+        textMessage: msg,
+      }
 
     case "resisted":
       return {
         type: "resisted",
         cssClass: "",
-        duration: 600,
-        effectivenessFlash: "Not very effective...",
-      };
+        duration: textDuration(msg, 500, speed),
+        textMessage: msg,
+      }
 
     case "immune":
       return {
         type: "immune",
         cssClass: "",
-        duration: 600,
-        effectivenessFlash: "It had no effect!",
-      };
+        duration: textDuration(msg, 500, speed),
+        textMessage: msg,
+      }
+
+    case "weather":
+      return {
+        type: "weather",
+        cssClass: "",
+        duration: textDuration(msg, 600, speed),
+        textMessage: msg,
+      }
+
+    case "terrain":
+      return {
+        type: "terrain",
+        cssClass: "",
+        duration: textDuration(msg, 600, speed),
+        textMessage: msg,
+      }
+
+    case "hazard":
+      return {
+        type: "hazard",
+        cssClass: "",
+        duration: textDuration(msg, 500, speed),
+        textMessage: msg,
+      }
+
+    case "item":
+      return {
+        type: "item",
+        cssClass: "",
+        duration: textDuration(msg, 500, speed),
+        textMessage: msg,
+      }
+
+    case "ability":
+      return {
+        type: "ability",
+        cssClass: "",
+        duration: textDuration(msg, 500, speed),
+        textMessage: msg,
+      }
+
+    case "start":
+      return {
+        type: "start",
+        cssClass: "",
+        duration: textDuration(msg, 500, speed),
+        textMessage: msg,
+      }
+
+    case "end":
+      return {
+        type: "end",
+        cssClass: "",
+        duration: textDuration(msg, 500, speed),
+        textMessage: msg,
+      }
+
+    case "cant":
+      return {
+        type: "cant",
+        cssClass: "",
+        duration: textDuration(msg, 500, speed),
+        textMessage: msg,
+      }
+
+    case "info":
+      return {
+        type: "info",
+        cssClass: "",
+        duration: textDuration(msg, 500, speed),
+        textMessage: msg,
+      }
+
+    case "win":
+      return {
+        type: "win",
+        cssClass: "",
+        duration: textDuration(msg, 2000, speed),
+        textMessage: msg,
+      }
+
+    case "turn":
+      // Turn separators — skip (no animation or text)
+      return null
 
     default:
-      return null;
+      return null
   }
 }
 
 /** Extract damage/heal percentage from log message. */
 function extractDamagePercent(message: string, isHeal: boolean): string {
   // Match patterns like "(45%, -45%)" or "(+20%)"
-  const deltaMatch = message.match(/([+-]\d+%)/);
-  if (deltaMatch) return deltaMatch[1];
+  const deltaMatch = message.match(/([+-]\d+%)/)
+  if (deltaMatch) return deltaMatch[1]
 
   // Fallback: extract any percentage
-  const pctMatch = message.match(/(\d+)%/);
-  if (pctMatch) return `${isHeal ? "+" : "-"}${pctMatch[1]}%`;
+  const pctMatch = message.match(/(\d+)%/)
+  if (pctMatch) return `${isHeal ? "+" : "-"}${pctMatch[1]}%`
 
-  return isHeal ? "+?%" : "-?%";
+  return isHeal ? "+?%" : "-?%"
 }
 
 /**
@@ -196,110 +296,115 @@ function extractDamagePercent(message: string, isHeal: boolean): string {
  * Detects new battle log entries, maps them to animation events,
  * and queues them sequentially with appropriate timing.
  */
-export function useBattleAnimations(state: BattleState): AnimationState {
-  const [animState, setAnimState] = useState<AnimationState>(INITIAL_ANIMATION_STATE);
+export function useBattleAnimations(
+  state: BattleState,
+  options?: { speed?: number },
+): AnimationState {
+  const speed = options?.speed ?? 1
+  const [animState, setAnimState] = useState<AnimationState>(INITIAL_ANIMATION_STATE)
   // Start at current log length so we don't animate history on mount
-  const lastLogLengthRef = useRef(state.fullLog.length);
-  const mountedRef = useRef(false);
-  const queueRef = useRef<AnimationEvent[]>([]);
-  const isProcessingRef = useRef(false);
-  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const safetyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastLogLengthRef = useRef(state.fullLog.length)
+  const mountedRef = useRef(false)
+  const queueRef = useRef<AnimationEvent[]>([])
+  const isProcessingRef = useRef(false)
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const safetyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const speedRef = useRef(speed)
+  speedRef.current = speed
 
   const processQueue = useCallback(() => {
     if (isProcessingRef.current || queueRef.current.length === 0) {
       // Queue empty — clear all animations
       if (queueRef.current.length === 0) {
-        setAnimState(INITIAL_ANIMATION_STATE);
+        setAnimState(INITIAL_ANIMATION_STATE)
       }
-      return;
+      return
     }
 
-    isProcessingRef.current = true;
-    const event = queueRef.current.shift()!;
+    isProcessingRef.current = true
+    const event = queueRef.current.shift()!
 
     // Apply this event's animation
     setAnimState((prev) => {
       const next: AnimationState = {
         slotAnimations: { ...prev.slotAnimations },
-        moveFlash: event.moveFlash || null,
-        effectivenessFlash: event.effectivenessFlash || null,
+        textMessage: event.textMessage || null,
         damageNumbers: event.damageNumber ? [event.damageNumber] : [],
         isAnimating: true,
-      };
-
-      if (event.slotKey && event.cssClass) {
-        next.slotAnimations[event.slotKey] = event.cssClass;
       }
 
-      return next;
-    });
+      if (event.slotKey && event.cssClass) {
+        next.slotAnimations[event.slotKey] = event.cssClass
+      }
+
+      return next
+    })
 
     // After the animation duration, clear and process next
     timeoutRef.current = setTimeout(() => {
-      isProcessingRef.current = false;
+      isProcessingRef.current = false
 
       // Clear the animation for this event's slot
       if (event.slotKey) {
         setAnimState((prev) => {
-          const next = { ...prev };
-          next.slotAnimations = { ...prev.slotAnimations };
-          delete next.slotAnimations[event.slotKey!];
-          return next;
-        });
+          const next = { ...prev }
+          next.slotAnimations = { ...prev.slotAnimations }
+          delete next.slotAnimations[event.slotKey!]
+          return next
+        })
       }
 
-      processQueue();
-    }, event.duration);
-  }, []);
+      processQueue()
+    }, event.duration)
+  }, [])
 
   // Detect new log entries and queue animations
   useEffect(() => {
     // Skip the initial mount — lastLogLengthRef is already set to current length
     if (!mountedRef.current) {
-      mountedRef.current = true;
-      lastLogLengthRef.current = state.fullLog.length;
-      return;
+      mountedRef.current = true
+      lastLogLengthRef.current = state.fullLog.length
+      return
     }
 
-    const fullLog = state.fullLog;
-    const prevLength = lastLogLengthRef.current;
+    const fullLog = state.fullLog
+    const prevLength = lastLogLengthRef.current
 
     if (fullLog.length > prevLength) {
-      const newEntries = fullLog.slice(prevLength);
-      lastLogLengthRef.current = fullLog.length;
+      const newEntries = fullLog.slice(prevLength)
+      lastLogLengthRef.current = fullLog.length
 
       for (const entry of newEntries) {
-        const anim = logEntryToAnimation(entry);
+        const anim = logEntryToAnimation(entry, speedRef.current)
         if (anim) {
-          queueRef.current.push(anim);
+          queueRef.current.push(anim)
         }
       }
 
       // Safety valve: force-clear isAnimating after 5s in case the queue gets stuck
-      if (safetyTimeoutRef.current) clearTimeout(safetyTimeoutRef.current);
+      if (safetyTimeoutRef.current) clearTimeout(safetyTimeoutRef.current)
       safetyTimeoutRef.current = setTimeout(() => {
         if (isProcessingRef.current || queueRef.current.length > 0) {
-          queueRef.current = [];
-          isProcessingRef.current = false;
-          setAnimState(INITIAL_ANIMATION_STATE);
+          queueRef.current = []
+          isProcessingRef.current = false
+          setAnimState(INITIAL_ANIMATION_STATE)
         }
-      }, 5000);
+      }, 5000)
 
       // Start processing if not already
       if (!isProcessingRef.current) {
-        processQueue();
+        processQueue()
       }
     }
-  }, [state.fullLog, state.fullLog.length, processQueue]);
+  }, [state.fullLog, state.fullLog.length, processQueue])
 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
-      if (safetyTimeoutRef.current) clearTimeout(safetyTimeoutRef.current);
-    };
-  }, []);
+      if (timeoutRef.current) clearTimeout(timeoutRef.current)
+      if (safetyTimeoutRef.current) clearTimeout(safetyTimeoutRef.current)
+    }
+  }, [])
 
-  return animState;
+  return animState
 }

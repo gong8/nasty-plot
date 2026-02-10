@@ -1,33 +1,30 @@
-"use client";
+"use client"
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useState } from "react";
-import { Menu } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
-import { ThemeToggle } from "./theme-toggle";
+import Link from "next/link"
+import { usePathname } from "next/navigation"
+import { useState } from "react"
+import { Menu } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
+import { ThemeToggle } from "./theme-toggle"
 
 const NAV_LINKS = [
   { href: "/pokemon", label: "Pokemon" },
   { href: "/teams", label: "Teams" },
   { href: "/battle", label: "Battle" },
-];
+]
 
 export function SiteHeader() {
-  const pathname = usePathname();
-  const [open, setOpen] = useState(false);
+  const pathname = usePathname()
+  const [open, setOpen] = useState(false)
 
   return (
     <header className="border-b bg-background/80 backdrop-blur-sm border-border dark:bg-card/80 dark:backdrop-blur-xl dark:border-white/10 sticky top-0 z-50">
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
-        <Link href="/" className="flex items-center gap-2 text-xl font-display font-bold text-primary dark:drop-shadow-[0_0_8px_var(--color-glow-primary)]">
+        <Link
+          href="/"
+          className="flex items-center gap-2 text-xl font-display font-bold text-primary dark:drop-shadow-[0_0_8px_var(--color-glow-primary)]"
+        >
           <img
             src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/1025.png"
             alt="Pecharunt"
@@ -42,9 +39,7 @@ export function SiteHeader() {
         <nav className="hidden md:flex items-center gap-1">
           {NAV_LINKS.map((link) => (
             <Link key={link.href} href={link.href}>
-              <Button
-                variant={pathname.startsWith(link.href) ? "secondary" : "ghost"}
-              >
+              <Button variant={pathname.startsWith(link.href) ? "secondary" : "ghost"}>
                 {link.label}
               </Button>
             </Link>
@@ -83,5 +78,5 @@ export function SiteHeader() {
         </div>
       </div>
     </header>
-  );
+  )
 }

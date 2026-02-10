@@ -44,23 +44,23 @@ How the Nasty Plot codebase evolves: package structure, growth patterns, perform
 
 ### Actual Dependency Graph (from `package.json`)
 
-| Package | Workspace Dependencies | External Dependencies |
-|---------|----------------------|----------------------|
-| `core` | *(none)* | *(none)* |
-| `db` | *(none)* | `@prisma/client`, `@prisma/adapter-better-sqlite3` |
-| `pokemon-data` | `core` | `@pkmn/dex`, `@pkmn/data` |
-| `smogon-data` | `core`, `db` | `@pkmn/smogon` |
-| `formats` | `core`, `pokemon-data` | *(none)* |
-| `data-pipeline` | `db`, `formats`, `smogon-data` | *(none)* |
-| `teams` | `core`, `db`, `pokemon-data` | *(none)* |
-| `analysis` | `core`, `db` | `@pkmn/dex` |
-| `damage-calc` | `core` | `@smogon/calc`, `@pkmn/dex`, `@pkmn/data` |
-| `battle-engine` | `core` | `@pkmn/sim`, `@pkmn/dex`, `@pkmn/data`, `@smogon/calc` |
-| `recommendations` | `core`, `db`, `analysis` | `@pkmn/dex` |
-| `llm` | `core`, `db`, `battle-engine` | `openai`, `@modelcontextprotocol/sdk` |
-| `mcp-server` | *(none -- calls web API)* | `@modelcontextprotocol/sdk`, `express`, `zod` |
-| `ui` | `core` | `react`, `clsx`, `tailwind-merge`, `class-variance-authority` |
-| `web` | *all 13 workspace packages* | `next`, `react`, `radix-ui`, `recharts`, etc. |
+| Package           | Workspace Dependencies         | External Dependencies                                         |
+| ----------------- | ------------------------------ | ------------------------------------------------------------- |
+| `core`            | _(none)_                       | _(none)_                                                      |
+| `db`              | _(none)_                       | `@prisma/client`, `@prisma/adapter-better-sqlite3`            |
+| `pokemon-data`    | `core`                         | `@pkmn/dex`, `@pkmn/data`                                     |
+| `smogon-data`     | `core`, `db`                   | `@pkmn/smogon`                                                |
+| `formats`         | `core`, `pokemon-data`         | _(none)_                                                      |
+| `data-pipeline`   | `db`, `formats`, `smogon-data` | _(none)_                                                      |
+| `teams`           | `core`, `db`, `pokemon-data`   | _(none)_                                                      |
+| `analysis`        | `core`, `db`                   | `@pkmn/dex`                                                   |
+| `damage-calc`     | `core`                         | `@smogon/calc`, `@pkmn/dex`, `@pkmn/data`                     |
+| `battle-engine`   | `core`                         | `@pkmn/sim`, `@pkmn/dex`, `@pkmn/data`, `@smogon/calc`        |
+| `recommendations` | `core`, `db`, `analysis`       | `@pkmn/dex`                                                   |
+| `llm`             | `core`, `db`, `battle-engine`  | `openai`, `@modelcontextprotocol/sdk`                         |
+| `mcp-server`      | _(none -- calls web API)_      | `@modelcontextprotocol/sdk`, `express`, `zod`                 |
+| `ui`              | `core`                         | `react`, `clsx`, `tailwind-merge`, `class-variance-authority` |
+| `web`             | _all 13 workspace packages_    | `next`, `react`, `radix-ui`, `recharts`, etc.                 |
 
 Key observations:
 
@@ -103,34 +103,34 @@ Team versioning: fork, compare, merge, lineage tracking.
 // packages/version/src/types.ts
 
 interface SlotChange {
-  position: number;
-  field: string;        // "pokemonId" | "ability" | "move1" | "evHp" | ...
-  before: string | number | null;
-  after: string | number | null;
+  position: number
+  field: string // "pokemonId" | "ability" | "move1" | "evHp" | ...
+  before: string | number | null
+  after: string | number | null
 }
 
 interface TeamDiff {
-  sourceId: string;
-  targetId: string;
-  changes: SlotChange[];
-  addedSlots: number[];    // positions added
-  removedSlots: number[];  // positions removed
+  sourceId: string
+  targetId: string
+  changes: SlotChange[]
+  addedSlots: number[] // positions added
+  removedSlots: number[] // positions removed
 }
 
 interface MergeDecision {
-  position: number;
-  field: string;
-  choice: "source" | "target" | "manual";
-  value: string | number | null;
+  position: number
+  field: string
+  choice: "source" | "target" | "manual"
+  value: string | number | null
 }
 
 interface LineageNode {
-  teamId: string;
-  teamName: string;
-  parentId: string | null;
-  branchName: string | null;
-  createdAt: string;
-  children: LineageNode[];
+  teamId: string
+  teamName: string
+  parentId: string | null
+  branchName: string | null
+  createdAt: string
+  children: LineageNode[]
 }
 ```
 
@@ -144,7 +144,11 @@ interface LineageNode {
 // packages/version/src/version.service.ts
 export function forkTeam(teamId: string, branchName: string): Promise<TeamData>
 export function compareTeams(sourceId: string, targetId: string): Promise<TeamDiff>
-export function mergeTeams(sourceId: string, targetId: string, decisions: MergeDecision[]): Promise<TeamData>
+export function mergeTeams(
+  sourceId: string,
+  targetId: string,
+  decisions: MergeDecision[],
+): Promise<TeamData>
 export function getLineage(teamId: string): Promise<LineageNode>
 ```
 
@@ -155,6 +159,7 @@ Meta profile definition, storage, and simulation. A "meta profile" is a named sn
 **Layer:** Domain (depends on: `core`, `db`, `smogon-data`, `formats`)
 
 **Use cases:**
+
 - Define a target meta from live usage data or manual curation
 - Score a team against a meta profile (coverage, threat exposure, speed tier distribution)
 - Track meta shifts over time by comparing profiles across months
@@ -166,6 +171,7 @@ Battle puzzles, pattern drilling, post-game review.
 **Layer:** Domain (depends on: `core`, `db`, `battle-engine`)
 
 **Key types:**
+
 - `Puzzle` -- a frozen battle position with a best action and explanation
 - `LearningPath` -- an ordered sequence of concepts (type matchups, switch timing, hazard control) with associated puzzles
 - `ReviewReport` -- post-game analysis of a completed battle (mistake identification, win probability timeline)
@@ -219,11 +225,11 @@ Tests are in the top-level `tests/battle-engine/` directory (11 test files).
 
 Three distinct concerns are visible:
 
-| Concern | Files | Purpose |
-|---------|-------|---------|
-| **Core simulation** | `battle-manager.ts`, `protocol-parser.ts`, `team-packer.ts`, `types.ts`, `replay/` | Running and observing battles |
-| **AI players** | `ai/*` (11 files) | 4 AI tiers (Random, Greedy, Heuristic, MCTS Expert), plus evaluator, win-probability, hints, set-predictor, battle-cloner |
-| **Batch simulation** | `simulation/*` (2 files) | Running many battles and computing analytics |
+| Concern              | Files                                                                              | Purpose                                                                                                                   |
+| -------------------- | ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| **Core simulation**  | `battle-manager.ts`, `protocol-parser.ts`, `team-packer.ts`, `types.ts`, `replay/` | Running and observing battles                                                                                             |
+| **AI players**       | `ai/*` (11 files)                                                                  | 4 AI tiers (Random, Greedy, Heuristic, MCTS Expert), plus evaluator, win-probability, hints, set-predictor, battle-cloner |
+| **Batch simulation** | `simulation/*` (2 files)                                                           | Running many battles and computing analytics                                                                              |
 
 **Planned split at Milestone 3:**
 
@@ -316,27 +322,28 @@ The worker message protocol already exists in the codebase (`packages/battle-eng
 
 ```typescript
 interface MCTSWorkerRequest {
-  type: "search";
-  battleJson: unknown;        // serialized via Battle.toJSON()
-  perspective: "p1" | "p2";
-  config: MCTSConfig;
-  formatId: string;
+  type: "search"
+  battleJson: unknown // serialized via Battle.toJSON()
+  perspective: "p1" | "p2"
+  config: MCTSConfig
+  formatId: string
 }
 
 interface MCTSWorkerProgress {
-  type: "progress";
-  iterations: number;
-  bestAction: string;
-  winProbability: number;
+  type: "progress"
+  iterations: number
+  bestAction: string
+  winProbability: number
 }
 
 interface MCTSWorkerResult {
-  type: "result";
-  result: MCTSResult;
+  type: "result"
+  result: MCTSResult
 }
 ```
 
 **Challenge:** `@pkmn/sim` uses some Node.js APIs internally (`BattleStream` extends Node streams). The MCTS worker doesn't use `BattleStream` -- it operates on `Battle` objects directly (cloned via `battle-cloner.ts`). But `Battle` still imports modules that reference Node globals. The worker will need to either:
+
 - Bundle `@pkmn/sim` with polyfills for `stream`, `events`, etc.
 - Use a shim that stubs out unused stream code.
 
@@ -474,17 +481,14 @@ All routes follow the same pattern: import service functions from packages, hand
 
 ```typescript
 // apps/web/src/app/api/teams/[teamId]/route.ts
-import { getTeam, updateTeam, deleteTeam } from "@nasty-plot/teams";
-import { NextResponse } from "next/server";
+import { getTeam, updateTeam, deleteTeam } from "@nasty-plot/teams"
+import { NextResponse } from "next/server"
 
-export async function GET(
-  _req: Request,
-  { params }: { params: Promise<{ teamId: string }> }
-) {
-  const { teamId } = await params;
-  const team = await getTeam(teamId);
-  if (!team) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  return NextResponse.json(team);
+export async function GET(_req: Request, { params }: { params: Promise<{ teamId: string }> }) {
+  const { teamId } = await params
+  const team = await getTeam(teamId)
+  if (!team) return NextResponse.json({ error: "Not found" }, { status: 404 })
+  return NextResponse.json(team)
 }
 ```
 
@@ -520,11 +524,11 @@ Each module exports a `register*Tools(server)` function. Tools call the Next.js 
 
 ### Growth Plan
 
-| Milestone | New Module | New Tools | Running Total |
-|-----------|-----------|-----------|---------------|
-| M2 | `version.ts` | `fork_team`, `compare_teams`, `merge_teams`, `get_lineage`, `get_meta_profile`, `simulate_against_meta` | ~30 |
-| M3 | `battle.ts` | `run_battle`, `get_battle_replay`, `get_battle_analysis`, `get_puzzle`, `submit_puzzle_answer`, `get_training_path` | ~36 |
-| M4 | `coaching.ts` | `start_coaching_session`, `get_meta_briefing`, `explain_turn`, `get_learning_progress` | ~40 |
+| Milestone | New Module    | New Tools                                                                                                           | Running Total |
+| --------- | ------------- | ------------------------------------------------------------------------------------------------------------------- | ------------- |
+| M2        | `version.ts`  | `fork_team`, `compare_teams`, `merge_teams`, `get_lineage`, `get_meta_profile`, `simulate_against_meta`             | ~30           |
+| M3        | `battle.ts`   | `run_battle`, `get_battle_replay`, `get_battle_analysis`, `get_puzzle`, `submit_puzzle_answer`, `get_training_path` | ~36           |
+| M4        | `coaching.ts` | `start_coaching_session`, `get_meta_briefing`, `explain_turn`, `get_learning_progress`                              | ~40           |
 
 ### Module Organization Rule
 
@@ -672,12 +676,12 @@ model SharedTeam {
 
 ### Current State
 
-| Tool | Purpose |
-|------|---------|
-| Vitest | Test runner with `globals: true` |
-| `jsdom` | Browser environment for component tests |
-| `@testing-library/react` | Component interaction testing |
-| `@vitest/coverage-v8` | V8-based code coverage |
+| Tool                     | Purpose                                 |
+| ------------------------ | --------------------------------------- |
+| Vitest                   | Test runner with `globals: true`        |
+| `jsdom`                  | Browser environment for component tests |
+| `@testing-library/react` | Component interaction testing           |
+| `@vitest/coverage-v8`    | V8-based code coverage                  |
 
 43 test files live in the top-level `tests/` directory, organized into 11 subdirectories mirroring package structure (e.g. `tests/core/`, `tests/battle-engine/`, `tests/llm/`). A single root `vitest.config.ts` covers all packages.
 
@@ -696,13 +700,13 @@ The most heavily tested layer. Each service function gets unit tests with edge c
 // tests/battle-engine/ai.test.ts (pattern)
 describe("HeuristicAI", () => {
   it("prefers super-effective moves", async () => {
-    const ai = new HeuristicAI();
-    const state = createMockBattleState(/* water vs fire */);
-    const actions = createMockActions(["Thunderbolt", "Tackle"]);
-    const choice = await ai.chooseAction(state, actions);
-    expect(choice).toEqual({ type: "move", moveIndex: 1 }); // Thunderbolt
-  });
-});
+    const ai = new HeuristicAI()
+    const state = createMockBattleState(/* water vs fire */)
+    const actions = createMockActions(["Thunderbolt", "Tackle"])
+    const choice = await ai.chooseAction(state, actions)
+    expect(choice).toEqual({ type: "move", moveIndex: 1 }) // Thunderbolt
+  })
+})
 ```
 
 **Feature packages (`llm`, `mcp-server`):**
@@ -713,13 +717,13 @@ Component tests with `@testing-library/react`. Test user interactions, not imple
 
 ### Evolution
 
-| Milestone | Testing Addition |
-|-----------|-----------------|
-| M1 | Target 80% unit test coverage across domain packages |
-| M2 | Integration tests for multi-package workflows (fork -> compare -> merge) |
-| M3 | E2E tests with Playwright for critical flows (battle start-to-finish, team build-to-export) |
-| M4 | LLM response testing with mocked OpenAI (verify context building produces correct prompts) |
-| M5 | Load testing for multiplayer scenarios |
+| Milestone | Testing Addition                                                                            |
+| --------- | ------------------------------------------------------------------------------------------- |
+| M1        | Target 80% unit test coverage across domain packages                                        |
+| M2        | Integration tests for multi-package workflows (fork -> compare -> merge)                    |
+| M3        | E2E tests with Playwright for critical flows (battle start-to-finish, team build-to-export) |
+| M4        | LLM response testing with mocked OpenAI (verify context building produces correct prompts)  |
+| M5        | Load testing for multiplayer scenarios                                                      |
 
 ### Integration Test Pattern
 
@@ -801,10 +805,10 @@ All packages use `"type": "module"`. No CommonJS `require()`, no `module.exports
 
 ```typescript
 // YES
-import { getSpecies } from "@nasty-plot/pokemon-data";
+import { getSpecies } from "@nasty-plot/pokemon-data"
 
 // NO
-const { getSpecies } = require("@nasty-plot/pokemon-data");
+const { getSpecies } = require("@nasty-plot/pokemon-data")
 ```
 
 ### 7. Data Flows Down, Never Up

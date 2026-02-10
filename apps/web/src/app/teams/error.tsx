@@ -1,15 +1,9 @@
-"use client";
+"use client"
 
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
-export default function TeamsError({
-  error,
-  reset,
-}: {
-  error: Error;
-  reset: () => void;
-}) {
+export default function TeamsError({ error, reset }: { error: Error; reset: () => void }) {
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
       <Card className="max-w-md w-full">
@@ -24,5 +18,5 @@ export default function TeamsError({
         </CardContent>
       </Card>
     </div>
-  );
+  )
 }

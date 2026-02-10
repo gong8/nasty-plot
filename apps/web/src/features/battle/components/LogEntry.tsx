@@ -1,4 +1,4 @@
-"use client";
+"use client"
 
 import {
   Sword,
@@ -14,9 +14,9 @@ import {
   Target,
   Star,
   type LucideIcon,
-} from "lucide-react";
-import type { BattleLogEntry } from "@nasty-plot/battle-engine";
-import { cn } from "@/lib/utils";
+} from "lucide-react"
+import type { BattleLogEntry } from "@nasty-plot/battle-engine"
+import { cn } from "@/lib/utils"
 
 const TYPE_ICONS: Record<string, LucideIcon> = {
   move: Sword,
@@ -39,7 +39,7 @@ const TYPE_ICONS: Record<string, LucideIcon> = {
   resisted: Shield,
   immune: Shield,
   win: Star,
-};
+}
 
 const TYPE_COLORS: Record<string, string> = {
   move: "text-foreground",
@@ -66,7 +66,7 @@ const TYPE_COLORS: Record<string, string> = {
   start: "text-muted-foreground",
   end: "text-muted-foreground",
   cant: "text-muted-foreground",
-};
+}
 
 /**
  * Format a log message with rich text:
@@ -74,66 +74,60 @@ const TYPE_COLORS: Record<string, string> = {
  * - Damage percentages (XX%) in monospace
  */
 export function formatLogMessage(message: string): React.ReactNode {
-  const parts: React.ReactNode[] = [];
-  let key = 0;
+  const parts: React.ReactNode[] = []
+  let key = 0
 
   // Pattern: text after "used " until "!"
-  const moveRegex = /used (.+?)!/;
-  const moveMatch = message.match(moveRegex);
+  const moveRegex = /used (.+?)!/
+  const moveMatch = message.match(moveRegex)
 
   if (moveMatch) {
-    const moveIdx = message.indexOf(`used ${moveMatch[1]}!`);
-    const before = message.slice(0, moveIdx + 5); // "...used "
-    const moveName = moveMatch[1];
-    const after = message.slice(moveIdx + 5 + moveName.length);
+    const moveIdx = message.indexOf(`used ${moveMatch[1]}!`)
+    const before = message.slice(0, moveIdx + 5) // "...used "
+    const moveName = moveMatch[1]
+    const after = message.slice(moveIdx + 5 + moveName.length)
 
-    parts.push(<span key={key++}>{formatWithPercentages(before)}</span>);
+    parts.push(<span key={key++}>{formatWithPercentages(before)}</span>)
     parts.push(
       <em key={key++} className="font-medium">
         {moveName}
-      </em>
-    );
-    parts.push(<span key={key++}>{formatWithPercentages(after)}</span>);
+      </em>,
+    )
+    parts.push(<span key={key++}>{formatWithPercentages(after)}</span>)
   } else {
-    parts.push(<span key={key++}>{formatWithPercentages(message)}</span>);
+    parts.push(<span key={key++}>{formatWithPercentages(message)}</span>)
   }
 
-  return <>{parts}</>;
+  return <>{parts}</>
 }
 
 function formatWithPercentages(text: string): React.ReactNode {
-  const parts = text.split(/(\d+%)/g);
+  const parts = text.split(/(\d+%)/g)
   return parts.map((part, i) => {
     if (/^\d+%$/.test(part)) {
       return (
         <code key={i} className="text-xs px-0.5 rounded bg-muted font-mono">
           {part}
         </code>
-      );
+      )
     }
-    return part;
-  });
+    return part
+  })
 }
 
 interface LogEntryProps {
-  entry: BattleLogEntry;
-  className?: string;
+  entry: BattleLogEntry
+  className?: string
 }
 
 export function LogEntry({ entry, className }: LogEntryProps) {
-  const Icon = TYPE_ICONS[entry.type];
-  const colorClass = TYPE_COLORS[entry.type] || "text-muted-foreground";
+  const Icon = TYPE_ICONS[entry.type]
+  const colorClass = TYPE_COLORS[entry.type] || "text-muted-foreground"
 
   return (
-    <div
-      className={cn("flex items-start gap-2 py-0.5 px-2", colorClass, className)}
-    >
-      {Icon && (
-        <Icon className="h-3.5 w-3.5 mt-0.5 shrink-0 opacity-70" />
-      )}
-      <span className="text-sm leading-relaxed font-mono">
-        {formatLogMessage(entry.message)}
-      </span>
+    <div className={cn("flex items-start gap-2 py-0.5 px-2", colorClass, className)}>
+      {Icon && <Icon className="h-3.5 w-3.5 mt-0.5 shrink-0 opacity-70" />}
+      <span className="text-sm leading-relaxed font-mono">{formatLogMessage(entry.message)}</span>
     </div>
-  );
+  )
 }

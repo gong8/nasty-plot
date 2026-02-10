@@ -1,34 +1,37 @@
-"use client";
+"use client"
 
-import { Sparkles, Save, Loader2, AlertTriangle, AlertCircle, Swords, ArrowLeft } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import { TypeBadge, PokemonSprite } from "@nasty-plot/ui";
-import { cn } from "@/lib/utils";
-import type {
-  TeamSlotData,
-  TeamAnalysis,
-  PokemonType,
-  UsageStatsEntry,
-} from "@nasty-plot/core";
-import { SimplifiedAnalysis } from "./simplified-analysis";
+import {
+  Sparkles,
+  Save,
+  Loader2,
+  AlertTriangle,
+  AlertCircle,
+  Swords,
+  ArrowLeft,
+} from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Separator } from "@/components/ui/separator"
+import { TypeBadge, PokemonSprite } from "@nasty-plot/ui"
+import { cn } from "@/lib/utils"
+import type { TeamSlotData, TeamAnalysis, PokemonType, UsageStatsEntry } from "@nasty-plot/core"
+import { SimplifiedAnalysis } from "./simplified-analysis"
 
 interface StepReviewProps {
-  slots: Partial<TeamSlotData>[];
-  analysis: TeamAnalysis | null;
-  isLoadingAnalysis: boolean;
-  usageData: UsageStatsEntry[];
+  slots: Partial<TeamSlotData>[]
+  analysis: TeamAnalysis | null
+  isLoadingAnalysis: boolean
+  usageData: UsageStatsEntry[]
   validation: {
-    errors: string[];
-    warnings: string[];
-    isValid: boolean;
-  };
-  isSaving: boolean;
-  onSave: () => void;
-  onGoToStep: (step: string) => void;
-  onTestTeam: () => void;
+    errors: string[]
+    warnings: string[]
+    isValid: boolean
+  }
+  isSaving: boolean
+  onSave: () => void
+  onGoToStep: (step: string) => void
+  onTestTeam: () => void
 }
 
 export function StepReview({
@@ -42,23 +45,23 @@ export function StepReview({
   onGoToStep,
   onTestTeam,
 }: StepReviewProps) {
-  const filledSlots = slots.filter((s) => s.pokemonId);
+  const filledSlots = slots.filter((s) => s.pokemonId)
 
   function formatName(id: string): string {
     return id
       .replace(/([A-Z])/g, " $1")
       .replace(/^./, (s) => s.toUpperCase())
-      .trim();
+      .trim()
   }
 
   function getTypes(pokemonId: string): PokemonType[] {
-    const usage = usageData.find((u) => u.pokemonId === pokemonId);
-    return usage?.types ?? [];
+    const usage = usageData.find((u) => u.pokemonId === pokemonId)
+    return usage?.types ?? []
   }
 
   function getNum(pokemonId: string): number {
-    const usage = usageData.find((u) => u.pokemonId === pokemonId);
-    return usage?.num ?? 0;
+    const usage = usageData.find((u) => u.pokemonId === pokemonId)
+    return usage?.num ?? 0
   }
 
   return (
@@ -70,8 +73,8 @@ export function StepReview({
           Review & Save
         </h3>
         <p className="text-sm text-muted-foreground mt-1">
-          Your squad is assembled. Review the lineup, check the analysis, and
-          save when you&apos;re ready.
+          Your squad is assembled. Review the lineup, check the analysis, and save when you&apos;re
+          ready.
         </p>
       </div>
 
@@ -81,11 +84,11 @@ export function StepReview({
           {/* Team overview */}
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {filledSlots.map((slot) => {
-              const id = slot.pokemonId!;
-              const name = formatName(id);
-              const types = getTypes(id);
-              const num = getNum(id);
-              const moves = slot.moves?.filter((m): m is string => !!m) ?? [];
+              const id = slot.pokemonId!
+              const name = formatName(id)
+              const types = getTypes(id)
+              const num = getNum(id)
+              const moves = slot.moves?.filter((m): m is string => !!m) ?? []
 
               return (
                 <Card key={slot.position} className="overflow-hidden">
@@ -122,11 +125,7 @@ export function StepReview({
                         <Separator />
                         <div className="flex flex-wrap gap-1">
                           {moves.map((move, i) => (
-                            <Badge
-                              key={i}
-                              variant="outline"
-                              className="text-[10px]"
-                            >
+                            <Badge key={i} variant="outline" className="text-[10px]">
                               {move}
                             </Badge>
                           ))}
@@ -135,7 +134,7 @@ export function StepReview({
                     )}
                   </CardContent>
                 </Card>
-              );
+              )
             })}
           </div>
 
@@ -154,7 +153,10 @@ export function StepReview({
           {validation.warnings.length > 0 && (
             <div className="rounded-lg border border-yellow-500/50 bg-yellow-500/5 p-3 space-y-1">
               {validation.warnings.map((warn, i) => (
-                <div key={i} className="flex items-start gap-2 text-sm text-yellow-600 dark:text-yellow-400">
+                <div
+                  key={i}
+                  className="flex items-start gap-2 text-sm text-yellow-600 dark:text-yellow-400"
+                >
                   <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
                   <span>{warn}</span>
                 </div>
@@ -170,10 +172,7 @@ export function StepReview({
               </CardHeader>
               <CardContent className="space-y-2">
                 {analysis.suggestions.slice(0, 3).map((suggestion, i) => (
-                  <div
-                    key={i}
-                    className="flex items-start gap-2 text-xs text-muted-foreground"
-                  >
+                  <div key={i} className="flex items-start gap-2 text-xs text-muted-foreground">
                     <span className="shrink-0">-</span>
                     <span>{suggestion}</span>
                   </div>
@@ -233,5 +232,5 @@ export function StepReview({
         </div>
       </div>
     </div>
-  );
+  )
 }

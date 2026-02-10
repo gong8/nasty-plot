@@ -1,4 +1,4 @@
-import { fetchSmogonSets, getSetsForPokemon, getAllSetsForFormat } from "@nasty-plot/smogon-data";
+import { fetchSmogonSets, getSetsForPokemon, getAllSetsForFormat } from "@nasty-plot/smogon-data"
 
 // ---------------------------------------------------------------------------
 // Mocks
@@ -14,13 +14,13 @@ vi.mock("@nasty-plot/db", () => ({
       upsert: vi.fn(),
     },
   },
-}));
+}))
 
-import { prisma } from "@nasty-plot/db";
+import { prisma } from "@nasty-plot/db"
 
-const mockSetUpsert = prisma.smogonSet.upsert as ReturnType<typeof vi.fn>;
-const mockSetFindMany = prisma.smogonSet.findMany as ReturnType<typeof vi.fn>;
-const mockSyncLogUpsert = prisma.dataSyncLog.upsert as ReturnType<typeof vi.fn>;
+const mockSetUpsert = prisma.smogonSet.upsert as ReturnType<typeof vi.fn>
+const mockSetFindMany = prisma.smogonSet.findMany as ReturnType<typeof vi.fn>
+const mockSyncLogUpsert = prisma.dataSyncLog.upsert as ReturnType<typeof vi.fn>
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -38,7 +38,7 @@ function makeDbSetRow(overrides?: Record<string, unknown>) {
     evs: JSON.stringify({ atk: 252, spe: 252, spd: 4 }),
     ivs: null,
     ...overrides,
-  };
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -46,124 +46,118 @@ function makeDbSetRow(overrides?: Record<string, unknown>) {
 // ---------------------------------------------------------------------------
 
 describe("getSetsForPokemon", () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => vi.clearAllMocks())
 
   it("returns sets for a Pokemon in a format", async () => {
-    mockSetFindMany.mockResolvedValue([makeDbSetRow()]);
+    mockSetFindMany.mockResolvedValue([makeDbSetRow()])
 
-    const result = await getSetsForPokemon("gen9ou", "garchomp");
+    const result = await getSetsForPokemon("gen9ou", "garchomp")
 
-    expect(result).toHaveLength(1);
-    expect(result[0].pokemonId).toBe("garchomp");
-    expect(result[0].setName).toBe("Swords Dance");
-    expect(result[0].ability).toBe("Rough Skin");
-    expect(result[0].nature).toBe("Jolly");
-    expect(Array.isArray(result[0].moves)).toBe(true);
-  });
+    expect(result).toHaveLength(1)
+    expect(result[0].pokemonId).toBe("garchomp")
+    expect(result[0].setName).toBe("Swords Dance")
+    expect(result[0].ability).toBe("Rough Skin")
+    expect(result[0].nature).toBe("Jolly")
+    expect(Array.isArray(result[0].moves)).toBe(true)
+  })
 
   it("returns empty array when no sets exist", async () => {
-    mockSetFindMany.mockResolvedValue([]);
+    mockSetFindMany.mockResolvedValue([])
 
-    const result = await getSetsForPokemon("gen9ou", "unknown");
+    const result = await getSetsForPokemon("gen9ou", "unknown")
 
-    expect(result).toEqual([]);
-  });
+    expect(result).toEqual([])
+  })
 
   it("queries with correct formatId and pokemonId", async () => {
-    mockSetFindMany.mockResolvedValue([]);
+    mockSetFindMany.mockResolvedValue([])
 
-    await getSetsForPokemon("gen9ou", "garchomp");
+    await getSetsForPokemon("gen9ou", "garchomp")
 
     expect(mockSetFindMany).toHaveBeenCalledWith({
       where: { formatId: "gen9ou", pokemonId: "garchomp" },
-    });
-  });
+    })
+  })
 
   it("parses moves from JSON", async () => {
-    mockSetFindMany.mockResolvedValue([makeDbSetRow()]);
+    mockSetFindMany.mockResolvedValue([makeDbSetRow()])
 
-    const result = await getSetsForPokemon("gen9ou", "garchomp");
+    const result = await getSetsForPokemon("gen9ou", "garchomp")
 
-    expect(result[0].moves).toEqual([
-      "Earthquake", "Dragon Claw", "Swords Dance", "Scale Shot",
-    ]);
-  });
+    expect(result[0].moves).toEqual(["Earthquake", "Dragon Claw", "Swords Dance", "Scale Shot"])
+  })
 
   it("parses EVs from JSON", async () => {
-    mockSetFindMany.mockResolvedValue([makeDbSetRow()]);
+    mockSetFindMany.mockResolvedValue([makeDbSetRow()])
 
-    const result = await getSetsForPokemon("gen9ou", "garchomp");
+    const result = await getSetsForPokemon("gen9ou", "garchomp")
 
-    expect(result[0].evs).toEqual({ atk: 252, spe: 252, spd: 4 });
-  });
+    expect(result[0].evs).toEqual({ atk: 252, spe: 252, spd: 4 })
+  })
 
   it("parses IVs from JSON when present", async () => {
-    mockSetFindMany.mockResolvedValue([
-      makeDbSetRow({ ivs: JSON.stringify({ atk: 0 }) }),
-    ]);
+    mockSetFindMany.mockResolvedValue([makeDbSetRow({ ivs: JSON.stringify({ atk: 0 }) })])
 
-    const result = await getSetsForPokemon("gen9ou", "garchomp");
+    const result = await getSetsForPokemon("gen9ou", "garchomp")
 
-    expect(result[0].ivs).toEqual({ atk: 0 });
-  });
+    expect(result[0].ivs).toEqual({ atk: 0 })
+  })
 
   it("returns undefined ivs when null", async () => {
-    mockSetFindMany.mockResolvedValue([makeDbSetRow({ ivs: null })]);
+    mockSetFindMany.mockResolvedValue([makeDbSetRow({ ivs: null })])
 
-    const result = await getSetsForPokemon("gen9ou", "garchomp");
+    const result = await getSetsForPokemon("gen9ou", "garchomp")
 
-    expect(result[0].ivs).toBeUndefined();
-  });
+    expect(result[0].ivs).toBeUndefined()
+  })
 
   it("maps teraType when present", async () => {
-    mockSetFindMany.mockResolvedValue([
-      makeDbSetRow({ teraType: "Fairy" }),
-    ]);
+    mockSetFindMany.mockResolvedValue([makeDbSetRow({ teraType: "Fairy" })])
 
-    const result = await getSetsForPokemon("gen9ou", "garchomp");
+    const result = await getSetsForPokemon("gen9ou", "garchomp")
 
-    expect(result[0].teraType).toBe("Fairy");
-  });
-});
+    expect(result[0].teraType).toBe("Fairy")
+  })
+})
 
 describe("getAllSetsForFormat", () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => vi.clearAllMocks())
 
   it("groups sets by pokemonId", async () => {
     mockSetFindMany.mockResolvedValue([
       makeDbSetRow({ pokemonId: "garchomp", setName: "SD" }),
       makeDbSetRow({ pokemonId: "garchomp", setName: "Scarf" }),
       makeDbSetRow({ pokemonId: "heatran", setName: "Special Wall" }),
-    ]);
+    ])
 
-    const result = await getAllSetsForFormat("gen9ou");
+    const result = await getAllSetsForFormat("gen9ou")
 
-    expect(Object.keys(result)).toContain("garchomp");
-    expect(Object.keys(result)).toContain("heatran");
-    expect(result["garchomp"]).toHaveLength(2);
-    expect(result["heatran"]).toHaveLength(1);
-  });
+    expect(Object.keys(result)).toContain("garchomp")
+    expect(Object.keys(result)).toContain("heatran")
+    expect(result["garchomp"]).toHaveLength(2)
+    expect(result["heatran"]).toHaveLength(1)
+  })
 
   it("returns empty object when no sets exist", async () => {
-    mockSetFindMany.mockResolvedValue([]);
+    mockSetFindMany.mockResolvedValue([])
 
-    const result = await getAllSetsForFormat("gen9ou");
+    const result = await getAllSetsForFormat("gen9ou")
 
-    expect(result).toEqual({});
-  });
-});
+    expect(result).toEqual({})
+  })
+})
 
 describe("fetchSmogonSets", () => {
   beforeEach(() => {
-    vi.clearAllMocks();
-    vi.stubGlobal("fetch", vi.fn());
-    vi.spyOn(console, "log").mockImplementation(() => {});
-  });
+    vi.clearAllMocks()
+    vi.stubGlobal("fetch", vi.fn())
+    vi.spyOn(console, "log").mockImplementation(() => {})
+  })
 
   afterEach(() => {
-    vi.unstubAllGlobals();
-    vi.restoreAllMocks();
-  });
+    vi.unstubAllGlobals()
+    vi.restoreAllMocks()
+  })
 
   it("fetches sets and saves to DB", async () => {
     const mockJson = {
@@ -176,35 +170,33 @@ describe("fetchSmogonSets", () => {
           evs: { atk: 252, spe: 252, spd: 4 },
         },
       },
-    };
+    }
 
     const mockFetch = vi.fn().mockResolvedValue({
       ok: true,
       json: () => Promise.resolve(mockJson),
-    });
-    vi.stubGlobal("fetch", mockFetch);
+    })
+    vi.stubGlobal("fetch", mockFetch)
 
-    mockSetUpsert.mockResolvedValue({});
-    mockSyncLogUpsert.mockResolvedValue({});
+    mockSetUpsert.mockResolvedValue({})
+    mockSyncLogUpsert.mockResolvedValue({})
 
-    await fetchSmogonSets("gen9ou");
+    await fetchSmogonSets("gen9ou")
 
-    expect(mockSetUpsert).toHaveBeenCalledTimes(1);
-    expect(mockSyncLogUpsert).toHaveBeenCalled();
-  });
+    expect(mockSetUpsert).toHaveBeenCalledTimes(1)
+    expect(mockSyncLogUpsert).toHaveBeenCalled()
+  })
 
   it("throws when fetch fails", async () => {
     const mockFetch = vi.fn().mockResolvedValue({
       ok: false,
       status: 404,
       statusText: "Not Found",
-    });
-    vi.stubGlobal("fetch", mockFetch);
+    })
+    vi.stubGlobal("fetch", mockFetch)
 
-    await expect(fetchSmogonSets("gen9ou")).rejects.toThrow(
-      "Failed to fetch sets"
-    );
-  });
+    await expect(fetchSmogonSets("gen9ou")).rejects.toThrow("Failed to fetch sets")
+  })
 
   it("handles array fields (ability, item, nature)", async () => {
     const mockJson = {
@@ -217,18 +209,18 @@ describe("fetchSmogonSets", () => {
           evs: { atk: 252, spe: 252, spd: 4 },
         },
       },
-    };
+    }
 
     const mockFetch = vi.fn().mockResolvedValue({
       ok: true,
       json: () => Promise.resolve(mockJson),
-    });
-    vi.stubGlobal("fetch", mockFetch);
+    })
+    vi.stubGlobal("fetch", mockFetch)
 
-    mockSetUpsert.mockResolvedValue({});
-    mockSyncLogUpsert.mockResolvedValue({});
+    mockSetUpsert.mockResolvedValue({})
+    mockSyncLogUpsert.mockResolvedValue({})
 
-    await fetchSmogonSets("gen9ou");
+    await fetchSmogonSets("gen9ou")
 
     // Should take first element of arrays
     expect(mockSetUpsert).toHaveBeenCalledWith(
@@ -238,9 +230,9 @@ describe("fetchSmogonSets", () => {
           item: "Life Orb",
           nature: "Jolly",
         }),
-      })
-    );
-  });
+      }),
+    )
+  })
 
   it("handles teraType field", async () => {
     const mockJson = {
@@ -254,32 +246,32 @@ describe("fetchSmogonSets", () => {
           evs: { atk: 252 },
         },
       },
-    };
+    }
 
     const mockFetch = vi.fn().mockResolvedValue({
       ok: true,
       json: () => Promise.resolve(mockJson),
-    });
-    vi.stubGlobal("fetch", mockFetch);
+    })
+    vi.stubGlobal("fetch", mockFetch)
 
-    mockSetUpsert.mockResolvedValue({});
-    mockSyncLogUpsert.mockResolvedValue({});
+    mockSetUpsert.mockResolvedValue({})
+    mockSyncLogUpsert.mockResolvedValue({})
 
-    await fetchSmogonSets("gen9ou");
+    await fetchSmogonSets("gen9ou")
 
     expect(mockSetUpsert).toHaveBeenCalledWith(
       expect.objectContaining({
         create: expect.objectContaining({
           teraType: "Fairy",
         }),
-      })
-    );
-  });
+      }),
+    )
+  })
 
   it("skips Pokemon entries with empty pokemonId", async () => {
     const mockJson = {
       "": {
-        "Set": {
+        Set: {
           ability: "Levitate",
           item: "Leftovers",
           nature: "Bold",
@@ -288,7 +280,7 @@ describe("fetchSmogonSets", () => {
         },
       },
       Garchomp: {
-        "SD": {
+        SD: {
           ability: "Rough Skin",
           item: "Leftovers",
           nature: "Jolly",
@@ -296,89 +288,92 @@ describe("fetchSmogonSets", () => {
           evs: {},
         },
       },
-    };
+    }
 
     const mockFetch = vi.fn().mockResolvedValue({
       ok: true,
       json: () => Promise.resolve(mockJson),
-    });
-    vi.stubGlobal("fetch", mockFetch);
+    })
+    vi.stubGlobal("fetch", mockFetch)
 
-    mockSetUpsert.mockResolvedValue({});
-    mockSyncLogUpsert.mockResolvedValue({});
+    mockSetUpsert.mockResolvedValue({})
+    mockSyncLogUpsert.mockResolvedValue({})
 
-    await fetchSmogonSets("gen9ou");
+    await fetchSmogonSets("gen9ou")
 
     // Only Garchomp should be saved, empty name skipped
-    expect(mockSetUpsert).toHaveBeenCalledTimes(1);
-  });
+    expect(mockSetUpsert).toHaveBeenCalledTimes(1)
+  })
 
   it("skips non-object set data entries", async () => {
     const mockJson = {
       Garchomp: {
-        "SD": {
+        SD: {
           ability: "Rough Skin",
           item: "Leftovers",
           nature: "Jolly",
           moves: ["Earthquake"],
           evs: {},
         },
-        "Invalid": null,
+        Invalid: null,
       },
-    };
+    }
 
     const mockFetch = vi.fn().mockResolvedValue({
       ok: true,
       json: () => Promise.resolve(mockJson),
-    });
-    vi.stubGlobal("fetch", mockFetch);
+    })
+    vi.stubGlobal("fetch", mockFetch)
 
-    mockSetUpsert.mockResolvedValue({});
-    mockSyncLogUpsert.mockResolvedValue({});
+    mockSetUpsert.mockResolvedValue({})
+    mockSyncLogUpsert.mockResolvedValue({})
 
-    await fetchSmogonSets("gen9ou");
+    await fetchSmogonSets("gen9ou")
 
     // Only "SD" should be saved, null entry skipped
-    expect(mockSetUpsert).toHaveBeenCalledTimes(1);
-  });
+    expect(mockSetUpsert).toHaveBeenCalledTimes(1)
+  })
 
   it("handles array EVs (firstRecord picks first element)", async () => {
     const mockJson = {
       Garchomp: {
-        "SD": {
+        SD: {
           ability: "Rough Skin",
           item: "Leftovers",
           nature: "Jolly",
           moves: ["Earthquake"],
-          evs: [{ atk: 252, spe: 252 }, { hp: 252, def: 252 }],
+          evs: [
+            { atk: 252, spe: 252 },
+            { hp: 252, def: 252 },
+          ],
         },
       },
-    };
+    }
 
     const mockFetch = vi.fn().mockResolvedValue({
       ok: true,
       json: () => Promise.resolve(mockJson),
-    });
-    vi.stubGlobal("fetch", mockFetch);
+    })
+    vi.stubGlobal("fetch", mockFetch)
 
-    mockSetUpsert.mockResolvedValue({});
-    mockSyncLogUpsert.mockResolvedValue({});
+    mockSetUpsert.mockResolvedValue({})
+    mockSyncLogUpsert.mockResolvedValue({})
 
-    await fetchSmogonSets("gen9ou");
+    await fetchSmogonSets("gen9ou")
 
     expect(mockSetUpsert).toHaveBeenCalledWith(
       expect.objectContaining({
         create: expect.objectContaining({
           evs: JSON.stringify({ atk: 252, spe: 252 }),
         }),
-      })
-    );
-  });
+      }),
+    )
+  })
 
   it("handles IVs field when present", async () => {
     const mockJson = {
       Garchomp: {
-        "SD": {
+        SD: {
           ability: "Rough Skin",
           item: "Leftovers",
           nature: "Jolly",
@@ -387,32 +382,32 @@ describe("fetchSmogonSets", () => {
           ivs: { atk: 0 },
         },
       },
-    };
+    }
 
     const mockFetch = vi.fn().mockResolvedValue({
       ok: true,
       json: () => Promise.resolve(mockJson),
-    });
-    vi.stubGlobal("fetch", mockFetch);
+    })
+    vi.stubGlobal("fetch", mockFetch)
 
-    mockSetUpsert.mockResolvedValue({});
-    mockSyncLogUpsert.mockResolvedValue({});
+    mockSetUpsert.mockResolvedValue({})
+    mockSyncLogUpsert.mockResolvedValue({})
 
-    await fetchSmogonSets("gen9ou");
+    await fetchSmogonSets("gen9ou")
 
     expect(mockSetUpsert).toHaveBeenCalledWith(
       expect.objectContaining({
         create: expect.objectContaining({
           ivs: JSON.stringify({ atk: 0 }),
         }),
-      })
-    );
-  });
+      }),
+    )
+  })
 
   it("handles IVs as empty object (normalizes to null)", async () => {
     const mockJson = {
       Garchomp: {
-        "SD": {
+        SD: {
           ability: "Rough Skin",
           item: "Leftovers",
           nature: "Jolly",
@@ -421,32 +416,32 @@ describe("fetchSmogonSets", () => {
           ivs: {},
         },
       },
-    };
+    }
 
     const mockFetch = vi.fn().mockResolvedValue({
       ok: true,
       json: () => Promise.resolve(mockJson),
-    });
-    vi.stubGlobal("fetch", mockFetch);
+    })
+    vi.stubGlobal("fetch", mockFetch)
 
-    mockSetUpsert.mockResolvedValue({});
-    mockSyncLogUpsert.mockResolvedValue({});
+    mockSetUpsert.mockResolvedValue({})
+    mockSyncLogUpsert.mockResolvedValue({})
 
-    await fetchSmogonSets("gen9ou");
+    await fetchSmogonSets("gen9ou")
 
     expect(mockSetUpsert).toHaveBeenCalledWith(
       expect.objectContaining({
         create: expect.objectContaining({
           ivs: null,
         }),
-      })
-    );
-  });
+      }),
+    )
+  })
 
   it("handles array IVs (firstRecord picks first element)", async () => {
     const mockJson = {
       Garchomp: {
-        "SD": {
+        SD: {
           ability: "Rough Skin",
           item: "Leftovers",
           nature: "Jolly",
@@ -455,32 +450,32 @@ describe("fetchSmogonSets", () => {
           ivs: [{ atk: 0 }, { spa: 0 }],
         },
       },
-    };
+    }
 
     const mockFetch = vi.fn().mockResolvedValue({
       ok: true,
       json: () => Promise.resolve(mockJson),
-    });
-    vi.stubGlobal("fetch", mockFetch);
+    })
+    vi.stubGlobal("fetch", mockFetch)
 
-    mockSetUpsert.mockResolvedValue({});
-    mockSyncLogUpsert.mockResolvedValue({});
+    mockSetUpsert.mockResolvedValue({})
+    mockSyncLogUpsert.mockResolvedValue({})
 
-    await fetchSmogonSets("gen9ou");
+    await fetchSmogonSets("gen9ou")
 
     expect(mockSetUpsert).toHaveBeenCalledWith(
       expect.objectContaining({
         create: expect.objectContaining({
           ivs: JSON.stringify({ atk: 0 }),
         }),
-      })
-    );
-  });
+      }),
+    )
+  })
 
   it("handles teraType as array (takes first)", async () => {
     const mockJson = {
       Garchomp: {
-        "Tera": {
+        Tera: {
           ability: "Rough Skin",
           item: "Leftovers",
           nature: "Jolly",
@@ -489,39 +484,39 @@ describe("fetchSmogonSets", () => {
           evs: {},
         },
       },
-    };
+    }
 
     const mockFetch = vi.fn().mockResolvedValue({
       ok: true,
       json: () => Promise.resolve(mockJson),
-    });
-    vi.stubGlobal("fetch", mockFetch);
+    })
+    vi.stubGlobal("fetch", mockFetch)
 
-    mockSetUpsert.mockResolvedValue({});
-    mockSyncLogUpsert.mockResolvedValue({});
+    mockSetUpsert.mockResolvedValue({})
+    mockSyncLogUpsert.mockResolvedValue({})
 
-    await fetchSmogonSets("gen9ou");
+    await fetchSmogonSets("gen9ou")
 
     expect(mockSetUpsert).toHaveBeenCalledWith(
       expect.objectContaining({
         create: expect.objectContaining({
           teraType: "Fairy",
         }),
-      })
-    );
-  });
+      }),
+    )
+  })
 
   it("saves multiple Pokemon and sets", async () => {
     const mockJson = {
       Garchomp: {
-        "SD": {
+        SD: {
           ability: "Rough Skin",
           item: "Leftovers",
           nature: "Jolly",
           moves: ["Earthquake"],
           evs: {},
         },
-        "Scarf": {
+        Scarf: {
           ability: "Rough Skin",
           item: "Choice Scarf",
           nature: "Jolly",
@@ -530,7 +525,7 @@ describe("fetchSmogonSets", () => {
         },
       },
       Heatran: {
-        "Wall": {
+        Wall: {
           ability: "Flash Fire",
           item: "Leftovers",
           nature: "Calm",
@@ -538,19 +533,19 @@ describe("fetchSmogonSets", () => {
           evs: {},
         },
       },
-    };
+    }
 
     const mockFetch = vi.fn().mockResolvedValue({
       ok: true,
       json: () => Promise.resolve(mockJson),
-    });
-    vi.stubGlobal("fetch", mockFetch);
+    })
+    vi.stubGlobal("fetch", mockFetch)
 
-    mockSetUpsert.mockResolvedValue({});
-    mockSyncLogUpsert.mockResolvedValue({});
+    mockSetUpsert.mockResolvedValue({})
+    mockSyncLogUpsert.mockResolvedValue({})
 
-    await fetchSmogonSets("gen9ou");
+    await fetchSmogonSets("gen9ou")
 
-    expect(mockSetUpsert).toHaveBeenCalledTimes(3);
-  });
-});
+    expect(mockSetUpsert).toHaveBeenCalledTimes(3)
+  })
+})

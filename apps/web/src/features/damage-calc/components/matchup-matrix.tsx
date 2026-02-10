@@ -1,24 +1,24 @@
-"use client";
+"use client"
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { Skeleton } from "@/components/ui/skeleton";
-import { cn } from "@/lib/utils";
-import type { MatchupMatrixEntry } from "@nasty-plot/core";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import { Skeleton } from "@/components/ui/skeleton"
+import { cn } from "@/lib/utils"
+import type { MatchupMatrixEntry } from "@nasty-plot/core"
 
 interface MatchupMatrixProps {
-  matrix: MatchupMatrixEntry[][] | undefined;
-  isLoading?: boolean;
+  matrix: MatchupMatrixEntry[][] | undefined
+  isLoading?: boolean
 }
 
 function getDamageColor(maxPercent: number): string {
-  if (maxPercent >= 100) return "bg-red-500/80 text-white";
-  if (maxPercent >= 66) return "bg-red-400/60 text-red-950 dark:text-red-100";
-  if (maxPercent >= 50) return "bg-orange-400/60 text-orange-950 dark:text-orange-100";
-  if (maxPercent >= 33) return "bg-yellow-400/60 text-yellow-950 dark:text-yellow-100";
-  if (maxPercent >= 20) return "bg-green-300/60 text-green-950 dark:text-green-100";
-  return "bg-green-200/40 text-green-900 dark:bg-green-800/40 dark:text-green-200";
+  if (maxPercent >= 100) return "bg-red-500/80 text-white"
+  if (maxPercent >= 66) return "bg-red-400/60 text-red-950 dark:text-red-100"
+  if (maxPercent >= 50) return "bg-orange-400/60 text-orange-950 dark:text-orange-100"
+  if (maxPercent >= 33) return "bg-yellow-400/60 text-yellow-950 dark:text-yellow-100"
+  if (maxPercent >= 20) return "bg-green-300/60 text-green-950 dark:text-green-100"
+  return "bg-green-200/40 text-green-900 dark:bg-green-800/40 dark:text-green-200"
 }
 
 export function MatchupMatrix({ matrix, isLoading }: MatchupMatrixProps) {
@@ -36,7 +36,7 @@ export function MatchupMatrix({ matrix, isLoading }: MatchupMatrixProps) {
           </div>
         </CardContent>
       </Card>
-    );
+    )
   }
 
   if (!matrix || matrix.length === 0) {
@@ -51,11 +51,11 @@ export function MatchupMatrix({ matrix, isLoading }: MatchupMatrixProps) {
           </p>
         </CardContent>
       </Card>
-    );
+    )
   }
 
   // Extract unique defender names from first row
-  const defenderNames = matrix[0]?.map((entry) => entry.defenderName) ?? [];
+  const defenderNames = matrix[0]?.map((entry) => entry.defenderName) ?? []
 
   return (
     <Card>
@@ -68,9 +68,7 @@ export function MatchupMatrix({ matrix, isLoading }: MatchupMatrixProps) {
             <table className="w-full text-xs">
               <thead>
                 <tr>
-                  <th className="text-left p-2 font-medium sticky left-0 bg-card z-10">
-                    Team
-                  </th>
+                  <th className="text-left p-2 font-medium sticky left-0 bg-card z-10">Team</th>
                   {defenderNames.map((name) => (
                     <th key={name} className="p-2 font-medium text-center min-w-[100px]">
                       <div className="flex flex-col items-center gap-1">
@@ -85,7 +83,7 @@ export function MatchupMatrix({ matrix, isLoading }: MatchupMatrixProps) {
               </thead>
               <tbody>
                 {matrix.map((row, rowIdx) => {
-                  const attackerName = row[0]?.attackerName ?? `Slot ${rowIdx + 1}`;
+                  const attackerName = row[0]?.attackerName ?? `Slot ${rowIdx + 1}`
                   return (
                     <tr key={rowIdx} className="border-t">
                       <td className="p-2 font-medium sticky left-0 bg-card z-10">
@@ -103,7 +101,7 @@ export function MatchupMatrix({ matrix, isLoading }: MatchupMatrixProps) {
                               <div
                                 className={cn(
                                   "rounded-md p-2 text-center cursor-default transition-colors",
-                                  getDamageColor(entry.maxPercent)
+                                  getDamageColor(entry.maxPercent),
                                 )}
                               >
                                 <div className="font-mono font-semibold">
@@ -128,7 +126,7 @@ export function MatchupMatrix({ matrix, isLoading }: MatchupMatrixProps) {
                         </td>
                       ))}
                     </tr>
-                  );
+                  )
                 })}
               </tbody>
             </table>
@@ -137,5 +135,5 @@ export function MatchupMatrix({ matrix, isLoading }: MatchupMatrixProps) {
         </ScrollArea>
       </CardContent>
     </Card>
-  );
+  )
 }

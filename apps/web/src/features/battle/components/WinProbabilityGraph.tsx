@@ -1,6 +1,6 @@
-"use client";
+"use client"
 
-import { useMemo } from "react";
+import { useMemo } from "react"
 import {
   ResponsiveContainer,
   LineChart,
@@ -10,16 +10,16 @@ import {
   ReferenceLine,
   Tooltip,
   CartesianGrid,
-} from "recharts";
-import type { ReplayFrame } from "@nasty-plot/battle-engine";
-import { cn } from "@/lib/utils";
+} from "recharts"
+import type { ReplayFrame } from "@nasty-plot/battle-engine"
+import { cn } from "@/lib/utils"
 
 interface WinProbabilityGraphProps {
-  frames: ReplayFrame[];
-  currentTurn?: number;
-  p1Name?: string;
-  p2Name?: string;
-  className?: string;
+  frames: ReplayFrame[]
+  currentTurn?: number
+  p1Name?: string
+  p2Name?: string
+  className?: string
 }
 
 export function WinProbabilityGraph({
@@ -38,9 +38,9 @@ export function WinProbabilityGraph({
           winProb: f.winProbTeam1!,
         })),
     [frames],
-  );
+  )
 
-  if (data.length < 2) return null;
+  if (data.length < 2) return null
 
   return (
     <div className={cn("w-full h-[200px]", className)}>
@@ -52,12 +52,13 @@ export function WinProbabilityGraph({
             tick={{ fontSize: 11 }}
             label={{ value: "Turn", position: "insideBottom", offset: -2, fontSize: 11 }}
           />
-          <YAxis
-            domain={[0, 100]}
-            tick={{ fontSize: 11 }}
-            tickFormatter={(v) => `${v}%`}
+          <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} tickFormatter={(v) => `${v}%`} />
+          <ReferenceLine
+            y={50}
+            stroke="hsl(var(--muted-foreground))"
+            strokeDasharray="3 3"
+            opacity={0.5}
           />
-          <ReferenceLine y={50} stroke="hsl(var(--muted-foreground))" strokeDasharray="3 3" opacity={0.5} />
           {currentTurn != null && (
             <ReferenceLine
               x={currentTurn}
@@ -87,5 +88,5 @@ export function WinProbabilityGraph({
         </LineChart>
       </ResponsiveContainer>
     </div>
-  );
+  )
 }

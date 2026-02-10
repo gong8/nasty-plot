@@ -6,4 +6,4 @@ export type {
   ItemData,
   StatsTable,
   StatName,
-} from "@nasty-plot/core";
+} from "@nasty-plot/core"

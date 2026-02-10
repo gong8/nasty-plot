@@ -1,4 +1,4 @@
-const MCP_PREFIX = "mcp__nasty-plot__";
+const MCP_PREFIX = "mcp__nasty-plot__"
 
 /** Tool categories mapped to their MCP tool names (without prefix) */
 const TOOL_CATEGORIES: Record<string, string[]> = {
@@ -34,12 +34,12 @@ const TOOL_CATEGORIES: Record<string, string[]> = {
     "suggest_teammates",
     "suggest_sets",
   ],
-};
+}
 
 /** All MCP tool names (with prefix) */
 const ALL_MCP_TOOLS = Object.values(TOOL_CATEGORIES)
   .flat()
-  .map((name) => `${MCP_PREFIX}${name}`);
+  .map((name) => `${MCP_PREFIX}${name}`)
 
 export type PageType =
   | "team-editor"
@@ -49,7 +49,7 @@ export type PageType =
   | "battle-live"
   | "chat"
   | "home"
-  | "other";
+  | "other"
 
 /** Map page types to which tool categories are ALLOWED */
 const TOOL_CONTEXT_MAP: Record<PageType, string[]> = {
@@ -61,33 +61,33 @@ const TOOL_CONTEXT_MAP: Record<PageType, string[]> = {
   chat: ["dataQuery", "analysis", "teamCrud", "metaRecs"],
   home: ["dataQuery", "analysis", "teamCrud", "metaRecs"],
   other: ["dataQuery", "analysis", "teamCrud", "metaRecs"],
-};
+}
 
 /**
  * Get MCP tool names that should be disallowed for a given page type.
  * Returns full MCP-prefixed tool names.
  */
 export function getDisallowedMcpTools(pageType: PageType): string[] {
-  const allowedCategories = TOOL_CONTEXT_MAP[pageType];
+  const allowedCategories = TOOL_CONTEXT_MAP[pageType]
   const allowedTools = new Set(
     allowedCategories.flatMap(
-      (cat) => TOOL_CATEGORIES[cat]?.map((name) => `${MCP_PREFIX}${name}`) ?? []
-    )
-  );
+      (cat) => TOOL_CATEGORIES[cat]?.map((name) => `${MCP_PREFIX}${name}`) ?? [],
+    ),
+  )
 
-  return ALL_MCP_TOOLS.filter((tool) => !allowedTools.has(tool));
+  return ALL_MCP_TOOLS.filter((tool) => !allowedTools.has(tool))
 }
 
 /**
  * Determine the page type from a pathname.
  */
 export function getPageTypeFromPath(pathname: string): PageType {
-  if (pathname.match(/^\/teams\/[^/]+$/)) return "team-editor";
-  if (pathname.match(/^\/pokemon\/[^/]+$/)) return "pokemon-detail";
-  if (pathname === "/pokemon") return "pokemon-browser";
-  if (pathname === "/damage-calc") return "damage-calc";
-  if (pathname === "/battle/live") return "battle-live";
-  if (pathname === "/chat") return "chat";
-  if (pathname === "/") return "home";
-  return "other";
+  if (pathname.match(/^\/teams\/[^/]+$/)) return "team-editor"
+  if (pathname.match(/^\/pokemon\/[^/]+$/)) return "pokemon-detail"
+  if (pathname === "/pokemon") return "pokemon-browser"
+  if (pathname === "/damage-calc") return "damage-calc"
+  if (pathname === "/battle/live") return "battle-live"
+  if (pathname === "/chat") return "chat"
+  if (pathname === "/") return "home"
+  return "other"
 }

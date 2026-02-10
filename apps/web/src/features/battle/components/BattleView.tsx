@@ -1,20 +1,20 @@
-"use client";
+"use client"
 
-import { useState, useRef } from "react";
-import { cn } from "@/lib/utils";
-import type { BattleState, MoveHint } from "@nasty-plot/battle-engine";
-import { BattleField } from "./BattleField";
-import { BattleLog } from "./BattleLog";
-import { MoveSelector } from "./MoveSelector";
-import { SwitchMenu } from "./SwitchMenu";
-import { TeamPreview } from "./TeamPreview";
-import { EvalBar } from "./EvalBar";
-import { HintPanel } from "./HintPanel";
-import { CommentaryPanel } from "./CommentaryPanel";
-import { useBattleHints } from "../hooks/use-battle-hints";
-import { useBattleAnimations } from "../hooks/use-battle-animations";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { useState, useRef } from "react"
+import { cn } from "@/lib/utils"
+import type { BattleState, MoveHint } from "@nasty-plot/battle-engine"
+import { BattleField } from "./BattleField"
+import { BattleLog } from "./BattleLog"
+import { MoveSelector } from "./MoveSelector"
+import { SwitchMenu } from "./SwitchMenu"
+import { TeamPreview } from "./TeamPreview"
+import { EvalBar } from "./EvalBar"
+import { HintPanel } from "./HintPanel"
+import { CommentaryPanel } from "./CommentaryPanel"
+import { useBattleHints } from "../hooks/use-battle-hints"
+import { useBattleAnimations } from "../hooks/use-battle-animations"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
 import {
   Trophy,
   RotateCcw,
@@ -25,17 +25,17 @@ import {
   Loader2,
   ChevronDown,
   ChevronUp,
-} from "lucide-react";
-import Link from "next/link";
+} from "lucide-react"
+import Link from "next/link"
 
 interface BattleViewProps {
-  state: BattleState;
-  onMove: (moveIndex: number, tera?: boolean, targetSlot?: number) => void;
-  onSwitch: (pokemonIndex: number) => void;
-  onLeadSelect: (leadOrder: number[]) => void;
-  onRematch?: () => void;
-  onSave?: (commentary?: Record<number, string>) => Promise<string | null>;
-  className?: string;
+  state: BattleState
+  onMove: (moveIndex: number, tera?: boolean, targetSlot?: number) => void
+  onSwitch: (pokemonIndex: number) => void
+  onLeadSelect: (leadOrder: number[]) => void
+  onRematch?: () => void
+  onSave?: (commentary?: Record<number, string>) => Promise<string | null>
+  className?: string
 }
 
 export function BattleView({
@@ -47,29 +47,31 @@ export function BattleView({
   onSave,
   className,
 }: BattleViewProps) {
-  const [showSwitchMenu, setShowSwitchMenu] = useState(false);
-  const [hintsEnabled, setHintsEnabled] = useState(false);
-  const [commentaryEnabled, setCommentaryEnabled] = useState(false);
-  const [commentaryAutoMode, setCommentaryAutoMode] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-  const [savedId, setSavedId] = useState<string | null>(null);
-  const [expandedPanel, setExpandedPanel] = useState(false);
+  const [showSwitchMenu, setShowSwitchMenu] = useState(false)
+  const [hintsEnabled, setHintsEnabled] = useState(false)
+  const [commentaryEnabled, setCommentaryEnabled] = useState(false)
+  const [commentaryAutoMode, setCommentaryAutoMode] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
+  const [savedId, setSavedId] = useState<string | null>(null)
+  const [expandedPanel, setExpandedPanel] = useState(false)
 
-  const commentaryRef = useRef<Record<number, string>>({});
+  const commentaryRef = useRef<Record<number, string>>({})
 
-  const { hints, winProb } = useBattleHints(state, { enabled: hintsEnabled });
-  const animState = useBattleAnimations(state);
+  const [textSpeed, setTextSpeed] = useState(1)
+
+  const { hints, winProb } = useBattleHints(state, { enabled: hintsEnabled })
+  const animState = useBattleAnimations(state, { speed: textSpeed })
 
   const handleHintSelect = (hint: MoveHint) => {
     if (hint.action.type === "move" && hint.action.moveIndex != null) {
-      onMove(hint.action.moveIndex, hint.action.tera);
+      onMove(hint.action.moveIndex, hint.action.tera)
     } else if (hint.action.type === "switch" && hint.action.pokemonIndex != null) {
-      onSwitch(hint.action.pokemonIndex);
+      onSwitch(hint.action.pokemonIndex)
     }
-  };
+  }
 
   const handleCommentaryGenerated = (turn: number, text: string) => {
-    commentaryRef.current[turn] = text;
+    commentaryRef.current[turn] = text
 
     // If battle is already saved, persist commentary incrementally
     if (savedId) {
@@ -77,20 +79,19 @@ export function BattleView({
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ turn, text }),
-      }).catch((err) => console.error("[Commentary persist]", err));
+      }).catch((err) => console.error("[Commentary persist]", err))
     }
-  };
+  }
 
   const handleSave = async () => {
-    if (!onSave || isSaving) return;
-    setIsSaving(true);
-    const commentary = Object.keys(commentaryRef.current).length > 0
-      ? commentaryRef.current
-      : undefined;
-    const id = await onSave(commentary);
-    setSavedId(id);
-    setIsSaving(false);
-  };
+    if (!onSave || isSaving) return
+    setIsSaving(true)
+    const commentary =
+      Object.keys(commentaryRef.current).length > 0 ? commentaryRef.current : undefined
+    const id = await onSave(commentary)
+    setSavedId(id)
+    setIsSaving(false)
+  }
 
   // Team Preview Phase
   if (state.phase === "preview") {
@@ -103,35 +104,47 @@ export function BattleView({
           onSubmit={onLeadSelect}
         />
       </div>
-    );
+    )
   }
 
   // Battle Ended
   if (state.phase === "ended") {
-    const playerWon = state.winner === "p1";
+    const playerWon = state.winner === "p1"
     return (
       <div className={cn("space-y-4", className)}>
         <BattleField
           state={state}
           animationStates={animState.slotAnimations}
-          moveFlash={animState.moveFlash}
-          effectivenessFlash={animState.effectivenessFlash}
+          textMessage={animState.textMessage}
           damageNumbers={animState.damageNumbers}
+          textSpeed={textSpeed}
         />
 
         <Card className="max-w-md mx-auto">
           <CardContent className="pt-6 text-center space-y-4">
-            <Trophy className={cn("h-12 w-12 mx-auto", playerWon ? "text-yellow-500" : "text-muted-foreground")} />
-            <h2 className="text-xl font-bold">
-              {playerWon ? "Victory." : "Defeat."}
-            </h2>
+            <Trophy
+              className={cn(
+                "h-12 w-12 mx-auto",
+                playerWon ? "text-yellow-500" : "text-muted-foreground",
+              )}
+            />
+            <h2 className="text-xl font-bold">{playerWon ? "Victory." : "Defeat."}</h2>
             <p className="text-muted-foreground">
               {state.winner === "p1" ? state.sides.p1.name : state.sides.p2.name} won the battle!
             </p>
             <div className="flex gap-3 justify-center flex-wrap">
               {onSave && !savedId && (
-                <Button onClick={handleSave} disabled={isSaving} variant="outline" className="gap-1.5">
-                  {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                <Button
+                  onClick={handleSave}
+                  disabled={isSaving}
+                  variant="outline"
+                  className="gap-1.5"
+                >
+                  {isSaving ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Save className="h-4 w-4" />
+                  )}
                   {isSaving ? "Saving..." : "Save Battle"}
                 </Button>
               )}
@@ -162,19 +175,19 @@ export function BattleView({
           <BattleLog entries={state.fullLog} />
         </div>
       </div>
-    );
+    )
   }
 
   // Active Battle Phase
-  const isForceSwitch = state.availableActions?.forceSwitch ?? false;
-  const showSwitch = showSwitchMenu || isForceSwitch;
-  const activePokemon = state.sides.p1.active[0];
+  const isForceSwitch = state.availableActions?.forceSwitch ?? false
+  const showSwitch = showSwitchMenu || isForceSwitch
+  const activePokemon = state.sides.p1.active[0]
 
   // Gate controls on animation state
-  const controlsDisabled = animState.isAnimating;
+  const controlsDisabled = animState.isAnimating
 
   // Recent log entries for commentary (last turn's entries)
-  const recentEntries = state.log.slice(-10);
+  const recentEntries = state.log.slice(-10)
 
   return (
     <div className={cn("flex flex-col h-[calc(100vh-80px)]", className)}>
@@ -195,10 +208,10 @@ export function BattleView({
             size="sm"
             variant={commentaryEnabled ? "default" : "ghost"}
             onClick={() => {
-              setCommentaryEnabled((v) => !v);
+              setCommentaryEnabled((v) => !v)
               if (!commentaryEnabled) {
                 // Opening commentary panel — expand it
-                setExpandedPanel(true);
+                setExpandedPanel(true)
               }
             }}
             className="h-7 text-xs gap-1"
@@ -206,6 +219,19 @@ export function BattleView({
             <MessageSquare className="h-3 w-3" />
             Commentary
           </Button>
+          <div className="flex items-center gap-0.5">
+            {[1, 2, 4].map((s) => (
+              <Button
+                key={s}
+                size="sm"
+                variant={textSpeed === s ? "default" : "ghost"}
+                onClick={() => setTextSpeed(s)}
+                className="h-7 text-xs px-1.5"
+              >
+                {s}x
+              </Button>
+            ))}
+          </div>
           {commentaryEnabled && (
             <Button
               size="sm"
@@ -243,9 +269,9 @@ export function BattleView({
           <BattleField
             state={state}
             animationStates={animState.slotAnimations}
-            moveFlash={animState.moveFlash}
-            effectivenessFlash={animState.effectivenessFlash}
+            textMessage={animState.textMessage}
             damageNumbers={animState.damageNumbers}
+            textSpeed={textSpeed}
           />
         </div>
 
@@ -264,8 +290,8 @@ export function BattleView({
                 <SwitchMenu
                   actions={state.availableActions}
                   onSwitch={(idx) => {
-                    onSwitch(idx);
-                    setShowSwitchMenu(false);
+                    onSwitch(idx)
+                    setShowSwitchMenu(false)
                   }}
                   onBack={isForceSwitch ? undefined : () => setShowSwitchMenu(false)}
                   team={state.sides.p1.team}
@@ -301,7 +327,11 @@ export function BattleView({
             onClick={() => setExpandedPanel((v) => !v)}
             className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors mb-1"
           >
-            {expandedPanel ? <ChevronDown className="h-3 w-3" /> : <ChevronUp className="h-3 w-3" />}
+            {expandedPanel ? (
+              <ChevronDown className="h-3 w-3" />
+            ) : (
+              <ChevronUp className="h-3 w-3" />
+            )}
             {hintsEnabled && "Hints"}
             {hintsEnabled && commentaryEnabled && " & "}
             {commentaryEnabled && "Commentary"}
@@ -310,10 +340,7 @@ export function BattleView({
           {expandedPanel && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
               {hintsEnabled && hints && (
-                <HintPanel
-                  hints={hints.rankedMoves}
-                  onSelectHint={handleHintSelect}
-                />
+                <HintPanel hints={hints.rankedMoves} onSelectHint={handleHintSelect} />
               )}
 
               {commentaryEnabled && (
@@ -331,5 +358,5 @@ export function BattleView({
         </div>
       )}
     </div>
-  );
+  )
 }

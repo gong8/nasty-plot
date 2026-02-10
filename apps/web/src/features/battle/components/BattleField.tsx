@@ -1,24 +1,23 @@
-"use client";
+"use client"
 
-import { cn } from "@/lib/utils";
-import type { BattleState, BattlePokemon } from "@nasty-plot/battle-engine";
-import { BattleSprite } from "./PokemonSprite";
-import { HealthBar } from "./HealthBar";
-import { BattlePlatform } from "./BattlePlatform";
-import { PokeballIndicator } from "./PokeballIndicator";
-import { WeatherOverlay } from "./WeatherOverlay";
-import { SideConditionIndicators } from "./SideConditionIndicators";
-import { MoveNameFlash } from "./MoveNameFlash";
-import { EffectivenessFlash } from "./EffectivenessFlash";
-import { DamageNumber } from "./DamageNumber";
+import { cn } from "@/lib/utils"
+import type { BattleState, BattlePokemon } from "@nasty-plot/battle-engine"
+import { BattleSprite } from "./PokemonSprite"
+import { HealthBar } from "./HealthBar"
+import { BattlePlatform } from "./BattlePlatform"
+import { PokeballIndicator } from "./PokeballIndicator"
+import { WeatherOverlay } from "./WeatherOverlay"
+import { SideConditionIndicators } from "./SideConditionIndicators"
+import { BattleTextBox } from "./BattleTextBox"
+import { DamageNumber } from "./DamageNumber"
 
 interface BattleFieldProps {
-  state: BattleState;
-  animationStates?: Record<string, string>; // slot key -> CSS class
-  moveFlash?: { name: string; side: "p1" | "p2" } | null;
-  effectivenessFlash?: string | null;
-  damageNumbers?: { value: string; side: "p1" | "p2"; slot: number }[] | null;
-  className?: string;
+  state: BattleState
+  animationStates?: Record<string, string> // slot key -> CSS class
+  textMessage?: string | null
+  textSpeed?: number
+  damageNumbers?: { value: string; side: "p1" | "p2"; slot: number }[] | null
+  className?: string
 }
 
 const STATUS_BADGE: Record<string, { label: string; color: string }> = {
@@ -28,13 +27,13 @@ const STATUS_BADGE: Record<string, { label: string; color: string }> = {
   frz: { label: "FRZ", color: "bg-cyan-400" },
   psn: { label: "PSN", color: "bg-purple-500" },
   tox: { label: "TOX", color: "bg-purple-700 dark:bg-purple-500" },
-};
+}
 
 /** Positioning configs for singles and doubles */
 const SINGLES_POSITIONS = {
   player: [{ bottom: "8%", left: "10%" }],
   opponent: [{ top: "10%", right: "10%" }],
-} as const;
+} as const
 
 const DOUBLES_POSITIONS = {
   player: [
@@ -45,30 +44,24 @@ const DOUBLES_POSITIONS = {
     { top: "5%", right: "5%" },
     { top: "12%", right: "30%" },
   ],
-} as const;
+} as const
 
-function PokemonInfoPlate({
-  pokemon,
-  isPlayer,
-}: {
-  pokemon: BattlePokemon;
-  isPlayer: boolean;
-}) {
-  const statusInfo = pokemon.status ? STATUS_BADGE[pokemon.status] : null;
+function PokemonInfoPlate({ pokemon, isPlayer }: { pokemon: BattlePokemon; isPlayer: boolean }) {
+  const statusInfo = pokemon.status ? STATUS_BADGE[pokemon.status] : null
 
   return (
-    <div className={cn(
-      "flex flex-col gap-0.5 px-3 py-1.5 rounded-lg border shadow-sm min-w-[160px]",
-      "bg-card/90 backdrop-blur-sm",
-      isPlayer ? "items-start" : "items-end"
-    )}>
+    <div
+      className={cn(
+        "flex flex-col gap-0.5 px-3 py-1.5 rounded-lg border shadow-sm min-w-[160px]",
+        "bg-card/90 backdrop-blur-sm",
+        isPlayer ? "items-start" : "items-end",
+      )}
+    >
       <div className={cn("flex items-center gap-1.5", !isPlayer && "flex-row-reverse")}>
         <span className="font-semibold text-sm truncate max-w-[120px]">
           {pokemon.nickname || pokemon.name}
         </span>
-        <span className="text-xs text-muted-foreground">
-          Lv{pokemon.level}
-        </span>
+        <span className="text-xs text-muted-foreground">Lv{pokemon.level}</span>
         {pokemon.isTerastallized && pokemon.teraType && (
           <span className="text-[10px] px-1 rounded bg-pink-500/20 text-pink-500 font-semibold">
             Tera {pokemon.teraType}
@@ -82,7 +75,7 @@ function PokemonInfoPlate({
       </div>
       <HealthBar hp={pokemon.hp} maxHp={pokemon.maxHp} showText={true} />
     </div>
-  );
+  )
 }
 
 function ActivePokemonSlot({
@@ -92,25 +85,20 @@ function ActivePokemonSlot({
   isDoubles,
   animationClass,
 }: {
-  pokemon: BattlePokemon;
-  isPlayer: boolean;
-  slotIndex: number;
-  isDoubles: boolean;
-  animationClass?: string;
+  pokemon: BattlePokemon
+  isPlayer: boolean
+  slotIndex: number
+  isDoubles: boolean
+  animationClass?: string
 }) {
-  const positions = isDoubles ? DOUBLES_POSITIONS : SINGLES_POSITIONS;
-  const posArray = isPlayer ? positions.player : positions.opponent;
-  const pos = posArray[slotIndex] ?? posArray[0];
+  const positions = isDoubles ? DOUBLES_POSITIONS : SINGLES_POSITIONS
+  const posArray = isPlayer ? positions.player : positions.opponent
+  const pos = posArray[slotIndex] ?? posArray[0]
 
   return (
-    <div
-      className="absolute flex flex-col items-center"
-      style={pos as React.CSSProperties}
-    >
+    <div className="absolute flex flex-col items-center" style={pos as React.CSSProperties}>
       {/* Info plate above/below sprite depending on side */}
-      {!isPlayer && (
-        <PokemonInfoPlate pokemon={pokemon} isPlayer={false} />
-      )}
+      {!isPlayer && <PokemonInfoPlate pokemon={pokemon} isPlayer={false} />}
 
       {/* Sprite + platform container */}
       <div className="relative">
@@ -124,37 +112,34 @@ function ActivePokemonSlot({
         {/* Platform beneath sprite */}
         <BattlePlatform
           variant={isPlayer ? "player" : "opponent"}
-          className={cn(
-            "left-1/2 -translate-x-1/2",
-            isPlayer ? "-bottom-2" : "-bottom-1"
-          )}
+          className={cn("left-1/2 -translate-x-1/2", isPlayer ? "-bottom-2" : "-bottom-1")}
         />
       </div>
 
-      {isPlayer && (
-        <PokemonInfoPlate pokemon={pokemon} isPlayer={true} />
-      )}
+      {isPlayer && <PokemonInfoPlate pokemon={pokemon} isPlayer={true} />}
     </div>
-  );
+  )
 }
 
 export function BattleField({
   state,
   animationStates,
-  moveFlash = null,
-  effectivenessFlash = null,
+  textMessage = null,
+  textSpeed,
   damageNumbers = null,
   className,
 }: BattleFieldProps) {
-  const isDoubles = state.sides.p1.active.length > 1;
+  const isDoubles = state.sides.p1.active.length > 1
 
   return (
-    <div className={cn(
-      "relative aspect-[16/9] w-full overflow-hidden rounded-xl border",
-      "bg-gradient-to-b from-sky-200 via-sky-100 to-emerald-200",
-      "dark:from-slate-900 dark:via-indigo-950 dark:to-emerald-950",
-      className
-    )}>
+    <div
+      className={cn(
+        "relative aspect-[16/9] w-full overflow-hidden rounded-xl border",
+        "bg-gradient-to-b from-sky-200 via-sky-100 to-emerald-200",
+        "dark:from-slate-900 dark:via-indigo-950 dark:to-emerald-950",
+        className,
+      )}
+    >
       {/* Weather/terrain overlay */}
       <WeatherOverlay field={state.field} />
 
@@ -184,8 +169,8 @@ export function BattleField({
 
       {/* Opponent active Pokemon */}
       {state.sides.p2.active.map((pokemon, i) => {
-        if (!pokemon) return null;
-        const slotKey = `p2-${i}`;
+        if (!pokemon) return null
+        const slotKey = `p2-${i}`
         return (
           <ActivePokemonSlot
             key={slotKey}
@@ -195,13 +180,13 @@ export function BattleField({
             isDoubles={isDoubles}
             animationClass={animationStates?.[slotKey]}
           />
-        );
+        )
       })}
 
       {/* Player active Pokemon */}
       {state.sides.p1.active.map((pokemon, i) => {
-        if (!pokemon) return null;
-        const slotKey = `p1-${i}`;
+        if (!pokemon) return null
+        const slotKey = `p1-${i}`
         return (
           <ActivePokemonSlot
             key={slotKey}
@@ -211,19 +196,11 @@ export function BattleField({
             isDoubles={isDoubles}
             animationClass={animationStates?.[slotKey]}
           />
-        );
+        )
       })}
 
-      {/* Move name flash */}
-      {moveFlash && (
-        <MoveNameFlash
-          moveName={moveFlash.name}
-          side={moveFlash.side}
-        />
-      )}
-
-      {/* Effectiveness flash */}
-      <EffectivenessFlash text={effectivenessFlash} />
+      {/* Pokemon-style text box */}
+      <BattleTextBox message={textMessage} speed={textSpeed} />
 
       {/* Damage numbers */}
       {damageNumbers?.map((dn, i) => (
@@ -235,5 +212,5 @@ export function BattleField({
         />
       ))}
     </div>
-  );
+  )
 }

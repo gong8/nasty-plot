@@ -94,80 +94,80 @@ These types live in `packages/core/src/types.ts` alongside the existing `TeamDat
 /** Extended TeamData with versioning fields */
 interface TeamData {
   // ... existing fields ...
-  parentId?: string;
-  branchName?: string;
-  isArchived?: boolean;
+  parentId?: string
+  branchName?: string
+  isArchived?: boolean
 }
 
 /** Diff between two teams */
 interface TeamDiff {
-  teamAId: string;
-  teamBId: string;
-  teamAName: string;
-  teamBName: string;
-  added: TeamSlotData[];       // Pokemon in B not in A
-  removed: TeamSlotData[];     // Pokemon in A not in B
-  changed: SlotChange[];       // Same Pokemon, different config
-  unchanged: string[];         // pokemonIds that are identical in both
-  summary: DiffSummary;
+  teamAId: string
+  teamBId: string
+  teamAName: string
+  teamBName: string
+  added: TeamSlotData[] // Pokemon in B not in A
+  removed: TeamSlotData[] // Pokemon in A not in B
+  changed: SlotChange[] // Same Pokemon, different config
+  unchanged: string[] // pokemonIds that are identical in both
+  summary: DiffSummary
 }
 
 /** Changes to a single slot between two versions */
 interface SlotChange {
-  pokemonId: string;
-  name: string;                // Display name for UI
-  changes: FieldChange[];
+  pokemonId: string
+  name: string // Display name for UI
+  changes: FieldChange[]
 }
 
 /** A single field difference */
 interface FieldChange {
-  field: string;               // "ability", "item", "evs.atk", "moves[2]", etc.
-  label: string;               // Human-readable: "Ability", "Attack EVs", "Move 3"
-  before: string | number;
-  after: string | number;
+  field: string // "ability", "item", "evs.atk", "moves[2]", etc.
+  label: string // Human-readable: "Ability", "Attack EVs", "Move 3"
+  before: string | number
+  after: string | number
 }
 
 /** High-level diff statistics */
 interface DiffSummary {
-  totalChanges: number;
-  slotsAdded: number;
-  slotsRemoved: number;
-  slotsChanged: number;
-  slotsUnchanged: number;
+  totalChanges: number
+  slotsAdded: number
+  slotsRemoved: number
+  slotsChanged: number
+  slotsUnchanged: number
 }
 
 /** Per-slot merge decision */
 interface MergeDecision {
-  pokemonId: string;
-  source: "teamA" | "teamB";  // Which version to keep for this slot
+  pokemonId: string
+  source: "teamA" | "teamB" // Which version to keep for this slot
 }
 
 /** Options for the merge operation */
 interface MergeOptions {
-  name?: string;               // Name for the merged team (defaults to "Merge of A + B")
-  branchName?: string;
-  notes?: string;
+  name?: string // Name for the merged team (defaults to "Merge of A + B")
+  branchName?: string
+  notes?: string
 }
 
 /** Options for the fork operation */
 interface ForkOptions {
-  name?: string;               // Defaults to "{originalName} (fork)"
-  branchName?: string;
-  notes?: string;
-  modifySlots?: Partial<TeamSlotInput>[]; // Apply changes atomically during fork
+  name?: string // Defaults to "{originalName} (fork)"
+  branchName?: string
+  notes?: string
+  modifySlots?: Partial<TeamSlotInput>[] // Apply changes atomically during fork
 }
 
 /** A node in the team lineage tree */
 interface LineageNode {
-  teamId: string;
-  name: string;
-  branchName?: string;
-  parentId: string | null;
-  children: LineageNode[];
-  createdAt: string;
-  isArchived: boolean;
-  slotCount: number;           // Quick visual indicator
-  pokemonIds: string[];        // For thumbnail sprites in the tree view
+  teamId: string
+  name: string
+  branchName?: string
+  parentId: string | null
+  children: LineageNode[]
+  createdAt: string
+  isArchived: boolean
+  slotCount: number // Quick visual indicator
+  pokemonIds: string[] // For thumbnail sprites in the tree view
 }
 ```
 
@@ -180,10 +180,7 @@ Forking creates a deep copy of a team with `parentId` pointing back to the origi
 ```typescript
 // packages/teams/src/version.service.ts
 
-async function forkTeam(
-  teamId: string,
-  options?: ForkOptions
-): Promise<TeamData>
+async function forkTeam(teamId: string, options?: ForkOptions): Promise<TeamData>
 ```
 
 **Behavior:**
@@ -222,6 +219,7 @@ function compareTeams(teamA: TeamData, teamB: TeamData): TeamDiff
 **Matching strategy:**
 
 Slots are matched by `pokemonId`, not by `position`. This is important because:
+
 - A player might reorder their team (move the lead from position 1 to position 3) without changing the build. That should not show up as a change.
 - Matching by `pokemonId` correctly identifies "same Pokemon, different config" vs "different Pokemon entirely."
 
@@ -239,17 +237,17 @@ Slots are matched by `pokemonId`, not by `position`. This is important because:
 
 **Field comparison details:**
 
-| Field | Comparison | FieldChange.field format |
-|-------|-----------|------------------------|
-| ability | string equality | `"ability"` |
-| item | string equality | `"item"` |
-| nature | string equality | `"nature"` |
-| teraType | string equality (both nullable) | `"teraType"` |
-| level | numeric equality | `"level"` |
-| moves[0-3] | per-index string equality | `"moves[0]"`, `"moves[1]"`, etc. |
-| evs.hp-spe | per-stat numeric equality | `"evs.hp"`, `"evs.atk"`, etc. |
-| ivs.hp-spe | per-stat numeric equality | `"ivs.hp"`, `"ivs.atk"`, etc. |
-| nickname | string equality (both nullable) | `"nickname"` |
+| Field      | Comparison                      | FieldChange.field format         |
+| ---------- | ------------------------------- | -------------------------------- |
+| ability    | string equality                 | `"ability"`                      |
+| item       | string equality                 | `"item"`                         |
+| nature     | string equality                 | `"nature"`                       |
+| teraType   | string equality (both nullable) | `"teraType"`                     |
+| level      | numeric equality                | `"level"`                        |
+| moves[0-3] | per-index string equality       | `"moves[0]"`, `"moves[1]"`, etc. |
+| evs.hp-spe | per-stat numeric equality       | `"evs.hp"`, `"evs.atk"`, etc.    |
+| ivs.hp-spe | per-stat numeric equality       | `"ivs.hp"`, `"ivs.atk"`, etc.    |
+| nickname   | string equality (both nullable) | `"nickname"`                     |
 
 **Duplicate pokemonId handling:** A team can technically have two of the same species (e.g., two Rotom forms with the same `pokemonId`). In practice, Species Clause prevents this in standard formats. If it occurs, the comparison falls back to position-based matching for duplicates within the same pokemonId.
 
@@ -262,7 +260,7 @@ async function mergeTeams(
   teamAId: string,
   teamBId: string,
   decisions: MergeDecision[],
-  options?: MergeOptions
+  options?: MergeOptions,
 ): Promise<TeamData>
 ```
 
@@ -282,6 +280,7 @@ async function mergeTeams(
 **Why single-parent for merges?**
 
 Prisma's relation model requires a single `parentId`. Supporting dual parents (true merge commits) would require either:
+
 - An array relation (`parentIds String[]`), which SQLite does not support natively.
 - A join table (`TeamParent` with `teamId` + `parentId`), adding schema complexity for a rare operation.
 
@@ -321,7 +320,7 @@ async function getLineageTree(teamId: string): Promise<LineageNode>
 
 ```typescript
 // Load all teams that share the same root
-const root = await walkToRoot(teamId);
+const root = await walkToRoot(teamId)
 const allInLineage = await prisma.team.findMany({
   where: {
     OR: [
@@ -329,10 +328,10 @@ const allInLineage = await prisma.team.findMany({
       { parentId: root.id },
       // This only gets direct children of root.
       // For deeper trees, use a recursive approach.
-    ]
+    ],
   },
-  include: { slots: { select: { pokemonId: true } } }
-});
+  include: { slots: { select: { pokemonId: true } } },
+})
 ```
 
 SQLite does not support recursive CTEs in Prisma, so the recursive fetch is done in application code. Given that team lineage trees are unlikely to exceed ~20-50 nodes, this is acceptable. If trees grow large, a `rootId` column can be added to enable single-query loading of all nodes in a lineage.
@@ -359,8 +358,8 @@ Sets `isArchived = true`. The `listTeams` function is updated to exclude archive
 
 ```typescript
 async function listTeams(filters?: {
-  formatId?: string;
-  includeArchived?: boolean;
+  formatId?: string
+  includeArchived?: boolean
 }): Promise<TeamData[]>
 ```
 
@@ -371,38 +370,24 @@ async function listTeams(filters?: {
 ```typescript
 // Public API
 
-export async function forkTeam(
-  teamId: string,
-  options?: ForkOptions
-): Promise<TeamData>;
+export async function forkTeam(teamId: string, options?: ForkOptions): Promise<TeamData>
 
-export function compareTeams(
-  teamA: TeamData,
-  teamB: TeamData
-): TeamDiff;
+export function compareTeams(teamA: TeamData, teamB: TeamData): TeamDiff
 
 export async function mergeTeams(
   teamAId: string,
   teamBId: string,
   decisions: MergeDecision[],
-  options?: MergeOptions
-): Promise<TeamData>;
+  options?: MergeOptions,
+): Promise<TeamData>
 
-export async function getLineageTree(
-  teamId: string
-): Promise<LineageNode>;
+export async function getLineageTree(teamId: string): Promise<LineageNode>
 
-export async function getTeamHistory(
-  teamId: string
-): Promise<TeamData[]>;
+export async function getTeamHistory(teamId: string): Promise<TeamData[]>
 
-export async function archiveTeam(
-  teamId: string
-): Promise<void>;
+export async function archiveTeam(teamId: string): Promise<void>
 
-export async function restoreTeam(
-  teamId: string
-): Promise<void>;
+export async function restoreTeam(teamId: string): Promise<void>
 ```
 
 **Barrel export** from `packages/teams/src/index.ts`:
@@ -416,7 +401,7 @@ export {
   getTeamHistory,
   archiveTeam,
   restoreTeam,
-} from "./version.service";
+} from "./version.service"
 
 export type {
   TeamDiff,
@@ -427,7 +412,7 @@ export type {
   MergeOptions,
   ForkOptions,
   LineageNode,
-} from "@nasty-plot/core";
+} from "@nasty-plot/core"
 ```
 
 ### Internal Helpers
@@ -533,6 +518,7 @@ Accessible from a dropdown on the team editor page: "Compare with..." lists all 
 ```
 
 **Color coding:**
+
 - Unchanged slots: neutral background.
 - Changed fields: yellow highlight with before/after values.
 - Added Pokemon (in B not A): green background on the right, empty on the left.

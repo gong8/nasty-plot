@@ -1,4 +1,4 @@
-const MCP_PREFIX = "mcp__nasty-plot__";
+const MCP_PREFIX = "mcp__nasty-plot__"
 
 const TOOL_LABEL_MAP: Record<string, string> = {
   // data-query tools
@@ -32,7 +32,7 @@ const TOOL_LABEL_MAP: Record<string, string> = {
   get_usage_stats: "Fetching usage stats",
   suggest_teammates: "Finding teammate suggestions",
   suggest_sets: "Suggesting sets",
-};
+}
 
 /** Write tools that mutate data — these get action notifications in the UI */
 const WRITE_TOOL_NAMES = new Set([
@@ -40,25 +40,21 @@ const WRITE_TOOL_NAMES = new Set([
   "add_pokemon_to_team",
   "update_pokemon_set",
   "remove_pokemon_from_team",
-]);
+])
 
 /**
  * Get a human-readable label for a tool name.
  * Accepts both raw names and MCP-prefixed names.
  */
 export function getToolLabel(name: string): string {
-  const stripped = name.startsWith(MCP_PREFIX)
-    ? name.slice(MCP_PREFIX.length)
-    : name;
-  return TOOL_LABEL_MAP[stripped] ?? `Running ${stripped}`;
+  const stripped = name.startsWith(MCP_PREFIX) ? name.slice(MCP_PREFIX.length) : name
+  return TOOL_LABEL_MAP[stripped] ?? `Running ${stripped}`
 }
 
 /**
  * Check if a tool is a write/mutating tool that should trigger action notifications.
  */
 export function isWriteTool(name: string): boolean {
-  const stripped = name.startsWith(MCP_PREFIX)
-    ? name.slice(MCP_PREFIX.length)
-    : name;
-  return WRITE_TOOL_NAMES.has(stripped);
+  const stripped = name.startsWith(MCP_PREFIX) ? name.slice(MCP_PREFIX.length) : name
+  return WRITE_TOOL_NAMES.has(stripped)
 }

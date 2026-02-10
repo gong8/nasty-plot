@@ -1,13 +1,13 @@
-"use client";
+"use client"
 
-import { useState, useEffect, useRef, useCallback } from "react";
-import type { BattleLogEntry } from "@nasty-plot/battle-engine";
+import { useState, useEffect, useRef, useCallback } from "react"
+import type { BattleLogEntry } from "@nasty-plot/battle-engine"
 import {
   type AnimationEvent,
   type AnimationState,
   INITIAL_ANIMATION_STATE,
   logEntryToAnimation,
-} from "./use-battle-animations";
+} from "./use-battle-animations"
 
 /**
  * Animation hook for replay mode.
@@ -19,77 +19,78 @@ import {
 export function useReplayAnimations(
   entries: BattleLogEntry[],
   frameIndex: number,
+  options?: { speed?: number },
 ): AnimationState {
-  const [animState, setAnimState] = useState<AnimationState>(INITIAL_ANIMATION_STATE);
-  const prevFrameRef = useRef(frameIndex);
-  const queueRef = useRef<AnimationEvent[]>([]);
-  const isProcessingRef = useRef(false);
-  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const speed = options?.speed ?? 1
+  const [animState, setAnimState] = useState<AnimationState>(INITIAL_ANIMATION_STATE)
+  const prevFrameRef = useRef(frameIndex)
+  const queueRef = useRef<AnimationEvent[]>([])
+  const isProcessingRef = useRef(false)
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const speedRef = useRef(speed)
+  speedRef.current = speed
 
   const processQueue = useCallback(() => {
     if (isProcessingRef.current || queueRef.current.length === 0) {
       if (queueRef.current.length === 0) {
-        setAnimState((prev) =>
-          prev.isAnimating ? INITIAL_ANIMATION_STATE : prev,
-        );
+        setAnimState((prev) => (prev.isAnimating ? INITIAL_ANIMATION_STATE : prev))
       }
-      return;
+      return
     }
 
-    isProcessingRef.current = true;
-    const event = queueRef.current.shift()!;
+    isProcessingRef.current = true
+    const event = queueRef.current.shift()!
 
     setAnimState(() => {
       const next: AnimationState = {
         slotAnimations: {},
-        moveFlash: event.moveFlash || null,
-        effectivenessFlash: event.effectivenessFlash || null,
+        textMessage: event.textMessage || null,
         damageNumbers: event.damageNumber ? [event.damageNumber] : [],
         isAnimating: true,
-      };
-
-      if (event.slotKey && event.cssClass) {
-        next.slotAnimations[event.slotKey] = event.cssClass;
       }
 
-      return next;
-    });
+      if (event.slotKey && event.cssClass) {
+        next.slotAnimations[event.slotKey] = event.cssClass
+      }
+
+      return next
+    })
 
     timeoutRef.current = setTimeout(() => {
-      isProcessingRef.current = false;
-      processQueue();
-    }, event.duration);
-  }, []);
+      isProcessingRef.current = false
+      processQueue()
+    }, event.duration)
+  }, [])
 
   useEffect(() => {
-    if (frameIndex === prevFrameRef.current) return;
-    prevFrameRef.current = frameIndex;
+    if (frameIndex === prevFrameRef.current) return
+    prevFrameRef.current = frameIndex
 
     // Clear any in-flight animation
-    if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    isProcessingRef.current = false;
-    queueRef.current = [];
-    setAnimState(INITIAL_ANIMATION_STATE);
+    if (timeoutRef.current) clearTimeout(timeoutRef.current)
+    isProcessingRef.current = false
+    queueRef.current = []
+    setAnimState(INITIAL_ANIMATION_STATE)
 
     // Queue animations for the new frame's entries
     for (const entry of entries) {
-      const anim = logEntryToAnimation(entry);
+      const anim = logEntryToAnimation(entry, speedRef.current)
       if (anim) {
-        queueRef.current.push(anim);
+        queueRef.current.push(anim)
       }
     }
 
     if (queueRef.current.length > 0) {
-      processQueue();
+      processQueue()
     }
-  }, [frameIndex, entries, processQueue]);
+  }, [frameIndex, entries, processQueue])
 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    };
-  }, []);
+      if (timeoutRef.current) clearTimeout(timeoutRef.current)
+    }
+  }, [])
 
-  return animState;
+  return animState
 }

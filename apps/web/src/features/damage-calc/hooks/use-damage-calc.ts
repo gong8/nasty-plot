@@ -1,12 +1,12 @@
-"use client";
+"use client"
 
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query"
 import type {
   DamageCalcInput,
   DamageCalcResult,
   MatchupMatrixEntry,
   ApiResponse,
-} from "@nasty-plot/core";
+} from "@nasty-plot/core"
 
 export function useDamageCalc() {
   return useMutation({
@@ -15,15 +15,15 @@ export function useDamageCalc() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(input),
-      });
+      })
       if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error ?? "Calculation failed");
+        const err = await res.json()
+        throw new Error(err.error ?? "Calculation failed")
       }
-      const json: ApiResponse<DamageCalcResult> = await res.json();
-      return json.data;
+      const json: ApiResponse<DamageCalcResult> = await res.json()
+      return json.data
     },
-  });
+  })
 }
 
 export function useMatchupMatrix(teamId: string | undefined, formatId: string | undefined) {
@@ -35,13 +35,13 @@ export function useMatchupMatrix(teamId: string | undefined, formatId: string | 
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ teamId, formatId }),
-      });
+      })
       if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error ?? "Matrix calculation failed");
+        const err = await res.json()
+        throw new Error(err.error ?? "Matrix calculation failed")
       }
-      const json: ApiResponse<MatchupMatrixEntry[][]> = await res.json();
-      return json.data;
+      const json: ApiResponse<MatchupMatrixEntry[][]> = await res.json()
+      return json.data
     },
-  });
+  })
 }

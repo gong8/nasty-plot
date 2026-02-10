@@ -1,18 +1,18 @@
-"use client";
+"use client"
 
-import { cn } from "./utils";
-import { TYPE_COLORS } from "@nasty-plot/core";
-import type { PokemonType } from "@nasty-plot/core";
+import { cn } from "./utils"
+import { TYPE_COLORS } from "@nasty-plot/core"
+import type { PokemonType } from "@nasty-plot/core"
 
 interface TypeBadgeProps {
-  type: PokemonType;
-  size?: "sm" | "md";
-  className?: string;
-  onClick?: () => void;
+  type: PokemonType
+  size?: "sm" | "md"
+  className?: string
+  onClick?: () => void
 }
 
 export function TypeBadge({ type, size = "md", className, onClick }: TypeBadgeProps) {
-  const color = TYPE_COLORS[type];
+  const color = TYPE_COLORS[type]
 
   return (
     <span
@@ -21,7 +21,7 @@ export function TypeBadge({ type, size = "md", className, onClick }: TypeBadgePr
         size === "sm" && "px-2 py-0.5 text-[10px] min-w-[48px]",
         size === "md" && "px-3 py-1 text-xs min-w-[60px]",
         onClick && "cursor-pointer hover:opacity-80 transition-opacity",
-        className
+        className,
       )}
       style={{ backgroundColor: color, boxShadow: `0 0 8px ${color}80` }}
       onClick={onClick}
@@ -29,5 +29,5 @@ export function TypeBadge({ type, size = "md", className, onClick }: TypeBadgePr
     >
       {type}
     </span>
-  );
+  )
 }

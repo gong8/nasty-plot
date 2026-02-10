@@ -1,31 +1,41 @@
-"use client";
+"use client"
 
-import { useSearchParams } from "next/navigation";
-import { useEffect, Suspense } from "react";
-import { BattleView } from "@/features/battle/components/BattleView";
-import { useBattle } from "@/features/battle/hooks/use-battle";
-import type { AIDifficulty, BattleFormat } from "@nasty-plot/battle-engine";
-import { Loader2 } from "lucide-react";
+import { useSearchParams } from "next/navigation"
+import { useEffect, Suspense } from "react"
+import { BattleView } from "@/features/battle/components/BattleView"
+import { useBattle } from "@/features/battle/hooks/use-battle"
+import type { AIDifficulty, BattleFormat } from "@nasty-plot/battle-engine"
+import { Loader2 } from "lucide-react"
 
 function BattleLiveContent() {
-  const searchParams = useSearchParams();
-  const { state, isLoading, error, startBattle, chooseLead, submitMove, submitSwitch, rematch, saveBattle } = useBattle();
+  const searchParams = useSearchParams()
+  const {
+    state,
+    isLoading,
+    error,
+    startBattle,
+    chooseLead,
+    submitMove,
+    submitSwitch,
+    rematch,
+    saveBattle,
+  } = useBattle()
 
   // Stable string key so the effect only re-runs when params actually change
-  const paramsKey = searchParams.toString();
+  const paramsKey = searchParams.toString()
 
   useEffect(() => {
-    const formatId = searchParams.get("format") || "gen9ou";
-    const gameType = (searchParams.get("gameType") || "singles") as BattleFormat;
-    const aiDifficulty = (searchParams.get("ai") || "greedy") as AIDifficulty;
-    const p1Encoded = searchParams.get("p1");
-    const p2Encoded = searchParams.get("p2");
+    const formatId = searchParams.get("format") || "gen9ou"
+    const gameType = (searchParams.get("gameType") || "singles") as BattleFormat
+    const aiDifficulty = (searchParams.get("ai") || "greedy") as AIDifficulty
+    const p1Encoded = searchParams.get("p1")
+    const p2Encoded = searchParams.get("p2")
 
-    if (!p1Encoded || !p2Encoded) return;
+    if (!p1Encoded || !p2Encoded) return
 
     try {
-      const playerTeamPaste = decodeURIComponent(atob(p1Encoded));
-      const opponentTeamPaste = decodeURIComponent(atob(p2Encoded));
+      const playerTeamPaste = decodeURIComponent(atob(p1Encoded))
+      const opponentTeamPaste = decodeURIComponent(atob(p2Encoded))
 
       startBattle({
         playerTeamPaste,
@@ -33,12 +43,12 @@ function BattleLiveContent() {
         formatId,
         gameType,
         aiDifficulty,
-      });
+      })
     } catch (err) {
-      console.error("Failed to decode teams:", err);
+      console.error("Failed to decode teams:", err)
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [paramsKey]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [paramsKey])
 
   if (error) {
     return (
@@ -48,7 +58,7 @@ function BattleLiveContent() {
           Check that both teams are in valid Showdown paste format.
         </p>
       </div>
-    );
+    )
   }
 
   if (state.phase === "setup" || (isLoading && state.turn === 0)) {
@@ -57,7 +67,7 @@ function BattleLiveContent() {
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
         <span className="ml-3 text-muted-foreground">Starting battle...</span>
       </div>
-    );
+    )
   }
 
   return (
@@ -69,21 +79,23 @@ function BattleLiveContent() {
       onRematch={rematch}
       onSave={(commentary) => saveBattle(commentary)}
     />
-  );
+  )
 }
 
 export default function BattleLivePage() {
   return (
     <>
       <main className="container mx-auto px-2 py-2 max-w-7xl">
-        <Suspense fallback={
-          <div className="flex items-center justify-center py-24">
-            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-          </div>
-        }>
+        <Suspense
+          fallback={
+            <div className="flex items-center justify-center py-24">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+          }
+        >
           <BattleLiveContent />
         </Suspense>
       </main>
     </>
-  );
+  )
 }

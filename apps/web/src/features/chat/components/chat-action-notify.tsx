@@ -1,23 +1,23 @@
-"use client";
+"use client"
 
-import { Zap } from "lucide-react";
-import type { ActionNotification } from "@/features/chat/hooks/use-chat-stream";
+import { Zap } from "lucide-react"
+import type { ActionNotification } from "@/features/chat/hooks/use-chat-stream"
 
 interface ChatActionNotifyProps {
-  notification: ActionNotification;
+  notification: ActionNotification
 }
 
 function summarizeInput(input: Record<string, unknown>): string {
-  const parts: string[] = [];
-  if (input.pokemonId) parts.push(String(input.pokemonId));
-  if (input.teamId) parts.push(`team ${String(input.teamId).slice(0, 8)}...`);
-  if (input.position) parts.push(`slot ${input.position}`);
-  if (input.setName) parts.push(String(input.setName));
-  return parts.join(" - ") || "";
+  const parts: string[] = []
+  if (input.pokemonId) parts.push(String(input.pokemonId))
+  if (input.teamId) parts.push(`team ${String(input.teamId).slice(0, 8)}...`)
+  if (input.position) parts.push(`slot ${input.position}`)
+  if (input.setName) parts.push(String(input.setName))
+  return parts.join(" - ") || ""
 }
 
 export function ChatActionNotify({ notification }: ChatActionNotifyProps) {
-  const summary = summarizeInput(notification.input);
+  const summary = summarizeInput(notification.input)
 
   return (
     <div className="ml-12 my-1">
@@ -29,5 +29,5 @@ export function ChatActionNotify({ notification }: ChatActionNotifyProps) {
         </span>
       </div>
     </div>
-  );
+  )
 }

@@ -1,25 +1,19 @@
-import { Dex } from "@pkmn/dex";
-import { POKEMON_TYPES } from "@nasty-plot/core";
-import type {
-  PokemonSpecies,
-  PokemonType,
-  MoveData,
-  AbilityData,
-  ItemData,
-} from "@nasty-plot/core";
+import { Dex } from "@pkmn/dex"
+import { POKEMON_TYPES } from "@nasty-plot/core"
+import type { PokemonSpecies, PokemonType, MoveData, AbilityData, ItemData } from "@nasty-plot/core"
 
-const dex = Dex.forGen(9);
+const dex = Dex.forGen(9)
 
 /** Nonstandard categories to exclude from all listings (CAP fakemons, LGPE exclusives, etc.) */
-const EXCLUDED_NONSTANDARD = new Set(["CAP", "LGPE", "Custom", "Future", "Unobtainable"]);
+const EXCLUDED_NONSTANDARD = new Set(["CAP", "LGPE", "Custom", "Future", "Unobtainable"])
 
 export function getDex() {
-  return dex;
+  return dex
 }
 
 function mapTypes(types: readonly string[]): [PokemonType] | [PokemonType, PokemonType] {
-  if (types.length === 1) return [types[0] as PokemonType];
-  return [types[0] as PokemonType, types[1] as PokemonType];
+  if (types.length === 1) return [types[0] as PokemonType]
+  return [types[0] as PokemonType, types[1] as PokemonType]
 }
 
 function toSpecies(species: ReturnType<typeof dex.species.get>): PokemonSpecies {
@@ -33,13 +27,13 @@ function toSpecies(species: ReturnType<typeof dex.species.get>): PokemonSpecies 
     weightkg: species.weightkg,
     tier: species.tier,
     isNonstandard: species.isNonstandard ?? null,
-  };
+  }
 }
 
 export function getSpecies(id: string): PokemonSpecies | null {
-  const species = dex.species.get(id);
-  if (!species || !species.exists) return null;
-  return toSpecies(species);
+  const species = dex.species.get(id)
+  if (!species || !species.exists) return null
+  return toSpecies(species)
 }
 
 /**
@@ -47,18 +41,18 @@ export function getSpecies(id: string): PokemonSpecies | null {
  * Examples: Pikachu caps, Vivillon patterns, Alcremie flavors, Deerling seasons.
  */
 function isCosmeticForme(species: ReturnType<typeof dex.species.get>): boolean {
-  if (!species.forme || species.changesFrom || species.battleOnly) return false;
-  const base = dex.species.get(species.baseSpecies);
-  if (!base || !base.exists) return false;
+  if (!species.forme || species.changesFrom || species.battleOnly) return false
+  const base = dex.species.get(species.baseSpecies)
+  if (!base || !base.exists) return false
   return (
     JSON.stringify(species.baseStats) === JSON.stringify(base.baseStats) &&
     JSON.stringify(species.abilities) === JSON.stringify(base.abilities) &&
     JSON.stringify(species.types) === JSON.stringify(base.types)
-  );
+  )
 }
 
 export function getAllSpecies(): PokemonSpecies[] {
-  const all: PokemonSpecies[] = [];
+  const all: PokemonSpecies[] = []
   for (const species of dex.species.all()) {
     if (
       species.exists &&
@@ -67,10 +61,10 @@ export function getAllSpecies(): PokemonSpecies[] {
       !species.battleOnly &&
       !isCosmeticForme(species)
     ) {
-      all.push(toSpecies(species));
+      all.push(toSpecies(species))
     }
   }
-  return all;
+  return all
 }
 
 function toMove(move: ReturnType<typeof dex.moves.get>): MoveData {
@@ -87,59 +81,59 @@ function toMove(move: ReturnType<typeof dex.moves.get>): MoveData {
     flags: { ...move.flags } as Record<string, number>,
     description: move.shortDesc || move.desc,
     isNonstandard: move.isNonstandard ?? null,
-  };
+  }
 }
 
 export function getMove(id: string): MoveData | null {
-  const move = dex.moves.get(id);
-  if (!move || !move.exists) return null;
-  return toMove(move);
+  const move = dex.moves.get(id)
+  if (!move || !move.exists) return null
+  return toMove(move)
 }
 
 export function getAllMoves(): MoveData[] {
-  const all: MoveData[] = [];
+  const all: MoveData[] = []
   for (const move of dex.moves.all()) {
     if (move.exists && !EXCLUDED_NONSTANDARD.has(move.isNonstandard as string)) {
-      all.push(toMove(move));
+      all.push(toMove(move))
     }
   }
-  return all;
+  return all
 }
 
 export function getAbility(id: string): AbilityData | null {
-  const ability = dex.abilities.get(id);
-  if (!ability || !ability.exists) return null;
+  const ability = dex.abilities.get(id)
+  if (!ability || !ability.exists) return null
   return {
     id: ability.id,
     name: ability.name,
     description: ability.shortDesc || ability.desc,
-  };
+  }
 }
 
 export function getItem(id: string): ItemData | null {
-  const item = dex.items.get(id);
-  if (!item || !item.exists) return null;
+  const item = dex.items.get(id)
+  if (!item || !item.exists) return null
   return {
     id: item.id,
     name: item.name,
     description: item.shortDesc || item.desc,
     isNonstandard: item.isNonstandard ?? null,
-  };
+  }
 }
 
 export async function getLearnset(speciesId: string): Promise<string[]> {
-  const learnsetData = await dex.learnsets.get(speciesId);
-  if (!learnsetData || !learnsetData.learnset) return [];
-  return Object.keys(learnsetData.learnset);
+  const learnsetData = await dex.learnsets.get(speciesId)
+  if (!learnsetData || !learnsetData.learnset) return []
+  return Object.keys(learnsetData.learnset)
 }
 
 export function searchSpecies(query: string): PokemonSpecies[] {
-  const lower = query.toLowerCase();
-  return getAllSpecies().filter((s) => s.name.toLowerCase().includes(lower));
+  const lower = query.toLowerCase()
+  return getAllSpecies().filter((s) => s.name.toLowerCase().includes(lower))
 }
 
 export function getAllItems(): ItemData[] {
-  const all: ItemData[] = [];
+  const all: ItemData[] = []
   for (const item of dex.items.all()) {
     if (item.exists && !EXCLUDED_NONSTANDARD.has(item.isNonstandard as string)) {
       all.push({
@@ -147,30 +141,30 @@ export function getAllItems(): ItemData[] {
         name: item.name,
         description: item.shortDesc || item.desc,
         isNonstandard: item.isNonstandard ?? null,
-      });
+      })
     }
   }
-  return all;
+  return all
 }
 
 export function searchItems(query: string): ItemData[] {
-  const lower = query.toLowerCase();
-  return getAllItems().filter((i) => i.name.toLowerCase().includes(lower));
+  const lower = query.toLowerCase()
+  return getAllItems().filter((i) => i.name.toLowerCase().includes(lower))
 }
 
 /** Check if an item is a Mega Stone */
 export function isMegaStone(itemId: string): boolean {
-  if (!itemId) return false;
-  const item = dex.items.get(itemId);
-  return item.exists && !!item.megaStone;
+  if (!itemId) return false
+  const item = dex.items.get(itemId)
+  return item.exists && !!item.megaStone
 }
 
 /** Get all valid Mega Stones for a given Pokemon */
 export function getMegaStonesFor(pokemonId: string): ItemData[] {
-  const species = dex.species.get(pokemonId);
-  if (!species || !species.exists) return [];
-  const baseName = species.baseSpecies || species.name;
-  const result: ItemData[] = [];
+  const species = dex.species.get(pokemonId)
+  if (!species || !species.exists) return []
+  const baseName = species.baseSpecies || species.name
+  const result: ItemData[] = []
   for (const item of dex.items.all()) {
     if (
       item.megaStone &&
@@ -182,79 +176,74 @@ export function getMegaStonesFor(pokemonId: string): ItemData[] {
         name: item.name,
         description: item.shortDesc || item.desc,
         isNonstandard: item.isNonstandard ?? null,
-      });
+      })
     }
   }
-  return result;
+  return result
 }
 
 /** Get the Mega form a Pokemon transforms into when holding a specific Mega Stone */
-export function getMegaForm(
-  pokemonId: string,
-  itemId: string,
-): PokemonSpecies | null {
-  const item = dex.items.get(itemId);
-  if (!item.exists || !item.megaStone) return null;
-  const species = dex.species.get(pokemonId);
-  if (!species || !species.exists) return null;
-  const baseName = species.baseSpecies || species.name;
-  const megaFormName = item.megaStone[baseName];
-  if (!megaFormName) return null;
-  const megaSpecies = dex.species.get(megaFormName);
-  if (!megaSpecies || !megaSpecies.exists) return null;
-  return toSpecies(megaSpecies);
+export function getMegaForm(pokemonId: string, itemId: string): PokemonSpecies | null {
+  const item = dex.items.get(itemId)
+  if (!item.exists || !item.megaStone) return null
+  const species = dex.species.get(pokemonId)
+  if (!species || !species.exists) return null
+  const baseName = species.baseSpecies || species.name
+  const megaFormName = item.megaStone[baseName]
+  if (!megaFormName) return null
+  const megaSpecies = dex.species.get(megaFormName)
+  if (!megaSpecies || !megaSpecies.exists) return null
+  return toSpecies(megaSpecies)
 }
 
 /** Check if an item is a Z-Crystal */
 export function isZCrystal(itemId: string): boolean {
-  const item = dex.items.get(itemId);
-  return item.exists && item.zMove !== undefined;
+  const item = dex.items.get(itemId)
+  return item.exists && item.zMove !== undefined
 }
 
 /** Get the type a Z-Crystal powers up (e.g., "Electrium Z" → "Electric"). Returns null for signature Z-Crystals. */
 export function getZCrystalType(itemId: string): PokemonType | null {
-  const item = dex.items.get(itemId);
-  if (!item.exists || !item.zMove) return null;
+  const item = dex.items.get(itemId)
+  if (!item.exists || !item.zMove) return null
   // Type-based Z-Crystals have zMove === true and zMoveType set
   if (item.zMove === true && item.zMoveType) {
-    return item.zMoveType as PokemonType;
+    return item.zMoveType as PokemonType
   }
-  return null;
+  return null
 }
 
 /** Get signature Z-Crystal info (e.g., "Pikanium Z" → { pokemonId, moveId }). Returns null for type-based Z-Crystals. */
-export function getSignatureZCrystal(
-  itemId: string
-): { pokemonId: string; moveId: string } | null {
-  const item = dex.items.get(itemId);
-  if (!item.exists || !item.zMove) return null;
+export function getSignatureZCrystal(itemId: string): { pokemonId: string; moveId: string } | null {
+  const item = dex.items.get(itemId)
+  if (!item.exists || !item.zMove) return null
   // Signature Z-Crystals have zMove as a string (the Z-Move name),
   // zMoveFrom (source move display name), and itemUser (species display names)
   if (typeof item.zMove === "string" && item.zMoveFrom && item.itemUser?.[0]) {
-    const species = dex.species.get(item.itemUser[0]);
-    const move = dex.moves.get(item.zMoveFrom);
+    const species = dex.species.get(item.itemUser[0])
+    const move = dex.moves.get(item.zMoveFrom)
     return {
       pokemonId: species.id,
       moveId: move.id,
-    };
+    }
   }
-  return null;
+  return null
 }
 
 export function getTypeChart(): Record<PokemonType, Partial<Record<PokemonType, number>>> {
-  const chart = {} as Record<PokemonType, Partial<Record<PokemonType, number>>>;
+  const chart = {} as Record<PokemonType, Partial<Record<PokemonType, number>>>
 
   for (const atkType of POKEMON_TYPES) {
-    const partial: Partial<Record<PokemonType, number>> = {};
+    const partial: Partial<Record<PokemonType, number>> = {}
     for (const defType of POKEMON_TYPES) {
-      const effectiveness = dex.types.get(atkType).damageTaken[defType];
+      const effectiveness = dex.types.get(atkType).damageTaken[defType]
       // @pkmn/dex damageTaken: 0 = normal, 1 = super effective (2x), 2 = resist (0.5x), 3 = immune (0x)
-      if (effectiveness === 1) partial[defType] = 2;
-      else if (effectiveness === 2) partial[defType] = 0.5;
-      else if (effectiveness === 3) partial[defType] = 0;
+      if (effectiveness === 1) partial[defType] = 2
+      else if (effectiveness === 2) partial[defType] = 0.5
+      else if (effectiveness === 3) partial[defType] = 0
     }
-    chart[atkType] = partial;
+    chart[atkType] = partial
   }
 
-  return chart;
+  return chart
 }

@@ -1,11 +1,11 @@
-"use client";
+"use client"
 
-import { useEffect, useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
+import { useEffect, useState } from "react"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
+import { Badge } from "@/components/ui/badge"
+import { Card, CardContent } from "@/components/ui/card"
 import {
   Dialog,
   DialogContent,
@@ -13,74 +13,69 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import type { TeamDiff, MergeDecision } from "@nasty-plot/core";
+} from "@/components/ui/dialog"
+import type { TeamDiff, MergeDecision } from "@nasty-plot/core"
 
 interface MergeWizardProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  diff: TeamDiff;
-  onMerge: (decisions: MergeDecision[], options: { name: string; branchName?: string; notes?: string }) => Promise<void>;
-  isLoading?: boolean;
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  diff: TeamDiff
+  onMerge: (
+    decisions: MergeDecision[],
+    options: { name: string; branchName?: string; notes?: string },
+  ) => Promise<void>
+  isLoading?: boolean
 }
 
-export function MergeWizard({
-  open,
-  onOpenChange,
-  diff,
-  onMerge,
-  isLoading,
-}: MergeWizardProps) {
-  const [step, setStep] = useState(0);
-  const [decisions, setDecisions] = useState<MergeDecision[]>([]);
-  const [name, setName] = useState("");
-  const [branchName, setBranchName] = useState("");
-  const [notes, setNotes] = useState("");
+export function MergeWizard({ open, onOpenChange, diff, onMerge, isLoading }: MergeWizardProps) {
+  const [step, setStep] = useState(0)
+  const [decisions, setDecisions] = useState<MergeDecision[]>([])
+  const [name, setName] = useState("")
+  const [branchName, setBranchName] = useState("")
+  const [notes, setNotes] = useState("")
 
   // Reset state when dialog opens/closes or diff changes
   useEffect(() => {
     if (open) {
-      setStep(0);
-      setDecisions([]);
-      setName(`Merge of ${diff.teamAName} + ${diff.teamBName}`);
-      setBranchName("");
-      setNotes("");
+      setStep(0)
+      setDecisions([])
+      setName(`Merge of ${diff.teamAName} + ${diff.teamBName}`)
+      setBranchName("")
+      setNotes("")
     }
-  }, [open, diff.teamAName, diff.teamBName]);
+  }, [open, diff.teamAName, diff.teamBName])
 
   const handleDecision = (pokemonId: string, source: "teamA" | "teamB") => {
     setDecisions((prev) => {
-      const filtered = prev.filter((d) => d.pokemonId !== pokemonId);
-      return [...filtered, { pokemonId, source }];
-    });
-  };
+      const filtered = prev.filter((d) => d.pokemonId !== pokemonId)
+      return [...filtered, { pokemonId, source }]
+    })
+  }
 
   const handleMerge = async () => {
     await onMerge(decisions, {
       name: name.trim(),
       branchName: branchName.trim() || undefined,
       notes: notes.trim() || undefined,
-    });
-  };
+    })
+  }
 
-  const hasConflicts = diff.changed.length > 0 || diff.added.length > 0 || diff.removed.length > 0;
+  const hasConflicts = diff.changed.length > 0 || diff.added.length > 0 || diff.removed.length > 0
 
-  const truncate = (s: string, max = 24) => s.length > max ? s.slice(0, max - 1) + "\u2026" : s;
-  const nameA = truncate(diff.teamAName);
-  const nameB = truncate(diff.teamBName);
+  const truncate = (s: string, max = 24) => (s.length > max ? s.slice(0, max - 1) + "\u2026" : s)
+  const nameA = truncate(diff.teamAName)
+  const nameB = truncate(diff.teamBName)
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg max-h-[80vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="truncate">
-            Merge into {diff.teamAName}
-          </DialogTitle>
+          <DialogTitle className="truncate">Merge into {diff.teamAName}</DialogTitle>
           <DialogDescription>
-            {step === 0 && (hasConflicts
-              ? `Pulling changes from ${diff.teamBName}. Choose which version to keep for each difference.`
-              : `No conflicts between ${diff.teamAName} and ${diff.teamBName}. The teams are identical.`
-            )}
+            {step === 0 &&
+              (hasConflicts
+                ? `Pulling changes from ${diff.teamBName}. Choose which version to keep for each difference.`
+                : `No conflicts between ${diff.teamAName} and ${diff.teamBName}. The teams are identical.`)}
             {step === 1 && "Name and finalize the merged team."}
           </DialogDescription>
         </DialogHeader>
@@ -90,7 +85,7 @@ export function MergeWizard({
           <div className="space-y-3">
             {/* Changed Pokemon */}
             {diff.changed.map((change) => {
-              const dec = decisions.find((d) => d.pokemonId === change.pokemonId);
+              const dec = decisions.find((d) => d.pokemonId === change.pokemonId)
               return (
                 <Card key={change.pokemonId}>
                   <CardContent className="py-3 space-y-2">
@@ -103,7 +98,8 @@ export function MergeWizard({
                     <div className="text-xs text-muted-foreground space-y-0.5">
                       {change.changes.map((fc) => (
                         <div key={fc.field}>
-                          {fc.label}: <span className="text-red-500 line-through">{fc.before ?? "none"}</span>{" "}
+                          {fc.label}:{" "}
+                          <span className="text-red-500 line-through">{fc.before ?? "none"}</span>{" "}
                           &rarr; <span className="text-green-500">{fc.after ?? "none"}</span>
                         </div>
                       ))}
@@ -128,12 +124,12 @@ export function MergeWizard({
                     </div>
                   </CardContent>
                 </Card>
-              );
+              )
             })}
 
             {/* Added Pokemon (only in B) */}
             {diff.added.map((slot) => {
-              const dec = decisions.find((d) => d.pokemonId === slot.pokemonId);
+              const dec = decisions.find((d) => d.pokemonId === slot.pokemonId)
               return (
                 <Card key={`added-${slot.pokemonId}`} className="border-green-500/30">
                   <CardContent className="py-3 space-y-2">
@@ -155,9 +151,7 @@ export function MergeWizard({
                         variant={!dec ? "default" : "outline"}
                         size="sm"
                         onClick={() =>
-                          setDecisions((prev) =>
-                            prev.filter((d) => d.pokemonId !== slot.pokemonId),
-                          )
+                          setDecisions((prev) => prev.filter((d) => d.pokemonId !== slot.pokemonId))
                         }
                       >
                         Exclude
@@ -165,12 +159,12 @@ export function MergeWizard({
                     </div>
                   </CardContent>
                 </Card>
-              );
+              )
             })}
 
             {/* Removed Pokemon (only in A) */}
             {diff.removed.map((slot) => {
-              const dec = decisions.find((d) => d.pokemonId === slot.pokemonId);
+              const dec = decisions.find((d) => d.pokemonId === slot.pokemonId)
               return (
                 <Card key={`removed-${slot.pokemonId}`} className="border-red-500/30">
                   <CardContent className="py-3 space-y-2">
@@ -192,9 +186,7 @@ export function MergeWizard({
                         variant={!dec ? "default" : "outline"}
                         size="sm"
                         onClick={() =>
-                          setDecisions((prev) =>
-                            prev.filter((d) => d.pokemonId !== slot.pokemonId),
-                          )
+                          setDecisions((prev) => prev.filter((d) => d.pokemonId !== slot.pokemonId))
                         }
                       >
                         Remove
@@ -202,7 +194,7 @@ export function MergeWizard({
                     </div>
                   </CardContent>
                 </Card>
-              );
+              )
             })}
 
             {diff.unchanged.length > 0 && (
@@ -224,11 +216,7 @@ export function MergeWizard({
           <div className="space-y-3">
             <div>
               <label className="text-sm font-medium">Merged Team Name</label>
-              <Input
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="mt-1"
-              />
+              <Input value={name} onChange={(e) => setName(e.target.value)} className="mt-1" />
             </div>
             <div>
               <label className="text-sm font-medium">Branch Label</label>
@@ -261,5 +249,5 @@ export function MergeWizard({
         )}
       </DialogContent>
     </Dialog>
-  );
+  )
 }

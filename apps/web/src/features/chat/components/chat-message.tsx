@@ -1,27 +1,27 @@
-"use client";
+"use client"
 
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
-import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
-import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
-import { User, Copy, Check } from "lucide-react";
-import { useState, useCallback } from "react";
-import { cn } from "@/lib/utils";
+import ReactMarkdown from "react-markdown"
+import remarkGfm from "remark-gfm"
+import { Prism as SyntaxHighlighter } from "react-syntax-highlighter"
+import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism"
+import { User, Copy, Check } from "lucide-react"
+import { useState, useCallback } from "react"
+import { cn } from "@/lib/utils"
 
 interface ChatMessageProps {
-  role: "user" | "assistant";
-  content: string;
-  isStreaming?: boolean;
+  role: "user" | "assistant"
+  content: string
+  isStreaming?: boolean
 }
 
 function CopyButton({ text }: { text: string }) {
-  const [copied, setCopied] = useState(false);
+  const [copied, setCopied] = useState(false)
 
   const handleCopy = useCallback(() => {
-    navigator.clipboard.writeText(text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  }, [text]);
+    navigator.clipboard.writeText(text)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }, [text])
 
   return (
     <button
@@ -31,7 +31,7 @@ function CopyButton({ text }: { text: string }) {
     >
       {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
     </button>
-  );
+  )
 }
 
 export function ChatMessage({ role, content, isStreaming }: ChatMessageProps) {
@@ -45,7 +45,7 @@ export function ChatMessage({ role, content, isStreaming }: ChatMessageProps) {
           {content}
         </div>
       </div>
-    );
+    )
   }
 
   return (
@@ -68,8 +68,8 @@ export function ChatMessage({ role, content, isStreaming }: ChatMessageProps) {
               remarkPlugins={[remarkGfm]}
               components={{
                 code({ className, children, ...props }) {
-                  const match = /language-(\w+)/.exec(className || "");
-                  const codeStr = String(children).replace(/\n$/, "");
+                  const match = /language-(\w+)/.exec(className || "")
+                  const codeStr = String(children).replace(/\n$/, "")
 
                   if (match) {
                     return (
@@ -88,42 +88,33 @@ export function ChatMessage({ role, content, isStreaming }: ChatMessageProps) {
                           {codeStr}
                         </SyntaxHighlighter>
                       </div>
-                    );
+                    )
                   }
                   return (
                     <code
-                      className={cn(
-                        "px-1 py-0.5 rounded bg-muted font-mono text-xs",
-                        className
-                      )}
+                      className={cn("px-1 py-0.5 rounded bg-muted font-mono text-xs", className)}
                       {...props}
                     >
                       {children}
                     </code>
-                  );
+                  )
                 },
                 table({ children }) {
                   return (
                     <div className="overflow-x-auto my-2">
-                      <table className="min-w-full text-xs border-collapse">
-                        {children}
-                      </table>
+                      <table className="min-w-full text-xs border-collapse">{children}</table>
                     </div>
-                  );
+                  )
                 },
                 th({ children }) {
                   return (
                     <th className="border border-border px-2 py-1 bg-muted/50 font-semibold text-left">
                       {children}
                     </th>
-                  );
+                  )
                 },
                 td({ children }) {
-                  return (
-                    <td className="border border-border px-2 py-1">
-                      {children}
-                    </td>
-                  );
+                  return <td className="border border-border px-2 py-1">{children}</td>
                 },
                 a({ href, children }) {
                   return (
@@ -135,7 +126,7 @@ export function ChatMessage({ role, content, isStreaming }: ChatMessageProps) {
                     >
                       {children}
                     </a>
-                  );
+                  )
                 },
               }}
             >
@@ -145,5 +136,5 @@ export function ChatMessage({ role, content, isStreaming }: ChatMessageProps) {
         )}
       </div>
     </div>
-  );
+  )
 }

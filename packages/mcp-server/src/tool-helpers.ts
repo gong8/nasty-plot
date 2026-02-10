@@ -4,23 +4,23 @@
  */
 
 type ToolSuccess = {
-  [key: string]: unknown;
-  content: [{ type: "text"; text: string }];
-};
+  [key: string]: unknown
+  content: [{ type: "text"; text: string }]
+}
 
 type ToolError = {
-  [key: string]: unknown;
-  content: [{ type: "text"; text: string }];
-  isError: true;
-};
+  [key: string]: unknown
+  content: [{ type: "text"; text: string }]
+  isError: true
+}
 
-type ToolResult = ToolSuccess | ToolError;
+type ToolResult = ToolSuccess | ToolError
 
 /** Wrap a JSON-serializable value as a successful MCP tool response. */
 export function toolSuccess(data: unknown): ToolSuccess {
   return {
     content: [{ type: "text", text: JSON.stringify(data, null, 2) }],
-  };
+  }
 }
 
 /** Wrap an error message as a failed MCP tool response. */
@@ -28,7 +28,7 @@ export function toolError(message: string): ToolError {
   return {
     content: [{ type: "text", text: message }],
     isError: true,
-  };
+  }
 }
 
 /**
@@ -39,14 +39,14 @@ export function toolError(message: string): ToolError {
  */
 export async function handleTool(
   fn: () => Promise<unknown>,
-  errorMessage: string
+  errorMessage: string,
 ): Promise<ToolResult> {
   try {
-    const data = await fn();
-    return toolSuccess(data);
+    const data = await fn()
+    return toolSuccess(data)
   } catch (err) {
-    const detail = err instanceof Error ? err.message : String(err);
-    return toolError(`${errorMessage} (${detail})`);
+    const detail = err instanceof Error ? err.message : String(err)
+    return toolError(`${errorMessage} (${detail})`)
   }
 }
 
@@ -55,13 +55,13 @@ export async function handleTool(
  * omitting entries where the value is undefined.
  */
 export function buildParams(
-  entries: Record<string, string | number | undefined>
+  entries: Record<string, string | number | undefined>,
 ): Record<string, string> {
-  const params: Record<string, string> = {};
+  const params: Record<string, string> = {}
   for (const [key, value] of Object.entries(entries)) {
     if (value !== undefined) {
-      params[key] = String(value);
+      params[key] = String(value)
     }
   }
-  return params;
+  return params
 }

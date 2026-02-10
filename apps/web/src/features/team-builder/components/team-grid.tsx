@@ -1,26 +1,21 @@
-"use client";
+"use client"
 
-import { Plus } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { TYPE_COLORS, type PokemonType, type TeamData } from "@nasty-plot/core";
-import { PokemonSprite } from "@nasty-plot/ui";
+import { Plus } from "lucide-react"
+import { Card, CardContent } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { TYPE_COLORS, type PokemonType, type TeamData } from "@nasty-plot/core"
+import { PokemonSprite } from "@nasty-plot/ui"
 
 interface TeamGridProps {
-  team: TeamData;
-  selectedSlot: number | null;
-  onSelectSlot: (position: number) => void;
-  onAddSlot: () => void;
+  team: TeamData
+  selectedSlot: number | null
+  onSelectSlot: (position: number) => void
+  onAddSlot: () => void
 }
 
-export function TeamGrid({
-  team,
-  selectedSlot,
-  onSelectSlot,
-  onAddSlot,
-}: TeamGridProps) {
-  const filledSlots = team.slots;
-  const emptyCount = 6 - filledSlots.length;
+export function TeamGrid({ team, selectedSlot, onSelectSlot, onAddSlot }: TeamGridProps) {
+  const filledSlots = team.slots
+  const emptyCount = 6 - filledSlots.length
 
   return (
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
@@ -84,5 +79,5 @@ export function TeamGrid({
         </Card>
       ))}
     </div>
-  );
+  )
 }
