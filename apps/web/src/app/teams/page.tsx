@@ -26,9 +26,9 @@ export default function TeamsPage() {
       <div className="container mx-auto max-w-5xl py-8 px-4">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold">My Teams</h1>
+          <h1 className="text-2xl font-bold font-display">My Teams</h1>
           <p className="text-muted-foreground text-sm mt-1">
-            Build and manage your competitive Pokemon teams
+            Every great scheme starts with a roster
           </p>
         </div>
         <Button onClick={() => router.push("/teams/new")}>
@@ -55,11 +55,18 @@ export default function TeamsPage() {
       {!isLoading && teams && teams.length === 0 && (
         <Card className="py-12">
           <CardContent className="flex flex-col items-center gap-4 text-center">
+            <img
+              src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/1025.png"
+              alt="Pecharunt"
+              width={48}
+              height={48}
+              className="pixelated mx-auto mb-2"
+            />
             <Users className="h-12 w-12 text-muted-foreground" />
             <div>
               <h3 className="text-lg font-semibold">No teams yet</h3>
               <p className="text-muted-foreground text-sm mt-1">
-                Create your first team to get started building
+                Pecharunt is waiting for your first team. Create one to get started.
               </p>
             </div>
             <Button onClick={() => router.push("/teams/new")}>
@@ -74,7 +81,7 @@ export default function TeamsPage() {
           {teams.map((team) => (
             <Card
               key={team.id}
-              className="cursor-pointer transition-all hover:shadow-md"
+              className="cursor-pointer transition-all hover:shadow-md dark:hover:shadow-[0_0_20px_var(--color-glow-primary)]"
               onClick={() => router.push(`/teams/${team.id}`)}
             >
               <CardHeader>

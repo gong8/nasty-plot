@@ -79,9 +79,9 @@ export default function NewTeamPage() {
       </Button>
       <Card>
         <CardHeader>
-          <CardTitle>Create New Team</CardTitle>
+          <CardTitle className="font-display">Create New Team</CardTitle>
           <CardDescription>
-            Set up a new competitive team to start building
+            Name it, pick a format, choose your approach.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -169,7 +169,7 @@ export default function NewTeamPage() {
             onClick={handleCreate}
             disabled={!name.trim() || createTeam.isPending}
           >
-            {createTeam.isPending ? "Creating..." : "Create Team"}
+            {createTeam.isPending ? "Pecharunt is scheming..." : "Create Team"}
           </Button>
         </CardContent>
       </Card>

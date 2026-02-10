@@ -29,7 +29,7 @@ export default function ChatPage() {
       <SiteHeader />
       <div className="flex flex-col flex-1 max-w-3xl mx-auto w-full p-4 min-h-0">
         <div className="flex items-center justify-between mb-4">
-          <h1 className="text-2xl font-bold">Team Assistant</h1>
+          <h1 className="text-2xl font-bold font-display">Pecharunt's Lab</h1>
           <Select
             value={formatId ?? ""}
             onValueChange={(v) => setFormatId(v || undefined)}

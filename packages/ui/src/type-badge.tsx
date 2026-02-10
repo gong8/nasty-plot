@@ -23,7 +23,7 @@ export function TypeBadge({ type, size = "md", className, onClick }: TypeBadgePr
         onClick && "cursor-pointer hover:opacity-80 transition-opacity",
         className
       )}
-      style={{ backgroundColor: color }}
+      style={{ backgroundColor: color, boxShadow: `0 0 8px ${color}80` }}
       onClick={onClick}
       role={onClick ? "button" : undefined}
     >

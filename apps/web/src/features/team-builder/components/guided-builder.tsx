@@ -107,13 +107,13 @@ function StepChooseCore({
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="text-lg font-semibold flex items-center gap-2">
+        <h3 className="text-lg font-semibold font-display flex items-center gap-2">
           <Sparkles className="h-5 w-5 text-primary" />
           Choose Your Core
         </h3>
         <p className="text-sm text-muted-foreground mt-1">
-          Start by picking 1-3 Pokemon that form the foundation of your team.
-          These are typically your win conditions or the Pokemon your team is built around.
+          Every great team starts with a strong core. Pick 1-3 Pokemon that anchor your strategy
+          and define your win condition.
         </p>
       </div>
       <CorePicker
@@ -143,13 +143,13 @@ function StepFillRoles({
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="text-lg font-semibold flex items-center gap-2">
+        <h3 className="text-lg font-semibold font-display flex items-center gap-2">
           <Sparkles className="h-5 w-5 text-primary" />
           Fill the Roles
         </h3>
         <p className="text-sm text-muted-foreground mt-1">
-          Based on your core, here are the roles your team needs.
-          Pick one Pokemon per role, or skip roles that your core already covers.
+          Your core sets the direction. Now shore up the gaps -- pick teammates
+          that round out your coverage and fill the roles your team needs.
         </p>
       </div>
       <div className="space-y-3">
@@ -200,13 +200,13 @@ function StepFineTune({
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="text-lg font-semibold flex items-center gap-2">
+        <h3 className="text-lg font-semibold font-display flex items-center gap-2">
           <Sparkles className="h-5 w-5 text-primary" />
           Fine-Tune Your Team
         </h3>
         <p className="text-sm text-muted-foreground mt-1">
-          Recommended sets have been applied from Smogon. Review each Pokemon
-          and switch to the freeform editor to customize individual sets.
+          Smogon sets have been applied as a starting point. Tweak moves, EVs,
+          and items to fit your playstyle and metagame reads.
         </p>
       </div>
 
@@ -296,12 +296,12 @@ function StepReview({
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="text-lg font-semibold flex items-center gap-2">
+        <h3 className="text-lg font-semibold font-display flex items-center gap-2">
           <Sparkles className="h-5 w-5 text-primary" />
           Review & Save
         </h3>
         <p className="text-sm text-muted-foreground mt-1">
-          Here is your assembled team. Review everything before saving.
+          Your squad is assembled. Review the lineup and save when you are ready to battle.
         </p>
       </div>
 

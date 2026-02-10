@@ -15,7 +15,7 @@ function getEffectivenessStyle(multiplier: number): {
   text: string;
   label: string;
 } {
-  if (multiplier === 0) return { bg: "bg-gray-900", text: "text-gray-300", label: "0x" };
+  if (multiplier === 0) return { bg: "bg-muted", text: "text-muted-foreground", label: "0x" };
   if (multiplier === 0.25) return { bg: "bg-green-800/70", text: "text-green-100", label: "\u00BCx" };
   if (multiplier === 0.5) return { bg: "bg-green-600/50", text: "text-green-100", label: "\u00BDx" };
   if (multiplier === 1) return { bg: "bg-muted/30", text: "text-muted-foreground", label: "1x" };
@@ -143,9 +143,9 @@ export function WeaknessHeatmap({ slots }: WeaknessHeatmapProps) {
                             bgClass
                           )}
                         >
-                          {weakCount > 0 && <span className="text-red-500">{weakCount}W</span>}
+                          {weakCount > 0 && <span className="text-red-500 dark:text-red-400">{weakCount}W</span>}
                           {weakCount > 0 && resistCount > 0 && "/"}
-                          {resistCount > 0 && <span className="text-green-600">{resistCount}R</span>}
+                          {resistCount > 0 && <span className="text-green-600 dark:text-green-400">{resistCount}R</span>}
                           {weakCount === 0 && resistCount === 0 && "-"}
                         </div>
                       </td>

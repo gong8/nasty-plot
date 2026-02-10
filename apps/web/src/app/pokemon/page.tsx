@@ -73,7 +73,8 @@ export default function PokemonBrowserPage() {
       <SiteHeader />
 
       <main className="flex-1 container mx-auto px-4 py-6">
-        <h1 className="text-3xl font-bold mb-6">Pokemon Browser</h1>
+        <h1 className="text-3xl font-bold font-display mb-2">Pokemon</h1>
+        <p className="text-muted-foreground mb-6">Know your options. Know your threats.</p>
 
         {/* Filters */}
         <div className="flex flex-wrap gap-4 mb-6">

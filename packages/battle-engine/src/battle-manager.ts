@@ -1,4 +1,4 @@
-import { BattleStreams } from "@pkmn/sim";
+import { BattleStreams, Teams } from "@pkmn/sim";
 import { processChunk, parseRequest, updateSideFromRequest } from "./protocol-parser";
 import type {
   BattleState,
@@ -88,6 +88,8 @@ export class BattleManager {
   private started = false;
   private resolveReady: ((value: void) => void) | null = null;
   private destroyed = false;
+  private startError: string | null = null;
+  private lastProtocolChunk = "";
 
   constructor(config: BattleManagerConfig) {
     this.config = config;
@@ -122,18 +124,40 @@ export class BattleManager {
     if (this.started) return;
     this.started = true;
 
+    // Convert paste format to packed format that @pkmn/sim expects
+    const playerPacked = pasteToPackedTeam(this.config.playerTeam);
+    const opponentPacked = pasteToPackedTeam(this.config.opponentTeam);
+
+    if (!playerPacked) {
+      throw new Error("Failed to parse player team. Check the Showdown paste format.");
+    }
+    if (!opponentPacked) {
+      throw new Error("Failed to parse opponent team. Check the Showdown paste format.");
+    }
+
     // Start reading from the stream
     this.readStream();
 
     // Write the battle initialization
     const format = this.config.formatId || "gen9ou";
     this.stream.write(`>start {"formatid":"${format}"}`);
-    this.stream.write(`>player p1 {"name":"${this.state.sides.p1.name}","team":"${escapeTeam(this.config.playerTeam)}"}`);
-    this.stream.write(`>player p2 {"name":"${this.state.sides.p2.name}","team":"${escapeTeam(this.config.opponentTeam)}"}`);
+    this.stream.write(`>player p1 {"name":"${this.state.sides.p1.name}","team":"${escapeTeam(playerPacked)}"}`);
+    this.stream.write(`>player p2 {"name":"${this.state.sides.p2.name}","team":"${escapeTeam(opponentPacked)}"}`);
 
-    // Wait for the first request to come in
-    await new Promise<void>((resolve) => {
+    // Wait for the first request to come in, with a timeout
+    await new Promise<void>((resolve, reject) => {
       this.resolveReady = resolve;
+
+      setTimeout(() => {
+        if (this.resolveReady) {
+          this.resolveReady = null;
+          reject(new Error(
+            this.startError
+              ? `Battle failed to start: ${this.startError}`
+              : "Battle timed out waiting for the simulator. Check team/format validity."
+          ));
+        }
+      }, 10_000);
     });
   }
 
@@ -202,10 +226,14 @@ export class BattleManager {
 
     for (const line of lines) {
       if (line.startsWith("|request|")) {
-        // Process any accumulated protocol lines first
+        // Process accumulated protocol lines, but skip if we already processed
+        // the same lines (sim emits identical protocol for each player's chunk)
         if (protocolLines.trim()) {
-          const entries = processChunk(this.state, protocolLines);
-          allEntries.push(...entries);
+          if (protocolLines.trim() !== this.lastProtocolChunk) {
+            this.lastProtocolChunk = protocolLines.trim();
+            const entries = processChunk(this.state, protocolLines);
+            allEntries.push(...entries);
+          }
           protocolLines = "";
         }
 
@@ -214,7 +242,9 @@ export class BattleManager {
       }
 
       if (line.startsWith("|error|")) {
-        console.error("[BattleManager] Error:", line.slice(7));
+        const errorMsg = line.slice(7);
+        console.error("[BattleManager] Error:", errorMsg);
+        this.startError = errorMsg;
         continue;
       }
 
@@ -222,8 +252,9 @@ export class BattleManager {
       protocolLines += line + "\n";
     }
 
-    // Process remaining protocol lines
-    if (protocolLines.trim()) {
+    // Process remaining protocol lines (deduplicated)
+    if (protocolLines.trim() && protocolLines.trim() !== this.lastProtocolChunk) {
+      this.lastProtocolChunk = protocolLines.trim();
       const entries = processChunk(this.state, protocolLines);
       allEntries.push(...entries);
     }
@@ -272,8 +303,13 @@ export class BattleManager {
         if (parsed.teamPreview) {
           // AI will handle team preview when player submits
         } else if (!parsed.wait && parsed.actions) {
-          // Store for AI to use when player submits
-          this.pendingP2Actions = parsed.actions;
+          if (parsed.actions.forceSwitch && this.ai && !this.state.waitingForChoice) {
+            // Only p2 needs to switch (p1 is waiting) — AI responds immediately
+            this.handleAIForceSwitch(parsed.actions);
+          } else {
+            // Store for AI to use when player submits their action
+            this.pendingP2Actions = parsed.actions;
+          }
         }
       }
     } catch (err) {
@@ -291,6 +327,17 @@ export class BattleManager {
     const choice = actionToChoice(aiAction);
     this.stream.write(`>p2 ${choice}`);
     this.pendingP2Actions = null;
+  }
+
+  private async handleAIForceSwitch(actions: BattleActionSet) {
+    if (!this.ai) return;
+
+    // Small delay for realism
+    await new Promise((resolve) => setTimeout(resolve, 200 + Math.random() * 300));
+
+    const aiAction = await this.ai.chooseAction(this.state, actions);
+    const choice = actionToChoice(aiAction);
+    this.stream.write(`>p2 ${choice}`);
   }
 
   private async waitForUpdate(): Promise<void> {
@@ -318,4 +365,27 @@ function actionToChoice(action: BattleAction): string {
 
 function escapeTeam(team: string): string {
   return team.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+}
+
+/**
+ * Convert a Showdown paste string into @pkmn/sim's packed team format.
+ * If the input is already packed (no newlines, pipe-delimited), returns it as-is.
+ */
+function pasteToPackedTeam(team: string): string | null {
+  const trimmed = team.trim();
+  if (!trimmed) return null;
+
+  // Already in packed format (single line with pipes, no newlines except between mons)
+  if (!trimmed.includes("\n") || (trimmed.includes("|") && !trimmed.includes("Ability:"))) {
+    return trimmed;
+  }
+
+  // Parse paste → PokemonSet[] → packed string
+  try {
+    const sets = Teams.import(trimmed);
+    if (!sets || sets.length === 0) return null;
+    return Teams.pack(sets);
+  } catch {
+    return null;
+  }
 }

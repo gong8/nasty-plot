@@ -12,9 +12,9 @@ export default function BattleHubPage() {
       <SiteHeader />
       <main className="container mx-auto p-4 max-w-4xl">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold mb-2">Battle Simulator</h1>
+          <h1 className="text-3xl font-bold font-display mb-2">Battle Simulator</h1>
           <p className="text-muted-foreground">
-            Test your teams against AI opponents
+            Stress-test your team against AI opponents. Pecharunt watches with glee.
           </p>
         </div>
 
@@ -37,7 +37,7 @@ export default function BattleHubPage() {
             </CardHeader>
             <CardContent>
               <p className="text-sm text-muted-foreground">
-                Picks random legal moves. Good for casual practice and testing new teams.
+                Picks moves at random. A punching bag for testing new teams.
               </p>
             </CardContent>
           </Card>
@@ -51,7 +51,7 @@ export default function BattleHubPage() {
             </CardHeader>
             <CardContent>
               <p className="text-sm text-muted-foreground">
-                Picks the highest damage move each turn. Tests your defensive play.
+                Always goes for maximum damage. Punishes weak defensive cores.
               </p>
             </CardContent>
           </Card>
@@ -65,7 +65,7 @@ export default function BattleHubPage() {
             </CardHeader>
             <CardContent>
               <p className="text-sm text-muted-foreground">
-                Type-aware switching, status moves, and setup. A real challenge.
+                Type-aware switching, status moves, and setup plays. The closest thing to a real opponent.
               </p>
             </CardContent>
           </Card>

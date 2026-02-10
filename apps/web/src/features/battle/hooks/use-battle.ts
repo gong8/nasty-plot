@@ -53,40 +53,47 @@ export function useBattle() {
     setError(null);
     configRef.current = config;
 
+    // Cleanup previous battle
+    managerRef.current?.destroy();
+
+    const manager = new BattleManager({
+      formatId: config.formatId,
+      gameType: config.gameType,
+      playerTeam: config.playerTeamPaste,
+      opponentTeam: config.opponentTeamPaste,
+      playerName: config.playerName || "Player",
+      opponentName: config.opponentName || "Opponent",
+    });
+
+    // Set AI
+    const ai = createAI(config.aiDifficulty);
+    manager.setAI(ai);
+
+    // Set up state update handler
+    manager.onUpdate((newState) => {
+      setState({ ...newState });
+    });
+
+    managerRef.current = manager;
+
     try {
-      // Cleanup previous battle
-      managerRef.current?.destroy();
-
-      const manager = new BattleManager({
-        formatId: config.formatId,
-        gameType: config.gameType,
-        playerTeam: config.playerTeamPaste,
-        opponentTeam: config.opponentTeamPaste,
-        playerName: config.playerName || "Player",
-        opponentName: config.opponentName || "Opponent",
-      });
-
-      // Set AI
-      const ai = createAI(config.aiDifficulty);
-      manager.setAI(ai);
-
-      // Set up state update handler
-      manager.onUpdate((newState) => {
-        setState({ ...newState });
-      });
-
-      managerRef.current = manager;
-
       // Start the battle
       await manager.start();
+
+      // If another startBattle call superseded us while we were awaiting, bail out
+      if (managerRef.current !== manager) return;
 
       // Update state after start
       setState({ ...manager.getState() });
     } catch (err) {
+      // If another startBattle call superseded us, don't overwrite its state
+      if (managerRef.current !== manager) return;
       setError(err instanceof Error ? err.message : "Failed to start battle");
       console.error("[useBattle] Start error:", err);
     } finally {
-      setIsLoading(false);
+      if (managerRef.current === manager) {
+        setIsLoading(false);
+      }
     }
   }, []);
 

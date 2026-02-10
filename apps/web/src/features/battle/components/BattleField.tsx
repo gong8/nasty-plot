@@ -14,7 +14,7 @@ interface BattleFieldProps {
 const STATUS_BADGE: Record<string, { label: string; color: string }> = {
   brn: { label: "BRN", color: "bg-red-500" },
   par: { label: "PAR", color: "bg-yellow-500" },
-  slp: { label: "SLP", color: "bg-gray-500" },
+  slp: { label: "SLP", color: "bg-muted-foreground" },
   frz: { label: "FRZ", color: "bg-cyan-400" },
   psn: { label: "PSN", color: "bg-purple-500" },
   tox: { label: "TOX", color: "bg-purple-700" },
@@ -87,7 +87,7 @@ export function BattleField({ state, className }: BattleFieldProps) {
       />
 
       {/* Battle area */}
-      <div className="relative min-h-[320px] bg-gradient-to-b from-sky-100 to-green-100 dark:from-sky-950 dark:to-green-950 rounded-xl border overflow-hidden p-4">
+      <div className="relative min-h-[320px] bg-gradient-to-b from-sky-100 to-green-100 dark:from-indigo-950/80 dark:via-purple-950/60 dark:to-background rounded-xl border overflow-hidden p-4">
         {/* Opponent side (top) */}
         <div className="flex justify-end gap-4 mb-8">
           {state.sides.p2.active.map((pokemon, i) => {

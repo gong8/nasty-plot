@@ -256,6 +256,23 @@ When the user asks what to work on, follow this decision tree:
 - At session start, read recent session files in `sessions/` for context on what happened last
 - When work is incomplete: update Linear issue comments AND write session notes
 
+## Execution Strategy: Parallel Agents & Teams
+
+**Always maximize parallelism.** Token budget is not a constraint — speed and thoroughness are. Follow these rules:
+
+- **Default to parallel agents.** When a task involves multiple independent subtasks (research, exploration, implementation across packages, running tests), spawn parallel agents via the `Task` tool. Do not serialize work that can run concurrently.
+- **Use agent teams for multi-package or multi-concern work.** For features, refactors, or investigations spanning 2+ packages, create a team with `TeamCreate` and assign teammates to work in parallel. Examples:
+  - Feature touching `core` + `teams` + `web` → 3 teammates, one per package
+  - Bug investigation → one agent exploring logs/errors, another reading relevant code, another checking tests
+  - New API endpoint → one agent on the route + service, another on tests, another on types/validation
+- **Explore agents are cheap — use them liberally.** When investigating unfamiliar code, spawn multiple `Explore` agents in parallel to search different areas of the codebase simultaneously rather than searching sequentially.
+- **Research in parallel.** When you need to understand multiple packages, files, or concepts, launch parallel `Task` calls with `subagent_type=Explore` or `subagent_type=general-purpose` for each area.
+- **Run background agents.** For long-running tasks (builds, test suites, complex searches), use `run_in_background: true` and continue working on other things while they execute.
+- **Batch independent tool calls.** Always group independent `Glob`, `Grep`, `Read`, and `Bash` calls into a single message. Never make sequential calls when parallel calls would work.
+- **Don't duplicate agent work.** If you delegate research to a subagent, don't also do the same search yourself. Trust agent results.
+
+**Rule of thumb:** If you're about to do 3+ sequential operations that don't depend on each other, stop and parallelize them instead.
+
 ## Technical Gotchas
 
 - **`@pkmn/dex` damageTaken encoding:** `0`=neutral, `1`=super effective, `2`=resist, `3`=immune — this is counterintuitive and easy to get wrong

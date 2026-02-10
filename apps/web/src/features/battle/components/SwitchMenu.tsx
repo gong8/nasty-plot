@@ -26,7 +26,7 @@ const STATUS_LABELS: Record<string, string> = {
 const STATUS_COLORS: Record<string, string> = {
   brn: "text-red-500 bg-red-500/10",
   par: "text-yellow-500 bg-yellow-500/10",
-  slp: "text-gray-500 bg-gray-500/10",
+  slp: "text-muted-foreground bg-muted-foreground/10",
   frz: "text-cyan-400 bg-cyan-400/10",
   psn: "text-purple-500 bg-purple-500/10",
   tox: "text-purple-600 bg-purple-600/10",

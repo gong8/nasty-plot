@@ -27,9 +27,9 @@ export function TeamGrid({
       {filledSlots.map((slot) => (
         <Card
           key={slot.position}
-          className={`cursor-pointer transition-all hover:shadow-md ${
+          className={`cursor-pointer transition-all hover:shadow-md dark:hover:shadow-[0_0_15px_var(--color-glow-primary)] ${
             selectedSlot === slot.position
-              ? "ring-2 ring-primary shadow-md"
+              ? "ring-2 ring-primary shadow-md dark:shadow-[0_0_15px_var(--color-glow-primary)]"
               : ""
           }`}
           onClick={() => onSelectSlot(slot.position)}

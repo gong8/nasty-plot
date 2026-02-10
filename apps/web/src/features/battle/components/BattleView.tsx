@@ -57,7 +57,7 @@ export function BattleView({
           <CardContent className="pt-6 text-center space-y-4">
             <Trophy className={cn("h-12 w-12 mx-auto", playerWon ? "text-yellow-500" : "text-muted-foreground")} />
             <h2 className="text-xl font-bold">
-              {playerWon ? "You Win!" : "You Lose!"}
+              {playerWon ? "Victory." : "Defeat."}
             </h2>
             <p className="text-muted-foreground">
               {state.winner === "p1" ? state.sides.p1.name : state.sides.p2.name} won the battle!

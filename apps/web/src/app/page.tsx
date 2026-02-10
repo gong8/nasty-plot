@@ -10,13 +10,21 @@ export default function Home() {
 
       <main className="flex-1 container mx-auto px-4 py-12">
         <div className="max-w-3xl mx-auto text-center space-y-6">
-          <h2 className="text-4xl font-bold tracking-tight">
+          <img
+            src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/1025.png"
+            alt="Pecharunt"
+            width={96}
+            height={96}
+            className="pixelated mx-auto"
+          />
+          <h2 className="text-4xl font-bold tracking-tight font-display">
             Build Competitive Pokemon Teams
           </h2>
           <p className="text-lg text-muted-foreground">
-            Scarlet/Violet team builder with usage data, damage calculator,
-            matchup analysis, and AI-powered recommendations. Supports VGC,
-            Smogon tiers, and Battle Stadium.
+            Your war room for Scarlet/Violet. Usage data, damage rolls, matchup analysis, and AI-powered teambuilding.
+          </p>
+          <p className="text-sm text-muted-foreground italic">
+            Every great team starts with a nasty plot. Pecharunt approves.
           </p>
           <div className="flex gap-4 justify-center">
             <Link href="/teams/new">
@@ -36,8 +44,8 @@ export default function Home() {
             </CardHeader>
             <CardContent>
               <p className="text-sm text-muted-foreground">
-                Build teams for any competitive format with format-aware
-                legality checks and tier-specific usage data.
+                Build for any competitive format with legality checks
+                and tier-specific usage data baked in.
               </p>
             </CardContent>
           </Card>
@@ -49,8 +57,8 @@ export default function Home() {
             </CardHeader>
             <CardContent>
               <p className="text-sm text-muted-foreground">
-                Calculate damage rolls, view matchup matrices against meta
-                threats, and find coverage gaps.
+                Run damage rolls, view matchup matrices against meta
+                threats, and spot coverage gaps before they cost you a game.
               </p>
             </CardContent>
           </Card>
@@ -62,8 +70,8 @@ export default function Home() {
             </CardHeader>
             <CardContent>
               <p className="text-sm text-muted-foreground">
-                Get teammate recommendations based on usage data, type coverage,
-                and synergy scoring with explanations.
+                Teammate recommendations driven by usage data, type coverage,
+                and synergy scoring — with reasoning you can learn from.
               </p>
             </CardContent>
           </Card>

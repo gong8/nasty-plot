@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Loader2, Send, Bot, User } from "lucide-react";
+import { Loader2, Send, User } from "lucide-react";
 
 interface Message {
   id: string;
@@ -207,13 +207,18 @@ export function ChatPanel({ teamId, formatId, sessionId }: ChatPanelProps) {
           <div className="space-y-4">
             {messages.length === 0 && (
               <div className="text-center text-muted-foreground py-12">
-                <Bot className="w-10 h-10 mx-auto mb-3 opacity-50" />
+                <img
+                  src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/1025.png"
+                  alt="Pecharunt"
+                  width={64}
+                  height={64}
+                  className="pixelated mx-auto mb-3"
+                />
                 <p className="text-lg font-medium">
-                  Pokemon Team Assistant
+                  Pecharunt&apos;s Team Lab
                 </p>
                 <p className="text-sm mt-1">
-                  Ask about competitive sets, team building, damage
-                  calcs, and more.
+                  Ask about competitive sets, damage calcs, meta trends, and team synergy.
                 </p>
               </div>
             )}
@@ -228,28 +233,34 @@ export function ChatPanel({ teamId, formatId, sessionId }: ChatPanelProps) {
                 }`}
               >
                 <div
-                  className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
+                  className={`flex-shrink-0 rounded-full flex items-center justify-center ${
                     msg.role === "user"
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-muted"
+                      ? "w-8 h-8 bg-primary text-primary-foreground"
+                      : "w-9 h-9 bg-accent/15 text-accent"
                   }`}
                 >
                   {msg.role === "user" ? (
                     <User className="w-4 h-4" />
                   ) : (
-                    <Bot className="w-4 h-4" />
+                    <img
+                      src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/1025.png"
+                      alt="Pecharunt"
+                      width={24}
+                      height={24}
+                      className="pixelated"
+                    />
                   )}
                 </div>
                 <div
                   className={`max-w-[80%] rounded-lg px-4 py-2 text-sm whitespace-pre-wrap ${
                     msg.role === "user"
                       ? "bg-primary text-primary-foreground"
-                      : "bg-muted"
+                      : "bg-muted/50 dark:bg-primary/5 border border-border"
                   }`}
                 >
                   {msg.content ||
                     (msg.role === "assistant" && isStreaming && (
-                      <span className="opacity-50">Thinking...</span>
+                      <span className="opacity-50">Pecharunt is scheming...</span>
                     ))}
                 </div>
               </div>

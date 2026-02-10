@@ -16,10 +16,10 @@ function getCoverageLevel(count: number): {
   label: string;
   className: string;
 } {
-  if (count === 0) return { label: "None", className: "bg-red-500/20 text-red-700 border-red-300" };
-  if (count === 1) return { label: "1x", className: "bg-yellow-500/20 text-yellow-700 border-yellow-300" };
-  if (count === 2) return { label: "2x", className: "bg-green-400/20 text-green-700 border-green-300" };
-  return { label: `${count}x`, className: "bg-green-600/20 text-green-800 border-green-400" };
+  if (count === 0) return { label: "None", className: "bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-400 border-red-300 dark:border-red-500/30" };
+  if (count === 1) return { label: "1x", className: "bg-yellow-100 dark:bg-yellow-500/20 text-yellow-700 dark:text-yellow-400 border-yellow-300 dark:border-yellow-500/30" };
+  if (count === 2) return { label: "2x", className: "bg-green-100 dark:bg-green-500/20 text-green-700 dark:text-green-400 border-green-300 dark:border-green-500/30" };
+  return { label: `${count}x`, className: "bg-green-200 dark:bg-green-600/20 text-green-800 dark:text-green-300 border-green-400 dark:border-green-500/30" };
 }
 
 export function CoverageChart({ coverage }: CoverageChartProps) {

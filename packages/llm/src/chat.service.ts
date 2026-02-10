@@ -1,6 +1,7 @@
 import type OpenAI from "openai";
 import { getOpenAI, MODEL } from "./openai-client";
 import { buildTeamContext, buildMetaContext } from "./context-builder";
+import { getMcpTools, executeMcpTool, getMcpResourceContext } from "./mcp-client";
 import type { ChatMessage, TeamData, UsageStatsEntry } from "@nasty-plot/core";
 
 const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
@@ -18,159 +19,6 @@ Be concise but thorough. When suggesting sets, include the full spread (EVs, nat
 
 You have access to tools for looking up Pokemon data, usage stats, and performing calculations. Use them when the user asks specific questions rather than guessing.`;
 
-const tools: OpenAI.ChatCompletionTool[] = [
-  {
-    type: "function",
-    function: {
-      name: "search_pokemon",
-      description:
-        "Search for a Pokemon by name and get its stats, types, and abilities",
-      parameters: {
-        type: "object",
-        properties: { query: { type: "string" } },
-        required: ["query"],
-      },
-    },
-  },
-  {
-    type: "function",
-    function: {
-      name: "get_usage_stats",
-      description:
-        "Get usage statistics for a format showing the most popular Pokemon",
-      parameters: {
-        type: "object",
-        properties: {
-          formatId: { type: "string" },
-          limit: { type: "number" },
-        },
-        required: ["formatId"],
-      },
-    },
-  },
-  {
-    type: "function",
-    function: {
-      name: "calculate_damage",
-      description:
-        "Calculate damage from one Pokemon's move against another",
-      parameters: {
-        type: "object",
-        properties: {
-          attackerPokemon: { type: "string" },
-          defenderPokemon: { type: "string" },
-          moveName: { type: "string" },
-          attackerLevel: { type: "number" },
-          defenderLevel: { type: "number" },
-        },
-        required: ["attackerPokemon", "defenderPokemon", "moveName"],
-      },
-    },
-  },
-  {
-    type: "function",
-    function: {
-      name: "analyze_team",
-      description:
-        "Analyze a team's type coverage, weaknesses, and threats",
-      parameters: {
-        type: "object",
-        properties: { teamId: { type: "string" } },
-        required: ["teamId"],
-      },
-    },
-  },
-  {
-    type: "function",
-    function: {
-      name: "suggest_teammates",
-      description:
-        "Suggest Pokemon teammates based on current team composition",
-      parameters: {
-        type: "object",
-        properties: {
-          teamId: { type: "string" },
-          formatId: { type: "string" },
-        },
-        required: ["teamId", "formatId"],
-      },
-    },
-  },
-];
-
-async function executeTool(
-  name: string,
-  args: Record<string, unknown>,
-): Promise<string> {
-  try {
-    let result: unknown;
-
-    switch (name) {
-      case "search_pokemon": {
-        const res = await fetch(
-          `${BASE_URL}/api/pokemon?search=${encodeURIComponent(args.query as string)}`,
-        );
-        result = await res.json();
-        break;
-      }
-      case "get_usage_stats": {
-        const limit = (args.limit as number) || 20;
-        const res = await fetch(
-          `${BASE_URL}/api/formats/${encodeURIComponent(args.formatId as string)}/usage?limit=${limit}`,
-        );
-        result = await res.json();
-        break;
-      }
-      case "calculate_damage": {
-        const res = await fetch(`${BASE_URL}/api/damage-calc`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            attacker: {
-              pokemonId: args.attackerPokemon,
-              level: (args.attackerLevel as number) || 100,
-            },
-            defender: {
-              pokemonId: args.defenderPokemon,
-              level: (args.defenderLevel as number) || 100,
-            },
-            move: args.moveName,
-          }),
-        });
-        result = await res.json();
-        break;
-      }
-      case "analyze_team": {
-        const res = await fetch(
-          `${BASE_URL}/api/teams/${encodeURIComponent(args.teamId as string)}/analysis`,
-        );
-        result = await res.json();
-        break;
-      }
-      case "suggest_teammates": {
-        const res = await fetch(`${BASE_URL}/api/recommend`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            teamId: args.teamId,
-            formatId: args.formatId,
-          }),
-        });
-        result = await res.json();
-        break;
-      }
-      default:
-        return JSON.stringify({ error: `Unknown tool: ${name}` });
-    }
-
-    return JSON.stringify(result);
-  } catch (error) {
-    return JSON.stringify({
-      error: `Tool execution failed: ${error instanceof Error ? error.message : "Unknown error"}`,
-    });
-  }
-}
-
 interface StreamChatOptions {
   messages: ChatMessage[];
   teamId?: string;
@@ -184,6 +32,12 @@ export async function streamChat(
   const encoder = new TextEncoder();
 
   const systemParts = [SYSTEM_PROMPT];
+
+  // Inject MCP resource context (type chart, formats, natures, stat formulas)
+  const resourceContext = await getMcpResourceContext();
+  if (resourceContext) {
+    systemParts.push(resourceContext);
+  }
 
   if (teamId) {
     try {
@@ -261,13 +115,22 @@ async function processStream(
   const currentMessages = [...messages];
   const maxToolRounds = 5;
 
+  // Discover tools from MCP server (empty array if unavailable)
+  const tools = await getMcpTools();
+
   for (let round = 0; round < maxToolRounds; round++) {
-    const stream = await getOpenAI().chat.completions.create({
+    const createOptions: OpenAI.ChatCompletionCreateParamsStreaming = {
       model: MODEL,
       messages: currentMessages,
-      tools,
       stream: true,
-    });
+    };
+
+    // Only pass tools if we have them
+    if (tools.length > 0) {
+      createOptions.tools = tools;
+    }
+
+    const stream = await getOpenAI().chat.completions.create(createOptions);
 
     let hasToolCalls = false;
     const toolCalls = new Map<
@@ -331,7 +194,7 @@ async function processStream(
         args = {};
       }
 
-      const result = await executeTool(tc.name, args);
+      const result = await executeMcpTool(tc.name, args);
 
       sendEvent(controller, encoder, {
         toolCall: { name: tc.name, status: "complete" },

@@ -36,11 +36,11 @@ const WEATHER_ICONS: Record<string, typeof Sun> = {
 const WEATHER_COLORS: Record<string, string> = {
   Sun: "text-orange-500",
   Rain: "text-blue-500",
-  Sand: "text-yellow-700",
+  Sand: "text-yellow-600 dark:text-yellow-400",
   Snow: "text-cyan-400",
-  "Desolate Land": "text-red-600",
-  "Primordial Sea": "text-blue-700",
-  "Delta Stream": "text-green-600",
+  "Desolate Land": "text-red-600 dark:text-red-400",
+  "Primordial Sea": "text-blue-600 dark:text-blue-400",
+  "Delta Stream": "text-green-600 dark:text-green-400",
 };
 
 const TERRAIN_ICONS: Record<string, typeof Zap> = {

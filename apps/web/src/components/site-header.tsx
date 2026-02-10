@@ -27,9 +27,16 @@ export function SiteHeader() {
   const [open, setOpen] = useState(false);
 
   return (
-    <header className="border-b">
+    <header className="border-b bg-background/80 backdrop-blur-sm border-border dark:bg-card/80 dark:backdrop-blur-xl dark:border-white/10 sticky top-0 z-50">
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
-        <Link href="/" className="text-xl font-bold">
+        <Link href="/" className="flex items-center gap-2 text-xl font-display font-bold text-primary dark:drop-shadow-[0_0_8px_var(--color-glow-primary)]">
+          <img
+            src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/1025.png"
+            alt="Pecharunt"
+            width={28}
+            height={28}
+            className="pixelated"
+          />
           Nasty Plot
         </Link>
 

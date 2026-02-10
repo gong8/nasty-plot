@@ -82,3 +82,12 @@ When the LLM wants to call a tool:
 - ToS gray area — programmatic use of Max subscription outside intended interfaces
 - Session stability — container restarts require manual re-authentication (OAuth flow)
 - Only suitable for personal/dev use, not for serving other users at scale
+
+## Phase 2: Frontend Polish
+
+The chat UI (`apps/web/src/app/chat/` and `apps/web/src/features/chat/`) was built for 5 hardcoded tools. With 24 dynamically discovered tools, the frontend needs updates:
+
+- **Tool name display**: MCP tool names like `get_moves_by_criteria` need friendly labels in the chat UI
+- **Tool status indicators**: Better visual feedback during tool execution (currently just "executing"/"complete")
+- **Tool result previews**: Structured display of tool results (e.g. Pokemon stat tables, damage calc summaries) instead of raw JSON
+- **Tool categories**: Group the 24 tools by category (data lookup, analysis, team management, meta) in any tool picker UI

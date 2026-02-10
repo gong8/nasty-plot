@@ -312,9 +312,10 @@ export function DamageCalculator() {
   }, [attacker, defender, moveName, weather, terrain, isReflect, isLightScreen, isAuroraVeil, isCritical, isDoubles, calculate]);
 
   const getKoColor = (koChance: string) => {
-    if (koChance.includes("OHKO")) return "text-red-500";
-    if (koChance.includes("2HKO")) return "text-orange-500";
-    if (koChance.includes("3HKO")) return "text-yellow-500";
+    if (koChance.includes("OHKO")) return "text-red-600 dark:text-red-400";
+    if (koChance.includes("2HKO")) return "text-orange-600 dark:text-orange-400";
+    if (koChance.includes("3HKO")) return "text-yellow-600 dark:text-yellow-400";
+    if (koChance.includes("4HKO")) return "text-green-600 dark:text-green-400";
     return "text-muted-foreground";
   };
 

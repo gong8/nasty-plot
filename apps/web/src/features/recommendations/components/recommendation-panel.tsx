@@ -127,7 +127,7 @@ export function RecommendationPanel({
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground">
-            Add some Pokemon first to get recommendations.
+            Add Pokemon to start receiving recommendations.
           </p>
         </CardContent>
       </Card>

@@ -1,3 +1,4 @@
+import { Dex } from "@pkmn/dex";
 import type { PokemonType } from "@nasty-plot/core";
 import type {
   BattleState,
@@ -10,6 +11,8 @@ import type {
   Terrain,
   BoostTable,
 } from "./types";
+
+const dex = Dex.forGen(9);
 
 /**
  * Protocol Parser
@@ -208,6 +211,8 @@ export function processLine(
       const status = parseStatusFromHp(args[1]);
       const pokemon = findPokemon(state, ident.side, ident.name);
 
+      const prevPercent = pokemon?.hpPercent ?? 100;
+
       if (pokemon) {
         pokemon.hp = hpData.hp;
         if (hpData.maxHp > 0) pokemon.maxHp = hpData.maxHp;
@@ -217,10 +222,13 @@ export function processLine(
       }
 
       const isHeal = cmd === "-heal";
+      const newPercent = pokemon?.hpPercent ?? 0;
+      const delta = Math.abs(newPercent - prevPercent);
       const source = args[2] ? ` (${args[2].replace("[from] ", "")})` : "";
+      const hpDetail = delta > 0 ? ` (${newPercent}%, ${isHeal ? "+" : "-"}${delta}%)` : ` (${newPercent}%)`;
       return logEntry(
         isHeal ? "heal" : "damage",
-        `${ident.name} ${isHeal ? "restored" : "lost"} HP!${source}`,
+        `${ident.name} ${isHeal ? "restored" : "lost"} HP!${hpDetail}${source}`,
         state.turn, ident.side
       );
     }
@@ -653,15 +661,18 @@ export function parseRequest(requestJson: string): {
 
   // Normal turn: extract moves and switches
   const active = req.active?.[0];
-  const moves = (active?.moves || []).map((m: RequestMove) => ({
-    name: m.move,
-    id: m.id,
-    pp: m.pp,
-    maxPp: m.maxpp,
-    type: (m.type || "Normal") as PokemonType,
-    disabled: m.disabled || false,
-    target: m.target || "normal",
-  }));
+  const moves = (active?.moves || []).map((m: RequestMove) => {
+    const moveData = dex.moves.get(m.id);
+    return {
+      name: m.move,
+      id: m.id,
+      pp: m.pp,
+      maxPp: m.maxpp,
+      type: (moveData?.type || m.type || "Normal") as PokemonType,
+      disabled: m.disabled || false,
+      target: m.target || "normal",
+    };
+  });
 
   const canTera = active?.canTerastallize != null;
   const switches = extractSwitches(req.side?.pokemon || []);
@@ -749,15 +760,18 @@ export function updateSideFromRequest(
 
     // Parse moves
     if (reqPoke.moves) {
-      pokemon.moves = reqPoke.moves.map((m: string) => ({
-        id: m,
-        name: m.replace(/([a-z])([A-Z])/g, "$1 $2").replace(/^./, (s: string) => s.toUpperCase()),
-        pp: 0,
-        maxPp: 0,
-        type: "Normal" as PokemonType,
-        disabled: false,
-        target: "normal",
-      }));
+      pokemon.moves = reqPoke.moves.map((m: string) => {
+        const moveData = dex.moves.get(m);
+        return {
+          id: m,
+          name: moveData?.name || m.replace(/([a-z])([A-Z])/g, "$1 $2").replace(/^./, (s: string) => s.toUpperCase()),
+          pp: 0,
+          maxPp: 0,
+          type: (moveData?.type || "Normal") as PokemonType,
+          disabled: false,
+          target: moveData?.target || "normal",
+        };
+      });
     }
 
     // Mark active

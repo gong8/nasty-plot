@@ -8,14 +8,15 @@
     "apps/*"
   ],
   "scripts": {
-    "dev": "turbo dev",
+    "dev": "concurrently -n next,mcp,proxy -c blue,green,magenta \"turbo dev\" \"pnpm run dev:mcp\" \"pnpm run dev:proxy\"",
     "build": "turbo build",
     "lint": "turbo lint",
     "test": "turbo test",
     "test:coverage": "turbo test -- --coverage",
     "seed": "pnpm --filter @nasty-plot/data-pipeline run seed",
     "dev:mcp": "pnpm --filter @nasty-plot/mcp-server run dev",
-    "dev:all": "concurrently \"pnpm run dev\" \"pnpm run dev:mcp\"",
+    "dev:proxy": "bash scripts/dev-proxy.sh",
+    "dev:all": "concurrently -n next,mcp,proxy -c blue,green,magenta \"pnpm run dev\" \"pnpm run dev:mcp\" \"pnpm run dev:proxy\"",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:push": "prisma db push"

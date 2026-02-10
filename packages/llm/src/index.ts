@@ -7,4 +7,10 @@ export {
 } from "./chat-session.service";
 export { streamChat } from "./chat.service";
 export { getOpenAI, MODEL } from "./openai-client";
+export {
+  getMcpTools,
+  getMcpResourceContext,
+  executeMcpTool,
+  disconnectMcp,
+} from "./mcp-client";
 export type { ChatMessage, ChatSessionData, ChatRole } from "@nasty-plot/core";

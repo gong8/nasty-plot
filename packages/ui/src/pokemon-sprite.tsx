@@ -33,7 +33,7 @@ export function PokemonSprite({ pokemonId, num, size = 96, className }: PokemonS
   return (
     <div className={cn("relative", className)} style={{ width: size, height: size }}>
       {loading && (
-        <div className="absolute inset-0 rounded-md bg-gray-200 dark:bg-gray-700 animate-pulse" />
+        <div className="absolute inset-0 rounded-md bg-muted animate-pulse" />
       )}
       <img
         src={src}

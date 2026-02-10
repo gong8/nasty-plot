@@ -5,10 +5,17 @@ let _openai: OpenAI | null = null;
 export function getOpenAI(): OpenAI {
   if (!_openai) {
     _openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
+      baseURL: process.env.LLM_BASE_URL || undefined,
+      apiKey:
+        process.env.LLM_API_KEY ||
+        process.env.OPENAI_API_KEY ||
+        "not-needed",
     });
   }
   return _openai;
 }
 
-export const MODEL = process.env.OPENAI_MODEL || "gpt-4o";
+export const MODEL =
+  process.env.LLM_MODEL ||
+  process.env.OPENAI_MODEL ||
+  "claude-opus-4-6";

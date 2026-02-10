@@ -189,9 +189,9 @@ export default function TeamEditorPage({
     return (
       <div className="container mx-auto max-w-6xl py-8 px-4">
         <div className="text-center py-12">
-          <h2 className="text-xl font-semibold">Team not found</h2>
+          <h2 className="text-xl font-semibold font-display">Team not found</h2>
           <p className="text-muted-foreground mt-2">
-            The team you are looking for does not exist or was deleted.
+            This team has vanished. It may have been deleted.
           </p>
         </div>
       </div>
@@ -263,7 +263,7 @@ export default function TeamEditorPage({
         <TabsContent value="overview" className="py-4">
           <div className="text-center text-muted-foreground py-8">
             {team.slots.length === 0
-              ? "Add Pokemon to your team to see an overview"
+              ? "Add Pokemon to begin your analysis"
               : `${team.slots.length}/6 Pokemon selected`}
           </div>
         </TabsContent>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { useEffect, useRef, Suspense } from "react";
+import { useEffect, Suspense } from "react";
 import { SiteHeader } from "@/components/site-header";
 import { BattleView } from "@/features/battle/components/BattleView";
 import { useBattle } from "@/features/battle/hooks/use-battle";
@@ -11,11 +11,11 @@ import { Loader2 } from "lucide-react";
 function BattleLiveContent() {
   const searchParams = useSearchParams();
   const { state, isLoading, error, startBattle, chooseLead, submitMove, submitSwitch, rematch } = useBattle();
-  const startedRef = useRef(false);
+
+  // Stable string key so the effect only re-runs when params actually change
+  const paramsKey = searchParams.toString();
 
   useEffect(() => {
-    if (startedRef.current) return;
-
     const formatId = searchParams.get("format") || "gen9ou";
     const gameType = (searchParams.get("gameType") || "singles") as BattleFormat;
     const aiDifficulty = (searchParams.get("ai") || "greedy") as AIDifficulty;
@@ -28,7 +28,6 @@ function BattleLiveContent() {
       const playerTeamPaste = decodeURIComponent(atob(p1Encoded));
       const opponentTeamPaste = decodeURIComponent(atob(p2Encoded));
 
-      startedRef.current = true;
       startBattle({
         playerTeamPaste,
         opponentTeamPaste,
@@ -39,7 +38,8 @@ function BattleLiveContent() {
     } catch (err) {
       console.error("Failed to decode teams:", err);
     }
-  }, [searchParams, startBattle]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [paramsKey]);
 
   if (error) {
     return (

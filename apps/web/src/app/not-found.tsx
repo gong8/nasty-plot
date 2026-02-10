@@ -7,14 +7,21 @@ export default function NotFound() {
     <div className="min-h-screen flex items-center justify-center p-4">
       <Card className="max-w-md w-full text-center">
         <CardHeader>
-          <CardTitle className="text-6xl font-bold">404</CardTitle>
+          <img
+            src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/1025.png"
+            alt="Pecharunt"
+            width={64}
+            height={64}
+            className="pixelated mx-auto"
+          />
+          <CardTitle className="text-6xl font-bold font-display">404</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-muted-foreground">
-            Page not found. The page you are looking for does not exist or has been moved.
+            Pecharunt led you astray. This route doesn't exist.
           </p>
           <Link href="/">
-            <Button>Back to Home</Button>
+            <Button>Return to Base</Button>
           </Link>
         </CardContent>
       </Card>

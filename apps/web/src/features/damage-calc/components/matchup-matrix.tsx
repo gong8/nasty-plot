@@ -14,11 +14,11 @@ interface MatchupMatrixProps {
 
 function getDamageColor(maxPercent: number): string {
   if (maxPercent >= 100) return "bg-red-500/80 text-white";
-  if (maxPercent >= 66) return "bg-red-400/60 text-red-950";
-  if (maxPercent >= 50) return "bg-orange-400/60 text-orange-950";
-  if (maxPercent >= 33) return "bg-yellow-400/60 text-yellow-950";
-  if (maxPercent >= 20) return "bg-green-300/60 text-green-950";
-  return "bg-green-200/40 text-green-900";
+  if (maxPercent >= 66) return "bg-red-400/60 text-red-950 dark:text-red-100";
+  if (maxPercent >= 50) return "bg-orange-400/60 text-orange-950 dark:text-orange-100";
+  if (maxPercent >= 33) return "bg-yellow-400/60 text-yellow-950 dark:text-yellow-100";
+  if (maxPercent >= 20) return "bg-green-300/60 text-green-950 dark:text-green-100";
+  return "bg-green-200/40 text-green-900 dark:bg-green-800/40 dark:text-green-200";
 }
 
 export function MatchupMatrix({ matrix, isLoading }: MatchupMatrixProps) {

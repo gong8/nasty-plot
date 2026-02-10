@@ -14,7 +14,18 @@ vi.mock("../openai-client", () => ({
       },
     },
   }),
-  MODEL: "gpt-4o-test",
+  MODEL: "claude-sonnet-test",
+}));
+
+const mockGetMcpTools = vi.fn();
+const mockExecuteMcpTool = vi.fn();
+const mockGetMcpResourceContext = vi.fn();
+
+vi.mock("../mcp-client", () => ({
+  getMcpTools: (...args: unknown[]) => mockGetMcpTools(...args),
+  executeMcpTool: (...args: unknown[]) => mockExecuteMcpTool(...args),
+  getMcpResourceContext: (...args: unknown[]) =>
+    mockGetMcpResourceContext(...args),
 }));
 
 // ---------------------------------------------------------------------------
@@ -40,7 +51,9 @@ async function* asyncIterator(chunks: unknown[]) {
   }
 }
 
-async function collectStream(stream: ReadableStream<Uint8Array>): Promise<string[]> {
+async function collectStream(
+  stream: ReadableStream<Uint8Array>,
+): Promise<string[]> {
   const reader = stream.getReader();
   const decoder = new TextDecoder();
   const events: string[] = [];
@@ -63,6 +76,21 @@ describe("streamChat", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.stubGlobal("fetch", vi.fn());
+    mockGetMcpTools.mockResolvedValue([
+      {
+        type: "function",
+        function: {
+          name: "get_pokemon",
+          description: "Look up a Pokemon",
+          parameters: {
+            type: "object",
+            properties: { pokemonId: { type: "string" } },
+          },
+        },
+      },
+    ]);
+    mockExecuteMcpTool.mockResolvedValue('{"name":"Pikachu"}');
+    mockGetMcpResourceContext.mockResolvedValue("");
   });
 
   afterEach(() => {
@@ -70,9 +98,7 @@ describe("streamChat", () => {
   });
 
   it("returns a readable stream", async () => {
-    mockCreate.mockResolvedValue(
-      asyncIterator([makeChunk("Hello")]),
-    );
+    mockCreate.mockResolvedValue(asyncIterator([makeChunk("Hello")]));
 
     const stream = await streamChat({
       messages: [{ role: "user", content: "Hi" }],
@@ -98,9 +124,7 @@ describe("streamChat", () => {
   });
 
   it("ends with [DONE]", async () => {
-    mockCreate.mockResolvedValue(
-      asyncIterator([makeChunk("test")]),
-    );
+    mockCreate.mockResolvedValue(asyncIterator([makeChunk("test")]));
 
     const stream = await streamChat({
       messages: [{ role: "user", content: "Hi" }],
@@ -112,7 +136,7 @@ describe("streamChat", () => {
     expect(lastEvent).toContain("[DONE]");
   });
 
-  it("calls OpenAI with system prompt and user messages", async () => {
+  it("calls LLM with system prompt and user messages", async () => {
     mockCreate.mockResolvedValue(asyncIterator([makeChunk("ok")]));
 
     const stream = await streamChat({
@@ -122,10 +146,43 @@ describe("streamChat", () => {
 
     expect(mockCreate).toHaveBeenCalledWith(
       expect.objectContaining({
-        model: "gpt-4o-test",
+        model: "claude-sonnet-test",
         stream: true,
       }),
     );
+  });
+
+  it("passes MCP tools to LLM", async () => {
+    mockCreate.mockResolvedValue(asyncIterator([makeChunk("ok")]));
+
+    const stream = await streamChat({
+      messages: [{ role: "user", content: "Hi" }],
+    });
+    await collectStream(stream);
+
+    expect(mockCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tools: expect.arrayContaining([
+          expect.objectContaining({
+            type: "function",
+            function: expect.objectContaining({ name: "get_pokemon" }),
+          }),
+        ]),
+      }),
+    );
+  });
+
+  it("omits tools when MCP returns empty array", async () => {
+    mockGetMcpTools.mockResolvedValue([]);
+    mockCreate.mockResolvedValue(asyncIterator([makeChunk("ok")]));
+
+    const stream = await streamChat({
+      messages: [{ role: "user", content: "Hi" }],
+    });
+    await collectStream(stream);
+
+    const callArgs = mockCreate.mock.calls[0][0];
+    expect(callArgs.tools).toBeUndefined();
   });
 
   it("handles errors gracefully", async () => {
@@ -193,7 +250,22 @@ describe("streamChat", () => {
     );
   });
 
-  it("handles tool calls", async () => {
+  it("injects MCP resource context into system prompt", async () => {
+    mockGetMcpResourceContext.mockResolvedValue(
+      "\n# Reference Data\n\n## type chart\n{...}",
+    );
+    mockCreate.mockResolvedValue(asyncIterator([makeChunk("ok")]));
+
+    const stream = await streamChat({
+      messages: [{ role: "user", content: "Hi" }],
+    });
+    await collectStream(stream);
+
+    const systemMsg = mockCreate.mock.calls[0][0].messages[0];
+    expect(systemMsg.content).toContain("Reference Data");
+  });
+
+  it("handles tool calls via MCP", async () => {
     const toolCallChunks = [
       {
         choices: [
@@ -203,7 +275,10 @@ describe("streamChat", () => {
                 {
                   index: 0,
                   id: "call_1",
-                  function: { name: "search_pokemon", arguments: '{"query":' },
+                  function: {
+                    name: "get_pokemon",
+                    arguments: '{"pokemonId":',
+                  },
                 },
               ],
             },
@@ -226,13 +301,9 @@ describe("streamChat", () => {
       },
     ];
 
-    const mockFetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve({ name: "Pikachu" }),
-    });
-    vi.stubGlobal("fetch", mockFetch);
+    mockExecuteMcpTool.mockResolvedValue('{"name":"Pikachu","types":["Electric"]}');
 
-    // First call returns tool calls, second call returns text
+    // First call returns tool calls, second returns text
     mockCreate
       .mockResolvedValueOnce(asyncIterator(toolCallChunks))
       .mockResolvedValueOnce(asyncIterator([makeChunk("Pikachu is great!")]));
@@ -245,6 +316,9 @@ describe("streamChat", () => {
     const joined = events.join("");
 
     expect(joined).toContain("toolCall");
-    expect(joined).toContain("search_pokemon");
+    expect(joined).toContain("get_pokemon");
+    expect(mockExecuteMcpTool).toHaveBeenCalledWith("get_pokemon", {
+      pokemonId: "pikachu",
+    });
   });
 });
