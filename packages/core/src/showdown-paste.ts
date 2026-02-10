@@ -39,7 +39,7 @@ function parseOneSlot(block: string, position: number): Partial<TeamSlotData> | 
 
   // First line: "Nickname (Pokemon) (F) @ Item" or "Pokemon @ Item"
   const firstLine = lines[0]
-  let pokemonId = ""
+  let pokemonId: string
   let item = ""
 
   const atSplit = firstLine.split(" @ ")

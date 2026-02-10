@@ -6,6 +6,10 @@
   "exports": {
     ".": "./src/index.ts"
   },
+  "scripts": {
+    "lint": "eslint src/",
+    "typecheck": "tsc --noEmit"
+  },
   "dependencies": {
     "@pkmn/smogon": "^0.5.28",
     "@nasty-plot/core": "workspace:*",

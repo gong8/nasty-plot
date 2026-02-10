@@ -831,8 +831,7 @@ export function parseRequestForSlot(
   }
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function extractMoves(active: any): BattleActionSet["moves"] {
+function extractMoves(active: RequestActive | undefined): BattleActionSet["moves"] {
   return (active?.moves || []).map((m: RequestMove) => {
     const moveData = dex.moves.get(m.id)
     return {
@@ -961,6 +960,11 @@ function logEntry(type: BattleLogType, message: string, turn: number, side?: Sid
 }
 
 /** Request JSON types from @pkmn/sim */
+
+interface RequestActive {
+  moves?: RequestMove[]
+  canTerastallize?: string
+}
 
 interface RequestMove {
   move: string

@@ -8,6 +8,8 @@ import { flattenDamage, getSpeciesTypes, getTypeEffectiveness } from "./shared"
 const gens = new Generations(Dex)
 const gen = gens.get(9)
 
+type DexMove = ReturnType<typeof Dex.moves.get>
+
 export type MoveClassification = "best" | "good" | "neutral" | "inaccuracy" | "mistake" | "blunder"
 
 export interface MoveHint {
@@ -108,9 +110,8 @@ function estimateMoveScore(
   }
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function estimateStatusMoveScore(
-  moveData: any,
+  moveData: DexMove,
   myActive: BattlePokemon,
   oppActive: BattlePokemon,
   state: BattleState,

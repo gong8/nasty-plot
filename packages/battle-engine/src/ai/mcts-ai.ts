@@ -72,7 +72,7 @@ export class MCTSAI implements AIPlayer {
     }
   }
 
-  chooseLeads(teamSize: number, gameType: BattleFormat): number[] {
+  chooseLeads(teamSize: number, _gameType: BattleFormat): number[] {
     // Use default ordering for now; could be improved with search
     return Array.from({ length: teamSize }, (_, i) => i + 1)
   }

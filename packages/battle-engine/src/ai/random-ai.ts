@@ -50,7 +50,7 @@ export class RandomAI implements AIPlayer {
     return possibleActions[Math.floor(Math.random() * possibleActions.length)]
   }
 
-  chooseLeads(teamSize: number, gameType: BattleFormat): number[] {
+  chooseLeads(teamSize: number, _gameType: BattleFormat): number[] {
     // Random lead order
     const order = Array.from({ length: teamSize }, (_, i) => i + 1)
     // Fisher-Yates shuffle

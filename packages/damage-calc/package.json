@@ -6,6 +6,10 @@
   "exports": {
     ".": "./src/index.ts"
   },
+  "scripts": {
+    "lint": "eslint src/",
+    "typecheck": "tsc --noEmit"
+  },
   "dependencies": {
     "@smogon/calc": "^0.10.0",
     "@pkmn/dex": "^0.10.6",

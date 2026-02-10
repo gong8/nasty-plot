@@ -1,5 +1,3 @@
-import { Dex } from "@pkmn/dex"
-import type { PokemonType } from "@nasty-plot/core"
 import type { BattleState, BattlePokemon, SideConditions, FieldState } from "../types"
 import { getSpeciesTypes, getTypeEffectiveness, getEffectiveSpeed } from "./shared"
 

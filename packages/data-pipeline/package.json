@@ -7,7 +7,9 @@
   "types": "src/index.ts",
   "scripts": {
     "seed": "tsx src/cli/seed.ts",
-    "clean": "tsx src/cli/clean.ts"
+    "clean": "tsx src/cli/clean.ts",
+    "lint": "eslint src/",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@nasty-plot/db": "workspace:*",

@@ -6,7 +6,7 @@ import {
   updateSideFromRequest,
 } from "../protocol-parser"
 import { createInitialState } from "../battle-manager"
-import type { BattleState, BattleFormat, BattleActionSet, BattleLogEntry, AIPlayer } from "../types"
+import type { BattleState, BattleFormat, BattleActionSet, AIPlayer } from "../types"
 
 export interface SingleBattleResult {
   winner: "p1" | "p2" | "draw"
@@ -59,8 +59,8 @@ export async function runAutomatedBattle(
   let p2TeamPreview = false
   let lastProtocolChunk = ""
   const isDoubles = config.gameType === "doubles"
-  let lastP1ReqJson = ""
-  let lastP2ReqJson = ""
+  let _lastP1ReqJson = ""
+  let _lastP2ReqJson = ""
 
   // Convert pastes to packed format
   const team1Packed = pasteToPackedTeam(config.team1Paste)
@@ -104,7 +104,7 @@ export async function runAutomatedBattle(
               } else if (!parsed.wait && parsed.actions) {
                 pendingP1Actions = parsed.actions
                 if (isDoubles) {
-                  lastP1ReqJson = reqJson
+                  _lastP1ReqJson = reqJson
                   const slot2 = parseRequestForSlot(reqJson, 1)
                   pendingP1Slot2Actions = slot2.actions
                 }
@@ -115,7 +115,7 @@ export async function runAutomatedBattle(
               } else if (!parsed.wait && parsed.actions) {
                 pendingP2Actions = parsed.actions
                 if (isDoubles) {
-                  lastP2ReqJson = reqJson
+                  _lastP2ReqJson = reqJson
                   const slot2 = parseRequestForSlot(reqJson, 1)
                   pendingP2Slot2Actions = slot2.actions
                 }

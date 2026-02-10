@@ -16,6 +16,8 @@ import { flattenDamage, getSpeciesTypes, getTypeEffectiveness, fallbackMove } fr
 const gens = new Generations(Dex)
 const gen = gens.get(9)
 
+type DexMove = ReturnType<typeof Dex.moves.get>
+
 /**
  * HeuristicAI uses type matchup awareness, switching logic, and situational
  * status move usage. Significantly smarter than GreedyAI.
@@ -137,8 +139,7 @@ export class HeuristicAI implements AIPlayer {
   }
 
   private scoreDamagingMove(
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    moveData: any,
+    moveData: DexMove,
     moveName: string,
     myPokemon: BattlePokemon,
     oppPokemon: BattlePokemon,
@@ -192,9 +193,8 @@ export class HeuristicAI implements AIPlayer {
     return score
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private scoreStatusMove(
-    moveData: any,
+    moveData: DexMove,
     myPokemon: BattlePokemon,
     oppPokemon: BattlePokemon,
     state: BattleState,

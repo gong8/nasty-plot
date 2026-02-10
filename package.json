@@ -34,14 +34,17 @@
     "prisma": "^7.3.0"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@modelcontextprotocol/sdk": "^1.26.0",
     "@pkmn/dex": "^0.10.6",
     "@pkmn/sim": "^0.10.6",
     "@vitest/coverage-v8": "^4.0.18",
     "concurrently": "^9.2.1",
+    "eslint": "^10.0.0",
     "prettier": "^3.8.1",
     "turbo": "^2.0.0",
     "typescript": "^5",
+    "typescript-eslint": "^8.55.0",
     "vitest": "^4.0.18"
   },
   "pnpm": {
