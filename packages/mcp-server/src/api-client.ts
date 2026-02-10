@@ -7,7 +7,11 @@ async function apiFetch(
   path: string,
   options?: { params?: Record<string, string>; body?: unknown }
 ): Promise<unknown> {
-  const url = new URL(path, API_BASE);
+  // Concatenate base + path instead of using new URL(path, base),
+  // which drops the base path when path starts with "/".
+  const base = API_BASE.replace(/\/+$/, "");
+  const cleanPath = path.startsWith("/") ? path : `/${path}`;
+  const url = new URL(`${base}${cleanPath}`);
   if (options?.params) {
     for (const [key, value] of Object.entries(options.params)) {
       url.searchParams.set(key, value);

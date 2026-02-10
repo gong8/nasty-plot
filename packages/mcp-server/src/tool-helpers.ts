@@ -34,7 +34,8 @@ export function toolError(message: string): ToolError {
 /**
  * Run an async tool handler with automatic error handling.
  * On success, the returned data is JSON-serialized.
- * On failure, the errorMessage is returned as a tool error.
+ * On failure, the errorMessage is returned as a tool error,
+ * with the actual error appended for debugging.
  */
 export async function handleTool(
   fn: () => Promise<unknown>,
@@ -43,8 +44,9 @@ export async function handleTool(
   try {
     const data = await fn();
     return toolSuccess(data);
-  } catch {
-    return toolError(errorMessage);
+  } catch (err) {
+    const detail = err instanceof Error ? err.message : String(err);
+    return toolError(`${errorMessage} (${detail})`);
   }
 }
 

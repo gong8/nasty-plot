@@ -15,7 +15,7 @@ export function registerDataQueryTools(server: McpServer): void {
     ({ pokemonId }) =>
       handleTool(
         () => apiGet(`/pokemon/${encodeURIComponent(pokemonId)}`),
-        `Could not find Pokemon "${pokemonId}". Check the spelling or try a different name. Common formats: "greatTusk", "flutterMane", "ironValiant".`
+        `Failed to look up Pokemon "${pokemonId}". This may be a server error — the Pokemon likely exists. Try again or use search_pokemon instead.`
       )
   );
 

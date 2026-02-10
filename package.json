@@ -17,7 +17,7 @@
     "dev:mcp": "pnpm --filter @nasty-plot/mcp-server run dev",
     "dev:proxy": "bash scripts/dev-proxy.sh",
     "dev:all": "concurrently -n next,mcp,proxy -c blue,green,magenta \"pnpm run dev\" \"pnpm run dev:mcp\" \"pnpm run dev:proxy\"",
-    "db:generate": "prisma generate",
+    "db:generate": "prisma generate && echo '{\"type\":\"module\"}' > generated/prisma/package.json",
     "db:migrate": "prisma migrate dev",
     "db:push": "prisma db push"
   },

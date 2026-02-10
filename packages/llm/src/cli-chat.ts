@@ -31,12 +31,24 @@ function writeMcpConfig(): string {
   return configPath;
 }
 
-/** Write system prompt to temp file for --append-system-prompt-file */
+/** Write system prompt to temp file for --system-prompt flag */
 function writeSystemPrompt(content: string): string {
   const dir = join(tmpdir(), "nasty-plot-cli");
   mkdirSync(dir, { recursive: true });
   const promptPath = join(dir, "system-prompt.txt");
-  writeFileSync(promptPath, content);
+
+  // Wrap the app's system prompt with guardrails to keep the model
+  // focused on MCP tools and prevent it from trying to use code tools.
+  const wrapped = [
+    content,
+    "",
+    "IMPORTANT: You are a Pokemon assistant chatbot, NOT a coding agent.",
+    "You MUST only use the MCP tools (prefixed with mcp__nasty-plot__) and MCP resource tools to answer questions.",
+    "NEVER attempt to use code tools like Bash, Read, Write, Edit, Glob, Grep, or any tool not prefixed with mcp__nasty-plot__.",
+    "If data is not available via MCP tools, say so and use your own knowledge instead. Do not try to access the filesystem or codebase.",
+  ].join("\n");
+
+  writeFileSync(promptPath, wrapped);
   return promptPath;
 }
 
@@ -120,9 +132,11 @@ export function streamCliChat(
         ...blockedTools,
         "--append-system-prompt-file",
         systemPromptPath,
+        "--setting-sources",
+        "",
         "--no-session-persistence",
         "--max-turns",
-        "10",
+        "50",
         prompt,
       ];
 
@@ -130,10 +144,14 @@ export function streamCliChat(
         `${LOG_PREFIX} === START === model=${model} mcp=${MCP_URL} prompt=${prompt.length} chars`,
       );
 
+      // Spawn from the temp dir so the CLI doesn't load this project's
+      // CLAUDE.md as project instructions (which teaches it about the codebase).
+      const cliCwd = join(tmpdir(), "nasty-plot-cli");
+
       let proc: ChildProcessWithoutNullStreams;
       try {
         proc = spawn("claude", args, {
-          cwd: process.cwd(),
+          cwd: cliCwd,
           env: { ...process.env },
           stdio: ["pipe", "pipe", "pipe"],
         });

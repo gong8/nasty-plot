@@ -87,13 +87,12 @@ export function registerMetaRecsTools(server: McpServer): void {
 
   server.tool(
     "suggest_sets",
-    "Get suggested competitive sets for a Pokemon, including Smogon recommended sets",
+    "Get suggested competitive sets for a Pokemon, including Smogon recommended sets. Requires a format ID.",
     {
       pokemonId: z.string().describe("Pokemon ID"),
       formatId: z
         .string()
-        .optional()
-        .describe("Format context for set selection"),
+        .describe("Format ID (required, e.g., 'gen9ou')"),
     },
     ({ pokemonId, formatId }) =>
       handleTool(
@@ -102,7 +101,7 @@ export function registerMetaRecsTools(server: McpServer): void {
             `/pokemon/${encodeURIComponent(pokemonId)}/sets`,
             buildParams({ format: formatId })
           ),
-        `Could not fetch sets for "${pokemonId}".`
+        `Could not fetch Smogon sets for "${pokemonId}". The Pokemon exists but set data may be unavailable for this format. Use get_pokemon for basic data instead.`
       )
   );
 }
