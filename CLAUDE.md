@@ -10,8 +10,10 @@ Pokemon team building simplifier and competitive analysis teaching playground. D
 ## Architecture
 
 ```
+tests/                      Vitest tests — one subdir per package (43 test files)
+
 apps/
-  web/                    Next.js 16 app — UI, API routes, test config
+  web/                    Next.js 16 app — UI, API routes
 
 packages/
   core/                   Domain types (TeamSlotData, PokemonSpecies), constants, type chart, stat calc, Showdown paste parser
@@ -47,7 +49,7 @@ Presentation: ui, web
 - **Package scope:** `@nasty-plot/<name>`
 - **Module type:** ESM everywhere (`"type": "module"`)
 - **Exports field:** `"exports": { ".": "./src/index.ts" }` (source, transpiled by Turbopack/Next.js)
-- **Tests:** co-located `.test.ts` or `src/__tests__/` directories
+- **Tests:** top-level `tests/` directory mirroring package structure (e.g. `tests/core/`, `tests/battle-engine/`). Single root `vitest.config.ts`
 
 ## Key Domain Concepts
 
@@ -164,7 +166,7 @@ All routes in `apps/web/src/app/api/`. Convention: routes import service functio
 - **ESM modules** — `"type": "module"` in all packages
 - **Service pattern** — pure functions from `{name}.service.ts`, no classes (except AI players)
 - **React** — functional components, named exports, Radix UI primitives + Tailwind CSS + `cn()` utility from `@nasty-plot/ui`
-- **Tests** — Vitest with `globals: true`, `jsdom` environment, `@testing-library/react` for components
+- **Tests** — Vitest with `globals: true`, all tests in top-level `tests/` directory. Import module under test via `@nasty-plot/<pkg>` barrel, mock sibling modules via `#<pkg>/<module>` alias (e.g. `vi.mock("#analysis/coverage.service", ...)`). `@testing-library/react` for component tests
 - **API errors** — `NextResponse.json({ error: "message" }, { status: 4xx })` pattern
 - **Zod validation** — used in MCP server tool schemas for input validation
 - **Barrel exports** — every package re-exports through `src/index.ts`

@@ -3,13 +3,11 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "exports": { ".": "./src/index.ts" },
-  "scripts": {
-    "test": "vitest run"
+  "exports": {
+    ".": "./src/index.ts"
   },
   "dependencies": {
     "@nasty-plot/core": "workspace:*",
     "@nasty-plot/pokemon-data": "workspace:*"
-  },
-  "devDependencies": { "vitest": "^4.0.18" }
+  }
 }

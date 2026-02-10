@@ -34,8 +34,10 @@ export function ChatPanel({ sessionId, mode = "sidebar" }: ChatPanelProps) {
     resetForSession,
   } = useChatStream(effectiveSessionId);
 
-  // Load session when active session changes
-  const prevSessionRef = useRef(effectiveSessionId);
+  // Load session on mount and when active session changes.
+  // Initialize to null (not effectiveSessionId) so the first render
+  // triggers a load when there's already an active session from localStorage.
+  const prevSessionRef = useRef<string | undefined | null>(null);
   useEffect(() => {
     if (effectiveSessionId !== prevSessionRef.current) {
       prevSessionRef.current = effectiveSessionId;

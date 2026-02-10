@@ -5,16 +5,12 @@
   "type": "module",
   "main": "src/index.ts",
   "types": "src/index.ts",
-  "scripts": {
-    "test": "vitest run"
-  },
   "dependencies": {
     "@nasty-plot/core": "workspace:*",
     "@nasty-plot/db": "workspace:*",
     "@nasty-plot/pokemon-data": "workspace:*"
   },
   "devDependencies": {
-    "typescript": "^5.9.3",
-    "vitest": "^4.0.18"
+    "typescript": "^5.9.3"
   }
 }

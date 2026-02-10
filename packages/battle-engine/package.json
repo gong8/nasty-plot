@@ -3,9 +3,8 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "exports": { ".": "./src/index.ts" },
-  "scripts": {
-    "test": "vitest run"
+  "exports": {
+    ".": "./src/index.ts"
   },
   "dependencies": {
     "@pkmn/sim": "^0.10.6",
@@ -13,6 +12,5 @@
     "@pkmn/data": "^0.10.6",
     "@nasty-plot/core": "workspace:*",
     "@smogon/calc": "^0.10.0"
-  },
-  "devDependencies": { "vitest": "^4.0.18" }
+  }
 }

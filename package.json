@@ -11,8 +11,9 @@
     "dev": "concurrently -n next,mcp,proxy -c blue,green,magenta \"turbo dev\" \"pnpm run dev:mcp\" \"pnpm run dev:proxy\"",
     "build": "turbo build",
     "lint": "turbo lint",
-    "test": "turbo test",
-    "test:coverage": "turbo test -- --coverage",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
     "seed": "pnpm --filter @nasty-plot/data-pipeline run seed",
     "dev:mcp": "pnpm --filter @nasty-plot/mcp-server run dev",
     "dev:proxy": "bash scripts/dev-proxy.sh",
@@ -26,10 +27,14 @@
     "prisma": "^7.3.0"
   },
   "devDependencies": {
+    "@modelcontextprotocol/sdk": "^1.26.0",
+    "@pkmn/dex": "^0.10.6",
+    "@pkmn/sim": "^0.10.6",
     "@vitest/coverage-v8": "^4.0.18",
     "concurrently": "^9.2.1",
     "turbo": "^2.0.0",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.0.18"
   },
   "pnpm": {
     "onlyBuiltDependencies": [

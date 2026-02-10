@@ -1,8 +1,6 @@
 "use client";
 
-import { MessageCircle, Plus, Trash2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { MessageCircle, Trash2 } from "lucide-react";
 import { useChatSidebar } from "@/features/chat/context/chat-provider";
 import {
   useChatSessions,
@@ -24,10 +22,11 @@ function relativeTime(dateStr: string): string {
 
 interface ChatSessionListProps {
   mode: "sidebar" | "fullpage";
+  onSelect?: () => void;
 }
 
-export function ChatSessionList({ mode }: ChatSessionListProps) {
-  const { activeSessionId, switchSession, newSession } = useChatSidebar();
+export function ChatSessionList({ mode, onSelect }: ChatSessionListProps) {
+  const { activeSessionId, switchSession } = useChatSidebar();
   const { data: sessions, isLoading } = useChatSessions();
   const deleteMut = useDeleteChatSession();
 
@@ -46,21 +45,7 @@ export function ChatSessionList({ mode }: ChatSessionListProps) {
         mode === "fullpage" ? "w-64 shrink-0" : "w-full"
       )}
     >
-      {/* New chat button */}
-      <div className="p-2 border-b border-border">
-        <Button
-          variant="outline"
-          size="sm"
-          className="w-full justify-start gap-2"
-          onClick={newSession}
-        >
-          <Plus className="h-3.5 w-3.5" />
-          New Chat
-        </Button>
-      </div>
-
-      {/* Session list */}
-      <ScrollArea className="flex-1">
+      <div className="flex-1 overflow-y-auto overscroll-contain">
         <div className="p-1">
           {isLoading && (
             <div className="px-3 py-4 text-sm text-muted-foreground text-center">
@@ -81,11 +66,12 @@ export function ChatSessionList({ mode }: ChatSessionListProps) {
                 key={session.id}
                 role="button"
                 tabIndex={0}
-                onClick={() => switchSession(session.id)}
+                onClick={() => { switchSession(session.id); onSelect?.(); }}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" || e.key === " ") {
                     e.preventDefault();
                     switchSession(session.id);
+                    onSelect?.();
                   }
                 }}
                 className={cn(
@@ -118,7 +104,7 @@ export function ChatSessionList({ mode }: ChatSessionListProps) {
             </div>
           )}
         </div>
-      </ScrollArea>
+      </div>
     </div>
   );
 }

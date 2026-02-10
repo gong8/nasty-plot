@@ -3,12 +3,13 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "exports": { ".": "./src/index.ts" },
+  "exports": {
+    ".": "./src/index.ts"
+  },
   "dependencies": {
     "@smogon/calc": "^0.10.0",
     "@pkmn/dex": "^0.10.6",
     "@pkmn/data": "^0.10.6",
     "@nasty-plot/core": "workspace:*"
-  },
-  "devDependencies": { "vitest": "^4.0.18" }
+  }
 }

@@ -6,7 +6,6 @@
   "main": "src/index.ts",
   "types": "src/index.ts",
   "scripts": {
-    "test": "vitest run",
     "seed": "tsx src/cli/seed.ts"
   },
   "dependencies": {
@@ -16,7 +15,6 @@
   },
   "devDependencies": {
     "typescript": "^5.9.3",
-    "vitest": "^4.0.18",
     "tsx": "^4.0.0"
   }
 }
