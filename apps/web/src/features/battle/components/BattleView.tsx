@@ -1,8 +1,8 @@
 "use client"
 
-import { useState, useRef, useMemo } from "react"
+import { useState, useRef, useMemo, useCallback } from "react"
 import { cn } from "@/lib/utils"
-import type { BattleState, MoveHint } from "@nasty-plot/battle-engine"
+import type { BattleState } from "@nasty-plot/battle-engine"
 import { BattleField } from "./BattleField"
 import { BattleLog } from "./BattleLog"
 import { BattleScreen, type SidebarTab } from "./BattleScreen"
@@ -10,14 +10,15 @@ import { MoveSelector } from "./MoveSelector"
 import { SwitchMenu } from "./SwitchMenu"
 import { TeamPreview } from "./TeamPreview"
 import { EvalBar } from "./EvalBar"
-import { HintPanel } from "./HintPanel"
 import { CommentaryPanel } from "./CommentaryPanel"
 import { useBattleHints } from "../hooks/use-battle-hints"
+import { useAutoAnalyze } from "../hooks/use-auto-analyze"
 import { useBattleAnimations } from "../hooks/use-battle-animations"
 import { useBattleStatePublisher } from "../context/battle-state-context"
+import { useBuildContextData } from "@/features/chat/hooks/use-build-context-data"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { Trophy, RotateCcw, ArrowLeft, MessageCircle, Save, Loader2 } from "lucide-react"
+import { Trophy, RotateCcw, ArrowLeft, Zap, Save, Loader2 } from "lucide-react"
 import { useChatSidebar } from "@/features/chat/context/chat-provider"
 import Link from "next/link"
 
@@ -45,21 +46,46 @@ export function BattleView({
   const [isSaving, setIsSaving] = useState(false)
   const [savedId, setSavedId] = useState<string | null>(null)
   const [textSpeed, setTextSpeed] = useState(1)
-  const { openNewChatModal } = useChatSidebar()
+  const { autoAnalyze, setAutoAnalyzeEnabled, openContextChat } = useChatSidebar()
   useBattleStatePublisher(state)
 
   const commentaryRef = useRef<Record<number, string>>({})
 
-  const { hints, winProb } = useBattleHints(state, { enabled: true })
+  const { winProb } = useBattleHints(state, { enabled: true })
+  const { abortIfAnalyzing } = useAutoAnalyze(state)
   const animState = useBattleAnimations(state, { speed: textSpeed })
+  const { contextMode, buildContextData } = useBuildContextData()
 
-  const handleHintSelect = (hint: MoveHint) => {
-    if (hint.action.type === "move" && hint.action.moveIndex != null) {
-      onMove(hint.action.moveIndex, hint.action.tera)
-    } else if (hint.action.type === "switch" && hint.action.pokemonIndex != null) {
-      onSwitch(hint.action.pokemonIndex)
+  const handleToggleAutoAnalyze = useCallback(() => {
+    if (autoAnalyze.enabled) {
+      setAutoAnalyzeEnabled(false)
+    } else {
+      setAutoAnalyzeEnabled(true)
+      // Open the chat sidebar with battle-live context
+      if (contextMode) {
+        openContextChat({
+          contextMode,
+          contextData: JSON.stringify(buildContextData()),
+        })
+      }
     }
-  }
+  }, [autoAnalyze.enabled, setAutoAnalyzeEnabled, openContextChat, contextMode, buildContextData])
+
+  const handleMove = useCallback(
+    (moveIndex: number, tera?: boolean, targetSlot?: number) => {
+      abortIfAnalyzing()
+      onMove(moveIndex, tera, targetSlot)
+    },
+    [abortIfAnalyzing, onMove],
+  )
+
+  const handleSwitch = useCallback(
+    (pokemonIndex: number) => {
+      abortIfAnalyzing()
+      onSwitch(pokemonIndex)
+    },
+    [abortIfAnalyzing, onSwitch],
+  )
 
   const handleCommentaryGenerated = (turn: number, text: string) => {
     commentaryRef.current[turn] = text
@@ -85,7 +111,7 @@ export function BattleView({
 
   const recentEntries = state.log.slice(-10)
 
-  // Sidebar tabs — always Log + Hints + Commentary
+  // Sidebar tabs — Log + Commentary (Hints tab removed, replaced by Auto-Analyze)
   const sidebarTabs = useMemo(() => {
     const tabs: SidebarTab[] = [
       {
@@ -98,14 +124,6 @@ export function BattleView({
         ),
       },
     ]
-
-    if (hints) {
-      tabs.push({
-        value: "hints",
-        label: "Hints",
-        content: <HintPanel hints={hints.rankedMoves} onSelectHint={handleHintSelect} />,
-      })
-    }
 
     tabs.push({
       value: "commentary",
@@ -126,7 +144,7 @@ export function BattleView({
 
     return tabs
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state.fullLog, state.log, hints, commentaryAutoMode, state, recentEntries])
+  }, [state.fullLog, state.log, commentaryAutoMode, state, recentEntries])
 
   // Team Preview Phase
   if (state.phase === "preview") {
@@ -230,12 +248,12 @@ export function BattleView({
           <span>{state.sides.p2.name}</span>
           <Button
             size="sm"
-            variant="ghost"
-            onClick={openNewChatModal}
+            variant={autoAnalyze.enabled ? "default" : "secondary"}
+            onClick={handleToggleAutoAnalyze}
             className="h-7 text-xs gap-1"
           >
-            <MessageCircle className="h-3 w-3" />
-            Coach
+            <Zap className="h-3 w-3" />
+            {autoAnalyze.enabled ? "Auto-Analyze On" : "Auto-Analyze"}
           </Button>
         </div>
       </div>
@@ -258,7 +276,7 @@ export function BattleView({
                     <SwitchMenu
                       actions={state.availableActions}
                       onSwitch={(idx) => {
-                        onSwitch(idx)
+                        handleSwitch(idx)
                         setShowSwitchMenu(false)
                       }}
                       onBack={isForceSwitch ? undefined : () => setShowSwitchMenu(false)}
@@ -267,7 +285,7 @@ export function BattleView({
                   ) : (
                     <MoveSelector
                       actions={state.availableActions}
-                      onMoveSelect={onMove}
+                      onMoveSelect={handleMove}
                       onSwitchClick={() => setShowSwitchMenu(true)}
                       canTera={state.availableActions.canTera && state.sides.p1.canTera}
                       teraType={activePokemon?.teraType}

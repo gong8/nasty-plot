@@ -11,6 +11,7 @@ export {
   buildTurnCommentaryContext,
   buildPostBattleContext,
   buildTurnAnalysisContext,
+  buildAutoAnalyzePrompt,
 } from "./battle-context-builder"
 export type { BattleCommentaryContext } from "./battle-context-builder"
 export {
@@ -31,9 +32,16 @@ export { getToolLabel, isWriteTool } from "./tool-labels"
 export {
   getDisallowedMcpTools,
   getDisallowedMcpToolsForContextMode,
+  getAllMcpToolNames,
   getPageTypeFromPath,
 } from "./tool-context"
 export type { PageType } from "./tool-context"
 export type { SSEEvent } from "./sse-events"
 export type { CreateSessionOptions } from "./chat-session.service"
-export type { ChatMessage, ChatSessionData, ChatRole } from "@nasty-plot/core"
+export type {
+  ChatMessage,
+  ChatSessionData,
+  ChatRole,
+  ChatMessageMetadata,
+  AutoAnalyzeDepth,
+} from "@nasty-plot/core"

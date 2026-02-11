@@ -41,6 +41,11 @@ const ALL_MCP_TOOLS = Object.values(TOOL_CATEGORIES)
   .flat()
   .map((name) => `${MCP_PREFIX}${name}`)
 
+/** Get all MCP tool names. Used by disableAllTools to block everything. */
+export function getAllMcpToolNames(): string[] {
+  return [...ALL_MCP_TOOLS]
+}
+
 export type PageType =
   | "guided-builder"
   | "team-editor"

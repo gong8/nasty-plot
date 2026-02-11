@@ -48,6 +48,7 @@ export function useBattle() {
   const [error, setError] = useState<string | null>(null)
   const managerRef = useRef<BattleManager | null>(null)
   const configRef = useRef<UseBattleConfig | null>(null)
+  const checkpointExtrasRef = useRef<(() => Partial<BattleCheckpoint>) | null>(null)
 
   // Cleanup on unmount
   useEffect(() => {
@@ -86,7 +87,10 @@ export function useBattle() {
       // Auto-save checkpoint when waiting for player choice
       if (newState.waitingForChoice && newState.phase === "battle") {
         const cp = manager.getCheckpoint(config.aiDifficulty)
-        if (cp) saveCheckpoint(cp)
+        if (cp) {
+          const extras = checkpointExtrasRef.current?.()
+          saveCheckpoint(extras ? { ...cp, ...extras } : cp)
+        }
       }
 
       // Clear checkpoint when battle ends
@@ -225,7 +229,10 @@ export function useBattle() {
    * Save the completed battle to the database.
    */
   const saveBattle = useCallback(
-    async (commentary?: Record<number, string>): Promise<string | null> => {
+    async (
+      commentary?: Record<number, string>,
+      chatSessionId?: string | null,
+    ): Promise<string | null> => {
       const manager = managerRef.current
       const config = configRef.current
       if (!manager || !config || state.phase !== "ended") return null
@@ -252,6 +259,7 @@ export function useBattle() {
             turnCount: state.turn,
             protocolLog,
             commentary: commentary ?? null,
+            chatSessionId: chatSessionId ?? null,
           }),
         })
 
@@ -266,6 +274,10 @@ export function useBattle() {
     [state],
   )
 
+  const setCheckpointExtras = useCallback((getter: (() => Partial<BattleCheckpoint>) | null) => {
+    checkpointExtrasRef.current = getter
+  }, [])
+
   return {
     state,
     isLoading,
@@ -277,5 +289,6 @@ export function useBattle() {
     rematch,
     saveBattle,
     resumeBattle,
+    setCheckpointExtras,
   }
 }

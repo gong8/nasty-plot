@@ -9,6 +9,7 @@ import { ReplayControls } from "@/features/battle/components/ReplayControls"
 import { WinProbabilityGraph } from "@/features/battle/components/WinProbabilityGraph"
 import { EvalBar } from "@/features/battle/components/EvalBar"
 import { CommentaryPanel } from "@/features/battle/components/CommentaryPanel"
+import { ChatPanel } from "@/features/chat/components/chat-panel"
 import { Loader2, MessageCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useChatSidebar } from "@/features/chat/context/chat-provider"
@@ -25,6 +26,7 @@ interface BattleData {
   turnCount: number
   protocolLog: string
   commentary: string | null
+  chatSessionId: string | null
 }
 
 export default function ReplayPage({ params }: { params: Promise<{ battleId: string }> }) {
@@ -110,8 +112,8 @@ function ReplayViewerContent({ battleData }: { battleData: BattleData }) {
   const allFrames = replay.getAllFrames()
 
   // Build sidebar tabs for replay — must be above early return to satisfy rules-of-hooks
-  const sidebarTabs: SidebarTab[] = useMemo(
-    () => [
+  const sidebarTabs: SidebarTab[] = useMemo(() => {
+    const tabs: SidebarTab[] = [
       {
         value: "log",
         label: "Log",
@@ -148,10 +150,23 @@ function ReplayViewerContent({ battleData }: { battleData: BattleData }) {
           />
         ),
       },
-    ],
+    ]
 
-    [replay.currentFrame, allFrames, battleData, commentary, handleCommentaryGenerated],
-  )
+    // Add Coaching tab when the battle was played with auto-analyze
+    if (battleData.chatSessionId) {
+      tabs.push({
+        value: "coaching",
+        label: "Coaching",
+        content: (
+          <div className="h-full overflow-hidden">
+            <ChatPanel sessionId={battleData.chatSessionId} />
+          </div>
+        ),
+      })
+    }
+
+    return tabs
+  }, [replay.currentFrame, allFrames, battleData, commentary, handleCommentaryGenerated])
 
   if (!replay.isReady || !replay.currentFrame) {
     return (

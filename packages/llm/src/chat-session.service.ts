@@ -1,5 +1,5 @@
 import { prisma } from "@nasty-plot/db"
-import type { ChatMessage, ChatRole, ChatSessionData } from "@nasty-plot/core"
+import type { ChatMessage, ChatRole, ChatSessionData, ChatMessageMetadata } from "@nasty-plot/core"
 
 export interface CreateSessionOptions {
   teamId?: string
@@ -54,7 +54,7 @@ export async function listSessions(
 
 export async function addMessage(
   sessionId: string,
-  message: Pick<ChatMessage, "role" | "content" | "toolCalls">,
+  message: Pick<ChatMessage, "role" | "content" | "toolCalls" | "metadata">,
 ): Promise<void> {
   await prisma.chatMessage.create({
     data: {
@@ -62,6 +62,7 @@ export async function addMessage(
       role: message.role,
       content: message.content,
       toolCalls: message.toolCalls ? JSON.stringify(message.toolCalls) : null,
+      metadata: message.metadata ? JSON.stringify(message.metadata) : null,
     },
   })
 
@@ -113,6 +114,7 @@ interface DbSession {
     role: string
     content: string
     toolCalls: string | null
+    metadata: string | null
     createdAt: Date
   }[]
 }
@@ -131,6 +133,7 @@ function mapSession(session: DbSession): ChatSessionData {
       role: m.role as ChatRole,
       content: m.content,
       toolCalls: m.toolCalls ? JSON.parse(m.toolCalls) : undefined,
+      metadata: m.metadata ? (JSON.parse(m.metadata) as ChatMessageMetadata) : undefined,
       createdAt: m.createdAt.toISOString(),
     })),
   }

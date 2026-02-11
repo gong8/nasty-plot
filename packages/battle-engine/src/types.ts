@@ -250,4 +250,9 @@ export interface BattleCheckpoint {
     opponentName: string
   }
   aiDifficulty: AIDifficulty
+  autoAnalyze?: {
+    enabled: boolean
+    depth: "quick" | "deep"
+    chatSessionId: string | null
+  }
 }

@@ -18,6 +18,7 @@ export async function GET(
       turnCount: true,
       protocolLog: true,
       commentary: true,
+      chatSessionId: true,
       createdAt: true,
       turns: { orderBy: { turnNumber: "asc" } },
     },

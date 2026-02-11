@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useTeam } from "@/features/teams/hooks/use-teams"
 import { GuidedBuilder } from "@/features/team-builder/components/guided-builder"
+import { GuidedBuilderProvider } from "@/features/team-builder/context/guided-builder-provider"
 
 export default function GuidedBuilderPage({ params }: { params: Promise<{ teamId: string }> }) {
   const { teamId } = use(params)
@@ -46,25 +47,26 @@ export default function GuidedBuilderPage({ params }: { params: Promise<{ teamId
   const team = teamQuery.data
 
   return (
-    <div className="container mx-auto max-w-5xl py-8 px-4 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => router.push(`/teams/${teamId}`)}>
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <div>
-            <h1 className="text-2xl font-bold">{team.name}</h1>
-            <p className="text-sm text-muted-foreground">
-              Guided Team Builder &middot; {team.formatId}
-            </p>
+    <GuidedBuilderProvider teamId={teamId} formatId={team.formatId}>
+      <div className="container mx-auto max-w-5xl py-6 px-4 space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" size="icon" onClick={() => router.push(`/teams/${teamId}`)}>
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+            <div>
+              <h1 className="text-2xl font-bold">{team.name}</h1>
+              <p className="text-sm text-muted-foreground">
+                Guided Team Builder &middot; {team.formatId}
+              </p>
+            </div>
           </div>
         </div>
-        {/* Freeform switch is in the GuidedBuilder footer (saves state before navigating) */}
-      </div>
 
-      {/* Guided builder wizard */}
-      <GuidedBuilder teamId={teamId} formatId={team.formatId} />
-    </div>
+        {/* Guided builder wizard */}
+        <GuidedBuilder />
+      </div>
+    </GuidedBuilderProvider>
   )
 }

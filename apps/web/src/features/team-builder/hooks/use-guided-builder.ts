@@ -15,6 +15,7 @@ import {
   type StatsTable,
   type TeamAnalysis,
   type Recommendation,
+  parseShowdownPaste,
 } from "@nasty-plot/core"
 
 // --- Types ---
@@ -89,7 +90,11 @@ async function fetchAnalysis(teamId: string): Promise<TeamAnalysis | null> {
 async function fetchSampleTeams(formatId: string): Promise<SampleTeamEntry[]> {
   const res = await fetch(`/api/sample-teams?formatId=${encodeURIComponent(formatId)}`)
   if (!res.ok) return []
-  return res.json()
+  const teams = await res.json()
+  return teams.map((t: Record<string, unknown>) => ({
+    ...t,
+    pokemonIds: typeof t.pokemonIds === "string" ? t.pokemonIds.split(",") : t.pokemonIds,
+  }))
 }
 
 // --- Hook ---
@@ -289,18 +294,11 @@ export function useGuidedBuilder(teamId: string, formatId: string) {
   // --- Sample team import ---
 
   const importSampleTeam = useCallback(async (sampleTeam: SampleTeamEntry) => {
-    // Parse the paste to extract Pokemon data
-    // For now, create slots from pokemonIds
-    const newSlots: Partial<TeamSlotData>[] = sampleTeam.pokemonIds.slice(0, 6).map((id, i) => ({
+    // Parse the full paste to get complete sets (moves, EVs, abilities, etc.)
+    const parsed = parseShowdownPaste(sampleTeam.paste)
+    const newSlots: Partial<TeamSlotData>[] = parsed.slice(0, 6).map((slot, i) => ({
+      ...slot,
       position: i + 1,
-      pokemonId: id,
-      ability: "",
-      item: "",
-      nature: "Adamant" as NatureName,
-      level: 100,
-      moves: [""] as TeamSlotData["moves"],
-      evs: { ...DEFAULT_EVS } as StatsTable,
-      ivs: { ...DEFAULT_IVS } as StatsTable,
     }))
     setSlots(newSlots)
     setStartedFromSample(true)

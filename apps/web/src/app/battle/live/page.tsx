@@ -5,6 +5,7 @@ import { useEffect, Suspense } from "react"
 import { BattleView } from "@/features/battle/components/BattleView"
 import { useBattle } from "@/features/battle/hooks/use-battle"
 import { loadCheckpoint } from "@/features/battle/lib/checkpoint-store"
+import { useChatSidebar } from "@/features/chat/context/chat-provider"
 import type { AIDifficulty, BattleFormat } from "@nasty-plot/battle-engine"
 import { Loader2 } from "lucide-react"
 
@@ -21,7 +22,26 @@ function BattleLiveContent() {
     rematch,
     saveBattle,
     resumeBattle,
+    setCheckpointExtras,
   } = useBattle()
+  const {
+    activeSessionId,
+    autoAnalyze,
+    setAutoAnalyzeEnabled,
+    setAutoAnalyzeDepth,
+    switchSession,
+  } = useChatSidebar()
+
+  // Save auto-analyze state into checkpoints
+  useEffect(() => {
+    setCheckpointExtras(() => ({
+      autoAnalyze: {
+        enabled: autoAnalyze.enabled,
+        depth: autoAnalyze.depth,
+        chatSessionId: activeSessionId,
+      },
+    }))
+  }, [autoAnalyze.enabled, autoAnalyze.depth, activeSessionId, setCheckpointExtras])
 
   // Stable string key so the effect only re-runs when params actually change
   const paramsKey = searchParams.toString()
@@ -62,6 +82,14 @@ function BattleLiveContent() {
     const checkpoint = loadCheckpoint()
     if (checkpoint) {
       resumeBattle(checkpoint)
+      // Restore auto-analyze state from checkpoint
+      if (checkpoint.autoAnalyze) {
+        setAutoAnalyzeEnabled(checkpoint.autoAnalyze.enabled)
+        setAutoAnalyzeDepth(checkpoint.autoAnalyze.depth)
+        if (checkpoint.autoAnalyze.chatSessionId) {
+          switchSession(checkpoint.autoAnalyze.chatSessionId)
+        }
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [paramsKey])
@@ -95,7 +123,7 @@ function BattleLiveContent() {
       onSwitch={submitSwitch}
       onLeadSelect={chooseLead}
       onRematch={rematch}
-      onSave={(commentary) => saveBattle(commentary)}
+      onSave={(commentary) => saveBattle(commentary, activeSessionId)}
     />
   )
 }

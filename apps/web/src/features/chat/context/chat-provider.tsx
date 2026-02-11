@@ -7,9 +7,19 @@ import {
   useCallback,
   useEffect,
   useState,
+  useRef,
   type ReactNode,
+  type MutableRefObject,
 } from "react"
-import type { ChatContextMode } from "@nasty-plot/core"
+import type { ChatContextMode, AutoAnalyzeDepth } from "@nasty-plot/core"
+
+// --- Stream Control ---
+
+export interface StreamControl {
+  sendAutoAnalyze: (prompt: string, turn: number, depth: AutoAnalyzeDepth) => Promise<void>
+  stopGeneration: () => void
+  isStreaming: boolean
+}
 
 // --- Pending Context ---
 
@@ -77,6 +87,8 @@ interface ChatContextValue {
   pendingContext: PendingChatContext | null
   pendingQuestion: string | null
   showNewChatModal: boolean
+  autoAnalyze: { enabled: boolean; depth: AutoAnalyzeDepth }
+  isAutoAnalyzing: boolean
   toggleSidebar: () => void
   openSidebar: (message?: string) => void
   closeSidebar: () => void
@@ -90,6 +102,22 @@ interface ChatContextValue {
   clearPendingQuestion: () => void
   openNewChatModal: () => void
   closeNewChatModal: () => void
+  setAutoAnalyzeEnabled: (enabled: boolean) => void
+  setAutoAnalyzeDepth: (depth: AutoAnalyzeDepth) => void
+  registerStreamControl: (controls: StreamControl) => void
+  triggerAutoAnalyze: (prompt: string, turn: number, depth: AutoAnalyzeDepth) => Promise<void>
+  stopAutoAnalyze: () => void
+  // Guided builder bridge
+  guidedBuilderContextRef: MutableRefObject<Record<string, unknown> | null>
+  setGuidedBuilderContext: (ctx: Record<string, unknown> | null) => void
+  guidedActionNotifyRef: MutableRefObject<
+    ((n: { name: string; label: string; input: Record<string, unknown> }) => void) | null
+  >
+  autoSendMessage: string | null
+  queueAutoSend: (text: string) => void
+  clearAutoSend: () => void
+  isChatStreaming: boolean
+  setIsChatStreaming: (streaming: boolean) => void
 }
 
 const ChatContext = createContext<ChatContextValue | null>(null)
@@ -114,6 +142,16 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   const [pendingContext, setPendingContext] = useState<PendingChatContext | null>(null)
   const [pendingQuestion, setPendingQuestionState] = useState<string | null>(null)
   const [showNewChatModal, setShowNewChatModal] = useState(false)
+  const [autoAnalyzeEnabled, setAutoAnalyzeEnabled] = useState(false)
+  const [autoAnalyzeDepth, setAutoAnalyzeDepth] = useState<AutoAnalyzeDepth>("quick")
+  const streamControlRef = useRef<StreamControl | null>(null)
+  // Guided builder bridge state (ref, not state — avoids re-render loops)
+  const guidedBuilderContextRef = useRef<Record<string, unknown> | null>(null)
+  const guidedActionNotifyRef = useRef<
+    ((n: { name: string; label: string; input: Record<string, unknown> }) => void) | null
+  >(null)
+  const [autoSendMessage, setAutoSendMessage] = useState<string | null>(null)
+  const [isChatStreaming, setIsChatStreaming] = useState(false)
 
   // Hydrate from localStorage after mount (avoids SSR/client mismatch)
   useEffect(() => {
@@ -178,6 +216,40 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   }, [])
   const closeNewChatModal = useCallback(() => setShowNewChatModal(false), [])
 
+  const registerStreamControl = useCallback((controls: StreamControl) => {
+    streamControlRef.current = controls
+  }, [])
+
+  const triggerAutoAnalyze = useCallback(
+    async (prompt: string, turn: number, depth: AutoAnalyzeDepth) => {
+      const ctrl = streamControlRef.current
+      if (!ctrl) return
+      setIsAutoAnalyzing(true)
+      try {
+        await ctrl.sendAutoAnalyze(prompt, turn, depth)
+      } finally {
+        setIsAutoAnalyzing(false)
+      }
+    },
+    [],
+  )
+
+  const stopAutoAnalyze = useCallback(() => {
+    const ctrl = streamControlRef.current
+    if (!ctrl) return
+    ctrl.stopGeneration()
+    setIsAutoAnalyzing(false)
+  }, [])
+
+  // Guided builder bridge callbacks
+  const setGuidedBuilderContext = useCallback((ctx: Record<string, unknown> | null) => {
+    guidedBuilderContextRef.current = ctx
+  }, [])
+  const queueAutoSend = useCallback((text: string) => setAutoSendMessage(text), [])
+  const clearAutoSend = useCallback(() => setAutoSendMessage(null), [])
+
+  const [isAutoAnalyzing, setIsAutoAnalyzing] = useState(false)
+
   return (
     <ChatContext.Provider
       value={{
@@ -188,6 +260,8 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         pendingContext,
         pendingQuestion,
         showNewChatModal,
+        autoAnalyze: { enabled: autoAnalyzeEnabled, depth: autoAnalyzeDepth },
+        isAutoAnalyzing,
         toggleSidebar,
         openSidebar,
         closeSidebar,
@@ -201,6 +275,19 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         clearPendingQuestion,
         openNewChatModal,
         closeNewChatModal,
+        setAutoAnalyzeEnabled,
+        setAutoAnalyzeDepth,
+        registerStreamControl,
+        triggerAutoAnalyze,
+        stopAutoAnalyze,
+        guidedBuilderContextRef,
+        setGuidedBuilderContext,
+        guidedActionNotifyRef,
+        autoSendMessage,
+        queueAutoSend,
+        clearAutoSend,
+        isChatStreaming,
+        setIsChatStreaming,
       }}
     >
       {children}

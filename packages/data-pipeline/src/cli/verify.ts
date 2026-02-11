@@ -1,0 +1,568 @@
+#!/usr/bin/env tsx
+
+/**
+ * Verify seeded data integrity against @pkmn/dex.
+ *
+ * Checks every Pokemon ID, ability, item, move, and nature stored in the DB
+ * to confirm they resolve in @pkmn/dex for Gen 9. Reports issues by table
+ * with enough detail to fix the seed pipeline or clean bad data.
+ *
+ * Usage:
+ *   pnpm verify                  # full verification
+ *   pnpm verify --format gen9ou  # single format
+ *   pnpm verify --fix            # delete rows with unresolvable Pokemon IDs
+ */
+
+import { prisma } from "@nasty-plot/db"
+import { getDex } from "@nasty-plot/pokemon-data"
+
+const dex = getDex()
+
+// ─── Types ───────────────────────────────────────────────────────────────────
+
+interface Issue {
+  table: string
+  formatId: string
+  pokemonId: string
+  field: string
+  value: string
+  message: string
+}
+
+interface CliArgs {
+  formatId?: string
+  fix: boolean
+}
+
+// ─── CLI parsing ─────────────────────────────────────────────────────────────
+
+function parseArgs(): CliArgs {
+  const args = process.argv.slice(2)
+  const result: CliArgs = { fix: false }
+
+  for (let i = 0; i < args.length; i++) {
+    if (args[i] === "--format" && args[i + 1]) {
+      result.formatId = args[i + 1]
+      i++
+    } else if (args[i] === "--fix") {
+      result.fix = true
+    }
+  }
+  return result
+}
+
+// ─── Allowlists ──────────────────────────────────────────────────────────────
+
+// Smogon uses "nothing" to mean "no item held" — valid in usage stats
+const ALLOWED_ITEMS = new Set(["nothing"])
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+function speciesExists(id: string): boolean {
+  const s = dex.species.get(id)
+  return !!(s && s.exists)
+}
+
+function moveExists(name: string): boolean {
+  const m = dex.moves.get(name)
+  return !!(m && m.exists)
+}
+
+function itemExists(name: string): boolean {
+  if (ALLOWED_ITEMS.has(name.toLowerCase())) return true
+  const i = dex.items.get(name)
+  return !!(i && i.exists)
+}
+
+function abilityExists(name: string): boolean {
+  const a = dex.abilities.get(name)
+  return !!(a && a.exists)
+}
+
+function natureExists(name: string): boolean {
+  const n = dex.natures.get(name)
+  return !!(n && n.exists)
+}
+
+// ─── Verification checks ────────────────────────────────────────────────────
+
+async function verifyUsageStats(
+  formatFilter?: string,
+): Promise<{ issues: Issue[]; total: number }> {
+  const where = formatFilter ? { formatId: formatFilter } : {}
+  const rows = await prisma.usageStats.findMany({
+    where,
+    select: { formatId: true, pokemonId: true },
+    distinct: ["pokemonId", "formatId"],
+  })
+
+  const issues: Issue[] = []
+  for (const row of rows) {
+    if (!speciesExists(row.pokemonId)) {
+      issues.push({
+        table: "UsageStats",
+        formatId: row.formatId,
+        pokemonId: row.pokemonId,
+        field: "pokemonId",
+        value: row.pokemonId,
+        message: `Species "${row.pokemonId}" not found in @pkmn/dex`,
+      })
+    }
+  }
+  return { issues, total: rows.length }
+}
+
+async function verifySmogonSets(
+  formatFilter?: string,
+): Promise<{ issues: Issue[]; total: number }> {
+  const where = formatFilter ? { formatId: formatFilter } : {}
+  const rows = await prisma.smogonSet.findMany({ where })
+
+  const issues: Issue[] = []
+  for (const row of rows) {
+    // Pokemon
+    if (!speciesExists(row.pokemonId)) {
+      issues.push({
+        table: "SmogonSet",
+        formatId: row.formatId,
+        pokemonId: row.pokemonId,
+        field: "pokemonId",
+        value: row.pokemonId,
+        message: `Species "${row.pokemonId}" not found in @pkmn/dex`,
+      })
+      continue // skip further checks if species itself is bad
+    }
+
+    // Ability
+    if (row.ability && !abilityExists(row.ability)) {
+      issues.push({
+        table: "SmogonSet",
+        formatId: row.formatId,
+        pokemonId: row.pokemonId,
+        field: "ability",
+        value: row.ability,
+        message: `Ability "${row.ability}" not found in @pkmn/dex`,
+      })
+    }
+
+    // Item
+    if (row.item && !itemExists(row.item)) {
+      issues.push({
+        table: "SmogonSet",
+        formatId: row.formatId,
+        pokemonId: row.pokemonId,
+        field: "item",
+        value: row.item,
+        message: `Item "${row.item}" not found in @pkmn/dex`,
+      })
+    }
+
+    // Nature
+    if (row.nature && !natureExists(row.nature)) {
+      issues.push({
+        table: "SmogonSet",
+        formatId: row.formatId,
+        pokemonId: row.pokemonId,
+        field: "nature",
+        value: row.nature,
+        message: `Nature "${row.nature}" not found in @pkmn/dex`,
+      })
+    }
+
+    // Moves
+    try {
+      const moves: (string | string[])[] = JSON.parse(row.moves)
+      for (const move of moves) {
+        const names = Array.isArray(move) ? move : [move]
+        for (const name of names) {
+          if (name && !moveExists(name)) {
+            issues.push({
+              table: "SmogonSet",
+              formatId: row.formatId,
+              pokemonId: row.pokemonId,
+              field: "moves",
+              value: name,
+              message: `Move "${name}" not found in @pkmn/dex`,
+            })
+          }
+        }
+      }
+    } catch {
+      issues.push({
+        table: "SmogonSet",
+        formatId: row.formatId,
+        pokemonId: row.pokemonId,
+        field: "moves",
+        value: row.moves,
+        message: `Malformed moves JSON`,
+      })
+    }
+  }
+  return { issues, total: rows.length }
+}
+
+async function verifyTeammateCorr(
+  formatFilter?: string,
+): Promise<{ issues: Issue[]; total: number }> {
+  const where = formatFilter ? { formatId: formatFilter } : {}
+  const rows = await prisma.teammateCorr.findMany({
+    where,
+    select: { formatId: true, pokemonAId: true, pokemonBId: true },
+    distinct: ["formatId", "pokemonAId", "pokemonBId"],
+  })
+
+  const issues: Issue[] = []
+  // Collect unique IDs to avoid repeated checks
+  const checked = new Map<string, boolean>()
+  for (const row of rows) {
+    for (const id of [row.pokemonAId, row.pokemonBId]) {
+      if (!checked.has(id)) {
+        checked.set(id, speciesExists(id))
+      }
+      if (!checked.get(id)) {
+        issues.push({
+          table: "TeammateCorr",
+          formatId: row.formatId,
+          pokemonId: id,
+          field: id === row.pokemonAId ? "pokemonAId" : "pokemonBId",
+          value: id,
+          message: `Species "${id}" not found in @pkmn/dex`,
+        })
+      }
+    }
+  }
+  return { issues, total: rows.length }
+}
+
+async function verifyCheckCounters(
+  formatFilter?: string,
+): Promise<{ issues: Issue[]; total: number }> {
+  const where = formatFilter ? { formatId: formatFilter } : {}
+  const rows = await prisma.checkCounter.findMany({
+    where,
+    select: { formatId: true, targetId: true, counterId: true },
+    distinct: ["formatId", "targetId", "counterId"],
+  })
+
+  const issues: Issue[] = []
+  const checked = new Map<string, boolean>()
+  for (const row of rows) {
+    for (const id of [row.targetId, row.counterId]) {
+      if (!checked.has(id)) {
+        checked.set(id, speciesExists(id))
+      }
+      if (!checked.get(id)) {
+        issues.push({
+          table: "CheckCounter",
+          formatId: row.formatId,
+          pokemonId: id,
+          field: id === row.targetId ? "targetId" : "counterId",
+          value: id,
+          message: `Species "${id}" not found in @pkmn/dex`,
+        })
+      }
+    }
+  }
+  return { issues, total: rows.length }
+}
+
+async function verifyMoveUsage(formatFilter?: string): Promise<{ issues: Issue[]; total: number }> {
+  const where = formatFilter ? { formatId: formatFilter } : {}
+  const rows = await prisma.moveUsage.findMany({
+    where,
+    select: { formatId: true, pokemonId: true, moveName: true },
+  })
+
+  const issues: Issue[] = []
+  const checkedPokemon = new Map<string, boolean>()
+  const checkedMoves = new Map<string, boolean>()
+
+  for (const row of rows) {
+    // Check Pokemon
+    if (!checkedPokemon.has(row.pokemonId)) {
+      checkedPokemon.set(row.pokemonId, speciesExists(row.pokemonId))
+    }
+    if (!checkedPokemon.get(row.pokemonId)) {
+      issues.push({
+        table: "MoveUsage",
+        formatId: row.formatId,
+        pokemonId: row.pokemonId,
+        field: "pokemonId",
+        value: row.pokemonId,
+        message: `Species "${row.pokemonId}" not found in @pkmn/dex`,
+      })
+    }
+
+    // Check Move
+    if (!checkedMoves.has(row.moveName)) {
+      checkedMoves.set(row.moveName, moveExists(row.moveName))
+    }
+    if (!checkedMoves.get(row.moveName)) {
+      issues.push({
+        table: "MoveUsage",
+        formatId: row.formatId,
+        pokemonId: row.pokemonId,
+        field: "moveName",
+        value: row.moveName,
+        message: `Move "${row.moveName}" not found in @pkmn/dex`,
+      })
+    }
+  }
+  return { issues, total: rows.length }
+}
+
+async function verifyItemUsage(formatFilter?: string): Promise<{ issues: Issue[]; total: number }> {
+  const where = formatFilter ? { formatId: formatFilter } : {}
+  const rows = await prisma.itemUsage.findMany({
+    where,
+    select: { formatId: true, pokemonId: true, itemName: true },
+  })
+
+  const issues: Issue[] = []
+  const checkedItems = new Map<string, boolean>()
+
+  for (const row of rows) {
+    if (!checkedItems.has(row.itemName)) {
+      checkedItems.set(row.itemName, itemExists(row.itemName))
+    }
+    if (!checkedItems.get(row.itemName)) {
+      issues.push({
+        table: "ItemUsage",
+        formatId: row.formatId,
+        pokemonId: row.pokemonId,
+        field: "itemName",
+        value: row.itemName,
+        message: `Item "${row.itemName}" not found in @pkmn/dex`,
+      })
+    }
+  }
+  return { issues, total: rows.length }
+}
+
+async function verifyAbilityUsage(
+  formatFilter?: string,
+): Promise<{ issues: Issue[]; total: number }> {
+  const where = formatFilter ? { formatId: formatFilter } : {}
+  const rows = await prisma.abilityUsage.findMany({
+    where,
+    select: { formatId: true, pokemonId: true, abilityName: true },
+  })
+
+  const issues: Issue[] = []
+  const checkedAbilities = new Map<string, boolean>()
+
+  for (const row of rows) {
+    if (!checkedAbilities.has(row.abilityName)) {
+      checkedAbilities.set(row.abilityName, abilityExists(row.abilityName))
+    }
+    if (!checkedAbilities.get(row.abilityName)) {
+      issues.push({
+        table: "AbilityUsage",
+        formatId: row.formatId,
+        pokemonId: row.pokemonId,
+        field: "abilityName",
+        value: row.abilityName,
+        message: `Ability "${row.abilityName}" not found in @pkmn/dex`,
+      })
+    }
+  }
+  return { issues, total: rows.length }
+}
+
+// ─── Fix: delete rows with unresolvable Pokemon IDs ─────────────────────────
+
+async function fixBadPokemonIds(issues: Issue[]): Promise<void> {
+  // Collect unique bad Pokemon IDs per table
+  const badIds = new Map<string, Set<string>>()
+  for (const issue of issues) {
+    if (
+      issue.field === "pokemonId" ||
+      issue.field === "pokemonAId" ||
+      issue.field === "pokemonBId" ||
+      issue.field === "targetId" ||
+      issue.field === "counterId"
+    ) {
+      const key = issue.table
+      if (!badIds.has(key)) badIds.set(key, new Set())
+      badIds.get(key)!.add(issue.value)
+    }
+  }
+
+  if (badIds.size === 0) {
+    console.log("\n[fix] No bad Pokemon IDs to clean up.")
+    return
+  }
+
+  console.log("\n[fix] Cleaning up rows with unresolvable Pokemon IDs...\n")
+
+  for (const [table, ids] of badIds) {
+    const idList = [...ids]
+    let deleted = 0
+
+    switch (table) {
+      case "UsageStats":
+        deleted = (await prisma.usageStats.deleteMany({ where: { pokemonId: { in: idList } } }))
+          .count
+        break
+      case "SmogonSet":
+        deleted = (await prisma.smogonSet.deleteMany({ where: { pokemonId: { in: idList } } }))
+          .count
+        break
+      case "TeammateCorr":
+        deleted = (
+          await prisma.teammateCorr.deleteMany({
+            where: { OR: [{ pokemonAId: { in: idList } }, { pokemonBId: { in: idList } }] },
+          })
+        ).count
+        break
+      case "CheckCounter":
+        deleted = (
+          await prisma.checkCounter.deleteMany({
+            where: { OR: [{ targetId: { in: idList } }, { counterId: { in: idList } }] },
+          })
+        ).count
+        break
+      case "MoveUsage":
+        deleted = (await prisma.moveUsage.deleteMany({ where: { pokemonId: { in: idList } } }))
+          .count
+        break
+      case "ItemUsage":
+        deleted = (await prisma.itemUsage.deleteMany({ where: { pokemonId: { in: idList } } }))
+          .count
+        break
+      case "AbilityUsage":
+        deleted = (await prisma.abilityUsage.deleteMany({ where: { pokemonId: { in: idList } } }))
+          .count
+        break
+    }
+
+    console.log(`  [fix] ${table}: deleted ${deleted} rows (bad IDs: ${idList.join(", ")})`)
+  }
+}
+
+// ─── Main ────────────────────────────────────────────────────────────────────
+
+async function main(): Promise<void> {
+  const args = parseArgs()
+
+  console.log("=== Seed Data Verification ===\n")
+  if (args.formatId) console.log(`Format filter: ${args.formatId}`)
+  if (args.fix) console.log("Fix mode: will delete rows with bad Pokemon IDs\n")
+
+  const allIssues: Issue[] = []
+
+  // Run all checks
+  const checks = [
+    { name: "UsageStats", fn: () => verifyUsageStats(args.formatId) },
+    { name: "SmogonSet", fn: () => verifySmogonSets(args.formatId) },
+    { name: "TeammateCorr", fn: () => verifyTeammateCorr(args.formatId) },
+    { name: "CheckCounter", fn: () => verifyCheckCounters(args.formatId) },
+    { name: "MoveUsage", fn: () => verifyMoveUsage(args.formatId) },
+    { name: "ItemUsage", fn: () => verifyItemUsage(args.formatId) },
+    { name: "AbilityUsage", fn: () => verifyAbilityUsage(args.formatId) },
+  ]
+
+  for (const check of checks) {
+    process.stdout.write(`Checking ${check.name}...`)
+    const { issues, total } = await check.fn()
+    allIssues.push(...issues)
+
+    if (issues.length === 0) {
+      console.log(` OK (${total} rows)`)
+    } else {
+      console.log(` ${issues.length} issues (${total} rows)`)
+    }
+  }
+
+  // ── Summary ──────────────────────────────────────────────────────────────
+
+  console.log("\n=== Summary ===\n")
+
+  if (allIssues.length === 0) {
+    console.log("All seeded data is valid.")
+    await prisma.$disconnect()
+    return
+  }
+
+  // Group issues by type for a clear report
+  const byTable = new Map<string, Issue[]>()
+  for (const issue of allIssues) {
+    if (!byTable.has(issue.table)) byTable.set(issue.table, [])
+    byTable.get(issue.table)!.push(issue)
+  }
+
+  // Deduplicate bad Pokemon IDs for top-level summary
+  const badPokemonIds = new Set<string>()
+  const badMoves = new Set<string>()
+  const badItems = new Set<string>()
+  const badAbilities = new Set<string>()
+
+  for (const issue of allIssues) {
+    if (
+      issue.field === "pokemonId" ||
+      issue.field === "pokemonAId" ||
+      issue.field === "pokemonBId" ||
+      issue.field === "targetId" ||
+      issue.field === "counterId"
+    ) {
+      badPokemonIds.add(issue.value)
+    } else if (issue.field === "moves" || issue.field === "moveName") {
+      badMoves.add(issue.value)
+    } else if (issue.field === "itemName") {
+      badItems.add(issue.value)
+    } else if (issue.field === "abilityName" || issue.field === "ability") {
+      badAbilities.add(issue.value)
+    }
+  }
+
+  console.log(`Total issues: ${allIssues.length}`)
+  if (badPokemonIds.size > 0)
+    console.log(
+      `  Bad Pokemon IDs (${badPokemonIds.size}): ${[...badPokemonIds].sort().join(", ")}`,
+    )
+  if (badMoves.size > 0)
+    console.log(`  Bad moves (${badMoves.size}): ${[...badMoves].sort().join(", ")}`)
+  if (badItems.size > 0)
+    console.log(`  Bad items (${badItems.size}): ${[...badItems].sort().join(", ")}`)
+  if (badAbilities.size > 0)
+    console.log(`  Bad abilities (${badAbilities.size}): ${[...badAbilities].sort().join(", ")}`)
+
+  // Detailed breakdown by table — dedupe by (field, value) and show affected formats + count
+  console.log("\n--- Details by table ---\n")
+  for (const [table, issues] of byTable) {
+    console.log(`${table} (${issues.length} issues):`)
+
+    // Group by field+value, collect formats and count
+    const grouped = new Map<string, { message: string; formats: Set<string>; count: number }>()
+    for (const issue of issues) {
+      const key = `${issue.field}|${issue.value}`
+      if (!grouped.has(key)) {
+        grouped.set(key, { message: issue.message, formats: new Set(), count: 0 })
+      }
+      const entry = grouped.get(key)!
+      entry.formats.add(issue.formatId)
+      entry.count++
+    }
+
+    for (const [, { message, formats, count }] of grouped) {
+      const fmts = [...formats].sort().join(", ")
+      console.log(`  ${message} (${count} rows across: ${fmts})`)
+    }
+    console.log()
+  }
+
+  // Fix mode
+  if (args.fix) {
+    await fixBadPokemonIds(allIssues)
+  } else if (badPokemonIds.size > 0) {
+    console.log("Run with --fix to delete rows with bad Pokemon IDs.")
+  }
+
+  await prisma.$disconnect()
+  process.exit(1)
+}
+
+main().catch((err) => {
+  console.error("Fatal error:", err)
+  process.exit(1)
+})

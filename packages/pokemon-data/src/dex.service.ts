@@ -4,6 +4,10 @@ import type { PokemonSpecies, PokemonType, MoveData, AbilityData, ItemData } fro
 
 const dex = Dex.forGen(9)
 
+function toID(str: string): string {
+  return str.toLowerCase().replace(/[^a-z0-9]+/g, "")
+}
+
 /** Nonstandard categories to exclude from all listings (CAP fakemons, LGPE exclusives, etc.) */
 const EXCLUDED_NONSTANDARD = new Set(["CAP", "LGPE", "Custom", "Future", "Unobtainable"])
 
@@ -122,9 +126,27 @@ export function getItem(id: string): ItemData | null {
 }
 
 export async function getLearnset(speciesId: string): Promise<string[]> {
+  // Try exact ID first
   const learnsetData = await dex.learnsets.get(speciesId)
-  if (!learnsetData || !learnsetData.learnset) return []
-  return Object.keys(learnsetData.learnset)
+  if (learnsetData?.learnset) return Object.keys(learnsetData.learnset)
+
+  // Alternate forms (Gmax, Mega, Therian, etc.) don't have their own learnsets
+  // in @pkmn/dex — walk the inheritance chain: changesFrom → baseSpecies
+  const species = dex.species.get(speciesId)
+  if (!species.exists) return []
+
+  if (species.changesFrom) {
+    const parent = Array.isArray(species.changesFrom) ? species.changesFrom[0] : species.changesFrom
+    const parentData = await dex.learnsets.get(toID(parent))
+    if (parentData?.learnset) return Object.keys(parentData.learnset)
+  }
+
+  if (species.baseSpecies && species.baseSpecies !== species.name) {
+    const baseData = await dex.learnsets.get(toID(species.baseSpecies))
+    if (baseData?.learnset) return Object.keys(baseData.learnset)
+  }
+
+  return []
 }
 
 export function searchSpecies(query: string): PokemonSpecies[] {

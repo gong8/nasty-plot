@@ -1,6 +1,6 @@
 "use client"
 
-import { useRef, useEffect, useCallback, useState } from "react"
+import { useRef, useEffect, useCallback, useState, useMemo } from "react"
 import { useChatSidebar } from "@/features/chat/context/chat-provider"
 import { useChatStream } from "@/features/chat/hooks/use-chat-stream"
 import { useContextMismatch } from "@/features/chat/hooks/use-context-mismatch"
@@ -11,7 +11,11 @@ import { ChatPlanDisplay } from "./chat-plan-display"
 import { ChatInput } from "./chat-input"
 import { ChatContextPicker } from "./chat-context-picker"
 import { ContextMismatchBanner } from "./context-mismatch-banner"
-import { ArrowDown } from "lucide-react"
+import { ChatWizardEvent } from "./chat-wizard-event"
+import { TurnAnalysisCard } from "./turn-analysis-card"
+import { ArrowDown, Zap, Search } from "lucide-react"
+import type { ChatStreamOptions } from "@/features/chat/hooks/use-chat-stream"
+import { cn } from "@/lib/utils"
 
 interface ChatPanelProps {
   teamId?: string
@@ -23,12 +27,37 @@ interface ChatPanelProps {
 export function ChatPanel({ sessionId }: ChatPanelProps) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
-  const { activeSessionId, pendingInput, clearPendingInput, pendingContext } = useChatSidebar()
+  const {
+    activeSessionId,
+    pendingInput,
+    clearPendingInput,
+    pendingContext,
+    autoAnalyze,
+    setAutoAnalyzeDepth,
+    guidedBuilderContextRef,
+    guidedActionNotifyRef,
+    autoSendMessage,
+    clearAutoSend,
+    setIsChatStreaming,
+  } = useChatSidebar()
   const effectiveSessionId = sessionId ?? activeSessionId ?? undefined
   const [isAtBottom, setIsAtBottom] = useState(true)
   const [modeChosen, setModeChosen] = useState(false)
 
   const { mismatch } = useContextMismatch()
+
+  // Stable action notify callback that delegates to guided builder ref
+  const actionNotifyCallback = useCallback<NonNullable<ChatStreamOptions["onActionNotify"]>>(
+    (notification) => {
+      guidedActionNotifyRef.current?.(notification)
+    },
+    [guidedActionNotifyRef],
+  )
+
+  const streamOptions = useMemo<ChatStreamOptions>(
+    () => ({ onActionNotify: actionNotifyCallback }),
+    [actionNotifyCallback],
+  )
 
   const {
     messages,
@@ -40,7 +69,21 @@ export function ChatPanel({ sessionId }: ChatPanelProps) {
     stopGeneration,
     retryLast,
     resetForSession,
-  } = useChatStream(effectiveSessionId)
+  } = useChatStream(effectiveSessionId, streamOptions)
+
+  // Sync streaming state to ChatProvider for guided builder proactive reactions
+  useEffect(() => {
+    setIsChatStreaming(isStreaming)
+  }, [isStreaming, setIsChatStreaming])
+
+  // Auto-send queued messages from guided builder (proactive reactions)
+  useEffect(() => {
+    if (autoSendMessage && !isStreaming) {
+      const ctx = guidedBuilderContextRef.current
+      sendMessage(autoSendMessage, false, ctx ? { guidedBuilder: ctx } : undefined)
+      clearAutoSend()
+    }
+  }, [autoSendMessage, isStreaming, sendMessage, guidedBuilderContextRef, clearAutoSend])
 
   // Load session on mount and when active session changes.
   // Initialize to null (not effectiveSessionId) so the first render
@@ -81,16 +124,20 @@ export function ChatPanel({ sessionId }: ChatPanelProps) {
     setIsAtBottom(true)
   }, [])
 
-  const handleSend = useCallback((text: string) => sendMessage(text), [sendMessage])
+  const handleSend = useCallback(
+    (text: string) => {
+      const ctx = guidedBuilderContextRef.current
+      return sendMessage(text, false, ctx ? { guidedBuilder: ctx } : undefined)
+    },
+    [sendMessage, guidedBuilderContextRef],
+  )
 
   // Reset mode choice when switching to a different session
-  const prevSessionForMode = useRef(effectiveSessionId)
-  useEffect(() => {
-    if (effectiveSessionId !== prevSessionForMode.current) {
-      prevSessionForMode.current = effectiveSessionId
-      setModeChosen(false)
-    }
-  }, [effectiveSessionId])
+  const [prevSessionForMode, setPrevSessionForMode] = useState(effectiveSessionId)
+  if (effectiveSessionId !== prevSessionForMode) {
+    setPrevSessionForMode(effectiveSessionId)
+    setModeChosen(false)
+  }
 
   const lastMsg = messages[messages.length - 1]
 
@@ -99,6 +146,40 @@ export function ChatPanel({ sessionId }: ChatPanelProps) {
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
+      {/* Auto-analyze depth toggle bar */}
+      {autoAnalyze.enabled && (
+        <div className="flex items-center gap-2 px-3 py-1.5 border-b bg-accent/20 shrink-0">
+          <Zap className="h-3.5 w-3.5 text-primary" />
+          <span className="text-xs font-medium text-foreground">Auto-Analyze</span>
+          <div className="flex gap-1 ml-auto">
+            <button
+              onClick={() => setAutoAnalyzeDepth("quick")}
+              className={cn(
+                "px-2 py-0.5 rounded-full text-xs font-medium transition-colors",
+                autoAnalyze.depth === "quick"
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted text-muted-foreground hover:bg-muted/80",
+              )}
+            >
+              <Zap className="h-3 w-3 inline mr-0.5" />
+              Quick
+            </button>
+            <button
+              onClick={() => setAutoAnalyzeDepth("deep")}
+              className={cn(
+                "px-2 py-0.5 rounded-full text-xs font-medium transition-colors",
+                autoAnalyze.depth === "deep"
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted text-muted-foreground hover:bg-muted/80",
+              )}
+            >
+              <Search className="h-3 w-3 inline mr-0.5" />
+              Deep
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Messages — native scrollable div */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto overscroll-contain p-4">
         <div className="space-y-4">
@@ -121,14 +202,37 @@ export function ChatPanel({ sessionId }: ChatPanelProps) {
             </div>
           )}
 
-          {messages.map((msg) => (
-            <ChatMessage
-              key={msg.id}
-              role={msg.role}
-              content={msg.content}
-              isStreaming={isStreaming && msg === lastMsg}
-            />
-          ))}
+          {messages.map((msg) => {
+            // Hide auto-generated user messages
+            if (msg.role === "user" && msg.metadata?.autoGenerated) return null
+
+            // Render [WIZARD_EVENT] messages with distinct style
+            if (msg.role === "user" && msg.content.startsWith("[WIZARD_EVENT]")) {
+              return <ChatWizardEvent key={msg.id} content={msg.content} />
+            }
+
+            // Render auto-generated assistant messages as TurnAnalysisCard
+            if (msg.role === "assistant" && msg.metadata?.autoGenerated) {
+              return (
+                <TurnAnalysisCard
+                  key={msg.id}
+                  turn={msg.metadata.turn ?? 0}
+                  content={msg.content}
+                  depth={msg.metadata.depth ?? "quick"}
+                  isStreaming={isStreaming && msg === lastMsg}
+                />
+              )
+            }
+
+            return (
+              <ChatMessage
+                key={msg.id}
+                role={msg.role}
+                content={msg.content}
+                isStreaming={isStreaming && msg === lastMsg}
+              />
+            )
+          })}
 
           {/* Plan display */}
           <ChatPlanDisplay steps={planSteps} />

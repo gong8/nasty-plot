@@ -50,6 +50,7 @@ export async function POST(req: NextRequest) {
       protocolLog,
       commentary,
       turns,
+      chatSessionId,
     } = body
 
     if (!formatId || !team1Paste || !team2Paste || !protocolLog) {
@@ -72,6 +73,7 @@ export async function POST(req: NextRequest) {
         turnCount: turnCount || 0,
         protocolLog,
         commentary: commentary ? JSON.stringify(commentary) : null,
+        chatSessionId: chatSessionId || null,
         turns: turns?.length
           ? {
               create: turns.map(

@@ -9,6 +9,7 @@ import {
 import {
   getDisallowedMcpTools,
   getDisallowedMcpToolsForContextMode,
+  getAllMcpToolNames,
   type PageType,
 } from "./tool-context"
 import { streamCliChat } from "./cli-chat"
@@ -49,6 +50,7 @@ export interface StreamChatOptions {
   context?: PageContextData
   contextMode?: string
   contextData?: string
+  disableAllTools?: boolean
 }
 
 /**
@@ -87,7 +89,7 @@ async function buildContextParts(teamId?: string, formatId?: string): Promise<st
 }
 
 export async function streamChat(options: StreamChatOptions): Promise<ReadableStream<Uint8Array>> {
-  const { messages, signal, context, contextMode, contextData } = options
+  const { messages, signal, context, contextMode, contextData, disableAllTools } = options
   let { teamId, formatId } = options
 
   // Extract teamId/formatId — frozen context wins for context-locked sessions
@@ -127,10 +129,15 @@ export async function streamChat(options: StreamChatOptions): Promise<ReadableSt
     }
   }
 
-  // Add page context — always include live context summary for battle modes
-  // so the LLM sees current turn state, not just the static session seed data
+  // Add page context — always include live context for guided-builder and battle modes
   if (context) {
     if (!contextMode) {
+      const pageCtxStr = buildPageContextPrompt(context)
+      if (pageCtxStr) {
+        contextParts.push(pageCtxStr)
+      }
+    } else if (contextMode === "guided-builder" && context.guidedBuilder) {
+      // Guided builder: use live context so LLM sees current wizard state
       const pageCtxStr = buildPageContextPrompt(context)
       if (pageCtxStr) {
         contextParts.push(pageCtxStr)
@@ -146,12 +153,15 @@ export async function streamChat(options: StreamChatOptions): Promise<ReadableSt
   const systemPrompt = [SYSTEM_PROMPT, ...contextParts].join("\n")
   console.log(`${LOG_PREFIX} CLI mode: system prompt ${systemPrompt.length} chars`)
 
-  // Calculate disallowed MCP tools: context mode overrides page-based filtering
-  const disallowedMcpTools = contextMode
-    ? getDisallowedMcpToolsForContextMode(contextMode)
-    : context?.pageType
-      ? getDisallowedMcpTools(context.pageType as PageType)
-      : []
+  // Calculate disallowed MCP tools: disableAllTools blocks everything,
+  // context mode overrides page-based filtering
+  const disallowedMcpTools = disableAllTools
+    ? getAllMcpToolNames()
+    : contextMode
+      ? getDisallowedMcpToolsForContextMode(contextMode)
+      : context?.pageType
+        ? getDisallowedMcpTools(context.pageType as PageType)
+        : []
 
   const stream = streamCliChat({
     messages: messages.map((m) => ({
