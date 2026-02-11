@@ -13,6 +13,8 @@
     "@nasty-plot/battle-engine": "workspace:*",
     "@nasty-plot/core": "workspace:*",
     "@nasty-plot/db": "workspace:*",
+    "@nasty-plot/teams": "workspace:*",
+    "@nasty-plot/smogon-data": "workspace:*",
     "@modelcontextprotocol/sdk": "^1.26.0",
     "openai": "^6.19.0"
   },

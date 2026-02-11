@@ -180,6 +180,13 @@ export function buildContextModePrompt(contextMode: string, contextData?: string
         if (data.teamName) lines.push(`\nTeam: "${data.teamName}"`)
         if (data.formatId) lines.push(`Format: ${data.formatId}`)
         if (data.paste) lines.push(`\nTeam Paste:\n\`\`\`\n${data.paste}\n\`\`\``)
+        if (data.slotsFilled !== undefined) lines.push(`Slots filled: ${data.slotsFilled}/6`)
+        if (data.slots && Array.isArray(data.slots) && data.slots.length > 0) {
+          lines.push(`\nCurrent team:`)
+          data.slots.forEach((s: string, i: number) => {
+            lines.push(`${i + 1}. ${s}`)
+          })
+        }
       }
 
       if (contextMode === "battle-live") {

@@ -37,7 +37,9 @@ export function useChatStream(sessionId?: string) {
   const [actionNotifications, setActionNotifications] = useState<ActionNotification[]>([])
   const [planSteps, setPlanSteps] = useState<PlanStep[]>([])
   const [currentSessionId, setCurrentSessionId] = useState(sessionId)
+  const currentSessionIdRef = useRef(sessionId)
   const abortRef = useRef<AbortController | null>(null)
+  const deferredSessionIdRef = useRef<string | null>(null)
   const pageContext = usePageContext()
   const { switchSession, pendingContext, clearPendingContext } = useChatSidebar()
   const queryClient = useQueryClient()
@@ -125,11 +127,14 @@ export function useChatStream(sessionId?: string) {
           signal: controller.signal,
         })
 
-        // Capture session ID from response
+        // Capture session ID from response — defer switchSession until after
+        // streaming completes to prevent ChatPanel's session-change effect from
+        // resetting messages mid-stream
         const newSessionId = res.headers.get("X-Session-Id")
         if (newSessionId && !currentSessionId) {
           setCurrentSessionId(newSessionId)
-          switchSession(newSessionId)
+          currentSessionIdRef.current = newSessionId
+          deferredSessionIdRef.current = newSessionId
           // Clear pending context after session is created
           if (pendingContext) clearPendingContext()
         }
@@ -331,6 +336,12 @@ export function useChatStream(sessionId?: string) {
       } finally {
         setIsStreaming(false)
         abortRef.current = null
+        // Now that streaming is done, notify the provider of the new session ID
+        // so the sidebar session list highlights the correct session
+        if (deferredSessionIdRef.current) {
+          switchSession(deferredSessionIdRef.current)
+          deferredSessionIdRef.current = null
+        }
         // Refresh sessions list
         queryClient.invalidateQueries({ queryKey: ["chat-sessions"] })
       }
@@ -367,11 +378,16 @@ export function useChatStream(sessionId?: string) {
 
   const resetForSession = useCallback(
     (id: string | null) => {
+      // Skip reset if the hook already owns this session (e.g., after streaming
+      // created it) — avoids clearing messages that were built during streaming
+      if (id && id === currentSessionIdRef.current) return
+
       setMessages([])
       setToolCalls(new Map())
       setActionNotifications([])
       setPlanSteps([])
       setCurrentSessionId(id ?? undefined)
+      currentSessionIdRef.current = id ?? undefined
       if (id) {
         loadSession(id)
       }

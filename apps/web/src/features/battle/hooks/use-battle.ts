@@ -22,6 +22,8 @@ interface UseBattleConfig {
   aiDifficulty: AIDifficulty
   playerName?: string
   opponentName?: string
+  playerTeamId?: string | null
+  opponentTeamId?: string | null
 }
 
 function createAI(difficulty: AIDifficulty): AIPlayer {
@@ -183,6 +185,8 @@ export function useBattle() {
             team1Name: config.playerName || "Player",
             team2Paste: config.opponentTeamPaste,
             team2Name: config.opponentName || "Opponent",
+            team1Id: config.playerTeamId || null,
+            team2Id: config.opponentTeamId || null,
             winnerId,
             turnCount: state.turn,
             protocolLog,

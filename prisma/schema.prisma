@@ -19,6 +19,9 @@ model Format {
   smogonSets    SmogonSet[]
   teammateCorrs TeammateCorr[]
   checkCounters CheckCounter[]
+  moveUsages    MoveUsage[]
+  itemUsages    ItemUsage[]
+  abilityUsages AbilityUsage[]
   teams         Team[]
 }
 
@@ -258,4 +261,43 @@ model SampleTeam {
 
   @@index([formatId])
   @@index([formatId, archetype])
+}
+
+model MoveUsage {
+  id           Int    @id @default(autoincrement())
+  formatId     String
+  pokemonId    String
+  moveName     String
+  usagePercent Float
+
+  format Format @relation(fields: [formatId], references: [id])
+
+  @@unique([formatId, pokemonId, moveName])
+  @@index([formatId, pokemonId])
+}
+
+model ItemUsage {
+  id           Int    @id @default(autoincrement())
+  formatId     String
+  pokemonId    String
+  itemName     String
+  usagePercent Float
+
+  format Format @relation(fields: [formatId], references: [id])
+
+  @@unique([formatId, pokemonId, itemName])
+  @@index([formatId, pokemonId])
+}
+
+model AbilityUsage {
+  id           Int    @id @default(autoincrement())
+  formatId     String
+  pokemonId    String
+  abilityName  String
+  usagePercent Float
+
+  format Format @relation(fields: [formatId], references: [id])
+
+  @@unique([formatId, pokemonId, abilityName])
+  @@index([formatId, pokemonId])
 }

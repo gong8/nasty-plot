@@ -184,6 +184,45 @@ export async function fetchUsageStats(
         },
       })
     }
+
+    // Save move usage
+    const moveEntries = Object.entries(data.Moves ?? {})
+    for (const [moveName, usage] of moveEntries) {
+      if (!moveName || usage <= 0) continue
+      await prisma.moveUsage.upsert({
+        where: {
+          formatId_pokemonId_moveName: { formatId, pokemonId, moveName },
+        },
+        update: { usagePercent: usage },
+        create: { formatId, pokemonId, moveName, usagePercent: usage },
+      })
+    }
+
+    // Save item usage
+    const itemEntries = Object.entries(data.Items ?? {})
+    for (const [itemName, usage] of itemEntries) {
+      if (!itemName || usage <= 0) continue
+      await prisma.itemUsage.upsert({
+        where: {
+          formatId_pokemonId_itemName: { formatId, pokemonId, itemName },
+        },
+        update: { usagePercent: usage },
+        create: { formatId, pokemonId, itemName, usagePercent: usage },
+      })
+    }
+
+    // Save ability usage
+    const abilityEntries = Object.entries(data.Abilities ?? {})
+    for (const [abilityName, usage] of abilityEntries) {
+      if (!abilityName || usage <= 0) continue
+      await prisma.abilityUsage.upsert({
+        where: {
+          formatId_pokemonId_abilityName: { formatId, pokemonId, abilityName },
+        },
+        update: { usagePercent: usage },
+        create: { formatId, pokemonId, abilityName, usagePercent: usage },
+      })
+    }
   }
 
   // Update sync log
@@ -275,4 +314,46 @@ export async function getTeammates(
     pokemonId: r.pokemonBId,
     correlationPercent: r.correlationPercent,
   }))
+}
+
+/**
+ * Get move usage data for a specific Pokemon in a format, ordered by usage descending.
+ */
+export async function getMoveUsage(
+  formatId: string,
+  pokemonId: string,
+): Promise<{ moveName: string; usagePercent: number }[]> {
+  const rows = await prisma.moveUsage.findMany({
+    where: { formatId, pokemonId },
+    orderBy: { usagePercent: "desc" },
+  })
+  return rows.map((r) => ({ moveName: r.moveName, usagePercent: r.usagePercent }))
+}
+
+/**
+ * Get item usage data for a specific Pokemon in a format, ordered by usage descending.
+ */
+export async function getItemUsage(
+  formatId: string,
+  pokemonId: string,
+): Promise<{ itemName: string; usagePercent: number }[]> {
+  const rows = await prisma.itemUsage.findMany({
+    where: { formatId, pokemonId },
+    orderBy: { usagePercent: "desc" },
+  })
+  return rows.map((r) => ({ itemName: r.itemName, usagePercent: r.usagePercent }))
+}
+
+/**
+ * Get ability usage data for a specific Pokemon in a format, ordered by usage descending.
+ */
+export async function getAbilityUsage(
+  formatId: string,
+  pokemonId: string,
+): Promise<{ abilityName: string; usagePercent: number }[]> {
+  const rows = await prisma.abilityUsage.findMany({
+    where: { formatId, pokemonId },
+    orderBy: { usagePercent: "desc" },
+  })
+  return rows.map((r) => ({ abilityName: r.abilityName, usagePercent: r.usagePercent }))
 }

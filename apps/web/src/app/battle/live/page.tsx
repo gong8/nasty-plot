@@ -30,6 +30,8 @@ function BattleLiveContent() {
     const aiDifficulty = (searchParams.get("ai") || "greedy") as AIDifficulty
     const p1Encoded = searchParams.get("p1")
     const p2Encoded = searchParams.get("p2")
+    const playerTeamId = searchParams.get("t1id") || null
+    const opponentTeamId = searchParams.get("t2id") || null
 
     if (!p1Encoded || !p2Encoded) return
 
@@ -43,6 +45,8 @@ function BattleLiveContent() {
         formatId,
         gameType,
         aiDifficulty,
+        playerTeamId,
+        opponentTeamId,
       })
     } catch (err) {
       console.error("Failed to decode teams:", err)

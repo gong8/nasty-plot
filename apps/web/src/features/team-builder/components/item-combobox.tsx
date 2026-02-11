@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { Check, ChevronsUpDown } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -13,16 +13,19 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
+  CommandSeparator,
 } from "@/components/ui/command"
 import type { ItemData, PaginatedResponse } from "@nasty-plot/core"
+import { usePopularityData } from "../hooks/use-popularity-data"
 
 interface ItemComboboxProps {
   value: string
   onChange: (value: string) => void
   formatId?: string
+  pokemonId?: string
 }
 
-export function ItemCombobox({ value, onChange, formatId }: ItemComboboxProps) {
+export function ItemCombobox({ value, onChange, formatId, pokemonId }: ItemComboboxProps) {
   const [open, setOpen] = useState(false)
 
   const { data: items = [] } = useQuery<ItemData[]>({
@@ -46,6 +49,26 @@ export function ItemCombobox({ value, onChange, formatId }: ItemComboboxProps) {
     },
     staleTime: Infinity,
   })
+
+  const { data: popularity } = usePopularityData(pokemonId ?? "", formatId)
+
+  const { commonItems, otherItems } = useMemo(() => {
+    if (!popularity?.items?.length) {
+      return { commonItems: [], otherItems: items }
+    }
+
+    const popularSet = new Set(popularity.items.map((i) => i.name))
+    const usageMap = new Map(popularity.items.map((i) => [i.name, i.usagePercent]))
+
+    const common = items
+      .filter((item) => popularSet.has(item.name))
+      .sort((a, b) => (usageMap.get(b.name) ?? 0) - (usageMap.get(a.name) ?? 0))
+      .map((item) => ({ ...item, usagePercent: usageMap.get(item.name) }))
+
+    const other = items.filter((item) => !popularSet.has(item.name))
+
+    return { commonItems: common, otherItems: other }
+  }, [items, popularity])
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -81,7 +104,42 @@ export function ItemCombobox({ value, onChange, formatId }: ItemComboboxProps) {
                 <Check className={cn("mr-2 h-4 w-4", !value ? "opacity-100" : "opacity-0")} />
                 <span className="text-muted-foreground">None</span>
               </CommandItem>
-              {items.map((item) => (
+            </CommandGroup>
+            {commonItems.length > 0 && (
+              <>
+                <CommandSeparator />
+                <CommandGroup heading="Common">
+                  {commonItems.map((item) => (
+                    <CommandItem
+                      key={item.id}
+                      value={item.name}
+                      onSelect={() => {
+                        onChange(item.name)
+                        setOpen(false)
+                      }}
+                    >
+                      <Check
+                        className={cn(
+                          "mr-2 h-4 w-4",
+                          value === item.name ? "opacity-100" : "opacity-0",
+                        )}
+                      />
+                      <div className="flex items-center justify-between w-full">
+                        <span>{item.name}</span>
+                        {item.usagePercent != null && (
+                          <span className="text-xs text-muted-foreground ml-2">
+                            {item.usagePercent.toFixed(1)}%
+                          </span>
+                        )}
+                      </div>
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+                <CommandSeparator />
+              </>
+            )}
+            <CommandGroup heading={commonItems.length > 0 ? "All Items" : undefined}>
+              {otherItems.map((item) => (
                 <CommandItem
                   key={item.id}
                   value={item.name}

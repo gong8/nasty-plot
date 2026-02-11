@@ -197,6 +197,29 @@ export async function getSetsForPokemon(
 }
 
 /**
+ * Get nature usage for a specific Pokemon in a format, derived from SmogonSet rows.
+ * Groups by nature and counts occurrences, ordered by count descending.
+ */
+export async function getNatureUsage(
+  formatId: string,
+  pokemonId: string,
+): Promise<{ natureName: string; count: number }[]> {
+  const rows = await prisma.smogonSet.findMany({
+    where: { formatId, pokemonId },
+    select: { nature: true },
+  })
+
+  const counts = new Map<string, number>()
+  for (const row of rows) {
+    counts.set(row.nature, (counts.get(row.nature) ?? 0) + 1)
+  }
+
+  return Array.from(counts.entries())
+    .map(([natureName, count]) => ({ natureName, count }))
+    .sort((a, b) => b.count - a.count)
+}
+
+/**
  * Get all sets for a format, grouped by pokemonId.
  */
 export async function getAllSetsForFormat(

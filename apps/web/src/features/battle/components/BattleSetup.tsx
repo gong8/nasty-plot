@@ -1,25 +1,22 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useRef } from "react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import type { TeamData } from "@nasty-plot/core"
 import type { AIDifficulty, BattleFormat } from "@nasty-plot/battle-engine"
 import { Swords, Zap, Brain, Cpu } from "lucide-react"
+import { FormatSelector } from "./FormatSelector"
+import { TeamPicker, type TeamSelection } from "./TeamPicker"
+import { useFormat } from "../hooks/use-formats"
+import type { GameType } from "@nasty-plot/core"
 
 interface BattleSetupProps {
   onStart: (config: {
     playerTeamPaste: string
     opponentTeamPaste: string
+    playerTeamId: string | null
+    opponentTeamId: string | null
     formatId: string
     gameType: BattleFormat
     aiDifficulty: AIDifficulty
@@ -46,15 +43,6 @@ const AI_OPTIONS: {
     description: "MCTS tree search (slower, strongest)",
     icon: Cpu,
   },
-]
-
-const FORMAT_OPTIONS = [
-  { value: "gen9ou", label: "Gen 9 OU", gameType: "singles" as BattleFormat },
-  { value: "gen9vgc2024regh", label: "VGC 2024 Reg H", gameType: "doubles" as BattleFormat },
-  { value: "gen9uu", label: "Gen 9 UU", gameType: "singles" as BattleFormat },
-  { value: "gen9monotype", label: "Gen 9 Monotype", gameType: "singles" as BattleFormat },
-  { value: "gen9doublesou", label: "Gen 9 Doubles OU", gameType: "doubles" as BattleFormat },
-  { value: "gen9randombattle", label: "Random Battle", gameType: "singles" as BattleFormat },
 ]
 
 const SAMPLE_TEAM_1 = `Garchomp @ Life Orb
@@ -189,72 +177,42 @@ Timid Nature
 - Recover
 - Nasty Plot`
 
-interface SampleTeam {
-  id: string
-  name: string
-  formatId: string
-  archetype: string | null
-  paste: string
-}
+const emptySelection = (paste: string): TeamSelection => ({
+  teamId: null,
+  paste,
+  source: "paste",
+})
 
 export function BattleSetup({ onStart }: BattleSetupProps) {
-  const [teams, setTeams] = useState<TeamData[]>([])
-  const [sampleTeams, setSampleTeams] = useState<SampleTeam[]>([])
-  const [playerTeamPaste, setPlayerTeamPaste] = useState(SAMPLE_TEAM_1)
-  const [opponentTeamPaste, setOpponentTeamPaste] = useState(SAMPLE_TEAM_2)
+  const [playerSelection, setPlayerSelection] = useState<TeamSelection>(
+    emptySelection(SAMPLE_TEAM_1),
+  )
+  const [opponentSelection, setOpponentSelection] = useState<TeamSelection>(
+    emptySelection(SAMPLE_TEAM_2),
+  )
   const [formatId, setFormatId] = useState("gen9ou")
   const [aiDifficulty, setAiDifficulty] = useState<AIDifficulty>("greedy")
+  const prevGameTypeRef = useRef<GameType>("singles")
 
-  // Fetch saved teams
-  useEffect(() => {
-    fetch("/api/teams")
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.data) setTeams(data.data)
-      })
-      .catch(() => {}) // Ignore errors, paste input is primary
-  }, [])
+  const format = useFormat(formatId)
+  const gameType: GameType = format?.gameType ?? "singles"
 
-  // Fetch sample teams for the selected format
-  useEffect(() => {
-    fetch(`/api/sample-teams?formatId=${formatId}`)
-      .then((r) => r.json())
-      .then((data) => {
-        if (Array.isArray(data)) setSampleTeams(data)
-        else setSampleTeams([])
-      })
-      .catch(() => setSampleTeams([]))
-  }, [formatId])
-
-  const handleLoadSampleTeam = (sampleTeamId: string, target: "player" | "opponent") => {
-    const sample = sampleTeams.find((t) => t.id === sampleTeamId)
-    if (sample?.paste) {
-      if (target === "player") {
-        setPlayerTeamPaste(sample.paste)
-      } else {
-        setOpponentTeamPaste(sample.paste)
-      }
-    }
+  const handleFormatChange = (newFormatId: string) => {
+    setFormatId(newFormatId)
   }
 
-  const handleLoadTeam = async (teamId: string, target: "player" | "opponent") => {
-    try {
-      const res = await fetch(`/api/teams/${teamId}/export`)
-      const data = await res.json()
-      if (data.data?.paste) {
-        if (target === "player") {
-          setPlayerTeamPaste(data.data.paste)
-        } else {
-          setOpponentTeamPaste(data.data.paste)
-        }
-      }
-    } catch {
-      // Failed to load team
+  // Clear selections when gameType changes (e.g. switching from singles to doubles)
+  // but keep them when staying in the same gameType (e.g. OU to UU)
+  if (gameType !== prevGameTypeRef.current) {
+    prevGameTypeRef.current = gameType
+    // If selections reference saved teams, clear them since they may be incompatible
+    if (playerSelection.source === "saved") {
+      setPlayerSelection(emptySelection(""))
+    }
+    if (opponentSelection.source === "saved") {
+      setOpponentSelection(emptySelection(""))
     }
   }
-
-  const selectedFormat = FORMAT_OPTIONS.find((f) => f.value === formatId)
-  const gameType = selectedFormat?.gameType || "singles"
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -263,132 +221,13 @@ export function BattleSetup({ onStart }: BattleSetupProps) {
         <p className="text-muted-foreground">Set up a battle between two teams</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Player team */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">Your Team</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {teams.length > 0 && (
-              <div>
-                <Label className="text-xs">Load saved team</Label>
-                <Select onValueChange={(v) => handleLoadTeam(v, "player")}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a team..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {teams.map((t) => (
-                      <SelectItem key={t.id} value={t.id}>
-                        {t.name} ({t.formatId})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-            {sampleTeams.length > 0 && (
-              <div>
-                <Label className="text-xs">Load sample team</Label>
-                <Select onValueChange={(v) => handleLoadSampleTeam(v, "player")}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Browse sample teams..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {sampleTeams.map((t) => (
-                      <SelectItem key={t.id} value={t.id}>
-                        {t.name}
-                        {t.archetype ? ` (${t.archetype})` : ""}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-            <div>
-              <Label className="text-xs">Team paste (Showdown format)</Label>
-              <Textarea
-                value={playerTeamPaste}
-                onChange={(e) => setPlayerTeamPaste(e.target.value)}
-                placeholder="Paste your team here..."
-                className="font-mono text-xs min-h-[200px]"
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Opponent team */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">Opponent Team</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {teams.length > 0 && (
-              <div>
-                <Label className="text-xs">Load saved team</Label>
-                <Select onValueChange={(v) => handleLoadTeam(v, "opponent")}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a team..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {teams.map((t) => (
-                      <SelectItem key={t.id} value={t.id}>
-                        {t.name} ({t.formatId})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-            {sampleTeams.length > 0 && (
-              <div>
-                <Label className="text-xs">Load sample team</Label>
-                <Select onValueChange={(v) => handleLoadSampleTeam(v, "opponent")}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Browse sample teams..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {sampleTeams.map((t) => (
-                      <SelectItem key={t.id} value={t.id}>
-                        {t.name}
-                        {t.archetype ? ` (${t.archetype})` : ""}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-            <div>
-              <Label className="text-xs">Team paste (Showdown format)</Label>
-              <Textarea
-                value={opponentTeamPaste}
-                onChange={(e) => setOpponentTeamPaste(e.target.value)}
-                placeholder="Paste opponent team here..."
-                className="font-mono text-xs min-h-[200px]"
-              />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Settings */}
+      {/* Format & AI Settings */}
       <Card>
         <CardContent className="pt-6 space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label>Format</Label>
-              <Select value={formatId} onValueChange={setFormatId}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {FORMAT_OPTIONS.map((f) => (
-                    <SelectItem key={f.value} value={f.value}>
-                      {f.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <FormatSelector value={formatId} onChange={handleFormatChange} activeOnly />
             </div>
 
             <div>
@@ -418,19 +257,49 @@ export function BattleSetup({ onStart }: BattleSetupProps) {
         </CardContent>
       </Card>
 
+      {/* Team Pickers */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <Card>
+          <CardContent className="pt-6">
+            <TeamPicker
+              label="Your Team"
+              formatId={formatId}
+              gameType={gameType}
+              selection={playerSelection}
+              onSelectionChange={setPlayerSelection}
+            />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="pt-6">
+            <TeamPicker
+              label="Opponent Team"
+              formatId={formatId}
+              gameType={gameType}
+              selection={opponentSelection}
+              onSelectionChange={setOpponentSelection}
+            />
+          </CardContent>
+        </Card>
+      </div>
+
       <div className="flex justify-center">
         <Button
           size="lg"
           onClick={() =>
             onStart({
-              playerTeamPaste,
-              opponentTeamPaste,
+              playerTeamPaste: playerSelection.paste,
+              opponentTeamPaste: opponentSelection.paste,
+              playerTeamId: playerSelection.source === "saved" ? playerSelection.teamId : null,
+              opponentTeamId:
+                opponentSelection.source === "saved" ? opponentSelection.teamId : null,
               formatId,
-              gameType,
+              gameType: gameType as BattleFormat,
               aiDifficulty,
             })
           }
-          disabled={!playerTeamPaste.trim() || !opponentTeamPaste.trim()}
+          disabled={!playerSelection.paste.trim() || !opponentSelection.paste.trim()}
           className="px-8"
         >
           <Swords className="h-4 w-4 mr-2" />

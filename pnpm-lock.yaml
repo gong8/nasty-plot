@@ -313,6 +313,12 @@ importers:
       '@nasty-plot/db':
         specifier: workspace:*
         version: link:../db
+      '@nasty-plot/smogon-data':
+        specifier: workspace:*
+        version: link:../smogon-data
+      '@nasty-plot/teams':
+        specifier: workspace:*
+        version: link:../teams
       openai:
         specifier: ^6.19.0
         version: 6.19.0(zod@4.3.6)

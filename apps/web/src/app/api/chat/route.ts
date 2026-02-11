@@ -49,8 +49,18 @@ export async function POST(req: NextRequest) {
         return Response.json({ error: "Session not found", code: "NOT_FOUND" }, { status: 404 })
       }
     } else {
+      // Extract teamId from contextData as fallback for session-team linking
+      let createTeamId = teamId
+      if (!createTeamId && contextData) {
+        try {
+          const ctxData = JSON.parse(contextData)
+          if (ctxData.teamId) createTeamId = ctxData.teamId
+        } catch {
+          // Invalid JSON is fine
+        }
+      }
       const session = await createSession({
-        teamId,
+        teamId: createTeamId,
         contextMode: contextMode ?? undefined,
         contextData: contextData ?? undefined,
       })
@@ -76,11 +86,25 @@ export async function POST(req: NextRequest) {
     const sessionContextMode = session?.contextMode ?? contextMode
     const sessionContextData = session?.contextData ?? contextData
 
+    // Extract teamId/formatId from session context data as fallback
+    let effectiveTeamId = teamId || context?.teamId
+    let effectiveFormatId = formatId || context?.formatId
+
+    if (sessionContextData && (!effectiveTeamId || !effectiveFormatId)) {
+      try {
+        const ctxData = JSON.parse(sessionContextData)
+        if (!effectiveTeamId && ctxData.teamId) effectiveTeamId = ctxData.teamId
+        if (!effectiveFormatId && ctxData.formatId) effectiveFormatId = ctxData.formatId
+      } catch {
+        // Invalid JSON is fine
+      }
+    }
+
     // Stream response
     const stream = await streamChat({
       messages,
-      teamId: teamId || context?.teamId,
-      formatId: formatId || context?.formatId,
+      teamId: effectiveTeamId,
+      formatId: effectiveFormatId,
       signal,
       context,
       contextMode: sessionContextMode,

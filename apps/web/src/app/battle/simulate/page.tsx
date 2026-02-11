@@ -5,10 +5,13 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
 import { Progress } from "@/components/ui/progress"
 import { Loader2, Play, BarChart3 } from "lucide-react"
 import type { BatchAnalytics } from "@nasty-plot/battle-engine"
+import { FormatSelector } from "@/features/battle/components/FormatSelector"
+import { TeamPicker, type TeamSelection } from "@/features/battle/components/TeamPicker"
+import { useFormat } from "@/features/battle/hooks/use-formats"
+import type { GameType } from "@nasty-plot/core"
 
 type Phase = "setup" | "running" | "results"
 
@@ -83,17 +86,27 @@ Adamant Nature
 - U-turn
 - Sucker Punch`
 
+const emptySelection = (paste: string): TeamSelection => ({
+  teamId: null,
+  paste,
+  source: "paste",
+})
+
 export default function SimulatePage() {
   const [phase, setPhase] = useState<Phase>("setup")
-  const [team1Paste, setTeam1Paste] = useState(SAMPLE_TEAM_1)
-  const [team2Paste, setTeam2Paste] = useState(SAMPLE_TEAM_2)
+  const [team1Selection, setTeam1Selection] = useState<TeamSelection>(emptySelection(SAMPLE_TEAM_1))
+  const [team2Selection, setTeam2Selection] = useState<TeamSelection>(emptySelection(SAMPLE_TEAM_2))
   const [team1Name, setTeam1Name] = useState("Team 1")
   const [team2Name, setTeam2Name] = useState("Team 2")
+  const [formatId, setFormatId] = useState("gen9ou")
   const [totalGames, setTotalGames] = useState(50)
   const [aiDifficulty, setAiDifficulty] = useState("heuristic")
   const [batchState, setBatchState] = useState<BatchState | null>(null)
   const [error, setError] = useState<string | null>(null)
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  const format = useFormat(formatId)
+  const gameType: GameType = format?.gameType ?? "singles"
 
   useEffect(() => {
     return () => {
@@ -110,12 +123,12 @@ export default function SimulatePage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          formatId: "gen9ou",
-          gameType: "singles",
+          formatId,
+          gameType,
           aiDifficulty,
-          team1Paste,
+          team1Paste: team1Selection.paste,
           team1Name,
-          team2Paste,
+          team2Paste: team2Selection.paste,
           team2Name,
           totalGames,
         }),
@@ -180,69 +193,88 @@ export default function SimulatePage() {
 
         {phase === "setup" && (
           <div className="space-y-6">
+            {/* Format & Settings */}
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-end gap-4 flex-wrap">
+                  <div className="space-y-2 min-w-[200px]">
+                    <Label>Format</Label>
+                    <FormatSelector value={formatId} onChange={setFormatId} activeOnly />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Number of Games</Label>
+                    <Input
+                      type="number"
+                      min={10}
+                      max={500}
+                      value={totalGames}
+                      onChange={(e) => setTotalGames(parseInt(e.target.value) || 50)}
+                      className="w-28"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>AI Difficulty</Label>
+                    <select
+                      value={aiDifficulty}
+                      onChange={(e) => setAiDifficulty(e.target.value)}
+                      className="h-9 rounded-md border border-input bg-background px-3 text-sm"
+                    >
+                      <option value="random">Random</option>
+                      <option value="greedy">Greedy</option>
+                      <option value="heuristic">Smart</option>
+                      <option value="expert">Expert (MCTS)</option>
+                    </select>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Team Pickers */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <Label htmlFor="team1name">Team 1 Name</Label>
-                <Input
-                  id="team1name"
-                  value={team1Name}
-                  onChange={(e) => setTeam1Name(e.target.value)}
-                />
-                <Label htmlFor="team1">Team 1 (Showdown Paste)</Label>
-                <Textarea
-                  id="team1"
-                  rows={10}
-                  value={team1Paste}
-                  onChange={(e) => setTeam1Paste(e.target.value)}
-                  className="font-mono text-xs"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="team2name">Team 2 Name</Label>
-                <Input
-                  id="team2name"
-                  value={team2Name}
-                  onChange={(e) => setTeam2Name(e.target.value)}
-                />
-                <Label htmlFor="team2">Team 2 (Showdown Paste)</Label>
-                <Textarea
-                  id="team2"
-                  rows={10}
-                  value={team2Paste}
-                  onChange={(e) => setTeam2Paste(e.target.value)}
-                  className="font-mono text-xs"
-                />
-              </div>
+              <Card>
+                <CardContent className="pt-6 space-y-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="team1name">Team 1 Name</Label>
+                    <Input
+                      id="team1name"
+                      value={team1Name}
+                      onChange={(e) => setTeam1Name(e.target.value)}
+                    />
+                  </div>
+                  <TeamPicker
+                    label="Team 1"
+                    formatId={formatId}
+                    gameType={gameType}
+                    selection={team1Selection}
+                    onSelectionChange={setTeam1Selection}
+                  />
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="pt-6 space-y-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="team2name">Team 2 Name</Label>
+                    <Input
+                      id="team2name"
+                      value={team2Name}
+                      onChange={(e) => setTeam2Name(e.target.value)}
+                    />
+                  </div>
+                  <TeamPicker
+                    label="Team 2"
+                    formatId={formatId}
+                    gameType={gameType}
+                    selection={team2Selection}
+                    onSelectionChange={setTeam2Selection}
+                  />
+                </CardContent>
+              </Card>
             </div>
 
-            <div className="flex items-end gap-4">
-              <div className="space-y-2">
-                <Label>Number of Games</Label>
-                <Input
-                  type="number"
-                  min={10}
-                  max={500}
-                  value={totalGames}
-                  onChange={(e) => setTotalGames(parseInt(e.target.value) || 50)}
-                  className="w-28"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>AI Difficulty</Label>
-                <select
-                  value={aiDifficulty}
-                  onChange={(e) => setAiDifficulty(e.target.value)}
-                  className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-                >
-                  <option value="random">Random</option>
-                  <option value="greedy">Greedy</option>
-                  <option value="heuristic">Smart</option>
-                  <option value="expert">Expert (MCTS)</option>
-                </select>
-              </div>
+            <div className="flex justify-center">
               <Button
                 onClick={startSimulation}
-                disabled={!team1Paste || !team2Paste}
+                disabled={!team1Selection.paste || !team2Selection.paste}
                 className="gap-1.5"
               >
                 <Play className="h-4 w-4" />

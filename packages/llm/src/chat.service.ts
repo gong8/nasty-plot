@@ -12,10 +12,11 @@ import {
   type PageType,
 } from "./tool-context"
 import { streamCliChat } from "./cli-chat"
-import type { ChatMessage, TeamData, UsageStatsEntry } from "@nasty-plot/core"
+import type { ChatMessage } from "@nasty-plot/core"
+import { getTeam } from "@nasty-plot/teams"
+import { getUsageStats } from "@nasty-plot/smogon-data"
 
 const MODEL = process.env.LLM_MODEL || "claude-opus-4-6"
-const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
 
 const LOG_PREFIX = "[chat]"
 
@@ -59,10 +60,9 @@ async function buildContextParts(teamId?: string, formatId?: string): Promise<st
   if (teamId) {
     try {
       const tTeam = performance.now()
-      const res = await fetch(`${BASE_URL}/api/teams/${teamId}`)
-      if (res.ok) {
-        const teamData = (await res.json()) as { data: TeamData }
-        parts.push("\n" + buildTeamContext(teamData.data))
+      const teamData = await getTeam(teamId)
+      if (teamData) {
+        parts.push("\n" + buildTeamContext(teamData))
         logTiming("Team context", tTeam)
       }
     } catch {
@@ -73,10 +73,9 @@ async function buildContextParts(teamId?: string, formatId?: string): Promise<st
   if (formatId) {
     try {
       const tMeta = performance.now()
-      const res = await fetch(`${BASE_URL}/api/formats/${formatId}/usage?limit=20`)
-      if (res.ok) {
-        const usageData = (await res.json()) as { data: UsageStatsEntry[] }
-        parts.push("\n" + buildMetaContext(formatId, usageData.data))
+      const usageData = await getUsageStats(formatId, { limit: 20 })
+      if (usageData.length > 0) {
+        parts.push("\n" + buildMetaContext(formatId, usageData))
         logTiming("Meta context", tMeta)
       }
     } catch {
@@ -88,7 +87,19 @@ async function buildContextParts(teamId?: string, formatId?: string): Promise<st
 }
 
 export async function streamChat(options: StreamChatOptions): Promise<ReadableStream<Uint8Array>> {
-  const { messages, teamId, formatId, signal, context, contextMode, contextData } = options
+  const { messages, signal, context, contextMode, contextData } = options
+  let { teamId, formatId } = options
+
+  // Fallback: extract teamId/formatId from contextData if not provided directly
+  if (contextData && (!teamId || !formatId)) {
+    try {
+      const ctxData = JSON.parse(contextData)
+      if (!teamId && ctxData.teamId) teamId = ctxData.teamId
+      if (!formatId && ctxData.formatId) formatId = ctxData.formatId
+    } catch {
+      // Invalid JSON is fine — contextData is optional
+    }
+  }
 
   const tStreamChat = performance.now()
   console.log(
@@ -108,11 +119,16 @@ export async function streamChat(options: StreamChatOptions): Promise<ReadableSt
     }
   }
 
-  // Add page context if provided (and not already covered by context mode)
-  if (context && !contextMode) {
-    const pageCtxStr = buildPageContextPrompt(context)
-    if (pageCtxStr) {
-      contextParts.push(pageCtxStr)
+  // Add page context — always include live context summary for battle modes
+  // so the LLM sees current turn state, not just the static session seed data
+  if (context) {
+    if (!contextMode) {
+      const pageCtxStr = buildPageContextPrompt(context)
+      if (pageCtxStr) {
+        contextParts.push(pageCtxStr)
+      }
+    } else if (context.contextSummary) {
+      contextParts.push(`\n## Live State\n${context.contextSummary}\n`)
     }
   }
 

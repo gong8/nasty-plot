@@ -28,11 +28,14 @@ function getBaseStatTotal(stats: PokemonSpecies["baseStats"]): number {
   return stats.hp + stats.atk + stats.def + stats.spa + stats.spd + stats.spe
 }
 
+type SortMode = "usage" | "name" | "bst" | "dex"
+
 export default function PokemonBrowserPage() {
   const [search, setSearch] = useState("")
   const [debouncedSearch, setDebouncedSearch] = useState("")
   const [typeFilter, setTypeFilter] = useState<PokemonType | null>(null)
   const [formatId, setFormatId] = useState<string>("")
+  const [sortBy, setSortBy] = useState<SortMode>("dex")
   const [page, setPage] = useState(1)
   const pageSize = 50
 
@@ -57,11 +60,12 @@ export default function PokemonBrowserPage() {
   if (debouncedSearch) params.set("search", debouncedSearch)
   if (typeFilter) params.set("type", typeFilter)
   if (formatId) params.set("format", formatId)
+  params.set("sort", sortBy)
   params.set("page", String(page))
   params.set("pageSize", String(pageSize))
 
   const { data: pokemonData, isLoading } = useQuery<PaginatedResponse<PokemonSpecies>>({
-    queryKey: ["pokemon", debouncedSearch, typeFilter, formatId, page],
+    queryKey: ["pokemon", debouncedSearch, typeFilter, formatId, sortBy, page],
     queryFn: () => fetch(`/api/pokemon?${params}`).then((r) => r.json()),
   })
 
@@ -85,7 +89,9 @@ export default function PokemonBrowserPage() {
           <Select
             value={formatId}
             onValueChange={(val) => {
-              setFormatId(val === "all" ? "" : val)
+              const newFormat = val === "all" ? "" : val
+              setFormatId(newFormat)
+              setSortBy(newFormat ? "usage" : "dex")
               setPage(1)
             }}
           >
@@ -99,6 +105,26 @@ export default function PokemonBrowserPage() {
                   {format.name}
                 </SelectItem>
               ))}
+            </SelectContent>
+          </Select>
+
+          <Select
+            value={sortBy}
+            onValueChange={(val) => {
+              setSortBy(val as SortMode)
+              setPage(1)
+            }}
+          >
+            <SelectTrigger className="w-40">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="usage" disabled={!formatId}>
+                Usage
+              </SelectItem>
+              <SelectItem value="name">Name</SelectItem>
+              <SelectItem value="bst">BST</SelectItem>
+              <SelectItem value="dex">Dex #</SelectItem>
             </SelectContent>
           </Select>
         </div>

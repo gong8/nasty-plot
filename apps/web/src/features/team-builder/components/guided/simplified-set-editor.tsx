@@ -10,7 +10,9 @@ import { Separator } from "@/components/ui/separator"
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
@@ -35,6 +37,7 @@ import {
 } from "@nasty-plot/core"
 import { PokemonSprite, TypeBadge } from "@nasty-plot/ui"
 import { ItemCombobox } from "../item-combobox"
+import { usePopularityData, type PopularityData } from "../../hooks/use-popularity-data"
 
 interface SimplifiedSetEditorProps {
   slot: Partial<TeamSlotData>
@@ -80,6 +83,9 @@ export function SimplifiedSetEditor({
     enabled: !!pokemonId,
   })
 
+  // Fetch popularity data for two-tier dropdowns
+  const { data: popularity } = usePopularityData(pokemonId, formatId)
+
   const abilities = useMemo(() => {
     if (!speciesData?.abilities) return []
     return Object.entries(speciesData.abilities).map(([slot, name]) => ({
@@ -87,6 +93,30 @@ export function SimplifiedSetEditor({
       isHidden: slot === "H",
     }))
   }, [speciesData])
+
+  // Sort abilities by usage
+  const { commonAbilities, otherAbilities } = useMemo(() => {
+    if (!popularity?.abilities?.length) {
+      return { commonAbilities: [] as typeof abilities, otherAbilities: abilities }
+    }
+    const usageMap = new Map(popularity.abilities.map((a) => [a.name, a.usagePercent]))
+    const common = abilities
+      .filter((a) => usageMap.has(a.name))
+      .sort((a, b) => (usageMap.get(b.name) ?? 0) - (usageMap.get(a.name) ?? 0))
+    const other = abilities.filter((a) => !usageMap.has(a.name))
+    return { commonAbilities: common, otherAbilities: other }
+  }, [abilities, popularity])
+
+  // Sort natures by usage
+  const { commonNatures, otherNatures } = useMemo(() => {
+    if (!popularity?.natures?.length) {
+      return { commonNatures: [] as string[], otherNatures: NATURES as readonly NatureName[] }
+    }
+    const commonSet = new Set(popularity.natures.map((n) => n.name))
+    const common = popularity.natures.map((n) => n.name)
+    const other = NATURES.filter((n) => !commonSet.has(n))
+    return { commonNatures: common, otherNatures: other }
+  }, [popularity])
 
   const evs = useMemo(
     () => (slot.evs ?? { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 }) as StatsTable,
@@ -172,12 +202,43 @@ export function SimplifiedSetEditor({
             <SelectValue placeholder="Select ability" />
           </SelectTrigger>
           <SelectContent>
-            {abilities.map((a) => (
-              <SelectItem key={a.name} value={a.name}>
-                {a.name}
-                {a.isHidden && <span className="text-muted-foreground ml-1">(Hidden)</span>}
-              </SelectItem>
-            ))}
+            {commonAbilities.length > 0 ? (
+              <>
+                <SelectGroup>
+                  <SelectLabel>Common</SelectLabel>
+                  {commonAbilities.map((a) => {
+                    const pct = popularity?.abilities?.find((x) => x.name === a.name)?.usagePercent
+                    return (
+                      <SelectItem key={a.name} value={a.name}>
+                        {a.name}
+                        {a.isHidden && <span className="text-muted-foreground ml-1">(Hidden)</span>}
+                        {pct != null && (
+                          <span className="text-muted-foreground ml-1">({pct.toFixed(0)}%)</span>
+                        )}
+                      </SelectItem>
+                    )
+                  })}
+                </SelectGroup>
+                {otherAbilities.length > 0 && (
+                  <SelectGroup>
+                    <SelectLabel>Other</SelectLabel>
+                    {otherAbilities.map((a) => (
+                      <SelectItem key={a.name} value={a.name}>
+                        {a.name}
+                        {a.isHidden && <span className="text-muted-foreground ml-1">(Hidden)</span>}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                )}
+              </>
+            ) : (
+              abilities.map((a) => (
+                <SelectItem key={a.name} value={a.name}>
+                  {a.name}
+                  {a.isHidden && <span className="text-muted-foreground ml-1">(Hidden)</span>}
+                </SelectItem>
+              ))
+            )}
           </SelectContent>
         </Select>
       </div>
@@ -189,6 +250,7 @@ export function SimplifiedSetEditor({
           value={slot.item || ""}
           onChange={(v) => onUpdate({ item: v })}
           formatId={formatId}
+          pokemonId={pokemonId}
         />
       </div>
 
@@ -200,17 +262,50 @@ export function SimplifiedSetEditor({
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {NATURES.map((n) => {
-              const nd = NATURE_DATA[n]
-              const label = nd.plus
-                ? `${n} (+${STAT_LABELS[nd.plus]}/-${STAT_LABELS[nd.minus!]})`
-                : `${n} (Neutral)`
-              return (
-                <SelectItem key={n} value={n}>
-                  {label}
-                </SelectItem>
-              )
-            })}
+            {commonNatures.length > 0 ? (
+              <>
+                <SelectGroup>
+                  <SelectLabel>Common</SelectLabel>
+                  {commonNatures.map((n) => {
+                    const nd = NATURE_DATA[n as NatureName]
+                    const label = nd?.plus
+                      ? `${n} (+${STAT_LABELS[nd.plus]}/-${STAT_LABELS[nd.minus!]})`
+                      : `${n} (Neutral)`
+                    return (
+                      <SelectItem key={n} value={n}>
+                        {label}
+                      </SelectItem>
+                    )
+                  })}
+                </SelectGroup>
+                <SelectGroup>
+                  <SelectLabel>All Natures</SelectLabel>
+                  {otherNatures.map((n) => {
+                    const nd = NATURE_DATA[n]
+                    const label = nd.plus
+                      ? `${n} (+${STAT_LABELS[nd.plus]}/-${STAT_LABELS[nd.minus!]})`
+                      : `${n} (Neutral)`
+                    return (
+                      <SelectItem key={n} value={n}>
+                        {label}
+                      </SelectItem>
+                    )
+                  })}
+                </SelectGroup>
+              </>
+            ) : (
+              NATURES.map((n) => {
+                const nd = NATURE_DATA[n]
+                const label = nd.plus
+                  ? `${n} (+${STAT_LABELS[nd.plus]}/-${STAT_LABELS[nd.minus!]})`
+                  : `${n} (Neutral)`
+                return (
+                  <SelectItem key={n} value={n}>
+                    {label}
+                  </SelectItem>
+                )
+              })
+            )}
           </SelectContent>
         </Select>
       </div>
@@ -250,6 +345,7 @@ export function SimplifiedSetEditor({
               learnset={learnset}
               selectedMoves={slot.moves ?? ["", undefined, undefined, undefined]}
               onChange={(val) => handleMoveChange(i, val)}
+              popularity={popularity}
             />
           ))}
         </div>
@@ -352,7 +448,7 @@ export function SimplifiedSetEditor({
   )
 }
 
-// --- Move Input with autocomplete ---
+// --- Move Input with two-tier autocomplete ---
 
 function MoveInput({
   index,
@@ -360,12 +456,14 @@ function MoveInput({
   learnset,
   selectedMoves,
   onChange,
+  popularity,
 }: {
   index: number
   value: string
   learnset: string[]
   selectedMoves: [string, string?, string?, string?]
   onChange: (val: string) => void
+  popularity?: PopularityData
 }) {
   const [search, setSearch] = useState("")
   const [open, setOpen] = useState(false)
@@ -381,16 +479,36 @@ function MoveInput({
     return others
   }, [selectedMoves, index])
 
-  const filtered = useMemo(() => {
-    let moves = learnset.filter((m) => !otherMoves.has(m.toLowerCase()))
+  const { commonMoves, otherFilteredMoves } = useMemo(() => {
+    let available = learnset.filter((m) => !otherMoves.has(m.toLowerCase()))
     if (search) {
       const lower = search.toLowerCase()
-      moves = moves.filter((m) => m.toLowerCase().includes(lower))
+      available = available.filter((m) => m.toLowerCase().includes(lower))
     }
-    return moves.slice(0, 20)
-  }, [search, learnset, otherMoves])
+
+    if (!popularity?.moves?.length) {
+      return { commonMoves: [] as string[], otherFilteredMoves: available.slice(0, 20) }
+    }
+
+    const availableSet = new Set(available)
+
+    const common = popularity.moves
+      .filter((m) => availableSet.has(m.name))
+      .slice(0, 12)
+      .map((m) => m.name)
+
+    const commonSet = new Set(common)
+    const other = available.filter((m) => !commonSet.has(m)).slice(0, 20)
+
+    return { commonMoves: common, otherFilteredMoves: other }
+  }, [search, learnset, otherMoves, popularity])
 
   const isDuplicate = value && otherMoves.has(value.toLowerCase())
+
+  const popularityMap = useMemo(() => {
+    if (!popularity?.moves?.length) return null
+    return new Map(popularity.moves.map((m) => [m.name, m.usagePercent]))
+  }, [popularity])
 
   return (
     <div className="relative">
@@ -411,22 +529,57 @@ function MoveInput({
         className={`h-8 text-sm ${isDuplicate ? "border-destructive" : ""}`}
       />
       {isDuplicate && <p className="text-[10px] text-destructive mt-0.5">Duplicate move</p>}
-      {open && filtered.length > 0 && (
-        <div className="absolute z-50 mt-1 w-full rounded-md border bg-popover shadow-md max-h-[150px] overflow-y-auto">
-          {filtered.map((move) => (
-            <button
-              key={move}
-              className="w-full px-3 py-1.5 text-sm text-left hover:bg-accent transition-colors"
-              onMouseDown={(e) => {
-                e.preventDefault()
-                onChange(move)
-                setSearch(move)
-                setOpen(false)
-              }}
-            >
-              {move}
-            </button>
-          ))}
+      {open && (commonMoves.length > 0 || otherFilteredMoves.length > 0) && (
+        <div className="absolute z-50 mt-1 w-full rounded-md border bg-popover shadow-md max-h-[200px] overflow-y-auto">
+          {commonMoves.length > 0 && (
+            <>
+              <div className="px-3 py-1 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider bg-muted/50">
+                Common
+              </div>
+              {commonMoves.map((move) => (
+                <button
+                  key={move}
+                  className="w-full px-3 py-1.5 text-sm text-left hover:bg-accent transition-colors flex items-center justify-between"
+                  onMouseDown={(e) => {
+                    e.preventDefault()
+                    onChange(move)
+                    setSearch(move)
+                    setOpen(false)
+                  }}
+                >
+                  <span>{move}</span>
+                  {popularityMap && (
+                    <span className="text-xs text-muted-foreground">
+                      {popularityMap.get(move)?.toFixed(1)}%
+                    </span>
+                  )}
+                </button>
+              ))}
+            </>
+          )}
+          {otherFilteredMoves.length > 0 && (
+            <>
+              {commonMoves.length > 0 && (
+                <div className="px-3 py-1 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider bg-muted/50">
+                  All Moves
+                </div>
+              )}
+              {otherFilteredMoves.map((move) => (
+                <button
+                  key={move}
+                  className="w-full px-3 py-1.5 text-sm text-left hover:bg-accent transition-colors"
+                  onMouseDown={(e) => {
+                    e.preventDefault()
+                    onChange(move)
+                    setSearch(move)
+                    setOpen(false)
+                  }}
+                >
+                  {move}
+                </button>
+              ))}
+            </>
+          )}
         </div>
       )}
     </div>
