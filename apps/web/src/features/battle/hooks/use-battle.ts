@@ -18,6 +18,7 @@ interface UseBattleConfig {
   playerTeamPaste: string
   opponentTeamPaste: string
   formatId: string
+  simFormatId?: string
   gameType: BattleFormat
   aiDifficulty: AIDifficulty
   playerName?: string
@@ -63,6 +64,7 @@ export function useBattle() {
 
     const manager = new BattleManager({
       formatId: config.formatId,
+      simFormatId: config.simFormatId,
       gameType: config.gameType,
       playerTeam: config.playerTeamPaste,
       opponentTeam: config.opponentTeamPaste,

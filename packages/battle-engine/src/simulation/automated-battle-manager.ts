@@ -22,6 +22,7 @@ export interface SingleBattleResult {
 
 interface AutomatedBattleConfig {
   formatId: string
+  simFormatId?: string // @pkmn/sim format ID when different from formatId
   gameType: BattleFormat
   team1Paste: string
   team2Paste: string
@@ -138,7 +139,7 @@ export async function runAutomatedBattle(
   })()
 
   // Start the battle
-  const format = config.formatId || "gen9ou"
+  const format = config.simFormatId || config.formatId || "gen9ou"
   stream.write(`>start {"formatid":"${format}"}`)
   stream.write(`>player p1 {"name":"${state.sides.p1.name}","team":"${escapeTeam(team1Packed)}"}`)
   stream.write(`>player p2 {"name":"${state.sides.p2.name}","team":"${escapeTeam(team2Packed)}"}`)

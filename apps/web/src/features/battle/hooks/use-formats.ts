@@ -20,7 +20,7 @@ export function useFormats(activeOnly?: boolean) {
   const formats = query.data ?? []
   const filtered = activeOnly ? formats.filter((f) => f.isActive) : formats
 
-  return { ...query, data: filtered }
+  return { isLoading: query.isLoading, data: filtered }
 }
 
 export function useFormat(formatId: string) {

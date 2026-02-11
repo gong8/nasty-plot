@@ -26,6 +26,7 @@ function BattleLiveContent() {
 
   useEffect(() => {
     const formatId = searchParams.get("format") || "gen9ou"
+    const simFormatId = searchParams.get("simFormat") || undefined
     const gameType = (searchParams.get("gameType") || "singles") as BattleFormat
     const aiDifficulty = (searchParams.get("ai") || "greedy") as AIDifficulty
     const p1Encoded = searchParams.get("p1")
@@ -43,6 +44,7 @@ function BattleLiveContent() {
         playerTeamPaste,
         opponentTeamPaste,
         formatId,
+        simFormatId,
         gameType,
         aiDifficulty,
         playerTeamId,

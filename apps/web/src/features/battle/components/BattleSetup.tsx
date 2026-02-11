@@ -18,6 +18,7 @@ interface BattleSetupProps {
     playerTeamId: string | null
     opponentTeamId: string | null
     formatId: string
+    simFormatId?: string
     gameType: BattleFormat
     aiDifficulty: AIDifficulty
   }) => void
@@ -295,6 +296,7 @@ export function BattleSetup({ onStart }: BattleSetupProps) {
               opponentTeamId:
                 opponentSelection.source === "saved" ? opponentSelection.teamId : null,
               formatId,
+              simFormatId: format?.simFormatId,
               gameType: gameType as BattleFormat,
               aiDifficulty,
             })

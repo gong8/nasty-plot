@@ -8,6 +8,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
     const {
       formatId,
+      simFormatId,
       gameType,
       aiDifficulty,
       team1Paste,
@@ -42,6 +43,7 @@ export async function POST(req: NextRequest) {
     runBatchSimulation(
       {
         formatId,
+        simFormatId: simFormatId || undefined,
         gameType: (gameType || "singles") as BattleFormat,
         aiDifficulty: (aiDifficulty || "heuristic") as AIDifficulty,
         team1Paste,

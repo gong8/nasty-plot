@@ -124,6 +124,7 @@ export default function SimulatePage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           formatId,
+          simFormatId: format?.simFormatId,
           gameType,
           aiDifficulty,
           team1Paste: team1Selection.paste,

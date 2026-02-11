@@ -245,6 +245,7 @@ export const FORMAT_DEFINITIONS: FormatDefinition[] = [
       "Zamazenta",
       "Eternatus",
     ],
+    simFormatId: "gen9vgc2024regg",
     isActive: false,
   },
   {
@@ -274,6 +275,7 @@ export const FORMAT_DEFINITIONS: FormatDefinition[] = [
     ],
     restricted: ["Koraidon", "Miraidon", "Calyrex-Ice", "Calyrex-Shadow", "Terapagos", "Pecharunt"],
     smogonStatsId: "gen9vgc2025regj",
+    simFormatId: "gen9vgc2026regi",
     isActive: true,
   },
 
@@ -306,6 +308,7 @@ export const FORMAT_DEFINITIONS: FormatDefinition[] = [
       "Calyrex",
     ],
     smogonStatsId: "gen9bssregj",
+    simFormatId: "gen9bssregj",
     isActive: true,
   },
   {
@@ -337,6 +340,7 @@ export const FORMAT_DEFINITIONS: FormatDefinition[] = [
     ],
     smogonStatsId: "gen9doublesou",
     pkmnSetsId: "gen9doublesou",
+    simFormatId: "gen9doublesou",
     isActive: true,
   },
 ]

@@ -13,6 +13,7 @@ export default function NewBattlePage() {
     playerTeamId: string | null
     opponentTeamId: string | null
     formatId: string
+    simFormatId?: string
     gameType: BattleFormat
     aiDifficulty: AIDifficulty
   }) => {
@@ -24,6 +25,7 @@ export default function NewBattlePage() {
       p1: btoa(encodeURIComponent(config.playerTeamPaste)),
       p2: btoa(encodeURIComponent(config.opponentTeamPaste)),
     })
+    if (config.simFormatId) params.set("simFormat", config.simFormatId)
     if (config.playerTeamId) params.set("t1id", config.playerTeamId)
     if (config.opponentTeamId) params.set("t2id", config.opponentTeamId)
 

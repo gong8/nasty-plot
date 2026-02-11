@@ -68,6 +68,7 @@ export function createInitialState(id: string, format: BattleFormat): BattleStat
 
 interface BattleManagerConfig {
   formatId: string
+  simFormatId?: string // @pkmn/sim format ID when different from formatId
   gameType: BattleFormat
   playerTeam: string // Packed or paste format
   opponentTeam: string
@@ -154,7 +155,7 @@ export class BattleManager {
     this.readStream()
 
     // Write the battle initialization
-    const format = this.config.formatId || "gen9ou"
+    const format = this.config.simFormatId || this.config.formatId || "gen9ou"
     this.stream.write(`>start {"formatid":"${format}"}`)
     this.stream.write(
       `>player p1 {"name":"${this.state.sides.p1.name}","team":"${escapeTeam(playerPacked)}"}`,

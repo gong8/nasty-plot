@@ -7,6 +7,7 @@ import type { AIPlayer, AIDifficulty, BattleFormat } from "../types"
 
 export interface BatchSimConfig {
   formatId: string
+  simFormatId?: string // @pkmn/sim format ID when different from formatId
   gameType: BattleFormat
   team1Paste: string
   team2Paste: string
@@ -89,6 +90,7 @@ export async function runBatchSimulation(
     try {
       const result = await runAutomatedBattle({
         formatId: config.formatId,
+        simFormatId: config.simFormatId,
         gameType: config.gameType,
         team1Paste: config.team1Paste,
         team2Paste: config.team2Paste,

@@ -130,6 +130,7 @@ export interface FormatDefinition {
   restricted?: string[] // For VGC restricted formats
   smogonStatsId?: string // Smogon stats format ID if different from id (e.g. "gen9vgc2025regj")
   pkmnSetsId?: string // pkmn.cc sets format ID if different from id (e.g. "gen9doublesou")
+  simFormatId?: string // @pkmn/sim format ID if different from id (e.g. "gen9vgc2026regi")
   isActive: boolean
 }
 
