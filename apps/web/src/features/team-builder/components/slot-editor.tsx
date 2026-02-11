@@ -240,13 +240,7 @@ export function SlotEditor({
         {/* Pokemon Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            {speciesData?.num ? (
-              <PokemonSprite pokemonId={pokemonId} num={speciesData.num} size={40} />
-            ) : (
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted text-xs font-bold uppercase">
-                {pokemonId.slice(0, 3)}
-              </div>
-            )}
+            <PokemonSprite pokemonId={pokemonId} size={40} />
             <div>
               <div className="font-semibold">{speciesData?.name ?? pokemonId}</div>
               <div className="flex gap-1 mt-0.5">
@@ -358,9 +352,7 @@ export function SlotEditor({
               <div className="rounded-md border border-primary/30 bg-primary/5 p-3 space-y-2">
                 <div className="text-xs font-semibold text-primary">Mega Evolution Preview</div>
                 <div className="flex items-center gap-2">
-                  {megaForm.num ? (
-                    <PokemonSprite pokemonId={megaForm.id} num={megaForm.num} size={32} />
-                  ) : null}
+                  <PokemonSprite pokemonId={megaForm.id} size={32} />
                   <div>
                     <div className="text-sm font-medium">{megaForm.name}</div>
                     <div className="flex gap-1 mt-0.5">

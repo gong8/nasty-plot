@@ -60,11 +60,7 @@ export function ThreatList({ threats, isLoading, slots }: ThreatListProps) {
   }
 
   // Build a lookup for team slot sprites
-  const slotMap = new Map(
-    (slots ?? [])
-      .filter((s) => s.species)
-      .map((s) => [s.pokemonId, { name: s.species!.name, num: s.species!.num }]),
-  )
+  const slotIds = new Set((slots ?? []).map((s) => s.pokemonId))
 
   return (
     <Card>
@@ -90,18 +86,7 @@ export function ThreatList({ threats, isLoading, slots }: ThreatListProps) {
                 )}
               >
                 {/* Pokemon Sprite */}
-                {threat.pokemonNum ? (
-                  <PokemonSprite
-                    pokemonId={threat.pokemonId}
-                    num={threat.pokemonNum}
-                    size={40}
-                    className="shrink-0"
-                  />
-                ) : (
-                  <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center text-xs font-medium shrink-0">
-                    {threat.pokemonName.slice(0, 2)}
-                  </div>
-                )}
+                <PokemonSprite pokemonId={threat.pokemonId} size={40} className="shrink-0" />
 
                 {/* Info */}
                 <div className="flex-1 min-w-0 space-y-1.5">
@@ -135,16 +120,8 @@ export function ThreatList({ threats, isLoading, slots }: ThreatListProps) {
                       <span className="text-[10px] text-muted-foreground shrink-0">Threatens:</span>
                       <div className="flex gap-1 flex-wrap">
                         {threat.threatenedSlots.map((slotId) => {
-                          const info = slotMap.get(slotId)
-                          if (!info) return null
-                          return (
-                            <PokemonSprite
-                              key={slotId}
-                              pokemonId={slotId}
-                              num={info.num}
-                              size={24}
-                            />
-                          )
+                          if (!slotIds.has(slotId)) return null
+                          return <PokemonSprite key={slotId} pokemonId={slotId} size={24} />
                         })}
                       </div>
                     </div>

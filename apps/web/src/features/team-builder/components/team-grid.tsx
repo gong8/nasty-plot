@@ -30,13 +30,7 @@ export function TeamGrid({ team, selectedSlot, onSelectSlot, onAddSlot }: TeamGr
           onClick={() => onSelectSlot(slot.position)}
         >
           <CardContent className="flex flex-col items-center gap-2 p-3">
-            {slot.species?.num ? (
-              <PokemonSprite pokemonId={slot.pokemonId} num={slot.species.num} size={48} />
-            ) : (
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted text-xs font-bold uppercase">
-                {slot.pokemonId.slice(0, 3)}
-              </div>
-            )}
+            <PokemonSprite pokemonId={slot.pokemonId} size={48} />
             <span className="text-sm font-medium truncate w-full text-center">
               {slot.nickname || slot.species?.name || slot.pokemonId}
             </span>

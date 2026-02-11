@@ -12,10 +12,11 @@
   },
   "dependencies": {
     "@nasty-plot/core": "workspace:*",
-    "react": "19.2.4",
+    "@pkmn/img": "^0.3.3",
+    "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "tailwind-merge": "^3.4.0",
-    "class-variance-authority": "^0.7.1"
+    "react": "19.2.4",
+    "tailwind-merge": "^3.4.0"
   },
   "devDependencies": {
     "@types/react": "^19"

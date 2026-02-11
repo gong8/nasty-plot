@@ -1,5 +1,6 @@
 "use client"
 
+import { useQueries } from "@tanstack/react-query"
 import {
   Sparkles,
   Save,
@@ -14,7 +15,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { TypeBadge, PokemonSprite } from "@nasty-plot/ui"
-import type { TeamSlotData, TeamAnalysis, PokemonType, UsageStatsEntry } from "@nasty-plot/core"
+import type {
+  TeamSlotData,
+  TeamAnalysis,
+  PokemonType,
+  PokemonSpecies,
+  UsageStatsEntry,
+} from "@nasty-plot/core"
 import { SimplifiedAnalysis } from "./simplified-analysis"
 
 interface StepReviewProps {
@@ -46,21 +53,35 @@ export function StepReview({
 }: StepReviewProps) {
   const filledSlots = slots.filter((s) => s.pokemonId)
 
-  function formatName(id: string): string {
-    return id
-      .replace(/([A-Z])/g, " $1")
-      .replace(/^./, (s) => s.toUpperCase())
-      .trim()
+  // Batch-fetch species data for display names
+  const speciesQueries = useQueries({
+    queries: filledSlots.map((slot) => ({
+      queryKey: ["pokemon", slot.pokemonId!],
+      queryFn: async () => {
+        const res = await fetch(`/api/pokemon/${slot.pokemonId}`)
+        if (!res.ok) throw new Error("Not found")
+        const json = await res.json()
+        return json.data as PokemonSpecies
+      },
+      enabled: !!slot.pokemonId,
+      staleTime: Infinity,
+    })),
+  })
+
+  const speciesMap = new Map<string, PokemonSpecies>()
+  for (const q of speciesQueries) {
+    if (q.data) speciesMap.set(q.data.id, q.data)
+  }
+
+  function speciesName(id: string): string {
+    return speciesMap.get(id)?.name ?? id
   }
 
   function getTypes(pokemonId: string): PokemonType[] {
+    const species = speciesMap.get(pokemonId)
+    if (species) return species.types
     const usage = usageData.find((u) => u.pokemonId === pokemonId)
     return usage?.types ?? []
-  }
-
-  function getNum(pokemonId: string): number {
-    const usage = usageData.find((u) => u.pokemonId === pokemonId)
-    return usage?.num ?? 0
   }
 
   return (
@@ -84,22 +105,15 @@ export function StepReview({
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {filledSlots.map((slot) => {
               const id = slot.pokemonId!
-              const name = formatName(id)
+              const name = speciesName(id)
               const types = getTypes(id)
-              const num = getNum(id)
               const moves = slot.moves?.filter((m): m is string => !!m) ?? []
 
               return (
                 <Card key={slot.position} className="overflow-hidden">
                   <CardContent className="p-3 space-y-2">
                     <div className="flex items-center gap-2">
-                      {num > 0 ? (
-                        <PokemonSprite pokemonId={id} num={num} size={32} />
-                      ) : (
-                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted text-xs font-bold uppercase">
-                          {id.slice(0, 2)}
-                        </div>
-                      )}
+                      <PokemonSprite pokemonId={id} size={32} />
                       <div className="min-w-0 flex-1">
                         <div className="text-sm font-medium truncate">{name}</div>
                         <div className="flex gap-0.5 mt-0.5">

@@ -46,7 +46,6 @@ export function CorePicker({ pokemon, selected, onToggle, maxPicks = 3 }: CorePi
           const disabled = !isSelected && atMax
           const displayName = p.pokemonName || p.pokemonId
           const types: PokemonType[] = p.types ?? ["Normal"]
-          const dexNum = p.num ?? 0
 
           return (
             <Card
@@ -73,13 +72,7 @@ export function CorePicker({ pokemon, selected, onToggle, maxPicks = 3 }: CorePi
                     <Check className="h-3 w-3 text-primary-foreground" />
                   </div>
                 )}
-                {dexNum > 0 ? (
-                  <PokemonSprite pokemonId={p.pokemonId} num={dexNum} size={64} />
-                ) : (
-                  <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted text-lg font-bold uppercase text-muted-foreground">
-                    {p.pokemonId.slice(0, 2)}
-                  </div>
-                )}
+                <PokemonSprite pokemonId={p.pokemonId} size={64} />
                 <span className="text-xs font-medium truncate w-full text-center">
                   {displayName}
                 </span>

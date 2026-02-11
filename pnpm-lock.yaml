@@ -419,6 +419,9 @@ importers:
       '@nasty-plot/core':
         specifier: workspace:*
         version: link:../core
+      '@pkmn/img':
+        specifier: ^0.3.3
+        version: 0.3.3
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1

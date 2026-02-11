@@ -35,13 +35,12 @@ export function ChatSidebar({ fullPage = false }: ChatSidebarProps) {
     )
   }
 
-  // Sidebar mode: fixed position, right side
-  if (!isOpen) return null
-
+  // Sidebar mode: fixed position, right side.
+  // Keep mounted (hidden via CSS) so ChatPanel hooks preserve messages across close/open.
   return (
     <div
       className="fixed top-0 right-0 bottom-0 z-[60] flex flex-col border-l border-border bg-background dark:bg-card/95 dark:backdrop-blur-xl overscroll-contain"
-      style={{ width }}
+      style={{ width, display: isOpen ? undefined : "none" }}
     >
       <ChatSidebarResizeHandle />
 

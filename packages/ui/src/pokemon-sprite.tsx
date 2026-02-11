@@ -1,20 +1,20 @@
 "use client"
 
 import { useState } from "react"
+import { Sprites } from "@pkmn/img"
 import { cn } from "./utils"
 
 interface PokemonSpriteProps {
   pokemonId: string
-  num: number
   size?: number
   className?: string
 }
 
-export function PokemonSprite({ pokemonId, num, size = 96, className }: PokemonSpriteProps) {
+export function PokemonSprite({ pokemonId, size = 96, className }: PokemonSpriteProps) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
 
-  const src = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${num}.png`
+  const spriteData = Sprites.getPokemon(pokemonId, { gen: "gen5" })
 
   if (error) {
     return (
@@ -34,7 +34,7 @@ export function PokemonSprite({ pokemonId, num, size = 96, className }: PokemonS
     <div className={cn("relative", className)} style={{ width: size, height: size }}>
       {loading && <div className="absolute inset-0 rounded-md bg-muted animate-pulse" />}
       <img
-        src={src}
+        src={spriteData.url}
         alt={pokemonId}
         width={size}
         height={size}

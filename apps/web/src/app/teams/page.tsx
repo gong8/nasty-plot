@@ -141,17 +141,7 @@ export default function TeamsPage() {
                     <div className="flex gap-1 mt-3">
                       {team.slots.map((slot) => (
                         <div key={slot.position} title={slot.species?.name || slot.pokemonId}>
-                          {slot.species?.num ? (
-                            <PokemonSprite
-                              pokemonId={slot.pokemonId}
-                              num={slot.species.num}
-                              size={32}
-                            />
-                          ) : (
-                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted text-[8px] font-bold uppercase">
-                              {slot.pokemonId.slice(0, 2)}
-                            </div>
-                          )}
+                          <PokemonSprite pokemonId={slot.pokemonId} size={32} />
                         </div>
                       ))}
                     </div>

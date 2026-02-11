@@ -112,9 +112,7 @@ function SlotRow({ slot, type }: { slot: TeamSlotData; type: "added" | "removed"
     <Card className={isAdded ? "border-green-500/30" : "border-red-500/30"}>
       <CardHeader className="py-3">
         <div className="flex items-center gap-2">
-          {slot.species?.num && (
-            <PokemonSprite pokemonId={slot.pokemonId} num={slot.species.num} size={32} />
-          )}
+          <PokemonSprite pokemonId={slot.pokemonId} size={32} />
           <span className="font-medium">{slot.species?.name ?? slot.pokemonId}</span>
           <Badge
             variant="outline"

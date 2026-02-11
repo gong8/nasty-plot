@@ -1,10 +1,11 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { useQueries } from "@tanstack/react-query"
 import { Sparkles, ChevronDown, ChevronUp, Loader2 } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
-import type { TeamSlotData } from "@nasty-plot/core"
+import type { TeamSlotData, PokemonSpecies } from "@nasty-plot/core"
 import { SimplifiedSetEditor } from "./simplified-set-editor"
 
 interface StepCustomizeSetsProps {
@@ -42,11 +43,28 @@ export function StepCustomizeSets({
 
   const filledSlots = slots.filter((s) => s.pokemonId)
 
-  function formatName(id: string): string {
-    return id
-      .replace(/([A-Z])/g, " $1")
-      .replace(/^./, (s) => s.toUpperCase())
-      .trim()
+  // Batch-fetch species data for display names (shares cache with SimplifiedSetEditor)
+  const speciesQueries = useQueries({
+    queries: filledSlots.map((slot) => ({
+      queryKey: ["pokemon", slot.pokemonId!],
+      queryFn: async () => {
+        const res = await fetch(`/api/pokemon/${slot.pokemonId}`)
+        if (!res.ok) throw new Error("Not found")
+        const json = await res.json()
+        return json.data as PokemonSpecies
+      },
+      enabled: !!slot.pokemonId,
+      staleTime: Infinity,
+    })),
+  })
+
+  const speciesMap = new Map<string, string>()
+  for (const q of speciesQueries) {
+    if (q.data) speciesMap.set(q.data.id, q.data.name)
+  }
+
+  function speciesName(id: string): string {
+    return speciesMap.get(id) ?? id
   }
 
   const toggleSlot = (position: number) => {
@@ -82,7 +100,7 @@ export function StepCustomizeSets({
             const position = slot.position!
             const isExpanded = expandedSlot === position
             const hasSet = !!slot.ability
-            const name = formatName(slot.pokemonId!)
+            const name = speciesName(slot.pokemonId!)
 
             return (
               <Card key={position} className="overflow-hidden">

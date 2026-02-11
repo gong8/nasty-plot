@@ -142,7 +142,6 @@ export function StepPickPokemon({
                     pokemonId={rec.pokemonId}
                     pokemonName={rec.pokemonName}
                     types={usageData.find((u) => u.pokemonId === rec.pokemonId)?.types ?? []}
-                    num={usageData.find((u) => u.pokemonId === rec.pokemonId)?.num}
                     score={rec.score}
                     reasons={rec.reasons}
                     onPick={() => handleRecPick(rec)}

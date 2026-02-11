@@ -170,13 +170,7 @@ export function SimplifiedSetEditor({
     <div className="space-y-4">
       {/* Pokemon header */}
       <div className="flex items-center gap-3">
-        {speciesData?.num ? (
-          <PokemonSprite pokemonId={pokemonId} num={speciesData.num} size={40} />
-        ) : (
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted text-xs font-bold uppercase">
-            {pokemonId.slice(0, 3)}
-          </div>
-        )}
+        <PokemonSprite pokemonId={pokemonId} size={40} />
         <div>
           <div className="font-semibold">{displayName}</div>
           <div className="flex gap-1 mt-0.5">

@@ -101,7 +101,7 @@ export function OpponentSelector({
                 key={id}
                 className="flex items-center gap-1.5 rounded-full bg-muted pl-1 pr-2 py-0.5"
               >
-                <PokemonSprite pokemonId={id} num={detail?.num ?? 0} size={24} />
+                <PokemonSprite pokemonId={id} size={24} />
                 <span className="text-xs">{detail?.name ?? id}</span>
                 <button
                   onClick={() => removeOpponent(id)}
@@ -151,12 +151,7 @@ export function OpponentSelector({
                         setOpen(false)
                       }}
                     >
-                      <PokemonSprite
-                        pokemonId={pokemon.id}
-                        num={pokemon.num}
-                        size={24}
-                        className="mr-2"
-                      />
+                      <PokemonSprite pokemonId={pokemon.id} size={24} className="mr-2" />
                       <span>{pokemon.name}</span>
                       <Badge variant="secondary" className="ml-auto text-[10px]">
                         {pokemon.types.join("/")}

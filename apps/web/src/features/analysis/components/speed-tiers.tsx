@@ -50,15 +50,7 @@ export function SpeedTiers({ tiers }: SpeedTiersProps) {
                   >
                     {/* Sprite + Name */}
                     <div className="flex items-center gap-1.5 w-36 shrink-0">
-                      {entry.pokemonNum ? (
-                        <PokemonSprite
-                          pokemonId={entry.pokemonId}
-                          num={entry.pokemonNum}
-                          size={20}
-                        />
-                      ) : (
-                        <div className="w-5 h-5" />
-                      )}
+                      <PokemonSprite pokemonId={entry.pokemonId} size={20} />
                       <span
                         className={cn(
                           "text-[11px] truncate",

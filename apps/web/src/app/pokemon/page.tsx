@@ -180,7 +180,7 @@ export default function PokemonBrowserPage() {
               <Link key={pokemon.id} href={`/pokemon/${pokemon.id}`}>
                 <Card className="hover:shadow-md transition-shadow cursor-pointer h-full">
                   <CardContent className="p-4 flex flex-col items-center gap-2">
-                    <PokemonSprite pokemonId={pokemon.id} num={pokemon.num} size={80} />
+                    <PokemonSprite pokemonId={pokemon.id} size={80} />
                     <span className="font-medium text-sm text-center leading-tight">
                       {pokemon.name}
                     </span>

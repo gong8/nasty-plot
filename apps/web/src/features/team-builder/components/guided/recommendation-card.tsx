@@ -12,7 +12,6 @@ interface RecommendationCardProps {
   pokemonId: string
   pokemonName: string
   types: PokemonType[]
-  num?: number
   score: number // 0-100
   reasons: RecommendationReason[]
   onPick: () => void
@@ -36,7 +35,6 @@ export function RecommendationCard({
   pokemonId,
   pokemonName,
   types,
-  num,
   score,
   reasons,
   onPick,
@@ -59,13 +57,7 @@ export function RecommendationCard({
       <CardContent className="flex items-center gap-4 p-4">
         {/* Sprite area */}
         <div className="shrink-0">
-          {num && num > 0 ? (
-            <PokemonSprite pokemonId={pokemonId} num={num} size={64} />
-          ) : (
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted text-lg font-bold uppercase text-muted-foreground">
-              {pokemonId.slice(0, 2)}
-            </div>
-          )}
+          <PokemonSprite pokemonId={pokemonId} size={64} />
         </div>
 
         {/* Content area */}

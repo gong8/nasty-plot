@@ -115,13 +115,7 @@ export function RoleSelector({
                   )
                 }
               >
-                {c.num ? (
-                  <PokemonSprite pokemonId={c.pokemonId} num={c.num} size={32} />
-                ) : (
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted text-xs font-bold uppercase">
-                    {c.pokemonId.slice(0, 2)}
-                  </div>
-                )}
+                <PokemonSprite pokemonId={c.pokemonId} size={32} />
                 <div className="flex flex-col">
                   <span className="text-sm font-medium">{name}</span>
                   <div className="flex gap-0.5">
