@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef } from "react"
+import { useState, useRef, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
@@ -10,6 +10,7 @@ import { FormatSelector } from "./FormatSelector"
 import { TeamPicker, type TeamSelection } from "./TeamPicker"
 import { useFormat } from "../hooks/use-formats"
 import type { GameType } from "@nasty-plot/core"
+import { parseShowdownPaste } from "@nasty-plot/core"
 
 interface BattleSetupProps {
   onStart: (config: {
@@ -184,6 +185,44 @@ const emptySelection = (paste: string): TeamSelection => ({
   source: "paste",
 })
 
+interface TeamValidation {
+  valid: boolean
+  pokemonCount: number
+  errors: string[]
+}
+
+function validatePaste(paste: string): TeamValidation {
+  const trimmed = paste.trim()
+  if (!trimmed) {
+    return { valid: false, pokemonCount: 0, errors: ["No team selected"] }
+  }
+
+  const parsed = parseShowdownPaste(trimmed)
+  if (parsed.length === 0) {
+    return {
+      valid: false,
+      pokemonCount: 0,
+      errors: ["Could not parse team — check Showdown format"],
+    }
+  }
+
+  const errors: string[] = []
+
+  for (const slot of parsed) {
+    if (!slot.pokemonId) {
+      errors.push(`Slot ${slot.position}: missing Pokemon`)
+      continue
+    }
+
+    const moves = slot.moves?.filter(Boolean) ?? []
+    if (moves.length === 0) {
+      errors.push(`${slot.pokemonId}: needs at least 1 move`)
+    }
+  }
+
+  return { valid: errors.length === 0, pokemonCount: parsed.length, errors }
+}
+
 export function BattleSetup({ onStart }: BattleSetupProps) {
   const [playerSelection, setPlayerSelection] = useState<TeamSelection>(
     emptySelection(SAMPLE_TEAM_1),
@@ -197,6 +236,16 @@ export function BattleSetup({ onStart }: BattleSetupProps) {
 
   const format = useFormat(formatId)
   const gameType: GameType = format?.gameType ?? "singles"
+
+  const playerValidation = useMemo(
+    () => validatePaste(playerSelection.paste),
+    [playerSelection.paste],
+  )
+  const opponentValidation = useMemo(
+    () => validatePaste(opponentSelection.paste),
+    [opponentSelection.paste],
+  )
+  const canStart = playerValidation.valid && opponentValidation.valid
 
   const handleFormatChange = (newFormatId: string) => {
     setFormatId(newFormatId)
@@ -268,6 +317,7 @@ export function BattleSetup({ onStart }: BattleSetupProps) {
               gameType={gameType}
               selection={playerSelection}
               onSelectionChange={setPlayerSelection}
+              validation={playerValidation}
             />
           </CardContent>
         </Card>
@@ -280,12 +330,13 @@ export function BattleSetup({ onStart }: BattleSetupProps) {
               gameType={gameType}
               selection={opponentSelection}
               onSelectionChange={setOpponentSelection}
+              validation={opponentValidation}
             />
           </CardContent>
         </Card>
       </div>
 
-      <div className="flex justify-center">
+      <div className="flex flex-col items-center gap-2">
         <Button
           size="lg"
           onClick={() =>
@@ -301,12 +352,20 @@ export function BattleSetup({ onStart }: BattleSetupProps) {
               aiDifficulty,
             })
           }
-          disabled={!playerSelection.paste.trim() || !opponentSelection.paste.trim()}
+          disabled={!canStart}
           className="px-8"
         >
           <Swords className="h-4 w-4 mr-2" />
           Start Battle
         </Button>
+        {!canStart && (playerSelection.paste.trim() || opponentSelection.paste.trim()) && (
+          <p className="text-xs text-destructive text-center max-w-md">
+            {[
+              ...playerValidation.errors.map((e) => `Your team: ${e}`),
+              ...opponentValidation.errors.map((e) => `Opponent: ${e}`),
+            ].join(" · ")}
+          </p>
+        )}
       </div>
     </div>
   )

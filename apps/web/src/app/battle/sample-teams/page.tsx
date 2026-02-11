@@ -33,7 +33,7 @@ const FORMAT_OPTIONS = [
   { value: "all", label: "All Formats" },
   { value: "gen9ou", label: "Gen 9 OU" },
   { value: "gen9uu", label: "Gen 9 UU" },
-  { value: "gen9vgc2024regh", label: "VGC 2024 Reg H" },
+  { value: "gen9vgc2025", label: "VGC 2025" },
   { value: "gen9monotype", label: "Gen 9 Monotype" },
   { value: "gen9doublesou", label: "Gen 9 Doubles OU" },
 ]

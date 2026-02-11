@@ -261,6 +261,9 @@ importers:
 
   packages/data-pipeline:
     dependencies:
+      '@nasty-plot/core':
+        specifier: workspace:*
+        version: link:../core
       '@nasty-plot/db':
         specifier: workspace:*
         version: link:../db

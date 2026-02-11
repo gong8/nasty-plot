@@ -9,6 +9,7 @@ import { ChatToolCall } from "./chat-tool-call"
 import { ChatActionNotify } from "./chat-action-notify"
 import { ChatPlanDisplay } from "./chat-plan-display"
 import { ChatInput } from "./chat-input"
+import { ChatContextPicker } from "./chat-context-picker"
 import { ContextMismatchBanner } from "./context-mismatch-banner"
 import { ArrowDown } from "lucide-react"
 
@@ -22,9 +23,10 @@ interface ChatPanelProps {
 export function ChatPanel({ sessionId }: ChatPanelProps) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
-  const { activeSessionId, pendingInput, clearPendingInput } = useChatSidebar()
+  const { activeSessionId, pendingInput, clearPendingInput, pendingContext } = useChatSidebar()
   const effectiveSessionId = sessionId ?? activeSessionId ?? undefined
   const [isAtBottom, setIsAtBottom] = useState(true)
+  const [modeChosen, setModeChosen] = useState(false)
 
   const { mismatch } = useContextMismatch()
 
@@ -81,14 +83,28 @@ export function ChatPanel({ sessionId }: ChatPanelProps) {
 
   const handleSend = useCallback((text: string) => sendMessage(text), [sendMessage])
 
+  // Reset mode choice when switching to a different session
+  const prevSessionForMode = useRef(effectiveSessionId)
+  useEffect(() => {
+    if (effectiveSessionId !== prevSessionForMode.current) {
+      prevSessionForMode.current = effectiveSessionId
+      setModeChosen(false)
+    }
+  }, [effectiveSessionId])
+
   const lastMsg = messages[messages.length - 1]
+
+  // Show the context picker for brand-new chats (no session, no messages, no pending context)
+  const showPicker = messages.length === 0 && !modeChosen && !effectiveSessionId && !pendingContext
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
       {/* Messages — native scrollable div */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto overscroll-contain p-4">
         <div className="space-y-4">
-          {messages.length === 0 && (
+          {showPicker && <ChatContextPicker onModeChosen={() => setModeChosen(true)} />}
+
+          {messages.length === 0 && !showPicker && (
             <div className="text-center py-12">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
@@ -148,18 +164,20 @@ export function ChatPanel({ sessionId }: ChatPanelProps) {
       {/* Context mismatch warning */}
       {mismatch && <ContextMismatchBanner mismatch={mismatch} />}
 
-      {/* Input area */}
-      <ChatInput
-        onSend={handleSend}
-        onStop={stopGeneration}
-        onRetry={retryLast}
-        isStreaming={isStreaming}
-        hasMessages={messages.length > 0}
-        lastMessageIsAssistant={lastMsg?.role === "assistant"}
-        pendingInput={pendingInput}
-        onClearPendingInput={clearPendingInput}
-        disabled={!!mismatch}
-      />
+      {/* Input area — hidden while the context picker is showing */}
+      {!showPicker && (
+        <ChatInput
+          onSend={handleSend}
+          onStop={stopGeneration}
+          onRetry={retryLast}
+          isStreaming={isStreaming}
+          hasMessages={messages.length > 0}
+          lastMessageIsAssistant={lastMsg?.role === "assistant"}
+          pendingInput={pendingInput}
+          onClearPendingInput={clearPendingInput}
+          disabled={!!mismatch}
+        />
+      )}
     </div>
   )
 }

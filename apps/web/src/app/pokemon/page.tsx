@@ -20,9 +20,8 @@ import {
   type PaginatedResponse,
   type PokemonSpecies,
   type PokemonType,
-  type FormatDefinition,
-  type ApiResponse,
 } from "@nasty-plot/core"
+import { useFormats } from "@/features/battle/hooks/use-formats"
 
 function getBaseStatTotal(stats: PokemonSpecies["baseStats"]): number {
   return stats.hp + stats.atk + stats.def + stats.spa + stats.spd + stats.spe
@@ -50,10 +49,7 @@ export default function PokemonBrowserPage() {
   }
 
   // Fetch formats for the selector
-  const { data: formatsData } = useQuery<ApiResponse<FormatDefinition[]>>({
-    queryKey: ["formats"],
-    queryFn: () => fetch("/api/formats").then((r) => r.json()),
-  })
+  const { data: formats } = useFormats()
 
   // Fetch Pokemon with all filters
   const params = new URLSearchParams()
@@ -100,7 +96,7 @@ export default function PokemonBrowserPage() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Formats</SelectItem>
-              {formatsData?.data.map((format) => (
+              {formats.map((format) => (
                 <SelectItem key={format.id} value={format.id}>
                   {format.name}
                 </SelectItem>

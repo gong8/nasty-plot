@@ -5,7 +5,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
-import { Loader2, ChevronDown, ChevronUp } from "lucide-react"
+import { Loader2, ChevronDown, ChevronUp, CheckCircle2, AlertCircle } from "lucide-react"
 import { useTeams } from "@/features/teams/hooks/use-teams"
 import { useSampleTeams } from "../hooks/use-sample-teams"
 import { TeamPickerCard } from "./TeamPickerCard"
@@ -17,12 +17,19 @@ export interface TeamSelection {
   source: "saved" | "sample" | "paste"
 }
 
+interface TeamValidation {
+  valid: boolean
+  pokemonCount: number
+  errors: string[]
+}
+
 interface TeamPickerProps {
   label: string
   formatId: string
   gameType: GameType
   selection: TeamSelection
   onSelectionChange: (selection: TeamSelection) => void
+  validation?: TeamValidation
 }
 
 export function TeamPicker({
@@ -31,6 +38,7 @@ export function TeamPicker({
   gameType,
   selection,
   onSelectionChange,
+  validation,
 }: TeamPickerProps) {
   const [pasteExpanded, setPasteExpanded] = useState(false)
   const [loadingTeamId, setLoadingTeamId] = useState<string | null>(null)
@@ -72,7 +80,22 @@ export function TeamPicker({
 
   return (
     <div className="space-y-3">
-      <Label className="text-base font-semibold">{label}</Label>
+      <div className="flex items-center justify-between">
+        <Label className="text-base font-semibold">{label}</Label>
+        {validation &&
+          selection.paste.trim() &&
+          (validation.valid ? (
+            <span className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400">
+              <CheckCircle2 className="h-3.5 w-3.5" />
+              {validation.pokemonCount} Pokemon ready
+            </span>
+          ) : (
+            <span className="flex items-center gap-1 text-xs text-destructive">
+              <AlertCircle className="h-3.5 w-3.5" />
+              Invalid team
+            </span>
+          ))}
+      </div>
 
       <Tabs defaultValue="saved">
         <TabsList variant="default" className="w-full">

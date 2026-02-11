@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from "react"
 import { cn } from "@/lib/utils"
-import { TYPE_COLORS, type PokemonType } from "@nasty-plot/core"
+import { TYPE_COLORS, isLightTypeColor, type PokemonType } from "@nasty-plot/core"
 import type { BattleActionSet, BattleFormat, BattlePokemon } from "@nasty-plot/battle-engine"
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
@@ -48,16 +48,6 @@ function formatTargetType(target: string): string {
     default:
       return target
   }
-}
-
-/** Returns true if the hex color is light enough to need dark text */
-function isLightColor(hex: string): boolean {
-  const r = parseInt(hex.slice(1, 3), 16)
-  const g = parseInt(hex.slice(3, 5), 16)
-  const b = parseInt(hex.slice(5, 7), 16)
-  // Relative luminance (sRGB)
-  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255
-  return luminance > 0.55
 }
 
 const CATEGORY_ICONS = {
@@ -232,7 +222,7 @@ export function MoveSelector({
         <div className="grid grid-cols-2 gap-2">
           {actions.moves.map((move, i) => {
             const color = TYPE_COLORS[move.type] || "#A8A878"
-            const light = isLightColor(color)
+            const light = isLightTypeColor(color)
             const isDamaging = move.category !== "Status" && move.basePower > 0
             const CategoryIcon = CATEGORY_ICONS[move.category] || Circle
 
@@ -467,7 +457,7 @@ function TargetCard({
         {pokemon.types.map((t) => (
           <span
             key={t}
-            className="text-[9px] px-1 py-px rounded text-white font-medium"
+            className={`text-[9px] px-1 py-px rounded font-medium ${isLightTypeColor(TYPE_COLORS[t] || "#A8A878") ? "text-gray-900" : "text-white"}`}
             style={{ backgroundColor: TYPE_COLORS[t] || "#A8A878" }}
           >
             {t}

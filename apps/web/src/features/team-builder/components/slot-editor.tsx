@@ -22,6 +22,7 @@ import {
 import {
   NATURE_DATA,
   TYPE_COLORS,
+  isLightTypeColor,
   STAT_LABELS,
   STAT_COLORS,
   MAX_TOTAL_EVS,
@@ -252,7 +253,7 @@ export function SlotEditor({
                 {speciesData?.types?.map((t: PokemonType) => (
                   <Badge
                     key={t}
-                    className="text-[9px] px-1 py-0 text-white"
+                    className={`text-[9px] px-1 py-0 ${isLightTypeColor(TYPE_COLORS[t]) ? "text-gray-900" : "text-white"}`}
                     style={{ backgroundColor: TYPE_COLORS[t] }}
                   >
                     {t}
@@ -457,7 +458,9 @@ export function SlotEditor({
                   <button
                     key={t}
                     onClick={() => setTeraType(t)}
-                    className={`rounded px-1 py-0.5 text-[10px] text-white font-medium transition-all ${
+                    className={`rounded px-1 py-0.5 text-[10px] font-medium transition-all ${
+                      isLightTypeColor(TYPE_COLORS[t]) ? "text-gray-900" : "text-white"
+                    } ${
                       teraType === t
                         ? "ring-2 ring-offset-1 ring-primary scale-105"
                         : "opacity-70 hover:opacity-100"

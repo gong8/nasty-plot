@@ -4,6 +4,7 @@ import { prisma } from "@nasty-plot/db"
 import { FORMAT_DEFINITIONS } from "@nasty-plot/formats"
 import { fetchUsageStats, fetchSmogonSets } from "@nasty-plot/smogon-data"
 import { isStale } from "../staleness.service"
+import { seedSampleTeams } from "../seed-sample-teams"
 
 const FORMATS = FORMAT_DEFINITIONS.filter((f) => f.isActive).map((f) => ({
   id: f.id,
@@ -19,11 +20,12 @@ interface CliArgs {
   force: boolean
   statsOnly: boolean
   setsOnly: boolean
+  teamsOnly: boolean
 }
 
 function parseArgs(): CliArgs {
   const args = process.argv.slice(2)
-  const result: CliArgs = { force: false, statsOnly: false, setsOnly: false }
+  const result: CliArgs = { force: false, statsOnly: false, setsOnly: false, teamsOnly: false }
 
   for (let i = 0; i < args.length; i++) {
     if (args[i] === "--format" && args[i + 1]) {
@@ -35,11 +37,16 @@ function parseArgs(): CliArgs {
       result.statsOnly = true
     } else if (args[i] === "--sets-only") {
       result.setsOnly = true
+    } else if (args[i] === "--teams-only") {
+      result.teamsOnly = true
     }
   }
 
-  if (result.statsOnly && result.setsOnly) {
-    console.error("[seed] Cannot use --stats-only and --sets-only together")
+  const exclusiveFlags = [result.statsOnly, result.setsOnly, result.teamsOnly].filter(
+    Boolean,
+  ).length
+  if (exclusiveFlags > 1) {
+    console.error("[seed] Cannot combine --stats-only, --sets-only, and --teams-only")
     process.exit(1)
   }
 
@@ -150,7 +157,21 @@ async function main(): Promise<void> {
   if (args.force) console.log("Force mode: ignoring staleness checks")
   if (args.statsOnly) console.log("Stats only mode")
   if (args.setsOnly) console.log("Sets only mode")
+  if (args.teamsOnly) console.log("Teams only mode")
   if (args.formatId) console.log(`Target format: ${args.formatId}`)
+
+  // Teams-only mode: seed sample teams and exit
+  if (args.teamsOnly) {
+    const teamsResult = await seedSampleTeams(args.force)
+    console.log("\n=== Seed Summary ===")
+    if (teamsResult.skipped) {
+      console.log("Sample teams: fresh (already seeded)")
+    } else {
+      console.log(`Sample teams: seeded ${teamsResult.seeded} teams`)
+    }
+    await prisma.$disconnect()
+    return
+  }
 
   let formatsToSeed = args.formatId ? FORMATS.filter((f) => f.id === args.formatId) : FORMATS
 
@@ -196,6 +217,12 @@ async function main(): Promise<void> {
     }
   }
 
+  // Seed sample teams (global, not per-format)
+  let teamsResult: { seeded: number; skipped: boolean } | undefined
+  if (!args.statsOnly && !args.setsOnly) {
+    teamsResult = await seedSampleTeams(args.force)
+  }
+
   // Summary
   console.log("\n=== Seed Summary ===")
   const fullSuccess = results.filter((r) => r.statsOk && r.setsOk)
@@ -215,6 +242,14 @@ async function main(): Promise<void> {
       console.log(`  [PARTIAL] ${r.format} — stats failed: ${r.statsError}`)
     } else {
       console.log(`  [FAIL]    ${r.format} — stats: ${r.statsError}; sets: ${r.setsError}`)
+    }
+  }
+
+  if (teamsResult) {
+    if (teamsResult.skipped) {
+      console.log(`  [OK]      sample-teams (fresh)`)
+    } else {
+      console.log(`  [OK]      sample-teams (seeded ${teamsResult.seeded})`)
     }
   }
 

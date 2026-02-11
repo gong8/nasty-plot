@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { Badge } from "@/components/ui/badge"
-import { POKEMON_TYPES, TYPE_COLORS, type TypeCoverage } from "@nasty-plot/core"
+import { POKEMON_TYPES, TYPE_COLORS, isLightTypeColor, type TypeCoverage } from "@nasty-plot/core"
 import { cn } from "@/lib/utils"
 
 interface CoverageChartProps {
@@ -93,8 +93,8 @@ export function CoverageChart({ coverage }: CoverageChartProps) {
                     )}
                   >
                     <div
-                      className="text-[10px] font-bold truncate"
-                      style={{ color: TYPE_COLORS[type] }}
+                      className={`text-[10px] font-bold truncate px-1 rounded ${isLightTypeColor(TYPE_COLORS[type]) ? "text-gray-900" : "text-white"}`}
+                      style={{ backgroundColor: TYPE_COLORS[type] }}
                     >
                       {type}
                     </div>

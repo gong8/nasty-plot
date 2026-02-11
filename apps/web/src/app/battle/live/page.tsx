@@ -4,6 +4,7 @@ import { useSearchParams } from "next/navigation"
 import { useEffect, Suspense } from "react"
 import { BattleView } from "@/features/battle/components/BattleView"
 import { useBattle } from "@/features/battle/hooks/use-battle"
+import { loadCheckpoint } from "@/features/battle/lib/checkpoint-store"
 import type { AIDifficulty, BattleFormat } from "@nasty-plot/battle-engine"
 import { Loader2 } from "lucide-react"
 
@@ -19,6 +20,7 @@ function BattleLiveContent() {
     submitSwitch,
     rematch,
     saveBattle,
+    resumeBattle,
   } = useBattle()
 
   // Stable string key so the effect only re-runs when params actually change
@@ -34,24 +36,32 @@ function BattleLiveContent() {
     const playerTeamId = searchParams.get("t1id") || null
     const opponentTeamId = searchParams.get("t2id") || null
 
-    if (!p1Encoded || !p2Encoded) return
+    if (p1Encoded && p2Encoded) {
+      // New battle from URL params
+      try {
+        const playerTeamPaste = decodeURIComponent(atob(p1Encoded))
+        const opponentTeamPaste = decodeURIComponent(atob(p2Encoded))
 
-    try {
-      const playerTeamPaste = decodeURIComponent(atob(p1Encoded))
-      const opponentTeamPaste = decodeURIComponent(atob(p2Encoded))
+        startBattle({
+          playerTeamPaste,
+          opponentTeamPaste,
+          formatId,
+          simFormatId,
+          gameType,
+          aiDifficulty,
+          playerTeamId,
+          opponentTeamId,
+        })
+      } catch (err) {
+        console.error("Failed to decode teams:", err)
+      }
+      return
+    }
 
-      startBattle({
-        playerTeamPaste,
-        opponentTeamPaste,
-        formatId,
-        simFormatId,
-        gameType,
-        aiDifficulty,
-        playerTeamId,
-        opponentTeamId,
-      })
-    } catch (err) {
-      console.error("Failed to decode teams:", err)
+    // No URL params — check for a checkpoint to resume immediately
+    const checkpoint = loadCheckpoint()
+    if (checkpoint) {
+      resumeBattle(checkpoint)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [paramsKey])
@@ -71,7 +81,9 @@ function BattleLiveContent() {
     return (
       <div className="flex items-center justify-center py-24">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-        <span className="ml-3 text-muted-foreground">Starting battle...</span>
+        <span className="ml-3 text-muted-foreground">
+          {isLoading ? "Resuming battle..." : "Starting battle..."}
+        </span>
       </div>
     )
   }

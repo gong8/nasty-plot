@@ -6,6 +6,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import {
   POKEMON_TYPES,
   TYPE_COLORS,
+  isLightTypeColor,
   getTypeEffectiveness,
   type PokemonType,
   type TeamSlotData,
@@ -63,7 +64,10 @@ export function WeaknessHeatmap({ slots }: WeaknessHeatmapProps) {
                   </th>
                   {POKEMON_TYPES.map((type) => (
                     <th key={type} className="p-1 text-center min-w-[38px]">
-                      <span className="text-[9px] font-bold" style={{ color: TYPE_COLORS[type] }}>
+                      <span
+                        className={`text-[9px] font-bold px-1 py-px rounded ${isLightTypeColor(TYPE_COLORS[type]) ? "text-gray-900" : "text-white"}`}
+                        style={{ backgroundColor: TYPE_COLORS[type] }}
+                      >
                         {type.slice(0, 3)}
                       </span>
                     </th>

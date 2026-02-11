@@ -6,7 +6,12 @@ import { Search } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { TYPE_COLORS, type PokemonSpecies, type PokemonType } from "@nasty-plot/core"
+import {
+  TYPE_COLORS,
+  isLightTypeColor,
+  type PokemonSpecies,
+  type PokemonType,
+} from "@nasty-plot/core"
 
 interface PokemonSearchPanelProps {
   onSelect: (pokemon: PokemonSpecies) => void
@@ -64,7 +69,7 @@ export function PokemonSearchPanel({ onSelect, formatId }: PokemonSearchPanelPro
                     {pokemon.types.map((t: PokemonType) => (
                       <Badge
                         key={t}
-                        className="text-[9px] px-1 py-0 text-white"
+                        className={`text-[9px] px-1 py-0 ${isLightTypeColor(TYPE_COLORS[t]) ? "text-gray-900" : "text-white"}`}
                         style={{ backgroundColor: TYPE_COLORS[t] }}
                       >
                         {t}

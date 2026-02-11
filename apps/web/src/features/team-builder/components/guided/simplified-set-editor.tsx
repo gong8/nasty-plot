@@ -19,6 +19,7 @@ import {
 import {
   NATURE_DATA,
   TYPE_COLORS,
+  isLightTypeColor,
   STAT_LABELS,
   STAT_COLORS,
   MAX_TOTAL_EVS,
@@ -318,7 +319,9 @@ export function SimplifiedSetEditor({
             <button
               key={t}
               onClick={() => onUpdate({ teraType: t })}
-              className={`rounded px-1 py-0.5 text-[10px] text-white font-medium transition-all ${
+              className={`rounded px-1 py-0.5 text-[10px] font-medium transition-all ${
+                isLightTypeColor(TYPE_COLORS[t]) ? "text-gray-900" : "text-white"
+              } ${
                 slot.teraType === t
                   ? "ring-2 ring-offset-1 ring-primary scale-105"
                   : "opacity-70 hover:opacity-100"

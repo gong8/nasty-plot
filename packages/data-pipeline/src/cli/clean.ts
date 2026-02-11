@@ -17,7 +17,6 @@ async function clean() {
     prisma.chatSession.deleteMany(),
     prisma.teamSlot.deleteMany(),
     prisma.team.deleteMany(),
-    prisma.sampleTeam.deleteMany(),
   ])
 
   const labels = [
@@ -28,7 +27,6 @@ async function clean() {
     "ChatSession",
     "TeamSlot",
     "Team",
-    "SampleTeam",
   ]
 
   for (let i = 0; i < labels.length; i++) {

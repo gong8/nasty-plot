@@ -3,7 +3,7 @@
 import { Plus } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { TYPE_COLORS, type PokemonType, type TeamData } from "@nasty-plot/core"
+import { TYPE_COLORS, isLightTypeColor, type PokemonType, type TeamData } from "@nasty-plot/core"
 import { PokemonSprite } from "@nasty-plot/ui"
 
 interface TeamGridProps {
@@ -44,7 +44,7 @@ export function TeamGrid({ team, selectedSlot, onSelectSlot, onAddSlot }: TeamGr
               {slot.species?.types?.map((t: PokemonType) => (
                 <Badge
                   key={t}
-                  className="text-[10px] px-1.5 py-0 text-white"
+                  className={`text-[10px] px-1.5 py-0 ${isLightTypeColor(TYPE_COLORS[t]) ? "text-gray-900" : "text-white"}`}
                   style={{ backgroundColor: TYPE_COLORS[t] }}
                 >
                   {t}
