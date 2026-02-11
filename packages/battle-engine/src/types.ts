@@ -233,3 +233,21 @@ export interface AIPlayer {
   chooseAction(state: BattleState, actions: BattleActionSet): Promise<BattleAction>
   chooseLeads(teamSize: number, gameType: BattleFormat): number[]
 }
+
+export interface BattleCheckpoint {
+  version: 1
+  savedAt: number
+  serializedBattle: unknown
+  battleState: BattleState
+  protocolLog: string
+  config: {
+    formatId: string
+    simFormatId?: string
+    gameType: BattleFormat
+    playerTeam: string
+    opponentTeam: string
+    playerName: string
+    opponentName: string
+  }
+  aiDifficulty: AIDifficulty
+}

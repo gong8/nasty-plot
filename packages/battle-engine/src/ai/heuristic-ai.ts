@@ -57,11 +57,11 @@ export class HeuristicAI implements AIPlayer {
       if (isDoubles) {
         // Evaluate move against each opponent active, pick best target
         let bestScore = -Infinity
-        let bestTarget = -1 // -1 = left foe
+        let bestTarget = 1 // 1 = left foe (p2a)
 
         for (let t = 0; t < oppActives.length; t++) {
           const score = this.scoreMove(move, myActive, oppActives[t], state)
-          const targetSlot = -(t + 1)
+          const targetSlot = t + 1 // Foe slots are positive: 1 = p2a, 2 = p2b
           if (score > bestScore) {
             bestScore = score
             bestTarget = targetSlot

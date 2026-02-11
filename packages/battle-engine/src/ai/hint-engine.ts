@@ -275,14 +275,14 @@ export function generateHints(
         // Evaluate against each target, pick best
         let bestScore = -Infinity
         let bestExpl = ""
-        let bestTarget = -1
+        let bestTarget = 1
 
         for (let t = 0; t < oppActives.length; t++) {
           const { score, explanation } = estimateMoveScore(move, myActive, oppActives[t], state)
           if (score > bestScore) {
             bestScore = score
             bestExpl = `${explanation} (→ ${oppActives[t].name})`
-            bestTarget = -(t + 1)
+            bestTarget = t + 1 // Foe slots are positive: 1 = p2a, 2 = p2b
           }
         }
 

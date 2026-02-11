@@ -224,15 +224,6 @@ export function BattleView({
       {/* Top bar: turn + names */}
       <div className="flex items-center justify-between px-3 py-1 shrink-0">
         <span className="text-sm font-semibold tabular-nums">Turn {state.turn}</span>
-        {winProb && (
-          <EvalBar
-            className="flex-1 mx-4"
-            p1WinProb={winProb.p1}
-            p2WinProb={winProb.p2}
-            p1Name={state.sides.p1.name}
-            p2Name={state.sides.p2.name}
-          />
-        )}
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <span>{state.sides.p1.name}</span>
           <span className="text-xs">vs</span>
@@ -252,6 +243,7 @@ export function BattleView({
       {/* BattleScreen with controls nested below the field */}
       <div className="flex-1 px-2 py-1 min-h-0">
         <BattleScreen
+          evalBar={winProb ? <EvalBar p1WinProb={winProb.p1} p2WinProb={winProb.p2} /> : undefined}
           state={state}
           animState={animState}
           textSpeed={textSpeed}
@@ -281,6 +273,8 @@ export function BattleView({
                       teraType={activePokemon?.teraType}
                       format={state.format}
                       activeSlot={state.availableActions.activeSlot}
+                      opponentActive={state.sides.p2.active}
+                      playerActive={state.sides.p1.active}
                     />
                   )}
                 </CardContent>

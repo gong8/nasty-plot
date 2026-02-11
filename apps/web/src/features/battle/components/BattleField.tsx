@@ -39,12 +39,12 @@ const SINGLES_POSITIONS = {
 
 const DOUBLES_POSITIONS = {
   player: [
-    { bottom: "10%", left: "5%" },
-    { bottom: "4%", left: "30%" },
+    { bottom: "18%", left: "5%" },
+    { bottom: "12%", left: "30%" },
   ],
   opponent: [
-    { top: "4%", right: "5%" },
-    { top: "10%", right: "30%" },
+    { top: "10%", right: "5%" },
+    { top: "4%", right: "30%" },
   ],
 } as const
 
@@ -104,17 +104,18 @@ function ActivePokemonSlot({
 
       {/* Sprite + platform container */}
       <div className="relative">
+        {/* Platform beneath sprite */}
+        <BattlePlatform
+          variant={isPlayer ? "player" : "opponent"}
+          className={cn("left-1/2 -translate-x-1/2 z-0", isPlayer ? "bottom-4" : "-bottom-1")}
+        />
         <BattleSprite
           speciesId={pokemon.speciesId || pokemon.name}
           side={isPlayer ? "back" : "front"}
           fainted={pokemon.fainted}
           size={isPlayer ? 128 : 96}
           animationClass={animationClass}
-        />
-        {/* Platform beneath sprite */}
-        <BattlePlatform
-          variant={isPlayer ? "player" : "opponent"}
-          className={cn("left-1/2 -translate-x-1/2", isPlayer ? "-bottom-2" : "-bottom-1")}
+          className="relative z-10"
         />
       </div>
 
@@ -147,9 +148,9 @@ export function BattleField({
       {/* Weather/terrain overlay */}
       <WeatherOverlay field={state.field} />
 
-      {/* Opponent pokeball indicators (right side, vertical) */}
+      {/* Opponent pokeball indicators (right side, vertical — reversed for perspective) */}
       <div className="absolute top-3 right-1 z-20">
-        <PokeballIndicator team={state.sides.p2.team} vertical />
+        <PokeballIndicator team={state.sides.p2.team} vertical className="flex-col-reverse" />
       </div>
 
       {/* Player pokeball indicators (left side, vertical) */}

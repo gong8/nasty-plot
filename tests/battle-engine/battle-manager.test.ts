@@ -7,7 +7,7 @@ let mockStreamChunks: string[] = []
 let mockStreamResolve: ((value: IteratorResult<string>) => void) | null = null
 
 // Create an async iterable mock for the BattleStream
-function createMockStream() {
+function _createMockStream() {
   const stream = {
     write: mockStreamWrite,
     destroy: mockStreamDestroy,
@@ -33,7 +33,7 @@ function createMockStream() {
   return stream
 }
 
-let currentMockStream: ReturnType<typeof createMockStream>
+let currentMockStream: ReturnType<typeof _createMockStream>
 
 vi.mock("@pkmn/sim", () => {
   // Use a real class so `new BattleStream()` works
@@ -45,10 +45,9 @@ vi.mock("@pkmn/sim", () => {
       this.write = mockStreamWrite
       this.destroy = mockStreamDestroy
       this.battle = undefined
-      currentMockStream = this as unknown as ReturnType<typeof createMockStream>
+      currentMockStream = this as unknown as ReturnType<typeof _createMockStream>
       // Also set the async iterator
-      const self = this
-      ;(self as unknown as Record<symbol, unknown>)[Symbol.asyncIterator] = function () {
+      ;(this as unknown as Record<symbol, unknown>)[Symbol.asyncIterator] = () => {
         let index = 0
         return {
           next(): Promise<IteratorResult<string>> {
@@ -98,13 +97,7 @@ vi.mock("@pkmn/sim", () => {
 })
 
 import { BattleManager, createInitialState } from "@nasty-plot/battle-engine"
-import type {
-  BattleState,
-  AIPlayer,
-  BattleAction,
-  BattleActionSet,
-  BattleFormat,
-} from "@nasty-plot/battle-engine"
+import type { AIPlayer, BattleAction } from "@nasty-plot/battle-engine"
 
 // Helper to push a chunk into the mock stream
 function pushChunk(chunk: string) {
@@ -725,7 +718,7 @@ describe("BattleManager", () => {
       pushChunk(`|error|Invalid team format\n|request|${makeP1Request()}`)
       await startPromise
 
-      expect(consoleSpy).toHaveBeenCalledWith("[BattleManager] Error:", "Invalid team format")
+      expect(consoleSpy).toHaveBeenCalledWith("[BattleManager] Sim error:", "Invalid team format")
       consoleSpy.mockRestore()
     })
 

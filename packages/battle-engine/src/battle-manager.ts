@@ -1,4 +1,4 @@
-import { BattleStreams, Teams } from "@pkmn/sim"
+import { Battle, BattleStreams, Teams } from "@pkmn/sim"
 import {
   processChunk,
   parseRequest,
@@ -14,6 +14,8 @@ import type {
   BattleLogEntry,
   SideConditions,
   AIPlayer,
+  AIDifficulty,
+  BattleCheckpoint,
   PredictedSet,
 } from "./types"
 
@@ -100,10 +102,15 @@ export class BattleManager {
   private resolveReady: ((value: void) => void) | null = null
   private destroyed = false
   private startError: string | null = null
+  /** Error received mid-battle before waitForUpdate was called */
+  private pendingError: string | null = null
   private lastProtocolChunk = ""
   private protocolLog = ""
   private setPredictor: SetPredictor | null = null
   private submitting = false
+  /** Stored slot-0 action while waiting for slot-1 in doubles */
+  private pendingP1Slot1Action: BattleAction | null = null
+  private suppressingOutput = false
 
   constructor(config: BattleManagerConfig) {
     this.config = config
@@ -210,15 +217,54 @@ export class BattleManager {
 
   /**
    * Submit a player action (move or switch).
+   *
+   * In doubles, this is called twice per turn (once per active slot).
+   * The first call stores the action and swaps availableActions to slot 2.
+   * The second call combines both and sends to the sim.
    */
   async submitAction(action: BattleAction): Promise<void> {
+    const isDoubles = this.state.format === "doubles"
+
+    // Doubles: first slot action — store it and show slot 2's options
+    if (isDoubles && this.pendingP1Slot1Action === null && this.pendingP1Slot2Actions) {
+      this.pendingP1Slot1Action = action
+      // Swap to slot 2 actions so the UI shows the second Pokemon's moves
+      this.state.availableActions = this.pendingP1Slot2Actions
+      this.pendingP1Slot2Actions = null
+      this.state.waitingForChoice = true
+      if (this.eventHandler) {
+        this.eventHandler(this.state, [])
+      }
+      return
+    }
+
     if (this.submitting) return
     this.submitting = true
     this.state.waitingForChoice = false
 
     try {
-      const choice = actionToChoice(action)
-      this.stream.write(`>p1 ${choice}`)
+      if (isDoubles && this.pendingP1Slot1Action) {
+        // Doubles: combine both slot actions
+        const slot1Choice =
+          this.pendingP1Slot1Action.type === "move" && this.pendingP1Slot1Action.moveIndex === 0
+            ? "pass"
+            : actionToChoice(this.pendingP1Slot1Action)
+        const choice = `${slot1Choice}, ${actionToChoice(action)}`
+        this.pendingP1Slot1Action = null
+        console.log("[BattleManager] p1 doubles choice:", choice)
+        this.stream.write(`>p1 ${choice}`)
+      } else if (isDoubles && this.state.availableActions?.forceSwitch) {
+        // Doubles forceSwitch with only one slot needing to switch
+        const slot = this.state.availableActions.activeSlot ?? 0
+        const actionStr = actionToChoice(action)
+        const choice = slot === 0 ? `${actionStr}, pass` : `pass, ${actionStr}`
+        console.log("[BattleManager] p1 doubles forceSwitch choice:", choice)
+        this.stream.write(`>p1 ${choice}`)
+      } else {
+        // Singles or fallback
+        const choice = actionToChoice(action)
+        this.stream.write(`>p1 ${choice}`)
+      }
 
       // Let AI make its choice
       if (this.ai && this.pendingP2Actions) {
@@ -256,6 +302,136 @@ export class BattleManager {
     return this.protocolLog
   }
 
+  /**
+   * Create a checkpoint of the current battle state for save/resume.
+   * Only valid when the battle is active and waiting for player input.
+   */
+  getCheckpoint(aiDifficulty: AIDifficulty): BattleCheckpoint | null {
+    if (this.state.phase !== "battle" || !this.state.waitingForChoice) {
+      return null
+    }
+
+    const serializedBattle = this.getSerializedBattle()
+    if (!serializedBattle) return null
+
+    return {
+      version: 1,
+      savedAt: Date.now(),
+      serializedBattle,
+      battleState: structuredClone(this.state),
+      protocolLog: this.protocolLog,
+      config: {
+        formatId: this.config.formatId,
+        simFormatId: this.config.simFormatId,
+        gameType: this.config.gameType,
+        playerTeam: this.config.playerTeam,
+        opponentTeam: this.config.opponentTeam,
+        playerName: this.config.playerName || "Player",
+        opponentName: this.config.opponentName || "Opponent",
+      },
+      aiDifficulty,
+    }
+  }
+
+  /**
+   * Resume a battle from a checkpoint.
+   * Creates a new BattleManager, initializes the stream, then swaps in the
+   * deserialized battle state using Battle.fromJSON() + battle.restart().
+   */
+  static async resume(
+    checkpoint: BattleCheckpoint,
+    ai: AIPlayer,
+    eventHandler: BattleEventHandler,
+  ): Promise<BattleManager> {
+    const manager = new BattleManager({
+      formatId: checkpoint.config.formatId,
+      simFormatId: checkpoint.config.simFormatId,
+      gameType: checkpoint.config.gameType,
+      playerTeam: checkpoint.config.playerTeam,
+      opponentTeam: checkpoint.config.opponentTeam,
+      playerName: checkpoint.config.playerName,
+      opponentName: checkpoint.config.opponentName,
+    })
+
+    manager.setAI(ai)
+    manager.suppressingOutput = true
+    manager.started = true
+
+    // Start reading the stream (but output is suppressed)
+    manager.readStream()
+
+    // Initialize BattleStream plumbing — this creates a throwaway Battle
+    // whose only purpose is to set up the `send` callback
+    const playerPacked = pasteToPackedTeam(checkpoint.config.playerTeam)
+    const opponentPacked = pasteToPackedTeam(checkpoint.config.opponentTeam)
+    const format = checkpoint.config.simFormatId || checkpoint.config.formatId || "gen9ou"
+
+    manager.stream.write(`>start {"formatid":"${format}"}`)
+    manager.stream.write(
+      `>player p1 {"name":"${checkpoint.config.playerName}","team":"${escapeTeam(playerPacked || "")}"}`,
+    )
+    manager.stream.write(
+      `>player p2 {"name":"${checkpoint.config.opponentName}","team":"${escapeTeam(opponentPacked || "")}"}`,
+    )
+
+    // Let the event loop process stream initialization
+    await new Promise((r) => setTimeout(r, 50))
+
+    // Capture the send callback from the throwaway battle
+    const streamBattle = (manager.stream as unknown as { battle?: { send: unknown } }).battle
+    if (!streamBattle) {
+      throw new Error("Failed to initialize battle stream for resume")
+    }
+    const send = streamBattle.send as (...args: unknown[]) => void
+
+    // Deserialize the saved battle and wire it back into the stream
+    const restored = Battle.fromJSON(checkpoint.serializedBattle as string)
+    restored.restart(send)
+    ;(manager.stream as unknown as { battle: unknown }).battle = restored
+
+    // Restore our state and protocol log
+    manager.state = structuredClone(checkpoint.battleState)
+    manager.protocolLog = checkpoint.protocolLog
+
+    // Re-extract pending actions from the restored battle's active requests
+    const p1Request = restored.sides[0]?.activeRequest
+    const p2Request = restored.sides[1]?.activeRequest
+
+    if (p2Request && !p2Request.wait) {
+      try {
+        const parsed = parseRequest(JSON.stringify(p2Request))
+        if (parsed.actions) {
+          manager.pendingP2Actions = parsed.actions
+          if (manager.state.sides.p2.hasTerastallized) {
+            manager.pendingP2Actions.canTera = false
+          }
+        }
+        if (manager.state.format === "doubles") {
+          const slot2 = parseRequestForSlot(JSON.stringify(p2Request), 1)
+          manager.pendingP2Slot2Actions = slot2.actions
+        }
+      } catch {
+        // Non-critical — AI will get actions on next turn
+      }
+    }
+
+    if (p1Request && !p1Request.wait && manager.state.format === "doubles") {
+      try {
+        const slot2 = parseRequestForSlot(JSON.stringify(p1Request), 1)
+        manager.pendingP1Slot2Actions = slot2.actions
+      } catch {
+        // Non-critical
+      }
+    }
+
+    // Re-enable output processing and emit current state
+    manager.suppressingOutput = false
+    manager.eventHandler = eventHandler
+    eventHandler(manager.state, [])
+
+    return manager
+  }
+
   /** Destroy the battle stream. */
   destroy() {
     this.destroyed = true
@@ -270,14 +446,21 @@ export class BattleManager {
     try {
       for await (const chunk of this.stream) {
         if (this.destroyed) break
-        this.processOutput(chunk)
+        try {
+          this.processOutput(chunk)
+        } catch (err) {
+          console.error("[BattleManager] processOutput threw:", err)
+        }
       }
-    } catch {
-      // Stream closed or errored
+    } catch (err) {
+      if (!this.destroyed) {
+        console.error("[BattleManager] Stream read error:", err)
+      }
     }
   }
 
   private processOutput(chunk: string) {
+    if (this.suppressingOutput) return
     const lines = chunk.split("\n")
     let protocolLines = ""
     const allEntries: BattleLogEntry[] = []
@@ -302,8 +485,26 @@ export class BattleManager {
 
       if (line.startsWith("|error|")) {
         const errorMsg = line.slice(7)
-        console.error("[BattleManager] Error:", errorMsg)
+        console.error("[BattleManager] Sim error:", errorMsg)
         this.startError = errorMsg
+
+        // Resolve pending waiter so waitForUpdate doesn't hang forever.
+        // During start(), the timeout handles errors — only resolve mid-battle.
+        if (this.resolveReady && this.state.phase === "battle") {
+          const resolve = this.resolveReady
+          this.resolveReady = null
+          resolve()
+        } else if (this.state.phase === "battle") {
+          // Error arrived before waitForUpdate was called — store it so
+          // waitForUpdate can resolve immediately when it's called.
+          this.pendingError = errorMsg
+        }
+        continue
+      }
+
+      // Skip stream markers — these differ per player (sideupdate + p1/p2)
+      // and break the deduplication check that prevents double-processing.
+      if (line === "update" || line === "sideupdate" || /^p[1-4]$/.test(line)) {
         continue
       }
 
@@ -394,20 +595,52 @@ export class BattleManager {
           updateSideFromRequest(this.state, "p1", parsed.side)
         }
 
+        // Reset pending slot-1 action on new request (new turn)
+        this.pendingP1Slot1Action = null
+
         if (parsed.teamPreview) {
           this.state.phase = "preview"
           this.state.waitingForChoice = true
         } else if (parsed.wait) {
           this.state.waitingForChoice = false
-        } else {
-          this.state.availableActions = parsed.actions
-          if (this.state.availableActions && this.state.sides.p1.hasTerastallized) {
-            this.state.availableActions.canTera = false
+          if (isDoubles) {
+            console.log("[BattleManager] p1 received wait request")
           }
+        } else {
           // In doubles, also parse slot 2 actions for p1
           if (isDoubles) {
             const slot2 = parseRequestForSlot(requestJson, 1)
-            this.pendingP1Slot2Actions = slot2.actions
+
+            // If slot 0 has no moves and no forceSwitch but slot 1 needs to act
+            // (e.g. forceSwitch: [false, true]), show slot 1's actions directly
+            if (
+              parsed.actions &&
+              !parsed.actions.forceSwitch &&
+              parsed.actions.moves.length === 0 &&
+              slot2.actions
+            ) {
+              // Slot 0 passes, show slot 1's forceSwitch directly
+              this.pendingP1Slot1Action = { type: "move", moveIndex: 0 } // sentinel for "pass"
+              this.state.availableActions = slot2.actions
+              this.pendingP1Slot2Actions = null
+              console.log("[BattleManager] p1 doubles: slot0 pass, showing slot1 forceSwitch")
+            } else {
+              this.state.availableActions = parsed.actions
+              this.pendingP1Slot2Actions = slot2.actions
+            }
+
+            console.log(
+              "[BattleManager] p1 request: slot0 moves=%d, slot1 actions=%s, forceSwitch=%s",
+              parsed.actions?.moves.length ?? 0,
+              slot2.actions ? `moves=${slot2.actions.moves.length}` : "null",
+              parsed.actions?.forceSwitch ?? false,
+            )
+          } else {
+            this.state.availableActions = parsed.actions
+          }
+
+          if (this.state.availableActions && this.state.sides.p1.hasTerastallized) {
+            this.state.availableActions.canTera = false
           }
           this.state.waitingForChoice = true
         }
@@ -426,6 +659,11 @@ export class BattleManager {
         if (parsed.side) {
           updateSideFromRequest(this.state, "p2", parsed.side)
         }
+
+        // Reset stale p2 pending actions on every new p2 request to prevent
+        // sending choices for fainted Pokemon on subsequent turns.
+        this.pendingP2Actions = null
+        this.pendingP2Slot2Actions = null
 
         if (parsed.teamPreview) {
           // AI will handle team preview when player submits
@@ -448,6 +686,11 @@ export class BattleManager {
             if (isDoubles) {
               const slot2 = parseRequestForSlot(requestJson, 1)
               this.pendingP2Slot2Actions = slot2.actions
+              console.log(
+                "[BattleManager] p2 request: slot0 moves=%d, slot1=%s",
+                parsed.actions?.moves.length ?? 0,
+                slot2.actions ? `moves=${slot2.actions.moves.length}` : "null",
+              )
             }
           }
         }
@@ -505,12 +748,14 @@ export class BattleManager {
       const action1 = await this.ai.chooseAction(this.state, this.pendingP2Actions)
       const action2 = await this.ai.chooseAction(this.state, this.pendingP2Slot2Actions)
       const choice = `${actionToChoice(action1)}, ${actionToChoice(action2)}`
+      console.log("[BattleManager] p2 AI doubles choice:", choice)
       this.stream.write(`>p2 ${choice}`)
       this.pendingP2Actions = null
       this.pendingP2Slot2Actions = null
     } else {
       const aiAction = await this.ai.chooseAction(this.state, this.pendingP2Actions)
       const choice = actionToChoice(aiAction)
+      console.log("[BattleManager] p2 AI choice:", choice)
       this.stream.write(`>p2 ${choice}`)
       this.pendingP2Actions = null
     }
@@ -539,9 +784,14 @@ export class BattleManager {
     if (slot2Actions) {
       const action2 = await this.ai.chooseAction(this.state, slot2Actions)
       const choice = `${actionToChoice(action1)}, ${actionToChoice(action2)}`
+      console.log("[BattleManager] p2 AI doubles forceSwitch:", choice)
       this.stream.write(`>p2 ${choice}`)
     } else {
-      const choice = actionToChoice(action1)
+      // Only slot 0 needs to switch — pass for slot 1
+      const slot = slot1Actions.activeSlot ?? 0
+      const actionStr = actionToChoice(action1)
+      const choice = slot === 0 ? `${actionStr}, pass` : `pass, ${actionStr}`
+      console.log("[BattleManager] p2 AI doubles partial forceSwitch:", choice)
       this.stream.write(`>p2 ${choice}`)
     }
   }
@@ -554,16 +804,32 @@ export class BattleManager {
         this.resolveReady = null
         resolve()
       }
+      // Resolve immediately if an error arrived before we started waiting
+      if (this.pendingError) {
+        this.pendingError = null
+        this.resolveReady = null
+        resolve()
+      }
+
+      // Safety timeout to prevent permanent hangs
+      setTimeout(() => {
+        if (this.resolveReady === resolve) {
+          console.error("[BattleManager] waitForUpdate timed out after 15s")
+          this.resolveReady = null
+          resolve()
+        }
+      }, 15_000)
     })
   }
 }
 
 function actionToChoice(action: BattleAction): string {
   if (action.type === "move") {
+    // @pkmn/sim format: move [index] [target] [mega|terastallize]
     let choice = `move ${action.moveIndex}`
+    if (action.targetSlot != null) choice += ` ${action.targetSlot}`
     if (action.tera) choice += " terastallize"
     if (action.mega) choice += " mega"
-    if (action.targetSlot != null) choice += ` ${action.targetSlot}`
     return choice
   }
   return `switch ${action.pokemonIndex}`

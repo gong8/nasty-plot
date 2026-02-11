@@ -569,7 +569,7 @@ describe("BattleManager - coverage boost", () => {
 
       // AI should have been called once (for slot 1 only)
       expect(mockAI.chooseAction).toHaveBeenCalledTimes(1)
-      expect(mockStreamWrite).toHaveBeenCalledWith(">p2 switch 3")
+      expect(mockStreamWrite).toHaveBeenCalledWith(">p2 switch 3, pass")
     })
   })
 

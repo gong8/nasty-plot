@@ -369,7 +369,7 @@ describe("GreedyAI doubles", () => {
     // Should return a move action with targetSlot defined for doubles
     if (action.type === "move") {
       expect(action.targetSlot).toBeDefined()
-      expect(action.targetSlot).toBeLessThan(0) // Negative = opponent slots
+      expect(action.targetSlot).toBeGreaterThan(0) // Positive = opponent slots (1 = p2a, 2 = p2b)
     }
     // If switch, that's also valid
   })
@@ -530,11 +530,10 @@ describe("HeuristicAI doubles", () => {
 describe("combined choice string formatting", () => {
   it("actionToChoice includes targetSlot", () => {
     // This tests the exported actionToChoice via BattleManager behavior
-    // We test the format directly
-    const action1 = { type: "move" as const, moveIndex: 1, targetSlot: -1 }
-    const action2 = { type: "move" as const, moveIndex: 2, targetSlot: -2 }
+    // Positive slots for foes: 1 = p2a, 2 = p2b
+    const action1 = { type: "move" as const, moveIndex: 1, targetSlot: 1 }
+    const action2 = { type: "move" as const, moveIndex: 2, targetSlot: 2 }
 
-    // Format: "move 1 -1, move 2 -2"
     const formatAction = (a: typeof action1) => {
       let choice = `move ${a.moveIndex}`
       if (a.targetSlot != null) choice += ` ${a.targetSlot}`
@@ -542,12 +541,12 @@ describe("combined choice string formatting", () => {
     }
 
     const combined = `${formatAction(action1)}, ${formatAction(action2)}`
-    expect(combined).toBe("move 1 -1, move 2 -2")
+    expect(combined).toBe("move 1 1, move 2 2")
   })
 
   it("handles switch + move combination", () => {
     const action1 = { type: "switch" as const, pokemonIndex: 3 }
-    const action2 = { type: "move" as const, moveIndex: 1, targetSlot: -1 }
+    const action2 = { type: "move" as const, moveIndex: 1, targetSlot: 1 }
 
     const formatAction = (a: {
       type: string
@@ -564,6 +563,6 @@ describe("combined choice string formatting", () => {
     }
 
     const combined = `${formatAction(action1)}, ${formatAction(action2)}`
-    expect(combined).toBe("switch 3, move 1 -1")
+    expect(combined).toBe("switch 3, move 1 1")
   })
 })

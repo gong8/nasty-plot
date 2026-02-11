@@ -67,8 +67,8 @@ export class GreedyAI implements AIPlayer {
           if (avgDamage > bestDamage) {
             bestDamage = avgDamage
             bestMoveIndex = i
-            // In doubles, set target slot: -1 = left foe, -2 = right foe
-            bestTargetSlot = isDoubles ? -(t + 1) : undefined
+            // In doubles, foe target slots are positive: 1 = p2a, 2 = p2b
+            bestTargetSlot = isDoubles ? t + 1 : undefined
           }
         } catch {
           // Move calc failed (status move etc.), treat as 0 damage

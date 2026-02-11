@@ -12,7 +12,9 @@ import {
   type BattleFormat,
   type AIDifficulty,
   type AIPlayer,
+  type BattleCheckpoint,
 } from "@nasty-plot/battle-engine"
+import { saveCheckpoint, clearCheckpoint } from "@/features/battle/lib/checkpoint-store"
 
 interface UseBattleConfig {
   playerTeamPaste: string
@@ -58,6 +60,7 @@ export function useBattle() {
     setIsLoading(true)
     setError(null)
     configRef.current = config
+    clearCheckpoint()
 
     // Cleanup previous battle
     managerRef.current?.destroy()
@@ -79,6 +82,17 @@ export function useBattle() {
     // Set up state update handler
     manager.onUpdate((newState) => {
       setState({ ...newState })
+
+      // Auto-save checkpoint when waiting for player choice
+      if (newState.waitingForChoice && newState.phase === "battle") {
+        const cp = manager.getCheckpoint(config.aiDifficulty)
+        if (cp) saveCheckpoint(cp)
+      }
+
+      // Clear checkpoint when battle ends
+      if (newState.phase === "ended") {
+        clearCheckpoint()
+      }
     })
 
     managerRef.current = manager
@@ -162,6 +176,51 @@ export function useBattle() {
     await startBattle(configRef.current)
   }, [startBattle])
 
+  const resumeBattle = useCallback(async (checkpoint: BattleCheckpoint) => {
+    setIsLoading(true)
+    setError(null)
+
+    // Cleanup previous battle
+    managerRef.current?.destroy()
+
+    // Reconstruct config for rematch support
+    configRef.current = {
+      playerTeamPaste: checkpoint.config.playerTeam,
+      opponentTeamPaste: checkpoint.config.opponentTeam,
+      formatId: checkpoint.config.formatId,
+      simFormatId: checkpoint.config.simFormatId,
+      gameType: checkpoint.config.gameType,
+      aiDifficulty: checkpoint.aiDifficulty,
+      playerName: checkpoint.config.playerName,
+      opponentName: checkpoint.config.opponentName,
+    }
+
+    try {
+      const ai = createAI(checkpoint.aiDifficulty)
+      const manager = await BattleManager.resume(checkpoint, ai, (newState) => {
+        setState({ ...newState })
+
+        if (newState.waitingForChoice && newState.phase === "battle") {
+          const cp = manager.getCheckpoint(checkpoint.aiDifficulty)
+          if (cp) saveCheckpoint(cp)
+        }
+
+        if (newState.phase === "ended") {
+          clearCheckpoint()
+        }
+      })
+
+      managerRef.current = manager
+      setState({ ...manager.getState() })
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to resume battle")
+      clearCheckpoint()
+      console.error("[useBattle] Resume error:", err)
+    } finally {
+      setIsLoading(false)
+    }
+  }, [])
+
   /**
    * Save the completed battle to the database.
    */
@@ -217,5 +276,6 @@ export function useBattle() {
     submitSwitch,
     rematch,
     saveBattle,
+    resumeBattle,
   }
 }

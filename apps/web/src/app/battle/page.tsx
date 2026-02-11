@@ -3,8 +3,8 @@
 import Link from "next/link"
 import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Swords, Zap, Brain, Dices, FlaskConical, Clock, Trophy } from "lucide-react"
+import { Card, CardContent } from "@/components/ui/card"
+import { Swords, FlaskConical, Clock, Trophy } from "lucide-react"
 
 interface BattleSummary {
   id: string
@@ -69,98 +69,21 @@ export default function BattleHubPage() {
           </Link>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base flex items-center gap-2">
-                <Dices className="h-4 w-4" />
-                Random AI
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">
-                Picks moves at random. A punching bag for testing new teams.
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base flex items-center gap-2">
-                <Zap className="h-4 w-4" />
-                Greedy AI
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">
-                Always goes for maximum damage. Punishes weak defensive cores.
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base flex items-center gap-2">
-                <Brain className="h-4 w-4" />
-                Smart AI
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">
-                Type-aware switching, status moves, and setup plays. The closest thing to a real
-                opponent.
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base flex items-center gap-2">
-                <FlaskConical className="h-4 w-4" />
-                Expert AI (MCTS)
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">
-                Monte Carlo tree search. Simulates thousands of games to find the optimal play each
-                turn.
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Tools */}
-        <div className="mt-10 grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Link href="/battle/simulate">
-            <Card className="hover:bg-accent/50 transition-colors cursor-pointer h-full">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <FlaskConical className="h-4 w-4" />
-                  Batch Simulation
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">
-                  Run hundreds of AI-vs-AI games to statistically evaluate two teams. See win rates,
-                  average game length, and per-Pokemon performance.
-                </p>
-              </CardContent>
+            <Card className="hover:bg-accent/50 transition-colors cursor-pointer h-full p-4">
+              <div className="text-base font-semibold flex items-center gap-2">
+                <FlaskConical className="h-4 w-4" />
+                Batch Simulation
+              </div>
             </Card>
           </Link>
           <Link href="/battle/sample-teams">
-            <Card className="hover:bg-accent/50 transition-colors cursor-pointer h-full">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <Trophy className="h-4 w-4" />
-                  Sample Teams
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">
-                  Browse curated competitive teams by format and archetype. Use them to battle or
-                  benchmark your own teams.
-                </p>
-              </CardContent>
+            <Card className="hover:bg-accent/50 transition-colors cursor-pointer h-full p-4">
+              <div className="text-base font-semibold flex items-center gap-2">
+                <Trophy className="h-4 w-4" />
+                Sample Teams
+              </div>
             </Card>
           </Link>
         </div>

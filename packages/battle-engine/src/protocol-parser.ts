@@ -23,6 +23,32 @@ const dex = Dex.forGen(9)
 
 type Side = "p1" | "p2"
 
+const BOOST_STAT_NAMES: Record<string, string> = {
+  atk: "Attack",
+  def: "Defense",
+  spa: "Sp. Atk",
+  spd: "Sp. Def",
+  spe: "Speed",
+}
+
+const STAT_BOOST_ABILITIES = ["quarkdrive", "protosynthesis"] as const
+
+/** Parse "quarkdrivespe" → { ability: "Quark Drive", stat: "Speed" } or null */
+function parseStatBoostCondition(condition: string): { ability: string; stat: string } | null {
+  const lower = condition.toLowerCase()
+  for (const prefix of STAT_BOOST_ABILITIES) {
+    if (lower.startsWith(prefix)) {
+      const statKey = lower.slice(prefix.length)
+      const statName = BOOST_STAT_NAMES[statKey]
+      if (statName) {
+        const abilityName = prefix === "quarkdrive" ? "Quark Drive" : "Protosynthesis"
+        return { ability: abilityName, stat: statName }
+      }
+    }
+  }
+  return null
+}
+
 /** Parse "p1a: Garchomp" → { side: "p1", slot: "a", name: "Garchomp" } */
 function parsePokemonIdent(ident: string): { side: Side; slot: string; name: string } | null {
   const match = ident.match(/^(p[12])([a-d]?):\s*(.+)$/)
@@ -491,6 +517,15 @@ export function processLine(state: BattleState, line: string): BattleLogEntry | 
         }
       }
 
+      const boost = condition ? parseStatBoostCondition(condition) : null
+      if (boost) {
+        return logEntry(
+          "ability",
+          `${ident.name}'s ${boost.ability} boosted its ${boost.stat}!`,
+          state.turn,
+          ident.side,
+        )
+      }
       return logEntry("start", `${ident.name}: ${condition} started!`, state.turn, ident.side)
     }
 
@@ -501,6 +536,15 @@ export function processLine(state: BattleState, line: string): BattleLogEntry | 
       const pokemon = findPokemon(state, ident.side, ident.name)
       if (pokemon && condition) {
         pokemon.volatiles = pokemon.volatiles.filter((v) => v !== condition)
+      }
+      const endBoost = condition ? parseStatBoostCondition(condition) : null
+      if (endBoost) {
+        return logEntry(
+          "ability",
+          `${ident.name}'s ${endBoost.ability} ${endBoost.stat} boost ended!`,
+          state.turn,
+          ident.side,
+        )
       }
       return logEntry("end", `${ident.name}: ${condition} ended!`, state.turn, ident.side)
     }
@@ -745,21 +789,27 @@ export function parseRequest(requestJson: string): {
   }
 
   if (req.forceSwitch) {
-    // Forced switch after KO
-    const switches = extractSwitches(req.side?.pokemon || [])
-    return {
-      actions: {
-        moves: [],
-        canTera: false,
-        switches,
+    // In doubles, forceSwitch is an array like [true, false].
+    // Only return forceSwitch actions for slot 0 if slot 0 needs to switch.
+    const forceArr: boolean[] = Array.isArray(req.forceSwitch) ? req.forceSwitch : [req.forceSwitch]
+
+    if (forceArr[0]) {
+      const switches = extractSwitches(req.side?.pokemon || [])
+      return {
+        actions: {
+          moves: [],
+          canTera: false,
+          switches,
+          forceSwitch: true,
+          activeSlot: 0,
+        },
+        teamPreview: false,
+        wait: false,
         forceSwitch: true,
-        activeSlot: 0,
-      },
-      teamPreview: false,
-      wait: false,
-      forceSwitch: true,
-      side: req.side,
+        side: req.side,
+      }
     }
+    // Slot 0 doesn't need to switch — fall through to normal move extraction
   }
 
   // Normal turn: extract moves and switches
@@ -888,9 +938,10 @@ function extractSwitches(pokemon: RequestPokemon[]): BattleActionSet["switches"]
         maxHp: hpData.maxHp,
         status,
         fainted: hpData.hp === 0 || p.condition === "0 fnt",
+        active: p.active ?? false,
       }
     })
-    .filter((p) => !p.fainted)
+    .filter((p) => !p.fainted && !p.active)
 }
 
 /** Update side pokemon data from request side info */

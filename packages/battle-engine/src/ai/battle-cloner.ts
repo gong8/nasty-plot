@@ -154,9 +154,9 @@ function getDoublesLegalChoices(
         // Add target variants for moves that need targeting
         const target = active.moves[i].target
         if (target === "normal" || target === "any") {
-          // Can target either opponent: -1 (left foe) or -2 (right foe)
-          slotChoices.push(`move ${i + 1} -1`)
-          slotChoices.push(`move ${i + 1} -2`)
+          // Can target either opponent: 1 (p2a) or 2 (p2b)
+          slotChoices.push(`move ${i + 1} 1`)
+          slotChoices.push(`move ${i + 1} 2`)
         } else {
           // Spread moves, self-targeting, etc. — no target needed
           slotChoices.push(`move ${i + 1}`)

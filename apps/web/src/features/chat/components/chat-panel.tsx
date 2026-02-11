@@ -3,11 +3,13 @@
 import { useRef, useEffect, useCallback, useState } from "react"
 import { useChatSidebar } from "@/features/chat/context/chat-provider"
 import { useChatStream } from "@/features/chat/hooks/use-chat-stream"
+import { useContextMismatch } from "@/features/chat/hooks/use-context-mismatch"
 import { ChatMessage } from "./chat-message"
 import { ChatToolCall } from "./chat-tool-call"
 import { ChatActionNotify } from "./chat-action-notify"
 import { ChatPlanDisplay } from "./chat-plan-display"
 import { ChatInput } from "./chat-input"
+import { ContextMismatchBanner } from "./context-mismatch-banner"
 import { ArrowDown } from "lucide-react"
 
 interface ChatPanelProps {
@@ -23,6 +25,8 @@ export function ChatPanel({ sessionId }: ChatPanelProps) {
   const { activeSessionId, pendingInput, clearPendingInput } = useChatSidebar()
   const effectiveSessionId = sessionId ?? activeSessionId ?? undefined
   const [isAtBottom, setIsAtBottom] = useState(true)
+
+  const { mismatch } = useContextMismatch()
 
   const {
     messages,
@@ -141,6 +145,9 @@ export function ChatPanel({ sessionId }: ChatPanelProps) {
         </div>
       )}
 
+      {/* Context mismatch warning */}
+      {mismatch && <ContextMismatchBanner mismatch={mismatch} />}
+
       {/* Input area */}
       <ChatInput
         onSend={handleSend}
@@ -151,6 +158,7 @@ export function ChatPanel({ sessionId }: ChatPanelProps) {
         lastMessageIsAssistant={lastMsg?.role === "assistant"}
         pendingInput={pendingInput}
         onClearPendingInput={clearPendingInput}
+        disabled={!!mismatch}
       />
     </div>
   )

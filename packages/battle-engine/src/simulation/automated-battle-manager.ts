@@ -126,6 +126,10 @@ export async function runAutomatedBattle(
           }
           continue
         }
+        // Skip stream markers that differ per player and break deduplication
+        if (line === "update" || line === "sideupdate" || /^p[1-4]$/.test(line)) {
+          continue
+        }
         protoLines += line + "\n"
       }
 
@@ -265,10 +269,11 @@ function actionToChoice(action: {
   mega?: boolean
 }): string {
   if (action.type === "move") {
+    // @pkmn/sim format: move [index] [target] [mega|terastallize]
     let choice = `move ${action.moveIndex}`
+    if (action.targetSlot != null) choice += ` ${action.targetSlot}`
     if (action.tera) choice += " terastallize"
     if (action.mega) choice += " mega"
-    if (action.targetSlot != null) choice += ` ${action.targetSlot}`
     return choice
   }
   return `switch ${action.pokemonIndex}`

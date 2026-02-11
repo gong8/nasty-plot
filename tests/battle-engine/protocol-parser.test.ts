@@ -352,7 +352,7 @@ describe("protocol-parser", () => {
       expect(result.actions!.moves).toHaveLength(2)
       expect(result.actions!.moves[0].name).toBe("Earthquake")
       expect(result.actions!.canTera).toBe(true)
-      expect(result.actions!.switches).toHaveLength(2) // both non-fainted pokemon
+      expect(result.actions!.switches).toHaveLength(1) // only non-active, non-fainted pokemon
     })
 
     it("parses a force switch request", () => {

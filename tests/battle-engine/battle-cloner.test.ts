@@ -237,8 +237,8 @@ describe("getLegalChoices", () => {
     for (const choice of choices) {
       expect(choice).toMatch(/^.+, .+$/)
     }
-    // Verify some expected combinations exist
-    expect(choices.some((c) => c.includes("move 1 -1"))).toBe(true)
+    // Verify some expected combinations exist (positive slots for foes: 1, 2)
+    expect(choices.some((c) => c.includes("move 1 1"))).toBe(true)
     expect(choices.some((c) => c.includes("move 2"))).toBe(true)
     expect(choices.some((c) => c.includes("switch 3"))).toBe(true)
   })
@@ -382,9 +382,9 @@ describe("getLegalChoices", () => {
 
     const choices = getLegalChoices(mockBattle as never, "p1")
     expect(choices.length).toBeGreaterThan(0)
-    // "any" target should generate -1 and -2 variants
-    expect(choices.some((c) => c.includes("move 1 -1"))).toBe(true)
-    expect(choices.some((c) => c.includes("move 1 -2"))).toBe(true)
+    // "any" target should generate foe target variants (positive: 1, 2)
+    expect(choices.some((c) => c.includes("move 1 1"))).toBe(true)
+    expect(choices.some((c) => c.includes("move 1 2"))).toBe(true)
   })
 })
 

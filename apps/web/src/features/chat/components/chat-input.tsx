@@ -14,6 +14,7 @@ interface ChatInputProps {
   lastMessageIsAssistant: boolean
   pendingInput?: string | null
   onClearPendingInput?: () => void
+  disabled?: boolean
 }
 
 export function ChatInput({
@@ -25,6 +26,7 @@ export function ChatInput({
   lastMessageIsAssistant,
   pendingInput,
   onClearPendingInput,
+  disabled,
 }: ChatInputProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const inputRef = useRef("")
@@ -41,7 +43,7 @@ export function ChatInput({
 
   const handleSend = () => {
     const value = textareaRef.current?.value.trim()
-    if (!value || isStreaming) return
+    if (!value || isStreaming || disabled) return
     onSend(value)
     if (textareaRef.current) {
       textareaRef.current.value = ""
@@ -59,7 +61,7 @@ export function ChatInput({
   return (
     <div className="border-t border-border p-3">
       {/* Retry button - show when not streaming and last message is from assistant */}
-      {!isStreaming && hasMessages && lastMessageIsAssistant && (
+      {!isStreaming && !disabled && hasMessages && lastMessageIsAssistant && (
         <div className="flex justify-center mb-2">
           <Button
             variant="ghost"
@@ -80,10 +82,14 @@ export function ChatInput({
             inputRef.current = e.target.value
           }}
           onKeyDown={handleKeyDown}
-          placeholder="Ask about team building, sets, damage calcs..."
+          placeholder={
+            disabled
+              ? "Navigate to the correct page to continue this chat..."
+              : "Ask about team building, sets, damage calcs..."
+          }
           className="min-h-[44px] max-h-[120px] resize-none"
           rows={1}
-          disabled={isStreaming}
+          disabled={isStreaming || disabled}
         />
         {isStreaming ? (
           <Button
@@ -96,7 +102,12 @@ export function ChatInput({
             <Square className="w-4 h-4" />
           </Button>
         ) : (
-          <Button onClick={handleSend} size="icon" className="flex-shrink-0 h-[44px] w-[44px]">
+          <Button
+            onClick={handleSend}
+            size="icon"
+            className="flex-shrink-0 h-[44px] w-[44px]"
+            disabled={disabled}
+          >
             <Send className="w-4 h-4" />
           </Button>
         )}

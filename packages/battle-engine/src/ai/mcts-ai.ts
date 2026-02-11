@@ -397,7 +397,7 @@ export class MCTSAI implements AIPlayer {
 
   /**
    * Convert an MCTS choice string back to a BattleAction.
-   * Choice strings may contain target slots like "move 1 -1".
+   * Choice strings may contain target slots like "move 1 1" (foe) or "move 1 -2" (ally).
    */
   private convertChoiceToAction(choice: string, actions: BattleActionSet): BattleAction {
     if (choice.startsWith("move ")) {

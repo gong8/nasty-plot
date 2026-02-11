@@ -90,8 +90,16 @@ export async function streamChat(options: StreamChatOptions): Promise<ReadableSt
   const { messages, signal, context, contextMode, contextData } = options
   let { teamId, formatId } = options
 
-  // Fallback: extract teamId/formatId from contextData if not provided directly
-  if (contextData && (!teamId || !formatId)) {
+  // Extract teamId/formatId — frozen context wins for context-locked sessions
+  if (contextMode && contextData) {
+    try {
+      const ctxData = JSON.parse(contextData)
+      teamId = ctxData.teamId || teamId
+      formatId = ctxData.formatId || formatId
+    } catch {
+      // Invalid JSON is fine
+    }
+  } else if (contextData && (!teamId || !formatId)) {
     try {
       const ctxData = JSON.parse(contextData)
       if (!teamId && ctxData.teamId) teamId = ctxData.teamId

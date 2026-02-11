@@ -86,17 +86,32 @@ export async function POST(req: NextRequest) {
     const sessionContextMode = session?.contextMode ?? contextMode
     const sessionContextData = session?.contextData ?? contextData
 
-    // Extract teamId/formatId from session context data as fallback
-    let effectiveTeamId = teamId || context?.teamId
-    let effectiveFormatId = formatId || context?.formatId
+    // Extract teamId/formatId — frozen context wins for context-locked sessions
+    let effectiveTeamId: string | undefined
+    let effectiveFormatId: string | undefined
 
-    if (sessionContextData && (!effectiveTeamId || !effectiveFormatId)) {
+    if (sessionContextMode && sessionContextData) {
+      // Context-locked session: frozen context takes priority over live
       try {
         const ctxData = JSON.parse(sessionContextData)
-        if (!effectiveTeamId && ctxData.teamId) effectiveTeamId = ctxData.teamId
-        if (!effectiveFormatId && ctxData.formatId) effectiveFormatId = ctxData.formatId
+        effectiveTeamId = ctxData.teamId || teamId || context?.teamId
+        effectiveFormatId = ctxData.formatId || formatId || context?.formatId
       } catch {
-        // Invalid JSON is fine
+        effectiveTeamId = teamId || context?.teamId
+        effectiveFormatId = formatId || context?.formatId
+      }
+    } else {
+      // General session: live context takes priority
+      effectiveTeamId = teamId || context?.teamId
+      effectiveFormatId = formatId || context?.formatId
+      if (sessionContextData && (!effectiveTeamId || !effectiveFormatId)) {
+        try {
+          const ctxData = JSON.parse(sessionContextData)
+          if (!effectiveTeamId && ctxData.teamId) effectiveTeamId = ctxData.teamId
+          if (!effectiveFormatId && ctxData.formatId) effectiveFormatId = ctxData.formatId
+        } catch {
+          // Invalid JSON is fine
+        }
       }
     }
 

@@ -21,6 +21,8 @@ interface BattleScreenProps {
   sidebarTabs: SidebarTab[]
   /** Content rendered below the battle field in the left column (e.g. move controls) */
   bottomContent?: React.ReactNode
+  /** Vertical eval bar rendered to the left of the battle field, height-matched to field row */
+  evalBar?: React.ReactNode
   className?: string
 }
 
@@ -39,6 +41,7 @@ export function BattleScreen({
   onSpeedChange,
   sidebarTabs,
   bottomContent,
+  evalBar,
   className,
 }: BattleScreenProps) {
   const hasControls = !!bottomContent
@@ -53,8 +56,16 @@ export function BattleScreen({
         className,
       )}
     >
-      {/* Battle field */}
-      <div className={cn("min-w-0", hasControls ? "lg:col-start-1 lg:row-start-1" : "lg:flex-[7]")}>
+      {/* Battle field — with eval bar absolutely positioned to its left */}
+      <div
+        className={cn(
+          "min-w-0 relative",
+          hasControls ? "lg:col-start-1 lg:row-start-1" : "lg:flex-[7]",
+        )}
+      >
+        {evalBar && (
+          <div className="hidden lg:flex absolute right-full top-0 bottom-0 mr-2">{evalBar}</div>
+        )}
         <BattleField
           state={state}
           animationStates={animState.slotAnimations}
@@ -67,7 +78,7 @@ export function BattleScreen({
         />
       </div>
 
-      {/* Controls below field — always rendered to keep grid row occupied */}
+      {/* Controls below field */}
       {hasControls && (
         <div className="lg:col-start-1 lg:row-start-2 min-h-0 overflow-y-auto">{bottomContent}</div>
       )}
