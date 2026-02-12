@@ -124,7 +124,10 @@ async function seedFormat(
     if (setsStale) {
       console.log(`[seed] Fetching Smogon sets for ${format.id}...`)
       try {
-        await fetchSmogonSets(format.id, { pkmnSetsId: format.pkmnSetsId })
+        await fetchSmogonSets(format.id, {
+          pkmnSetsId: format.pkmnSetsId,
+          smogonStatsId: format.smogonStatsId,
+        })
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err)
         console.error(`[seed] Failed to fetch sets for ${format.id}: ${msg}`)

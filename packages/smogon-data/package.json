@@ -13,6 +13,7 @@
   "dependencies": {
     "@pkmn/smogon": "^0.5.28",
     "@nasty-plot/core": "workspace:*",
-    "@nasty-plot/db": "workspace:*"
+    "@nasty-plot/db": "workspace:*",
+    "@nasty-plot/pokemon-data": "workspace:*"
   }
 }

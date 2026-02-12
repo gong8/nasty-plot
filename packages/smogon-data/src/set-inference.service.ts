@@ -108,35 +108,24 @@ function buildFormatFallbacks(formatId: string): string[] {
 }
 
 /**
- * Merge sets from all fallback formats.
- * Earlier (more specific) formats take priority per-species: if a species
- * already has sets from a higher-priority format, later formats won't
- * overwrite them. This ensures e.g. Iron Crown gets sets from gen9vgc2024
- * even when the primary fallback (gen9vgc2025) doesn't include it.
+ * Find the best matching format that has sets.
+ * Tries the format itself, then falls back to related formats (e.g. earlier VGC years).
+ * Returns sets from the *single* best match.
  */
 async function resolveFormatWithSets(
   formatId: string,
 ): Promise<{ resolvedFormat: string; sets: Record<string, SmogonSetData[]> }> {
   const fallbacks = buildFormatFallbacks(formatId)
-  const merged: Record<string, SmogonSetData[]> = {}
-  let resolvedFormat = formatId
 
   for (const candidate of fallbacks) {
     const sets = await getAllSetsForFormat(candidate)
-    if (Object.keys(sets).length === 0) continue
-
-    if (Object.keys(merged).length === 0) {
-      resolvedFormat = candidate
-    }
-
-    for (const [speciesId, speciesSets] of Object.entries(sets)) {
-      if (!merged[speciesId]) {
-        merged[speciesId] = speciesSets
-      }
+    if (Object.keys(sets).length > 0) {
+      return { resolvedFormat: candidate, sets }
     }
   }
 
-  return { resolvedFormat, sets: merged }
+  // No sets found in any fallback
+  return { resolvedFormat: formatId, sets: {} }
 }
 
 /**
@@ -209,11 +198,10 @@ export function scoreSetMatch(extracted: ExtractedPokemon, set: SmogonSetData): 
     }
   }
 
-  // Heavy penalty for unmatched moves — each unmatched move cuts score by 40%
+  // Heavy penalty for unmatched moves — if any move is not found, the set is disqualified
+  // This strictness is appropriate now that we have accurate generation-specific data
   if (unmatchedMoves > 0) {
-    const penalty = Math.pow(0.6, unmatchedMoves)
-    score *= penalty
-    maxScore = Math.max(maxScore, 0.01) // prevent division by zero
+    return { set, score: 0, matchedMoves }
   }
 
   // When nothing is revealed, the species match alone gives a low base score

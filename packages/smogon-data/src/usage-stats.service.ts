@@ -3,13 +3,18 @@ import { toId } from "@nasty-plot/core"
 import type { UsageStatsEntry, TeammateCorrelation } from "@nasty-plot/core"
 
 // Build Smogon stats URL for a given format/year/month
-function buildStatsUrl(formatId: string, year: number, month: number, rating = 1695): string {
+export function buildStatsUrl(
+  formatId: string,
+  year: number,
+  month: number,
+  rating = 1695,
+): string {
   const monthStr = String(month).padStart(2, "0")
   return `https://www.smogon.com/stats/${year}-${monthStr}/chaos/${formatId}-${rating}.json`
 }
 
 // Raw shape from Smogon chaos JSON
-interface SmogonChaosData {
+export interface SmogonChaosData {
   info: { metagame: string; cutoff: number }
   data: Record<
     string,
@@ -21,6 +26,8 @@ interface SmogonChaosData {
       Moves: Record<string, number>
       Teammates: Record<string, number>
       "Checks and Counters": Record<string, [number, number, ...number[]]>
+      Spreads?: Record<string, number>
+      "Tera Types"?: Record<string, number>
     }
   >
 }
@@ -34,7 +41,7 @@ const RATING_THRESHOLDS = [1695, 1630, 1500, 0]
  * Smogon stats are typically published a month behind.
  * Tries multiple rating thresholds per month since only OU has 1695.
  */
-async function resolveYearMonth(
+export async function resolveYearMonth(
   formatId: string,
   year?: number,
   month?: number,

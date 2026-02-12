@@ -103,10 +103,8 @@ describe("scoreSetMatch", () => {
     const set = makeSet()
     const result = scoreSetMatch(extracted, set)
 
-    // Unmatched moves get a heavy penalty (0.6^n) but not full disqualification
-    expect(result.score).toBeGreaterThan(0)
-    expect(result.score).toBeLessThan(0.15) // heavily penalized
-    expect(result.matchedMoves).toEqual(["Earthquake"])
+    // Unmatched moves cause disqualification
+    expect(result.score).toBe(0)
   })
 
   it("matches slash option moves", () => {
@@ -242,7 +240,7 @@ describe("inferFromSets", () => {
     expect(result.confidence).toBeGreaterThan(0)
   })
 
-  it("returns low-confidence result when moves don't match any set", () => {
+  it("returns null result when moves don't match any set", () => {
     const extracted = makeExtracted({
       moves: ["Flamethrower"],
     })
@@ -250,9 +248,9 @@ describe("inferFromSets", () => {
 
     const result = inferFromSets(extracted, [set])
 
-    // Still picks the best available set, but with low confidence
-    expect(result.bestMatch).not.toBeNull()
-    expect(result.confidence).toBeLessThan(15)
+    // Strict scoring returns no match
+    expect(result.bestMatch).toBeNull()
+    expect(result.confidence).toBe(0)
   })
 
   it("preserves revealed data", () => {
@@ -585,58 +583,5 @@ describe("enrichExtractedTeam", () => {
     const result = await enrichExtractedTeam(team, "gen9vgc2030regz")
 
     expect(result.pokemon[0].nature).toBe("Jolly")
-  })
-
-  it("merges sets from multiple fallback formats for different species", async () => {
-    // gen9vgc2025 has Flutter Mane but NOT Iron Crown
-    // gen9vgc2024 has Iron Crown
-    mockFindMany.mockImplementation(({ where }: { where: { formatId: string } }) => {
-      if (where.formatId === "gen9vgc2025") {
-        return Promise.resolve([
-          makeDbRow({
-            pokemonId: "fluttermane",
-            setName: "Choice Specs",
-            ability: "Protosynthesis",
-            item: "Choice Specs",
-            nature: "Timid",
-            moves: JSON.stringify(["Moonblast", "Shadow Ball", "Mystical Fire", "Dazzling Gleam"]),
-            evs: JSON.stringify({ spa: 252, spe: 252, hp: 4 }),
-          }),
-        ])
-      }
-      if (where.formatId === "gen9vgc2024") {
-        return Promise.resolve([
-          makeDbRow({
-            pokemonId: "ironcrown",
-            setName: "Booster Energy",
-            ability: "Quark Drive",
-            item: "Booster Energy",
-            nature: "Timid",
-            moves: JSON.stringify(["Tachyon Cutter", "Expanding Force", "Calm Mind", "Protect"]),
-            evs: JSON.stringify({ spa: 252, spe: 252, hp: 4 }),
-          }),
-        ])
-      }
-      return Promise.resolve([])
-    })
-
-    const team = {
-      playerName: "Test Player",
-      pokemon: [
-        makeExtracted({ speciesId: "fluttermane", species: "Flutter Mane", moves: [] }),
-        makeExtracted({ speciesId: "ironcrown", species: "Iron Crown", moves: [] }),
-      ],
-    }
-
-    const result = await enrichExtractedTeam(team, "gen9vgc2026regfbo3")
-
-    // Flutter Mane from gen9vgc2025
-    expect(result.pokemon[0].nature).toBe("Timid")
-    expect(result.pokemon[0].ability).toBe("Protosynthesis")
-
-    // Iron Crown from gen9vgc2024 (merged from a later fallback)
-    expect(result.pokemon[1].nature).toBe("Timid")
-    expect(result.pokemon[1].ability).toBe("Quark Drive")
-    expect(result.pokemon[1].item).toBe("Booster Energy")
   })
 })

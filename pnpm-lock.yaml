@@ -394,6 +394,9 @@ importers:
       '@nasty-plot/db':
         specifier: workspace:*
         version: link:../db
+      '@nasty-plot/pokemon-data':
+        specifier: workspace:*
+        version: link:../pokemon-data
       '@pkmn/smogon':
         specifier: ^0.5.28
         version: 0.5.28

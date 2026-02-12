@@ -1,6 +1,8 @@
 import { prisma } from "@nasty-plot/db"
 import { toId } from "@nasty-plot/core"
 import type { SmogonSetData, NatureName, PokemonType } from "@nasty-plot/core"
+import { resolveYearMonth, type SmogonChaosData } from "./usage-stats.service"
+import { generateSetsFromChaos } from "./chaos-sets.service"
 
 function buildSetsUrl(formatId: string): string {
   return `https://data.pkmn.cc/sets/${formatId}.json`
@@ -38,7 +40,7 @@ function firstRecord(
  */
 export async function fetchSmogonSets(
   formatId: string,
-  options?: { pkmnSetsId?: string },
+  options?: { pkmnSetsId?: string; smogonStatsId?: string },
 ): Promise<void> {
   const setsId = options?.pkmnSetsId ?? formatId
   const url = buildSetsUrl(setsId)
@@ -46,6 +48,12 @@ export async function fetchSmogonSets(
 
   const res = await fetch(url)
   if (!res.ok) {
+    if (res.status === 404) {
+      console.log(
+        `[smogon-sets] Sets not found at ${url}, attempting to generate from usage stats...`,
+      )
+      return fetchAndSaveChaosSets(formatId, options?.smogonStatsId ?? setsId)
+    }
     throw new Error(`Failed to fetch sets: ${res.status} ${res.statusText} (${url})`)
   }
 
@@ -132,6 +140,75 @@ export async function fetchSmogonSets(
   console.log(
     `[smogon-sets] Done: ${totalSets} sets saved for ${formatId}${skipped > 0 ? ` (${skipped} skipped)` : ""}`,
   )
+}
+
+/**
+ * Fallback: Generate sets from Smogon Chaos usage stats when pkmn.cc has no pre-compiled sets.
+ */
+async function fetchAndSaveChaosSets(formatId: string, smogonStatsId: string): Promise<void> {
+  // Use the stats ID (e.g. gen9vgc2026regf) to find the chaos JSON
+  const { url } = await resolveYearMonth(smogonStatsId)
+  console.log(`[smogon-sets] Fetching chaos stats from ${url}`)
+
+  const res = await fetch(url)
+  if (!res.ok) {
+    throw new Error(`Failed to fetch chaos stats: ${res.status} ${res.statusText} (${url})`)
+  }
+
+  const chaos: SmogonChaosData = await res.json()
+  const sets = generateSetsFromChaos(chaos)
+
+  console.log(`[smogon-sets] Generated ${sets.length} sets from usage stats. Saving to DB...`)
+
+  for (const set of sets) {
+    await prisma.smogonSet.upsert({
+      where: {
+        formatId_pokemonId_setName: { formatId, pokemonId: set.pokemonId, setName: set.setName },
+      },
+      update: {
+        ability: set.ability,
+        item: set.item,
+        nature: set.nature,
+        teraType: set.teraType ?? null,
+        moves: JSON.stringify(set.moves),
+        evs: JSON.stringify(set.evs),
+        ivs: null, // Chaos sets don't infer IVs
+      },
+      create: {
+        formatId,
+        pokemonId: set.pokemonId,
+        setName: set.setName,
+        ability: set.ability,
+        item: set.item,
+        nature: set.nature,
+        teraType: set.teraType ?? null,
+        moves: JSON.stringify(set.moves),
+        evs: JSON.stringify(set.evs),
+        ivs: null,
+      },
+    })
+  }
+
+  // Update sync log
+  await prisma.dataSyncLog.upsert({
+    where: {
+      source_formatId: { source: "smogon-sets", formatId },
+    },
+    update: {
+      lastSynced: new Date(),
+      status: "success",
+      message: `Generated ${sets.length} sets from usage stats (fallback)`,
+    },
+    create: {
+      source: "smogon-sets",
+      formatId,
+      lastSynced: new Date(),
+      status: "success",
+      message: `Generated ${sets.length} sets from usage stats (fallback)`,
+    },
+  })
+
+  console.log(`[smogon-sets] Done: ${sets.length} sets generated for ${formatId}`)
 }
 
 /**
