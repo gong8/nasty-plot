@@ -520,6 +520,14 @@ export class BattleManager {
       allEntries.push(...entries)
     }
 
+    // Resolve immediately if battle has ended
+    // This is critical because sim might not send a final request after |win|
+    if (this.state.phase === "ended" && this.resolveReady) {
+      const resolve = this.resolveReady
+      this.resolveReady = null
+      resolve()
+    }
+
     // Update SetPredictor from opponent observations
     if (this.setPredictor) {
       this.updateSetPredictorFromLines(chunk)
