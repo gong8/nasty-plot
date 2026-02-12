@@ -6,9 +6,8 @@ import { useChatSidebar } from "@/features/chat/context/chat-provider"
 import { usePageContext } from "@/features/chat/context/page-context-provider"
 import { useChatSessions, useDeleteChatSession } from "@/features/chat/hooks/use-chat-sessions"
 import { ContextModeBadge } from "./context-mode-badge"
-import { cn } from "@/lib/utils"
-import type { ChatSessionData } from "@nasty-plot/core"
-import type { PageType } from "@/features/chat/context/page-context-provider"
+import { cn } from "@nasty-plot/ui"
+import type { ChatSessionData, PageType } from "@nasty-plot/core"
 
 function relativeTime(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime()

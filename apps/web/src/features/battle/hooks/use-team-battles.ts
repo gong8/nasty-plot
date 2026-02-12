@@ -1,45 +1,14 @@
 "use client"
 
 import { useQuery } from "@tanstack/react-query"
-
-interface BattleSummary {
-  id: string
-  formatId: string
-  gameType: string
-  mode: string
-  aiDifficulty: string | null
-  team1Name: string
-  team2Name: string
-  team1Id: string | null
-  team2Id: string | null
-  batchId: string | null
-  winnerId: string | null
-  turnCount: number
-  createdAt: string
-}
+import type { TeamBattleAnalytics } from "@nasty-plot/battle-engine"
+import type { BattleSummary } from "../types"
 
 interface BattlesResponse {
   battles: BattleSummary[]
   total: number
   page: number
   limit: number
-}
-
-interface TeamBattleAnalytics {
-  totalBattles: number
-  wins: number
-  losses: number
-  draws: number
-  winRate: number
-  avgTurnCount: number
-  battlesByFormat: Record<string, { total: number; wins: number; losses: number }>
-  recentTrend: {
-    battleId: string
-    result: "win" | "loss" | "draw"
-    turnCount: number
-    createdAt: string
-    opponentName: string
-  }[]
 }
 
 export function useTeamBattles(teamId: string | undefined, page = 1) {

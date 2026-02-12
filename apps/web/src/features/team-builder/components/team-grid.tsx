@@ -4,8 +4,7 @@ import { Plus } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { TYPE_COLORS, isLightTypeColor, type PokemonType, type TeamData } from "@nasty-plot/core"
-import { PokemonSprite } from "@nasty-plot/ui"
-import { cn } from "@/lib/utils"
+import { cn, PokemonSprite } from "@nasty-plot/ui"
 
 interface TeamGridProps {
   team: TeamData

@@ -1,27 +1,19 @@
 "use client"
 
 import { useQuery } from "@tanstack/react-query"
+import type { SampleTeamData } from "@nasty-plot/teams"
 
-export interface SampleTeamData {
-  id: string
-  name: string
-  formatId: string
-  archetype: string | null
-  source: string | null
-  sourceUrl: string | null
-  paste: string
-  pokemonIds: string
-  isActive: boolean
-}
+/** API returns SampleTeamData without the Date-typed createdAt field */
+type SampleTeamApiData = Omit<SampleTeamData, "createdAt">
 
-async function fetchSampleTeams(formatId: string): Promise<SampleTeamData[]> {
+async function fetchSampleTeams(formatId: string): Promise<SampleTeamApiData[]> {
   const res = await fetch(`/api/sample-teams?formatId=${formatId}`)
   if (!res.ok) throw new Error("Failed to fetch sample teams")
   return res.json()
 }
 
 export function useSampleTeams(formatId?: string) {
-  return useQuery<SampleTeamData[]>({
+  return useQuery<SampleTeamApiData[]>({
     queryKey: ["sample-teams", formatId],
     queryFn: () => fetchSampleTeams(formatId!),
     enabled: !!formatId,

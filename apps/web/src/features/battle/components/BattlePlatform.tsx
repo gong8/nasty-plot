@@ -1,6 +1,6 @@
 "use client"
 
-import { cn } from "@/lib/utils"
+import { cn } from "@nasty-plot/ui"
 
 interface BattlePlatformProps {
   variant: "player" | "opponent"

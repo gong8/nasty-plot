@@ -3,7 +3,7 @@
 import type { TeamAnalysis } from "@nasty-plot/core"
 import { AlertTriangle, Info, Lightbulb } from "lucide-react"
 import { ConceptTooltip } from "./concept-tooltip"
-import { cn } from "@/lib/utils"
+import { cn } from "@nasty-plot/ui"
 
 interface RoleSuggestionBannerProps {
   analysis: TeamAnalysis | null

@@ -3,8 +3,7 @@
 import { Shield, Swords, Zap, Gauge, TriangleAlert, Eraser } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { cn } from "@/lib/utils"
-import { TypeBadge, PokemonSprite } from "@nasty-plot/ui"
+import { cn, TypeBadge, PokemonSprite } from "@nasty-plot/ui"
 import type { PokemonType, UsageStatsEntry } from "@nasty-plot/core"
 import type { GuidedPokemonPick } from "../hooks/use-guided-builder"
 

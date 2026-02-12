@@ -4,8 +4,7 @@ import { Check } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { cn } from "@/lib/utils"
-import { TypeBadge, PokemonSprite } from "@nasty-plot/ui"
+import { cn, TypeBadge, PokemonSprite } from "@nasty-plot/ui"
 import type { PokemonType, RecommendationReason } from "@nasty-plot/core"
 
 interface RecommendationCardProps {

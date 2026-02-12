@@ -3,11 +3,10 @@
 import { type TeamAnalysis, POKEMON_TYPES, type PokemonType } from "@nasty-plot/core"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { TypeBadge } from "@nasty-plot/ui"
+import { cn, TypeBadge } from "@nasty-plot/ui"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Progress } from "@/components/ui/progress"
 import { Shield, Swords, Gauge, AlertTriangle } from "lucide-react"
-import { cn } from "@/lib/utils"
 
 interface SimplifiedAnalysisProps {
   analysis: TeamAnalysis | null

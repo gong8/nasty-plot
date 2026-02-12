@@ -16,19 +16,10 @@ import { SampleTeamCard } from "@/features/battle/components/SampleTeamCard"
 import { ArrowLeft, Search } from "lucide-react"
 import Link from "next/link"
 import { getActiveFormats } from "@nasty-plot/formats"
+import type { SampleTeamData } from "@nasty-plot/teams"
 
-interface SampleTeam {
-  id: string
-  name: string
-  formatId: string
-  archetype: string | null
-  source: string | null
-  sourceUrl: string | null
-  paste: string
-  pokemonIds: string
-  isActive: boolean
-  createdAt: string
-}
+/** SampleTeam as returned by the API (createdAt serialized to string) */
+type SampleTeam = Omit<SampleTeamData, "createdAt"> & { createdAt: string }
 
 const FORMAT_OPTIONS = [
   { value: "all", label: "All Formats" },

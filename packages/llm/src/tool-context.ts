@@ -1,7 +1,7 @@
 const MCP_PREFIX = "mcp__nasty-plot__"
 
 /** Tool categories mapped to their MCP tool names (without prefix) */
-const TOOL_CATEGORIES: Record<string, string[]> = {
+export const TOOL_CATEGORIES: Record<string, string[]> = {
   dataQuery: [
     "get_pokemon",
     "search_pokemon",
@@ -46,17 +46,9 @@ export function getAllMcpToolNames(): string[] {
   return [...ALL_MCP_TOOLS]
 }
 
-export type PageType =
-  | "guided-builder"
-  | "team-editor"
-  | "pokemon-detail"
-  | "pokemon-browser"
-  | "damage-calc"
-  | "battle-live"
-  | "battle-replay"
-  | "chat"
-  | "home"
-  | "other"
+import type { PageType } from "@nasty-plot/core"
+
+export type { PageType } from "@nasty-plot/core"
 
 /** Map page types to which tool categories are ALLOWED */
 const TOOL_CONTEXT_MAP: Record<PageType, string[]> = {

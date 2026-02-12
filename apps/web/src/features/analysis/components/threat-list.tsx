@@ -4,9 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { AlertTriangle, Shield, Info } from "lucide-react"
-import { PokemonSprite, TypeBadge } from "@nasty-plot/ui"
+import { cn, PokemonSprite, TypeBadge } from "@nasty-plot/ui"
 import type { ThreatEntry, TeamSlotData } from "@nasty-plot/core"
-import { cn } from "@/lib/utils"
 
 interface ThreatListProps {
   threats: ThreatEntry[] | undefined

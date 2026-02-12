@@ -1,6 +1,6 @@
 "use client"
 
-import { cn } from "@/lib/utils"
+import { cn } from "@nasty-plot/ui"
 
 interface EvalBarProps {
   p1WinProb: number // 0-100

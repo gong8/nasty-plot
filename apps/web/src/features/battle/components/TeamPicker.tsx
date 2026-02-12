@@ -10,17 +10,12 @@ import { useTeams } from "@/features/teams/hooks/use-teams"
 import { useSampleTeams } from "../hooks/use-sample-teams"
 import { TeamPickerCard } from "./TeamPickerCard"
 import type { GameType } from "@nasty-plot/core"
+import type { TeamValidation } from "../types"
 
 export interface TeamSelection {
   teamId: string | null
   paste: string
   source: "saved" | "sample" | "paste"
-}
-
-interface TeamValidation {
-  valid: boolean
-  pokemonCount: number
-  errors: string[]
 }
 
 interface TeamPickerProps {

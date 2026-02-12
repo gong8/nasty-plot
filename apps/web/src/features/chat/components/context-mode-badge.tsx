@@ -1,6 +1,6 @@
 "use client"
 
-import { cn } from "@/lib/utils"
+import { cn } from "@nasty-plot/ui"
 import { Hammer, Wrench, Swords, Film } from "lucide-react"
 import type { ChatContextMode } from "@nasty-plot/core"
 

@@ -1,4 +1,9 @@
+import { TOOL_CATEGORIES } from "./tool-context"
+
 const MCP_PREFIX = "mcp__nasty-plot__"
+
+/** All tool names derived from TOOL_CATEGORIES (single source of truth) */
+const ALL_TOOL_NAMES = Object.values(TOOL_CATEGORIES).flat()
 
 const TOOL_LABEL_MAP: Record<string, string> = {
   // data-query tools
@@ -32,6 +37,15 @@ const TOOL_LABEL_MAP: Record<string, string> = {
   get_usage_stats: "Fetching usage stats",
   suggest_teammates: "Finding teammate suggestions",
   suggest_sets: "Suggesting sets",
+}
+
+// Validate at module load that every tool in TOOL_CATEGORIES has a label
+if (process.env.NODE_ENV !== "production") {
+  for (const name of ALL_TOOL_NAMES) {
+    if (!(name in TOOL_LABEL_MAP)) {
+      console.warn(`[tool-labels] Missing label for tool "${name}" — add it to TOOL_LABEL_MAP`)
+    }
+  }
 }
 
 /** Write tools that mutate data — these get action notifications in the UI */

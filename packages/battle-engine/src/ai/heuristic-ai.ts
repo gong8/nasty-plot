@@ -9,14 +9,13 @@ import type {
   BattleFormat,
   BattlePokemon,
   PredictedSet,
+  DexMove,
 } from "../types"
 import type { PokemonType } from "@nasty-plot/core"
 import { flattenDamage, getSpeciesTypes, getTypeEffectiveness, fallbackMove } from "./shared"
 
 const gens = new Generations(Dex)
 const gen = gens.get(9)
-
-type DexMove = ReturnType<typeof Dex.moves.get>
 
 /**
  * HeuristicAI uses type matchup awareness, switching logic, and situational

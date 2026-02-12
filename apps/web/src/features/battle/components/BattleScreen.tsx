@@ -1,6 +1,6 @@
 "use client"
 
-import { cn } from "@/lib/utils"
+import { cn } from "@nasty-plot/ui"
 import type { BattleState } from "@nasty-plot/battle-engine"
 import type { AnimationState } from "../hooks/use-battle-animations"
 import { BattleField } from "./BattleField"

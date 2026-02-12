@@ -1,12 +1,8 @@
 "use client"
 
 import { Loader2, Check, Circle, Minus } from "lucide-react"
-import { cn } from "@/lib/utils"
-
-export interface PlanStep {
-  text: string
-  status: "pending" | "active" | "complete" | "skipped"
-}
+import { cn } from "@nasty-plot/ui"
+import type { PlanStep } from "@/features/chat/hooks/use-chat-stream"
 
 interface ChatPlanDisplayProps {
   steps: PlanStep[]

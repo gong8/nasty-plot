@@ -2,7 +2,7 @@
 
 import { useMemo } from "react"
 import { Lightbulb } from "lucide-react"
-import { cn } from "@/lib/utils"
+import { cn } from "@nasty-plot/ui"
 
 interface ChatGuidedPromptsProps {
   step: string

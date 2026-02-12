@@ -1,8 +1,7 @@
 "use client"
 
-import { cn } from "@/lib/utils"
+import { cn, TypeBadge } from "@nasty-plot/ui"
 import type { BattleActionSet, BattlePokemon } from "@nasty-plot/battle-engine"
-import { TypeBadge } from "@nasty-plot/ui"
 import { Button } from "@/components/ui/button"
 import { HealthBar } from "./HealthBar"
 import { BattleSprite } from "./PokemonSprite"

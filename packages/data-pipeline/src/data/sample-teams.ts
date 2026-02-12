@@ -1,4 +1,4 @@
-export interface SampleTeamEntry {
+export interface SampleTeamSeedEntry {
   name: string
   formatId: string
   archetype: string
@@ -6,7 +6,7 @@ export interface SampleTeamEntry {
   source: string
 }
 
-export const SAMPLE_TEAMS: SampleTeamEntry[] = [
+export const SAMPLE_TEAMS: SampleTeamSeedEntry[] = [
   // ========== gen9ou ==========
   {
     name: "OU Balance",

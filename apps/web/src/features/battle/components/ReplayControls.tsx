@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button"
 import { Slider } from "@/components/ui/slider"
 import { SkipBack, SkipForward, ChevronLeft, ChevronRight, Play, Pause } from "lucide-react"
-import { cn } from "@/lib/utils"
+import { cn } from "@nasty-plot/ui"
 
 interface ReplayControlsProps {
   currentFrame: number

@@ -1,26 +1,21 @@
-import type { SmogonSetData, NatureName, StatsTable } from "@nasty-plot/core"
+import type {
+  SmogonSetData,
+  NatureName,
+  StatsTable,
+  ExtractedPokemonData,
+  ExtractedTeamData,
+} from "@nasty-plot/core"
 import { getAllSetsForFormat } from "./smogon-sets.service"
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
-/** Minimal pokemon data extracted from a replay — matches battle-engine's ExtractedPokemonData. */
-export interface ExtractedPokemon {
-  speciesId: string
-  species: string
-  level: number
-  moves: string[]
-  ability?: string
-  item?: string
-  teraType?: string
-}
+/** @deprecated Use ExtractedPokemonData from @nasty-plot/core */
+export type ExtractedPokemon = ExtractedPokemonData
 
-/** Minimal team data extracted from a replay — matches battle-engine's ExtractedTeamData. */
-export interface ExtractedTeam {
-  playerName: string
-  pokemon: ExtractedPokemon[]
-}
+/** @deprecated Use ExtractedTeamData from @nasty-plot/core */
+export type ExtractedTeam = ExtractedTeamData
 
 export interface SetMatchScore {
   set: SmogonSetData

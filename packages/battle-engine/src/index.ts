@@ -43,7 +43,7 @@ export type {
   ParsedBattleImport,
 } from "./replay/replay-import"
 export { formatShowdownLog, formatShowdownReplayJSON } from "./export/battle-export.service"
-export type { BattleRecord, ShowdownReplayJSON } from "./export/battle-export.service"
+export type { BattleRecord } from "./export/battle-export.service"
 export { computeTeamBattleAnalytics } from "./battle-history.service"
 export type { TeamBattleAnalytics } from "./battle-history.service"
 export { runAutomatedBattle, type SingleBattleResult } from "./simulation/automated-battle-manager"

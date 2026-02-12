@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useCallback } from "react"
-import { cn } from "@/lib/utils"
+import { cn } from "@nasty-plot/ui"
 import { TYPE_COLORS, isLightTypeColor, type PokemonType } from "@nasty-plot/core"
 import type { BattleActionSet, BattleFormat, BattlePokemon } from "@nasty-plot/battle-engine"
 import { Button } from "@/components/ui/button"

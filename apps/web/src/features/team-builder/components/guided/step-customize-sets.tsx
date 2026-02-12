@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import { useQueries } from "@tanstack/react-query"
 import { Sparkles, ChevronDown, ChevronUp, Loader2 } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
-import { cn } from "@/lib/utils"
+import { cn } from "@nasty-plot/ui"
 import type { TeamSlotData, PokemonSpecies } from "@nasty-plot/core"
 import { SimplifiedSetEditor } from "./simplified-set-editor"
 

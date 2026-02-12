@@ -427,6 +427,38 @@ export interface ChatSessionData {
   updatedAt: string
 }
 
+// --- Page Context ---
+
+export type PageType =
+  | "guided-builder"
+  | "team-editor"
+  | "pokemon-detail"
+  | "pokemon-browser"
+  | "damage-calc"
+  | "battle-live"
+  | "battle-replay"
+  | "chat"
+  | "home"
+  | "other"
+
+// --- Extracted Replay Data ---
+
+export interface ExtractedPokemonData {
+  speciesId: string
+  species: string
+  nickname?: string
+  level: number
+  moves: string[]
+  ability?: string
+  item?: string
+  teraType?: string
+}
+
+export interface ExtractedTeamData {
+  playerName: string
+  pokemon: ExtractedPokemonData[]
+}
+
 // --- API Response Wrappers ---
 
 export interface ApiResponse<T> {

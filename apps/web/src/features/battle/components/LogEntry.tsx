@@ -16,7 +16,7 @@ import {
   type LucideIcon,
 } from "lucide-react"
 import type { BattleLogEntry } from "@nasty-plot/battle-engine"
-import { cn } from "@/lib/utils"
+import { cn } from "@nasty-plot/ui"
 
 const TYPE_ICONS: Record<string, LucideIcon> = {
   move: Sword,

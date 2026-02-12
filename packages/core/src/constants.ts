@@ -155,3 +155,56 @@ export const MIN_IV = 0
 
 export const DEFAULT_IVS: StatsTable = { hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31 }
 export const DEFAULT_EVS: StatsTable = { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 }
+
+// --- Level Defaults ---
+
+export const DEFAULT_LEVEL = 100
+export const VGC_LEVEL = 50
+export const LC_LEVEL = 5
+
+// --- Format Defaults ---
+
+export const DEFAULT_FORMAT_ID = "gen9ou"
+
+// --- Game Constants (Weathers, Terrains, Statuses, Boosts) ---
+
+export const WEATHERS = [
+  "None",
+  "Sun",
+  "Rain",
+  "Sand",
+  "Snow",
+  "Harsh Sunshine",
+  "Heavy Rain",
+  "Strong Winds",
+] as const
+
+export const TERRAINS = ["None", "Electric", "Grassy", "Misty", "Psychic"] as const
+
+export const STATUSES = [
+  "None",
+  "Healthy",
+  "Burned",
+  "Paralyzed",
+  "Poisoned",
+  "Badly Poisoned",
+  "Asleep",
+  "Frozen",
+] as const
+
+export const BOOST_VALUES = [-6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6] as const
+
+// --- Archetype Options ---
+
+export const ARCHETYPE_OPTIONS = [
+  { value: "all", label: "All Archetypes" },
+  { value: "hyper-offense", label: "Hyper Offense" },
+  { value: "offense", label: "Offense" },
+  { value: "balance", label: "Balance" },
+  { value: "bulky-offense", label: "Bulky Offense" },
+  { value: "stall", label: "Stall" },
+  { value: "rain", label: "Rain" },
+  { value: "sun", label: "Sun" },
+  { value: "sand", label: "Sand" },
+  { value: "trick-room", label: "Trick Room" },
+] as const

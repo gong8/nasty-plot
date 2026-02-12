@@ -28,19 +28,7 @@ import {
 } from "@/features/battle/lib/checkpoint-store"
 import { BattleSprite } from "@/features/battle/components/PokemonSprite"
 import type { BattleCheckpoint, BattlePokemon } from "@nasty-plot/battle-engine"
-
-interface BattleSummary {
-  id: string
-  formatId: string
-  gameType: string
-  mode: string
-  aiDifficulty: string | null
-  team1Name: string
-  team2Name: string
-  winnerId: string | null
-  turnCount: number
-  createdAt: string
-}
+import type { BattleSummary } from "@/features/battle/types"
 
 function winnerLabel(winnerId: string | null, team1Name: string, team2Name: string): string {
   if (!winnerId) return "No result"

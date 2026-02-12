@@ -4,6 +4,8 @@
  * Formats battles for export in Showdown log and JSON formats.
  */
 
+import type { ShowdownReplayJSON } from "../types"
+
 export interface BattleRecord {
   id: string
   formatId: string
@@ -17,16 +19,6 @@ export interface BattleRecord {
   turnCount: number
   protocolLog: string
   createdAt: string | Date
-}
-
-export interface ShowdownReplayJSON {
-  id: string
-  format: string
-  players: [string, string]
-  log: string
-  uploadtime: number
-  turns: number
-  winner: string
 }
 
 /** Return raw protocol log text (already in Showdown format) */

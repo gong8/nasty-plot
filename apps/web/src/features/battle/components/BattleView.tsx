@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useRef, useMemo, useCallback } from "react"
-import { cn } from "@/lib/utils"
+import { cn } from "@nasty-plot/ui"
 import type { BattleState } from "@nasty-plot/battle-engine"
 import { BattleField } from "./BattleField"
 import { BattleLog } from "./BattleLog"

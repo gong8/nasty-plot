@@ -2,7 +2,7 @@
 
 import { Shield, Flame, Bug, Wind, Snowflake } from "lucide-react"
 import type { SideConditions } from "@nasty-plot/battle-engine"
-import { cn } from "@/lib/utils"
+import { cn } from "@nasty-plot/ui"
 
 interface SideConditionIndicatorsProps {
   conditions: SideConditions

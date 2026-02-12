@@ -1,4 +1,7 @@
 import OpenAI from "openai"
+import { MODEL } from "./config"
+
+export { MODEL }
 
 let _openai: OpenAI | null = null
 
@@ -11,5 +14,3 @@ export function getOpenAI(): OpenAI {
   }
   return _openai
 }
-
-export const MODEL = process.env.LLM_MODEL || process.env.OPENAI_MODEL || "claude-opus-4-6"

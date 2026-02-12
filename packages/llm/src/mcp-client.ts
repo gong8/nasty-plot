@@ -1,8 +1,7 @@
 import { Client } from "@modelcontextprotocol/sdk/client/index.js"
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js"
 import type OpenAI from "openai"
-
-const MCP_URL = process.env.MCP_URL || "http://localhost:3001/mcp"
+import { MCP_URL } from "./config"
 
 const LOG_PREFIX = "[mcp-client]"
 

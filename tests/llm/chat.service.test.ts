@@ -13,6 +13,12 @@ vi.mock("#llm/cli-chat", () => ({
 }))
 
 vi.mock("#llm/tool-context", () => ({
+  TOOL_CATEGORIES: {
+    dataQuery: ["get_pokemon"],
+    analysis: ["analyze_team_coverage"],
+    teamCrud: ["create_team"],
+    metaRecs: ["get_usage_stats"],
+  },
   getDisallowedMcpTools: vi.fn().mockReturnValue([]),
   getDisallowedMcpToolsForContextMode: vi.fn().mockReturnValue([]),
   getAllMcpToolNames: vi.fn().mockReturnValue([]),

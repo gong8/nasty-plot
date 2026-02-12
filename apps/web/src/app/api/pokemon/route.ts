@@ -3,8 +3,7 @@ import { getAllSpecies } from "@nasty-plot/pokemon-data"
 import { getFormatPokemon } from "@nasty-plot/formats"
 import { getUsageStats } from "@nasty-plot/smogon-data"
 import type { PaginatedResponse, PokemonSpecies, PokemonType } from "@nasty-plot/core"
-
-type SortMode = "usage" | "name" | "bst" | "dex"
+import type { SortMode } from "@/features/pokemon/types"
 
 function getBaseStatTotal(stats: PokemonSpecies["baseStats"]): number {
   return stats.hp + stats.atk + stats.def + stats.spa + stats.spd + stats.spe

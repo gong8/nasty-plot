@@ -12,7 +12,7 @@ import {
   CartesianGrid,
 } from "recharts"
 import type { ReplayFrame } from "@nasty-plot/battle-engine"
-import { cn } from "@/lib/utils"
+import { cn } from "@nasty-plot/ui"
 
 interface WinProbabilityGraphProps {
   frames: ReplayFrame[]

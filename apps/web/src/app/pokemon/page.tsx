@@ -22,12 +22,11 @@ import {
   type PokemonType,
 } from "@nasty-plot/core"
 import { useFormats } from "@/features/battle/hooks/use-formats"
+import type { SortMode } from "@/features/pokemon/types"
 
 function getBaseStatTotal(stats: PokemonSpecies["baseStats"]): number {
   return stats.hp + stats.atk + stats.def + stats.spa + stats.spd + stats.spe
 }
-
-type SortMode = "usage" | "name" | "bst" | "dex"
 
 export default function PokemonBrowserPage() {
   const [search, setSearch] = useState("")

@@ -2,7 +2,7 @@
 
 import type { BattlePokemon } from "@nasty-plot/battle-engine"
 import { Icons } from "@pkmn/img"
-import { cn } from "@/lib/utils"
+import { cn } from "@nasty-plot/ui"
 import { CircleHelp } from "lucide-react"
 
 interface PokeballIndicatorProps {

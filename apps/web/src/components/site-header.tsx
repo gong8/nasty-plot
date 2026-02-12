@@ -7,7 +7,7 @@ import { Menu, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { ThemeToggle } from "./theme-toggle"
-import { cn } from "@/lib/utils"
+import { cn } from "@nasty-plot/ui"
 import { PECHARUNT_SPRITE_URL } from "@/lib/constants"
 
 const NAV_LINKS = [

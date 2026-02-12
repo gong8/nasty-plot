@@ -1,7 +1,7 @@
 "use client"
 
 import { useRef, useEffect, useState } from "react"
-import { cn } from "@/lib/utils"
+import { cn } from "@nasty-plot/ui"
 
 interface HealthBarProps {
   hp: number

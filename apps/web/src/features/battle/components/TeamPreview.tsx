@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { cn } from "@/lib/utils"
+import { cn } from "@nasty-plot/ui"
 import { Button } from "@/components/ui/button"
 import { BattleSprite } from "./PokemonSprite"
 import type { BattlePokemon, BattleFormat } from "@nasty-plot/battle-engine"

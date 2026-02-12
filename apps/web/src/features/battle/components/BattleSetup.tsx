@@ -11,6 +11,7 @@ import { TeamPicker, type TeamSelection } from "./TeamPicker"
 import { useFormat } from "../hooks/use-formats"
 import type { GameType } from "@nasty-plot/core"
 import { parseShowdownPaste } from "@nasty-plot/core"
+import type { TeamValidation } from "../types"
 
 interface BattleSetupProps {
   onStart: (config: {
@@ -186,12 +187,6 @@ const emptySelection = (paste: string): TeamSelection => ({
   paste,
   source: "paste",
 })
-
-interface TeamValidation {
-  valid: boolean
-  pokemonCount: number
-  errors: string[]
-}
 
 function validatePaste(paste: string): TeamValidation {
   const trimmed = paste.trim()

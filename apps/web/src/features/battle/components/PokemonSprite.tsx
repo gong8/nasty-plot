@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { Sprites } from "@pkmn/img"
-import { cn } from "@/lib/utils"
+import { cn } from "@nasty-plot/ui"
 import { Skeleton } from "@/components/ui/skeleton"
 
 interface BattleSpriteProps {

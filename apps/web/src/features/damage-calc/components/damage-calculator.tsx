@@ -28,7 +28,7 @@ import { Switch } from "@/components/ui/switch"
 import { Separator } from "@/components/ui/separator"
 import { Progress } from "@/components/ui/progress"
 import { ArrowRight, Swords, Shield, Zap, ChevronsUpDown } from "lucide-react"
-import { PokemonSprite } from "@nasty-plot/ui"
+import { cn, PokemonSprite } from "@nasty-plot/ui"
 import { useDamageCalc } from "../hooks/use-damage-calc"
 import {
   POKEMON_TYPES,
@@ -47,7 +47,6 @@ import {
   type ItemData,
   type ApiResponse,
 } from "@nasty-plot/core"
-import { cn } from "@/lib/utils"
 
 interface PokemonConfig {
   pokemonId: string

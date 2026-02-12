@@ -6,7 +6,7 @@ import { useChatSidebar } from "@/features/chat/context/chat-provider"
 import { useQueryClient } from "@tanstack/react-query"
 import type { ChatMessageMetadata, AutoAnalyzeDepth } from "@nasty-plot/core"
 
-export interface ChatMessage {
+export interface UIChatMessage {
   id: string
   role: "user" | "assistant"
   content: string
@@ -37,7 +37,7 @@ export interface ChatStreamOptions {
 }
 
 export function useChatStream(sessionId?: string, options?: ChatStreamOptions) {
-  const [messages, setMessages] = useState<ChatMessage[]>([])
+  const [messages, setMessages] = useState<UIChatMessage[]>([])
   const [isStreaming, setIsStreaming] = useState(false)
   const [toolCalls, setToolCalls] = useState<Map<string, ToolCallState>>(new Map())
   const [actionNotifications, setActionNotifications] = useState<ActionNotification[]>([])
@@ -100,7 +100,7 @@ export function useChatStream(sessionId?: string, options?: ChatStreamOptions) {
       if (!trimmed || isStreaming) return
 
       if (!regenerate) {
-        const userMsg: ChatMessage = {
+        const userMsg: UIChatMessage = {
           id: `user-${Date.now()}`,
           role: "user",
           content: trimmed,
@@ -113,7 +113,7 @@ export function useChatStream(sessionId?: string, options?: ChatStreamOptions) {
       setActionNotifications([])
       setPlanSteps([])
 
-      const assistantMsg: ChatMessage = {
+      const assistantMsg: UIChatMessage = {
         id: `assistant-${Date.now()}`,
         role: "assistant",
         content: "",
@@ -397,7 +397,7 @@ export function useChatStream(sessionId?: string, options?: ChatStreamOptions) {
       setIsStreaming(true)
       setToolCalls(new Map())
 
-      const assistantMsg: ChatMessage = {
+      const assistantMsg: UIChatMessage = {
         id: `auto-${turn}-${Date.now()}`,
         role: "assistant",
         content: "",

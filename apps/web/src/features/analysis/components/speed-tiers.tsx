@@ -2,9 +2,8 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
-import { PokemonSprite } from "@nasty-plot/ui"
+import { cn, PokemonSprite } from "@nasty-plot/ui"
 import { STAT_COLORS, type SpeedTierEntry } from "@nasty-plot/core"
-import { cn } from "@/lib/utils"
 
 interface SpeedTiersProps {
   tiers: SpeedTierEntry[] | undefined

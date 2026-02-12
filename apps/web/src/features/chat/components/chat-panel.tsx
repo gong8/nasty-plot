@@ -16,7 +16,7 @@ import { TurnAnalysisCard } from "./turn-analysis-card"
 import { ChatGuidedPrompts } from "./chat-guided-prompts"
 import { ArrowDown, Zap, Search } from "lucide-react"
 import type { ChatStreamOptions } from "@/features/chat/hooks/use-chat-stream"
-import { cn } from "@/lib/utils"
+import { cn } from "@nasty-plot/ui"
 import { PECHARUNT_SPRITE_URL } from "@/lib/constants"
 
 interface ChatPanelProps {

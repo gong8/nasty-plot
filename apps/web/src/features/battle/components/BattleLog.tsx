@@ -4,7 +4,7 @@ import { useRef, useEffect, useState, useCallback, useMemo } from "react"
 import { ArrowDown } from "lucide-react"
 import type { BattleLogEntry } from "@nasty-plot/battle-engine"
 import { Button } from "@/components/ui/button"
-import { cn } from "@/lib/utils"
+import { cn } from "@nasty-plot/ui"
 import { LogEntry } from "./LogEntry"
 
 interface BattleLogProps {

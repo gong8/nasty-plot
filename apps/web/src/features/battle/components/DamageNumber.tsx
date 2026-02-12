@@ -1,6 +1,6 @@
 "use client"
 
-import { cn } from "@/lib/utils"
+import { cn } from "@nasty-plot/ui"
 
 interface DamageNumberProps {
   value: string | null // e.g. "-45%" or "+20%"

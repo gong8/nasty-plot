@@ -5,7 +5,7 @@ import { Sparkles, Search, ChevronDown, ChevronUp } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { Skeleton } from "@/components/ui/skeleton"
-import { cn } from "@/lib/utils"
+import { cn } from "@nasty-plot/ui"
 import type {
   Recommendation,
   TeamAnalysis,

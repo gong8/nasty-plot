@@ -1,4 +1,5 @@
-import type { PokemonType, StatsTable } from "@nasty-plot/core"
+import { Dex } from "@pkmn/dex"
+import type { PokemonType, StatsTable, GameType } from "@nasty-plot/core"
 
 export interface PredictedSet {
   pokemonId: string
@@ -9,8 +10,30 @@ export interface PredictedSet {
 }
 
 export type BattlePhase = "setup" | "preview" | "battle" | "ended"
-export type BattleFormat = "singles" | "doubles"
+/** @deprecated Use GameType from @nasty-plot/core */
+export type BattleFormat = GameType
 export type AIDifficulty = "random" | "greedy" | "heuristic" | "expert"
+
+/** Move data from @pkmn/dex. Defined once to avoid duplication across AI modules. */
+export type DexMove = ReturnType<typeof Dex.moves.get>
+
+/** Unified Showdown replay JSON structure — superset of import and export fields. */
+export interface ShowdownReplayJSON {
+  id: string
+  /** Format ID (e.g. "gen9ou") — used by export */
+  format?: string
+  /** Format ID as returned by Showdown API — used by import */
+  formatid?: string
+  players: [string, string]
+  log: string
+  uploadtime: number
+  /** Number of turns — used by export */
+  turns?: number
+  /** Winner name — used by export */
+  winner?: string
+  /** Rating — used by import */
+  rating?: number
+}
 
 export type StatusCondition = "brn" | "par" | "slp" | "frz" | "psn" | "tox" | ""
 

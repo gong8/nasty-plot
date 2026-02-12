@@ -16,8 +16,7 @@ import { streamCliChat } from "./cli-chat"
 import type { ChatMessage } from "@nasty-plot/core"
 import { getTeam } from "@nasty-plot/teams"
 import { getUsageStats } from "@nasty-plot/smogon-data"
-
-const MODEL = process.env.LLM_MODEL || "claude-opus-4-6"
+import { MODEL } from "./config"
 
 const LOG_PREFIX = "[chat]"
 

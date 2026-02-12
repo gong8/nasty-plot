@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { cn } from "@/lib/utils"
+import { cn } from "@nasty-plot/ui"
 import { Zap, Search, ChevronDown, ChevronRight } from "lucide-react"
 import { ChatMessage } from "./chat-message"
 

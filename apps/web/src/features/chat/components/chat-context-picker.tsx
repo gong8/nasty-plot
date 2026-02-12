@@ -4,7 +4,7 @@ import { usePageContext } from "@/features/chat/context/page-context-provider"
 import { useChatSidebar } from "@/features/chat/context/chat-provider"
 import { useBattleStateContext } from "@/features/battle/context/battle-state-context"
 import type { ChatContextMode } from "@nasty-plot/core"
-import { cn } from "@/lib/utils"
+import { cn } from "@nasty-plot/ui"
 import { Globe, Lock } from "lucide-react"
 import { PECHARUNT_SPRITE_URL } from "@/lib/constants"
 

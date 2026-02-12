@@ -58,7 +58,7 @@ import type {
   MatchupMatrixEntry,
   MergeDecision,
 } from "@nasty-plot/core"
-import { cn } from "@/lib/utils"
+import { cn } from "@nasty-plot/ui"
 
 export default function TeamEditorPage({ params }: { params: Promise<{ teamId: string }> }) {
   const { teamId } = use(params)

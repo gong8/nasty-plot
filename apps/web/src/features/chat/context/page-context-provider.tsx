@@ -3,7 +3,7 @@
 import { createContext, useContext, useMemo, type ReactNode } from "react"
 import { usePathname } from "next/navigation"
 import { useQuery } from "@tanstack/react-query"
-import type { TeamData, PokemonSpecies } from "@nasty-plot/core"
+import type { TeamData, PokemonSpecies, PageType } from "@nasty-plot/core"
 import type {
   BattleState,
   BattlePokemon,
@@ -12,17 +12,7 @@ import type {
 } from "@nasty-plot/battle-engine"
 import { useBattleStateContext } from "@/features/battle/context/battle-state-context"
 
-export type PageType =
-  | "guided-builder"
-  | "team-editor"
-  | "pokemon-detail"
-  | "pokemon-browser"
-  | "damage-calc"
-  | "battle-live"
-  | "battle-replay"
-  | "chat"
-  | "home"
-  | "other"
+export type { PageType } from "@nasty-plot/core"
 
 export interface PageContext {
   pageType: PageType

@@ -6,7 +6,7 @@ import { Prism as SyntaxHighlighter } from "react-syntax-highlighter"
 import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism"
 import { User, Copy, Check } from "lucide-react"
 import { useState, useCallback } from "react"
-import { cn } from "@/lib/utils"
+import { cn } from "@nasty-plot/ui"
 import { PECHARUNT_SPRITE_URL } from "@/lib/constants"
 
 interface ChatMessageProps {

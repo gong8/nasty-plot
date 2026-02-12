@@ -30,6 +30,7 @@ export { getOpenAI, MODEL } from "./openai-client"
 export { getMcpTools, getMcpResourceContext, executeMcpTool, disconnectMcp } from "./mcp-client"
 export { getToolLabel, isWriteTool } from "./tool-labels"
 export {
+  TOOL_CATEGORIES,
   getDisallowedMcpTools,
   getDisallowedMcpToolsForContextMode,
   getAllMcpToolNames,

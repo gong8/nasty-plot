@@ -6,7 +6,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { Badge } from "@/components/ui/badge"
 import { POKEMON_TYPES, TYPE_COLORS, isLightTypeColor, type TypeCoverage } from "@nasty-plot/core"
-import { cn } from "@/lib/utils"
+import { cn } from "@nasty-plot/ui"
 
 interface CoverageChartProps {
   coverage: TypeCoverage | undefined

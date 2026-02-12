@@ -11,7 +11,7 @@ import {
   type PokemonType,
   type TeamSlotData,
 } from "@nasty-plot/core"
-import { cn } from "@/lib/utils"
+import { cn } from "@nasty-plot/ui"
 
 interface WeaknessHeatmapProps {
   slots: TeamSlotData[]

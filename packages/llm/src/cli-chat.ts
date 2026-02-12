@@ -6,8 +6,9 @@ import { getToolLabel, isWriteTool } from "./tool-labels"
 import { StreamParser } from "./stream-parser"
 import type { SSEEvent } from "./sse-events"
 import type { PageContextData } from "./context-builder"
+import { MCP_URL } from "./config"
 
-const MCP_URL = process.env.MCP_URL || "http://localhost:3001/mcp"
+// CLI uses shorthand model names ("opus") vs full model IDs
 const CLI_MODEL = process.env.LLM_MODEL || "opus"
 const LOG_PREFIX = "[cli-chat]"
 

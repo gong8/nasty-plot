@@ -338,6 +338,12 @@ importers:
       '@modelcontextprotocol/sdk':
         specifier: ^1.26.0
         version: 1.26.0(zod@4.3.6)
+      '@nasty-plot/core':
+        specifier: workspace:*
+        version: link:../core
+      '@nasty-plot/formats':
+        specifier: workspace:*
+        version: link:../formats
       express:
         specifier: ^5.2.1
         version: 5.2.1

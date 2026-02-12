@@ -14,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { cn } from "@/lib/utils"
+import { cn } from "@nasty-plot/ui"
 import { useCreateTeam } from "@/features/teams/hooks/use-teams"
 import { getActiveFormats } from "@nasty-plot/formats"
 

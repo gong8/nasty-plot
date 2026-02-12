@@ -1,10 +1,8 @@
 import { z } from "zod"
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js"
+import { DEFAULT_EVS, DEFAULT_IVS } from "@nasty-plot/core"
 import { apiDelete, apiGet, apiPost, apiPut } from "../api-client.js"
 import { buildParams, handleTool, toolError, toolSuccess } from "../tool-helpers.js"
-
-const DEFAULT_IVS = { hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31 }
-const ZERO_EVS = { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 }
 
 const evsSchema = z
   .object({
@@ -90,7 +88,7 @@ export function registerTeamCrudTools(server: McpServer): void {
           teraType,
           level: level ?? 100,
           moves,
-          evs: { ...ZERO_EVS, ...evs },
+          evs: { ...DEFAULT_EVS, ...evs },
           ivs: DEFAULT_IVS,
         })
         return toolSuccess(data)

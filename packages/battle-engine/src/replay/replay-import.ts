@@ -5,30 +5,13 @@
  * battle data for import into the system.
  */
 
-export interface ShowdownReplayJson {
-  id: string
-  formatid: string
-  players: [string, string]
-  log: string
-  uploadtime: number
-  rating: number
-}
+import type { ExtractedPokemonData, ExtractedTeamData } from "@nasty-plot/core"
+import type { ShowdownReplayJSON } from "../types"
 
-export interface ExtractedPokemonData {
-  speciesId: string
-  species: string
-  nickname?: string
-  level: number
-  moves: string[]
-  ability?: string
-  item?: string
-  teraType?: string
-}
+export type { ExtractedPokemonData, ExtractedTeamData } from "@nasty-plot/core"
 
-export interface ExtractedTeamData {
-  playerName: string
-  pokemon: ExtractedPokemonData[]
-}
+/** @deprecated Use ShowdownReplayJSON from ../types */
+export type ShowdownReplayJson = ShowdownReplayJSON
 
 export interface ParsedBattleImport {
   source: "replay-url" | "raw-log"

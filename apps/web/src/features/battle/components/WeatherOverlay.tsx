@@ -1,7 +1,7 @@
 "use client"
 
 import type { FieldState } from "@nasty-plot/battle-engine"
-import { cn } from "@/lib/utils"
+import { cn } from "@nasty-plot/ui"
 
 interface WeatherOverlayProps {
   field: FieldState

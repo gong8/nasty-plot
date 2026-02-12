@@ -1,14 +1,12 @@
 import { Generations } from "@pkmn/data"
 import { Dex } from "@pkmn/dex"
 import { calculate, Pokemon, Move, Field } from "@smogon/calc"
-import type { BattleState, BattleActionSet, BattleAction, BattlePokemon } from "../types"
+import type { BattleState, BattleActionSet, BattleAction, BattlePokemon, DexMove } from "../types"
 import { evaluatePosition, type EvalResult } from "./evaluator"
 import { flattenDamage, getSpeciesTypes, getTypeEffectiveness } from "./shared"
 
 const gens = new Generations(Dex)
 const gen = gens.get(9)
-
-type DexMove = ReturnType<typeof Dex.moves.get>
 
 export type MoveClassification = "best" | "good" | "neutral" | "inaccuracy" | "mistake" | "blunder"
 
