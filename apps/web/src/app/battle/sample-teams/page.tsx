@@ -15,6 +15,7 @@ import { Label } from "@/components/ui/label"
 import { SampleTeamCard } from "@/features/battle/components/SampleTeamCard"
 import { ArrowLeft, Search } from "lucide-react"
 import Link from "next/link"
+import { getActiveFormats } from "@nasty-plot/formats"
 
 interface SampleTeam {
   id: string
@@ -31,11 +32,7 @@ interface SampleTeam {
 
 const FORMAT_OPTIONS = [
   { value: "all", label: "All Formats" },
-  { value: "gen9ou", label: "Gen 9 OU" },
-  { value: "gen9uu", label: "Gen 9 UU" },
-  { value: "gen9vgc2025", label: "VGC 2025" },
-  { value: "gen9monotype", label: "Gen 9 Monotype" },
-  { value: "gen9doublesou", label: "Gen 9 Doubles OU" },
+  ...getActiveFormats().map((f) => ({ value: f.id, label: f.name })),
 ]
 
 const ARCHETYPE_OPTIONS = [

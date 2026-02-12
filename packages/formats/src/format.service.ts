@@ -8,6 +8,7 @@ import {
 } from "@nasty-plot/pokemon-data"
 
 import { FORMAT_DEFINITIONS } from "./data/format-definitions"
+import { resolveFormatId } from "./resolver"
 
 function buildBanSet(format: FormatDefinition): Set<string> {
   return new Set(format.bans.map((b) => b.toLowerCase()))
@@ -22,7 +23,9 @@ function isBanned(species: PokemonSpecies, format: FormatDefinition, banSet: Set
 }
 
 export function getFormat(id: string): FormatDefinition | null {
-  return FORMAT_DEFINITIONS.find((f) => f.id === id) ?? null
+  const resolvedId = resolveFormatId(id)
+  if (!resolvedId) return null
+  return FORMAT_DEFINITIONS.find((f) => f.id === resolvedId) ?? null
 }
 
 export function getAllFormats(): FormatDefinition[] {

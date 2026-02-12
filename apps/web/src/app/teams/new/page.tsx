@@ -16,22 +16,12 @@ import {
 } from "@/components/ui/select"
 import { cn } from "@/lib/utils"
 import { useCreateTeam } from "@/features/teams/hooks/use-teams"
+import { getActiveFormats } from "@nasty-plot/formats"
 
-const COMMON_FORMATS = [
-  { id: "gen9ou", name: "Gen 9 OU" },
-  { id: "gen9uu", name: "Gen 9 UU" },
-  { id: "gen9ru", name: "Gen 9 RU" },
-  { id: "gen9nu", name: "Gen 9 NU" },
-  { id: "gen9ubers", name: "Gen 9 Ubers" },
-  { id: "gen9lc", name: "Gen 9 LC" },
-  { id: "gen9monotype", name: "Gen 9 Monotype" },
-  { id: "gen9nationaldex", name: "Gen 9 National Dex" },
-  { id: "gen9vgc2025", name: "VGC 2025" },
-  { id: "gen9vgc2024", name: "VGC 2024" },
-  { id: "gen9doublesou", name: "Gen 9 Doubles OU" },
-  { id: "gen9battlestadiumsingles", name: "Battle Stadium Singles" },
-  { id: "gen9battlestadiumdoubles", name: "Battle Stadium Doubles" },
-]
+const COMMON_FORMATS = getActiveFormats().map((f) => ({
+  id: f.id,
+  name: f.name,
+}))
 
 type BuilderMode = "freeform" | "guided"
 
