@@ -6,7 +6,7 @@ import {
   updateSideFromRequest,
 } from "./protocol-parser"
 import type { SetPredictor } from "./ai/set-predictor"
-import type { GameType } from "@nasty-plot/core"
+import { DEFAULT_FORMAT_ID, type GameType } from "@nasty-plot/core"
 import type {
   BattleState,
   BattleAction,
@@ -162,7 +162,7 @@ export class BattleManager {
     this.readStream()
 
     // Write the battle initialization
-    const format = this.config.simFormatId || this.config.formatId || "gen9ou"
+    const format = this.config.simFormatId || this.config.formatId || DEFAULT_FORMAT_ID
     this.stream.write(`>start {"formatid":"${format}"}`)
     this.stream.write(
       `>player p1 {"name":"${this.state.sides.p1.name}","team":"${escapeTeam(playerPacked)}"}`,
@@ -364,7 +364,7 @@ export class BattleManager {
     // whose only purpose is to set up the `send` callback
     const playerPacked = pasteToPackedTeam(checkpoint.config.playerTeam)
     const opponentPacked = pasteToPackedTeam(checkpoint.config.opponentTeam)
-    const format = checkpoint.config.simFormatId || checkpoint.config.formatId || "gen9ou"
+    const format = checkpoint.config.simFormatId || checkpoint.config.formatId || DEFAULT_FORMAT_ID
 
     manager.stream.write(`>start {"formatid":"${format}"}`)
     manager.stream.write(

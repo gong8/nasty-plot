@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { calculateMatchupMatrix } from "@nasty-plot/damage-calc"
 import { getTeam } from "@nasty-plot/teams"
-import { prisma } from "@nasty-plot/db"
+import { getUsageStats } from "@nasty-plot/smogon-data"
 import type { ApiResponse, MatchupMatrixEntry, ApiError } from "@nasty-plot/core"
 
 export async function POST(request: NextRequest) {
@@ -34,12 +34,8 @@ export async function POST(request: NextRequest) {
     // Resolve threat IDs: use provided or top usage Pokemon
     let resolvedThreats = threatIds ?? []
     if (resolvedThreats.length === 0) {
-      const usageEntries = await prisma.usageStats.findMany({
-        where: { formatId },
-        orderBy: { rank: "asc" },
-        take: 10,
-      })
-      resolvedThreats = usageEntries.map((e: (typeof usageEntries)[number]) => e.pokemonId)
+      const usageEntries = await getUsageStats(formatId, { limit: 10 })
+      resolvedThreats = usageEntries.map((e) => e.pokemonId)
     }
 
     if (resolvedThreats.length === 0) {

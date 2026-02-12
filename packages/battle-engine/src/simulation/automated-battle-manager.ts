@@ -6,7 +6,7 @@ import {
   updateSideFromRequest,
 } from "../protocol-parser"
 import { createInitialState } from "../battle-manager"
-import type { GameType } from "@nasty-plot/core"
+import { DEFAULT_FORMAT_ID, type GameType } from "@nasty-plot/core"
 import type { BattleState, BattleActionSet, AIPlayer } from "../types"
 
 export interface SingleBattleResult {
@@ -146,7 +146,7 @@ export async function runAutomatedBattle(
   })()
 
   // Start the battle
-  const format = config.simFormatId || config.formatId || "gen9ou"
+  const format = config.simFormatId || config.formatId || DEFAULT_FORMAT_ID
   const startSpec: Record<string, unknown> = { formatid: format }
   if (config.seed) startSpec.seed = config.seed
   stream.write(`>start ${JSON.stringify(startSpec)}`)

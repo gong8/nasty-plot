@@ -14,6 +14,8 @@
     "@nasty-plot/core": "workspace:*",
     "@nasty-plot/db": "workspace:*",
     "@nasty-plot/formats": "workspace:*",
-    "@pkmn/dex": "^0.10.6"
+    "@nasty-plot/pokemon-data": "workspace:*",
+    "@nasty-plot/smogon-data": "workspace:*",
+    "@nasty-plot/teams": "workspace:*"
   }
 }

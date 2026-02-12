@@ -1,4 +1,5 @@
 import { Dex } from "@pkmn/dex"
+import { Generations, type Generation } from "@pkmn/data"
 import { POKEMON_TYPES } from "@nasty-plot/core"
 import type { PokemonSpecies, PokemonType, MoveData, AbilityData, ItemData } from "@nasty-plot/core"
 
@@ -250,6 +251,37 @@ export function getSignatureZCrystal(itemId: string): { pokemonId: string; moveI
     }
   }
   return null
+}
+
+// Lazy gen9 instance for @smogon/calc consumers
+let _gen9: Generation | null = null
+export function getGen9() {
+  if (!_gen9) {
+    _gen9 = new Generations(Dex).get(9)
+  }
+  return _gen9
+}
+
+/** Raw Dex move access — use when you need fields not in MoveData (e.g. .flags, .secondary, .target) */
+export function getRawMove(nameOrId: string) {
+  return dex.moves.get(nameOrId)
+}
+
+/** Raw Dex species access — use when you need fields not in PokemonSpecies (e.g. .exists, .baseSpecies) */
+export function getRawSpecies(nameOrId: string) {
+  return dex.species.get(nameOrId)
+}
+
+/** Raw Dex type access — use for damageTaken lookups */
+export function getType(name: string) {
+  return dex.types.get(name)
+}
+
+/** Resolve a pokemonId to a display name (e.g. "greatTusk" → "Great Tusk") */
+export function resolveSpeciesName(pokemonId: string): string {
+  const species = dex.species.get(pokemonId)
+  if (species?.exists) return species.name
+  return pokemonId.replace(/([a-z])([A-Z])/g, "$1 $2").replace(/^./, (s) => s.toUpperCase())
 }
 
 export function getTypeChart(): Record<PokemonType, Partial<Record<PokemonType, number>>> {

@@ -1,13 +1,42 @@
-import { Dex } from "@pkmn/dex"
+import { getGen9, getRawSpecies, getType } from "@nasty-plot/pokemon-data"
+import { calculate, Pokemon, Move, Field } from "@smogon/calc"
+import type { Result } from "@smogon/calc"
 import type { PokemonType } from "@nasty-plot/core"
 import { flattenDamage } from "@nasty-plot/damage-calc"
 import type { BattleAction, BattleActionSet, BattlePokemon, SideConditions } from "../types"
 
 export { flattenDamage }
 
-/** Look up a species' types by display name via @pkmn/dex. */
+/**
+ * Calculate damage from one BattlePokemon to another using @smogon/calc.
+ * Centralizes the Pokemon/Move construction boilerplate used by all AI modules.
+ */
+export function calculateBattleDamage(
+  attacker: BattlePokemon,
+  defender: BattlePokemon,
+  moveName: string,
+): { damage: number[]; result: Result } {
+  const gen = getGen9()
+  const atkCalc = new Pokemon(gen, attacker.name, {
+    level: attacker.level,
+    ability: attacker.ability || undefined,
+    item: attacker.item || undefined,
+  })
+  const defCalc = new Pokemon(gen, defender.name, {
+    level: defender.level,
+    ability: defender.ability || undefined,
+    item: defender.item || undefined,
+    curHP: defender.hp,
+  })
+  const calcMove = new Move(gen, moveName)
+  const result = calculate(gen, atkCalc, defCalc, calcMove, new Field())
+  const damage = flattenDamage(result.damage)
+  return { damage, result }
+}
+
+/** Look up a species' types by display name via @nasty-plot/pokemon-data. */
 export function getSpeciesTypes(name: string): PokemonType[] {
-  const species = Dex.species.get(name)
+  const species = getRawSpecies(name)
   if (species?.exists) return species.types as PokemonType[]
   return ["Normal"]
 }
@@ -21,7 +50,7 @@ export function getSpeciesTypes(name: string): PokemonType[] {
 export function getTypeEffectiveness(atkType: string, defTypes: string[]): number {
   let mult = 1
   for (const defType of defTypes) {
-    const typeData = Dex.types.get(atkType)
+    const typeData = getType(atkType)
     if (!typeData?.exists) continue
     const eff = typeData.damageTaken?.[defType]
     if (eff === 1) mult *= 2

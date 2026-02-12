@@ -6,36 +6,21 @@ import { getCoverageBasedRecommendations } from "@nasty-plot/recommendations"
 // Mocks
 // ---------------------------------------------------------------------------
 
-vi.mock("@nasty-plot/db", () => ({
-  prisma: {
-    usageStats: {
-      findMany: vi.fn(),
-    },
-  },
+vi.mock("@nasty-plot/pokemon-data", () => ({
+  getSpecies: vi.fn(),
+  getAllSpecies: vi.fn(),
 }))
 
-vi.mock("@pkmn/dex", () => ({
-  Dex: {
-    forGen: vi.fn().mockReturnValue({
-      species: { get: vi.fn(), all: vi.fn() },
-      moves: { get: vi.fn(), all: vi.fn() },
-      abilities: { get: vi.fn(), all: vi.fn() },
-      items: { get: vi.fn(), all: vi.fn() },
-      learnsets: { get: vi.fn() },
-    }),
-    species: {
-      get: vi.fn(),
-      all: vi.fn(),
-    },
-  },
+vi.mock("@nasty-plot/smogon-data", () => ({
+  getUsageStats: vi.fn(),
 }))
 
-import { prisma } from "@nasty-plot/db"
-import { Dex } from "@pkmn/dex"
+import { getSpecies, getAllSpecies } from "@nasty-plot/pokemon-data"
+import { getUsageStats } from "@nasty-plot/smogon-data"
 
-const mockUsageFindMany = prisma.usageStats.findMany as ReturnType<typeof vi.fn>
-const mockSpeciesGet = Dex.species.get as ReturnType<typeof vi.fn>
-const mockSpeciesAll = (Dex.species as { all: ReturnType<typeof vi.fn> }).all
+const mockGetSpecies = getSpecies as ReturnType<typeof vi.fn>
+const mockGetAllSpecies = getAllSpecies as ReturnType<typeof vi.fn>
+const mockGetUsageStats = getUsageStats as ReturnType<typeof vi.fn>
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -69,12 +54,15 @@ function makeSlot(
   }
 }
 
-function mockSpecies(id: string, types: string[]) {
+function mockSpeciesResult(id: string, types: string[]) {
   return {
-    exists: true,
+    id,
     name: id.charAt(0).toUpperCase() + id.slice(1),
-    types,
     num: 1,
+    types,
+    baseStats: defaultStats,
+    abilities: { "0": "Ability" },
+    weightkg: 50,
     isNonstandard: null,
   }
 }
@@ -102,8 +90,8 @@ describe("getCoverageBasedRecommendations", () => {
       makeSlot("zapdos", ["Electric", "Flying"]),
     ]
 
-    mockUsageFindMany.mockResolvedValue([])
-    mockSpeciesAll.mockReturnValue([])
+    mockGetUsageStats.mockResolvedValue([])
+    mockGetAllSpecies.mockReturnValue([])
 
     const result = await getCoverageBasedRecommendations(team, "gen9ou")
     expect(Array.isArray(result)).toBe(true)
@@ -117,15 +105,15 @@ describe("getCoverageBasedRecommendations", () => {
     it("recommends Pokemon that cover offensive gaps", async () => {
       const team = [makeSlot("snorlax", ["Normal"]), makeSlot("blissey", ["Normal"])]
 
-      mockUsageFindMany.mockResolvedValue([
+      mockGetUsageStats.mockResolvedValue([
         { pokemonId: "lucario", usagePercent: 10, rank: 1 },
         { pokemonId: "garchomp", usagePercent: 15, rank: 2 },
       ])
 
-      mockSpeciesGet.mockImplementation((id: string) => {
-        if (id === "lucario") return mockSpecies("lucario", ["Fighting", "Steel"])
-        if (id === "garchomp") return mockSpecies("garchomp", ["Dragon", "Ground"])
-        return { exists: false }
+      mockGetSpecies.mockImplementation((id: string) => {
+        if (id === "lucario") return mockSpeciesResult("lucario", ["Fighting", "Steel"])
+        if (id === "garchomp") return mockSpeciesResult("garchomp", ["Dragon", "Ground"])
+        return null
       })
 
       const result = await getCoverageBasedRecommendations(team, "gen9ou")
@@ -138,15 +126,15 @@ describe("getCoverageBasedRecommendations", () => {
     it("scores higher for Pokemon covering more gaps", async () => {
       const team = [makeSlot("pikachu", ["Electric"])]
 
-      mockUsageFindMany.mockResolvedValue([
+      mockGetUsageStats.mockResolvedValue([
         { pokemonId: "groundmon", usagePercent: 10, rank: 1 },
         { pokemonId: "normalmon", usagePercent: 10, rank: 2 },
       ])
 
-      mockSpeciesGet.mockImplementation((id: string) => {
-        if (id === "groundmon") return mockSpecies("groundmon", ["Ground"])
-        if (id === "normalmon") return mockSpecies("normalmon", ["Normal"])
-        return { exists: false }
+      mockGetSpecies.mockImplementation((id: string) => {
+        if (id === "groundmon") return mockSpeciesResult("groundmon", ["Ground"])
+        if (id === "normalmon") return mockSpeciesResult("normalmon", ["Normal"])
+        return null
       })
 
       const result = await getCoverageBasedRecommendations(team, "gen9ou")
@@ -170,11 +158,11 @@ describe("getCoverageBasedRecommendations", () => {
     it("recommends Pokemon that resist shared weaknesses", async () => {
       const team = [makeSlot("vaporeon", ["Water"]), makeSlot("starmie", ["Water", "Psychic"])]
 
-      mockUsageFindMany.mockResolvedValue([{ pokemonId: "garchomp", usagePercent: 15, rank: 1 }])
+      mockGetUsageStats.mockResolvedValue([{ pokemonId: "garchomp", usagePercent: 15, rank: 1 }])
 
-      mockSpeciesGet.mockImplementation((id: string) => {
-        if (id === "garchomp") return mockSpecies("garchomp", ["Dragon", "Ground"])
-        return { exists: false }
+      mockGetSpecies.mockImplementation((id: string) => {
+        if (id === "garchomp") return mockSpeciesResult("garchomp", ["Dragon", "Ground"])
+        return null
       })
 
       const result = await getCoverageBasedRecommendations(team, "gen9ou")
@@ -191,11 +179,11 @@ describe("getCoverageBasedRecommendations", () => {
     it("gives higher weight to resistance reasons than offensive coverage", async () => {
       const team = [makeSlot("vaporeon", ["Water"]), makeSlot("blastoise", ["Water"])]
 
-      mockUsageFindMany.mockResolvedValue([{ pokemonId: "candidate", usagePercent: 10, rank: 1 }])
+      mockGetUsageStats.mockResolvedValue([{ pokemonId: "candidate", usagePercent: 10, rank: 1 }])
 
-      mockSpeciesGet.mockImplementation((id: string) => {
-        if (id === "candidate") return mockSpecies("candidate", ["Ground", "Dragon"])
-        return { exists: false }
+      mockGetSpecies.mockImplementation((id: string) => {
+        if (id === "candidate") return mockSpeciesResult("candidate", ["Ground", "Dragon"])
+        return null
       })
 
       const result = await getCoverageBasedRecommendations(team, "gen9ou")
@@ -217,15 +205,15 @@ describe("getCoverageBasedRecommendations", () => {
   it("excludes team members from recommendations", async () => {
     const team = [makeSlot("garchomp", ["Dragon", "Ground"])]
 
-    mockUsageFindMany.mockResolvedValue([
+    mockGetUsageStats.mockResolvedValue([
       { pokemonId: "garchomp", usagePercent: 20, rank: 1 },
       { pokemonId: "heatran", usagePercent: 18, rank: 2 },
     ])
 
-    mockSpeciesGet.mockImplementation((id: string) => {
-      if (id === "garchomp") return mockSpecies("garchomp", ["Dragon", "Ground"])
-      if (id === "heatran") return mockSpecies("heatran", ["Fire", "Steel"])
-      return { exists: false }
+    mockGetSpecies.mockImplementation((id: string) => {
+      if (id === "garchomp") return mockSpeciesResult("garchomp", ["Dragon", "Ground"])
+      if (id === "heatran") return mockSpeciesResult("heatran", ["Fire", "Steel"])
+      return null
     })
 
     const result = await getCoverageBasedRecommendations(team, "gen9ou")
@@ -237,172 +225,70 @@ describe("getCoverageBasedRecommendations", () => {
   it("skips species that do not exist in the Dex", async () => {
     const team = [makeSlot("pikachu", ["Electric"])]
 
-    mockUsageFindMany.mockResolvedValue([{ pokemonId: "fakemon", usagePercent: 10, rank: 1 }])
+    mockGetUsageStats.mockResolvedValue([{ pokemonId: "fakemon", usagePercent: 10, rank: 1 }])
 
-    mockSpeciesGet.mockReturnValue({ exists: false })
+    mockGetSpecies.mockReturnValue(null)
 
     const result = await getCoverageBasedRecommendations(team, "gen9ou")
     expect(result).toHaveLength(0)
   })
 
   // -----------------------------------------------------------------------
-  // Fallback to Dex when no usage data
+  // Fallback to getAllSpecies when no usage data
   // -----------------------------------------------------------------------
 
   it("falls back to getAllLegalSpeciesIds when no usage data exists", async () => {
     const team = [makeSlot("pikachu", ["Electric"])]
 
-    mockUsageFindMany.mockResolvedValue([])
-    mockSpeciesAll.mockReturnValue([
-      {
-        exists: true,
-        id: "bulbasaur",
-        num: 1,
-        isNonstandard: null,
-        types: ["Grass", "Poison"],
-        name: "Bulbasaur",
-      },
-      {
-        exists: true,
-        id: "charmander",
-        num: 4,
-        isNonstandard: null,
-        types: ["Fire"],
-        name: "Charmander",
-      },
+    mockGetUsageStats.mockResolvedValue([])
+    mockGetAllSpecies.mockReturnValue([
+      mockSpeciesResult("bulbasaur", ["Grass", "Poison"]),
+      mockSpeciesResult("charmander", ["Fire"]),
     ])
 
-    mockSpeciesGet.mockImplementation((id: string) => {
-      if (id === "bulbasaur") return mockSpecies("bulbasaur", ["Grass", "Poison"])
-      if (id === "charmander") return mockSpecies("charmander", ["Fire"])
-      return { exists: false }
+    mockGetSpecies.mockImplementation((id: string) => {
+      if (id === "bulbasaur") return mockSpeciesResult("bulbasaur", ["Grass", "Poison"])
+      if (id === "charmander") return mockSpeciesResult("charmander", ["Fire"])
+      return null
     })
 
     const result = await getCoverageBasedRecommendations(team, "gen9ou")
     expect(Array.isArray(result)).toBe(true)
   })
 
-  it("fallback excludes species with isNonstandard set", async () => {
+  it("fallback excludes species with num > 1025", async () => {
     const team = [makeSlot("pikachu", ["Electric"])]
 
-    mockUsageFindMany.mockResolvedValue([])
-    mockSpeciesAll.mockReturnValue([
-      {
-        exists: true,
-        id: "bulbasaur",
-        num: 1,
-        isNonstandard: null,
-        types: ["Grass", "Poison"],
-        name: "Bulbasaur",
-      },
-      {
-        exists: true,
-        id: "syclant",
-        num: 100,
-        isNonstandard: "CAP",
-        types: ["Ice", "Bug"],
-        name: "Syclant",
-      },
+    mockGetUsageStats.mockResolvedValue([])
+    mockGetAllSpecies.mockReturnValue([
+      mockSpeciesResult("bulbasaur", ["Grass", "Poison"]),
+      { ...mockSpeciesResult("futuremon", ["Psychic"]), num: 1100 },
     ])
 
-    mockSpeciesGet.mockImplementation((id: string) => {
-      if (id === "bulbasaur") return mockSpecies("bulbasaur", ["Grass", "Poison"])
-      if (id === "syclant") return mockSpecies("syclant", ["Ice", "Bug"])
-      return { exists: false }
+    mockGetSpecies.mockImplementation((id: string) => {
+      if (id === "bulbasaur") return mockSpeciesResult("bulbasaur", ["Grass", "Poison"])
+      if (id === "futuremon") return { ...mockSpeciesResult("futuremon", ["Psychic"]), num: 1100 }
+      return null
     })
 
     const result = await getCoverageBasedRecommendations(team, "gen9ou")
     const ids = result.map((r) => r.pokemonId)
-    expect(ids).not.toContain("syclant")
-  })
-
-  it("fallback excludes species with num <= 0 or num > 1025", async () => {
-    const team = [makeSlot("pikachu", ["Electric"])]
-
-    mockUsageFindMany.mockResolvedValue([])
-    mockSpeciesAll.mockReturnValue([
-      {
-        exists: true,
-        id: "bulbasaur",
-        num: 1,
-        isNonstandard: null,
-        types: ["Grass", "Poison"],
-        name: "Bulbasaur",
-      },
-      {
-        exists: true,
-        id: "missingno",
-        num: 0,
-        isNonstandard: null,
-        types: ["Normal"],
-        name: "MissingNo",
-      },
-      {
-        exists: true,
-        id: "futuremon",
-        num: 1100,
-        isNonstandard: null,
-        types: ["Psychic"],
-        name: "FutureMon",
-      },
-    ])
-
-    mockSpeciesGet.mockImplementation((id: string) => {
-      if (id === "bulbasaur") return mockSpecies("bulbasaur", ["Grass", "Poison"])
-      if (id === "missingno") return mockSpecies("missingno", ["Normal"])
-      if (id === "futuremon") return mockSpecies("futuremon", ["Psychic"])
-      return { exists: false }
-    })
-
-    const result = await getCoverageBasedRecommendations(team, "gen9ou")
-    const ids = result.map((r) => r.pokemonId)
-    expect(ids).not.toContain("missingno")
     expect(ids).not.toContain("futuremon")
-  })
-
-  it("fallback excludes non-existent species entries", async () => {
-    const team = [makeSlot("pikachu", ["Electric"])]
-
-    mockUsageFindMany.mockResolvedValue([])
-    mockSpeciesAll.mockReturnValue([
-      { exists: false, id: "ghost", num: 1, isNonstandard: null },
-      {
-        exists: true,
-        id: "bulbasaur",
-        num: 1,
-        isNonstandard: null,
-        types: ["Grass", "Poison"],
-        name: "Bulbasaur",
-      },
-    ])
-
-    mockSpeciesGet.mockImplementation((id: string) => {
-      if (id === "bulbasaur") return mockSpecies("bulbasaur", ["Grass", "Poison"])
-      return { exists: false }
-    })
-
-    const result = await getCoverageBasedRecommendations(team, "gen9ou")
-    const ids = result.map((r) => r.pokemonId)
-    expect(ids).not.toContain("ghost")
   })
 
   it("fallback caps at 200 species", async () => {
     const team = [makeSlot("pikachu", ["Electric"])]
 
-    mockUsageFindMany.mockResolvedValue([])
+    mockGetUsageStats.mockResolvedValue([])
     // Create 250 valid species entries
     const allSpecies = Array.from({ length: 250 }, (_, i) => ({
-      exists: true,
-      id: `mon${i}`,
+      ...mockSpeciesResult(`mon${i}`, ["Fighting"]),
       num: i + 1,
-      isNonstandard: null,
-      types: ["Fighting"],
-      name: `Mon${i}`,
     }))
-    mockSpeciesAll.mockReturnValue(allSpecies)
+    mockGetAllSpecies.mockReturnValue(allSpecies)
 
-    mockSpeciesGet.mockImplementation((id: string) => {
-      return mockSpecies(id, ["Fighting"])
+    mockGetSpecies.mockImplementation((id: string) => {
+      return mockSpeciesResult(id, ["Fighting"])
     })
 
     const result = await getCoverageBasedRecommendations(team, "gen9ou")
@@ -423,10 +309,10 @@ describe("getCoverageBasedRecommendations", () => {
       rank: i + 1,
     }))
 
-    mockUsageFindMany.mockResolvedValue(entries)
+    mockGetUsageStats.mockResolvedValue(entries)
 
-    mockSpeciesGet.mockImplementation((id: string) => {
-      return mockSpecies(id, ["Fighting"])
+    mockGetSpecies.mockImplementation((id: string) => {
+      return mockSpeciesResult(id, ["Fighting"])
     })
 
     const result = await getCoverageBasedRecommendations(team, "gen9ou", 5)
@@ -440,17 +326,17 @@ describe("getCoverageBasedRecommendations", () => {
   it("returns results sorted by score descending", async () => {
     const team = [makeSlot("snorlax", ["Normal"])]
 
-    mockUsageFindMany.mockResolvedValue([
+    mockGetUsageStats.mockResolvedValue([
       { pokemonId: "lucario", usagePercent: 10, rank: 1 },
       { pokemonId: "machamp", usagePercent: 8, rank: 2 },
       { pokemonId: "heatran", usagePercent: 12, rank: 3 },
     ])
 
-    mockSpeciesGet.mockImplementation((id: string) => {
-      if (id === "lucario") return mockSpecies("lucario", ["Fighting", "Steel"])
-      if (id === "machamp") return mockSpecies("machamp", ["Fighting"])
-      if (id === "heatran") return mockSpecies("heatran", ["Fire", "Steel"])
-      return { exists: false }
+    mockGetSpecies.mockImplementation((id: string) => {
+      if (id === "lucario") return mockSpeciesResult("lucario", ["Fighting", "Steel"])
+      if (id === "machamp") return mockSpeciesResult("machamp", ["Fighting"])
+      if (id === "heatran") return mockSpeciesResult("heatran", ["Fire", "Steel"])
+      return null
     })
 
     const result = await getCoverageBasedRecommendations(team, "gen9ou")
@@ -471,11 +357,11 @@ describe("getCoverageBasedRecommendations", () => {
       makeSlot("chansey", ["Normal"]),
     ]
 
-    mockUsageFindMany.mockResolvedValue([{ pokemonId: "lucario", usagePercent: 10, rank: 1 }])
+    mockGetUsageStats.mockResolvedValue([{ pokemonId: "lucario", usagePercent: 10, rank: 1 }])
 
-    mockSpeciesGet.mockImplementation((id: string) => {
-      if (id === "lucario") return mockSpecies("lucario", ["Fighting", "Steel"])
-      return { exists: false }
+    mockGetSpecies.mockImplementation((id: string) => {
+      if (id === "lucario") return mockSpeciesResult("lucario", ["Fighting", "Steel"])
+      return null
     })
 
     const result = await getCoverageBasedRecommendations(team, "gen9ou")
@@ -492,11 +378,11 @@ describe("getCoverageBasedRecommendations", () => {
   it("returns correctly shaped Recommendation objects", async () => {
     const team = [makeSlot("pikachu", ["Electric"])]
 
-    mockUsageFindMany.mockResolvedValue([{ pokemonId: "garchomp", usagePercent: 15, rank: 1 }])
+    mockGetUsageStats.mockResolvedValue([{ pokemonId: "garchomp", usagePercent: 15, rank: 1 }])
 
-    mockSpeciesGet.mockImplementation((id: string) => {
-      if (id === "garchomp") return mockSpecies("garchomp", ["Dragon", "Ground"])
-      return { exists: false }
+    mockGetSpecies.mockImplementation((id: string) => {
+      if (id === "garchomp") return mockSpeciesResult("garchomp", ["Dragon", "Ground"])
+      return null
     })
 
     const result = await getCoverageBasedRecommendations(team, "gen9ou")

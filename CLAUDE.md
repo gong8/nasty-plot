@@ -286,7 +286,7 @@ When the user asks what to work on, follow this decision tree:
 
 ## Session Management
 
-- **Session summaries** go in `sessions/YYYY-MM-DD-{slug}.md`
+- **Session summaries** go in `sessions/YYYY-MM-DD/{slug}.md` (date subdirectory, then slug filename)
 - Use `/summary` command at end of sessions to generate one
 - **Template sections:** Accomplishments, Key Decisions, Bugs Found, Pitfalls Encountered, Files Changed, Known Issues & Next Steps, Technical Notes
 - At session start, read recent session files in `sessions/` for context on what happened last

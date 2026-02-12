@@ -220,9 +220,15 @@ importers:
       '@nasty-plot/formats':
         specifier: workspace:*
         version: link:../formats
-      '@pkmn/dex':
-        specifier: ^0.10.6
-        version: 0.10.6
+      '@nasty-plot/pokemon-data':
+        specifier: workspace:*
+        version: link:../pokemon-data
+      '@nasty-plot/smogon-data':
+        specifier: workspace:*
+        version: link:../smogon-data
+      '@nasty-plot/teams':
+        specifier: workspace:*
+        version: link:../teams
 
   packages/battle-engine:
     dependencies:
@@ -232,12 +238,9 @@ importers:
       '@nasty-plot/damage-calc':
         specifier: workspace:*
         version: link:../damage-calc
-      '@pkmn/data':
-        specifier: ^0.10.6
-        version: 0.10.6
-      '@pkmn/dex':
-        specifier: ^0.10.6
-        version: 0.10.6
+      '@nasty-plot/pokemon-data':
+        specifier: workspace:*
+        version: link:../pokemon-data
       '@pkmn/sim':
         specifier: ^0.10.6
         version: 0.10.6
@@ -252,12 +255,9 @@ importers:
       '@nasty-plot/core':
         specifier: workspace:*
         version: link:../core
-      '@pkmn/data':
-        specifier: ^0.10.6
-        version: 0.10.6
-      '@pkmn/dex':
-        specifier: ^0.10.6
-        version: 0.10.6
+      '@nasty-plot/pokemon-data':
+        specifier: workspace:*
+        version: link:../pokemon-data
       '@smogon/calc':
         specifier: ^0.10.0
         version: 0.10.0
@@ -387,9 +387,15 @@ importers:
       '@nasty-plot/db':
         specifier: workspace:*
         version: link:../db
-      '@pkmn/dex':
-        specifier: ^0.10.6
-        version: 0.10.6
+      '@nasty-plot/pokemon-data':
+        specifier: workspace:*
+        version: link:../pokemon-data
+      '@nasty-plot/smogon-data':
+        specifier: workspace:*
+        version: link:../smogon-data
+      '@nasty-plot/teams':
+        specifier: workspace:*
+        version: link:../teams
     devDependencies:
       typescript:
         specifier: ^5.9.3
@@ -403,6 +409,9 @@ importers:
       '@nasty-plot/db':
         specifier: workspace:*
         version: link:../db
+      '@nasty-plot/formats':
+        specifier: workspace:*
+        version: link:../formats
       '@nasty-plot/pokemon-data':
         specifier: workspace:*
         version: link:../pokemon-data

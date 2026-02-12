@@ -1,4 +1,4 @@
-import { NATURE_DATA } from "./constants"
+import { MAX_SINGLE_EV, MAX_TOTAL_EVS, NATURE_DATA } from "./constants"
 import { STATS } from "./types"
 import type { NatureName, StatName, StatsTable } from "./types"
 
@@ -59,16 +59,16 @@ export function getTotalEvs(evs: StatsTable): number {
  */
 export function validateEvs(evs: StatsTable): { valid: boolean; reason?: string } {
   for (const stat of STATS) {
-    if (evs[stat] < 0 || evs[stat] > 252) {
-      return { valid: false, reason: `${stat} EVs must be between 0 and 252` }
+    if (evs[stat] < 0 || evs[stat] > MAX_SINGLE_EV) {
+      return { valid: false, reason: `${stat} EVs must be between 0 and ${MAX_SINGLE_EV}` }
     }
     if (evs[stat] % 4 !== 0) {
       return { valid: false, reason: `${stat} EVs should be divisible by 4` }
     }
   }
   const total = getTotalEvs(evs)
-  if (total > 510) {
-    return { valid: false, reason: `Total EVs (${total}) exceeds maximum of 510` }
+  if (total > MAX_TOTAL_EVS) {
+    return { valid: false, reason: `Total EVs (${total}) exceeds maximum of ${MAX_TOTAL_EVS}` }
   }
   return { valid: true }
 }

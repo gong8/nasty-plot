@@ -7,7 +7,7 @@ import { useBattle } from "@/features/battle/hooks/use-battle"
 import { loadCheckpoint } from "@/features/battle/lib/checkpoint-store"
 import { useChatSidebar } from "@/features/chat/context/chat-provider"
 import type { AIDifficulty } from "@nasty-plot/battle-engine"
-import type { GameType } from "@nasty-plot/core"
+import { DEFAULT_FORMAT_ID, type GameType } from "@nasty-plot/core"
 import { Loader2 } from "lucide-react"
 
 function BattleLiveContent() {
@@ -48,7 +48,7 @@ function BattleLiveContent() {
   const paramsKey = searchParams.toString()
 
   useEffect(() => {
-    const formatId = searchParams.get("format") || "gen9ou"
+    const formatId = searchParams.get("format") || DEFAULT_FORMAT_ID
     const simFormatId = searchParams.get("simFormat") || undefined
     const gameType = (searchParams.get("gameType") || "singles") as GameType
     const aiDifficulty = (searchParams.get("ai") || "greedy") as AIDifficulty

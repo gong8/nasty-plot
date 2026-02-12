@@ -1,4 +1,3 @@
-import type { PokemonType } from "@nasty-plot/core"
 import { getRecommendations } from "@nasty-plot/recommendations"
 
 // ---------------------------------------------------------------------------
@@ -19,13 +18,9 @@ vi.mock("@nasty-plot/db", () => ({
   },
 }))
 
-vi.mock("@pkmn/dex", () => ({
-  Dex: {
-    species: {
-      get: vi.fn(),
-      all: vi.fn(),
-    },
-  },
+vi.mock("@nasty-plot/pokemon-data", () => ({
+  getSpecies: vi.fn(),
+  getAllSpecies: vi.fn(),
 }))
 
 vi.mock("#recommendations/usage-recommender", () => ({
@@ -37,12 +32,12 @@ vi.mock("#recommendations/coverage-recommender", () => ({
 }))
 
 import { prisma } from "@nasty-plot/db"
-import { Dex } from "@pkmn/dex"
+import { getSpecies } from "@nasty-plot/pokemon-data"
 import { getUsageBasedRecommendations } from "#recommendations/usage-recommender"
 import { getCoverageBasedRecommendations } from "#recommendations/coverage-recommender"
 
 const mockTeamFindUnique = prisma.team.findUnique as ReturnType<typeof vi.fn>
-const mockSpeciesGet = Dex.species.get as ReturnType<typeof vi.fn>
+const mockGetSpecies = getSpecies as ReturnType<typeof vi.fn>
 const mockUsageRecs = getUsageBasedRecommendations as ReturnType<typeof vi.fn>
 const mockCoverageRecs = getCoverageBasedRecommendations as ReturnType<typeof vi.fn>
 
@@ -78,9 +73,9 @@ function makeDbSlot(position: number, pokemonId: string) {
   }
 }
 
-function makeDexSpecies(id: string, name: string, types: string[]) {
+function makeSpecies(id: string, name: string, types: string[]) {
   return {
-    exists: true,
+    id,
     name,
     num: 1,
     types,
@@ -115,7 +110,7 @@ describe("getRecommendations", () => {
 
   it("loads team from prisma with slots", async () => {
     mockTeamFindUnique.mockResolvedValue(makeDbTeam([makeDbSlot(1, "pikachu")]))
-    mockSpeciesGet.mockReturnValue(makeDexSpecies("pikachu", "Pikachu", ["Electric"]))
+    mockGetSpecies.mockReturnValue(makeSpecies("pikachu", "Pikachu", ["Electric"]))
     mockUsageRecs.mockResolvedValue([])
     mockCoverageRecs.mockResolvedValue([])
 
@@ -129,7 +124,7 @@ describe("getRecommendations", () => {
 
   it("calls both usage and coverage recommenders", async () => {
     mockTeamFindUnique.mockResolvedValue(makeDbTeam([makeDbSlot(1, "garchomp")]))
-    mockSpeciesGet.mockReturnValue(makeDexSpecies("garchomp", "Garchomp", ["Dragon", "Ground"]))
+    mockGetSpecies.mockReturnValue(makeSpecies("garchomp", "Garchomp", ["Dragon", "Ground"]))
     mockUsageRecs.mockResolvedValue([])
     mockCoverageRecs.mockResolvedValue([])
 
@@ -143,10 +138,10 @@ describe("getRecommendations", () => {
     mockTeamFindUnique.mockResolvedValue(
       makeDbTeam([makeDbSlot(1, "garchomp"), makeDbSlot(2, "heatran")]),
     )
-    mockSpeciesGet.mockImplementation((id: string) => {
-      if (id === "garchomp") return makeDexSpecies("garchomp", "Garchomp", ["Dragon", "Ground"])
-      if (id === "heatran") return makeDexSpecies("heatran", "Heatran", ["Fire", "Steel"])
-      return { exists: false }
+    mockGetSpecies.mockImplementation((id: string) => {
+      if (id === "garchomp") return makeSpecies("garchomp", "Garchomp", ["Dragon", "Ground"])
+      if (id === "heatran") return makeSpecies("heatran", "Heatran", ["Fire", "Steel"])
+      return null
     })
     mockUsageRecs.mockResolvedValue([])
     mockCoverageRecs.mockResolvedValue([])
@@ -158,7 +153,7 @@ describe("getRecommendations", () => {
 
   it("passes converted slots to coverage recommender", async () => {
     mockTeamFindUnique.mockResolvedValue(makeDbTeam([makeDbSlot(1, "pikachu")]))
-    mockSpeciesGet.mockReturnValue(makeDexSpecies("pikachu", "Pikachu", ["Electric"]))
+    mockGetSpecies.mockReturnValue(makeSpecies("pikachu", "Pikachu", ["Electric"]))
     mockUsageRecs.mockResolvedValue([])
     mockCoverageRecs.mockResolvedValue([])
 
@@ -174,7 +169,7 @@ describe("getRecommendations", () => {
   describe("score merging", () => {
     it("applies default weights (0.6 usage, 0.4 coverage)", async () => {
       mockTeamFindUnique.mockResolvedValue(makeDbTeam([makeDbSlot(1, "pikachu")]))
-      mockSpeciesGet.mockReturnValue(makeDexSpecies("pikachu", "Pikachu", ["Electric"]))
+      mockGetSpecies.mockReturnValue(makeSpecies("pikachu", "Pikachu", ["Electric"]))
 
       mockUsageRecs.mockResolvedValue([
         {
@@ -202,7 +197,7 @@ describe("getRecommendations", () => {
 
     it("applies custom weights when provided", async () => {
       mockTeamFindUnique.mockResolvedValue(makeDbTeam([makeDbSlot(1, "pikachu")]))
-      mockSpeciesGet.mockReturnValue(makeDexSpecies("pikachu", "Pikachu", ["Electric"]))
+      mockGetSpecies.mockReturnValue(makeSpecies("pikachu", "Pikachu", ["Electric"]))
 
       mockUsageRecs.mockResolvedValue([
         { pokemonId: "heatran", pokemonName: "Heatran", score: 80, reasons: [] },
@@ -223,7 +218,7 @@ describe("getRecommendations", () => {
 
     it("handles Pokemon appearing only in usage recs", async () => {
       mockTeamFindUnique.mockResolvedValue(makeDbTeam([makeDbSlot(1, "pikachu")]))
-      mockSpeciesGet.mockReturnValue(makeDexSpecies("pikachu", "Pikachu", ["Electric"]))
+      mockGetSpecies.mockReturnValue(makeSpecies("pikachu", "Pikachu", ["Electric"]))
 
       mockUsageRecs.mockResolvedValue([
         {
@@ -244,7 +239,7 @@ describe("getRecommendations", () => {
 
     it("handles Pokemon appearing only in coverage recs", async () => {
       mockTeamFindUnique.mockResolvedValue(makeDbTeam([makeDbSlot(1, "pikachu")]))
-      mockSpeciesGet.mockReturnValue(makeDexSpecies("pikachu", "Pikachu", ["Electric"]))
+      mockGetSpecies.mockReturnValue(makeSpecies("pikachu", "Pikachu", ["Electric"]))
 
       mockUsageRecs.mockResolvedValue([])
       mockCoverageRecs.mockResolvedValue([
@@ -265,7 +260,7 @@ describe("getRecommendations", () => {
 
     it("merges reasons from both recommenders", async () => {
       mockTeamFindUnique.mockResolvedValue(makeDbTeam([makeDbSlot(1, "pikachu")]))
-      mockSpeciesGet.mockReturnValue(makeDexSpecies("pikachu", "Pikachu", ["Electric"]))
+      mockGetSpecies.mockReturnValue(makeSpecies("pikachu", "Pikachu", ["Electric"]))
 
       mockUsageRecs.mockResolvedValue([
         {
@@ -297,7 +292,7 @@ describe("getRecommendations", () => {
 
     it("caps composite score at 100", async () => {
       mockTeamFindUnique.mockResolvedValue(makeDbTeam([makeDbSlot(1, "pikachu")]))
-      mockSpeciesGet.mockReturnValue(makeDexSpecies("pikachu", "Pikachu", ["Electric"]))
+      mockGetSpecies.mockReturnValue(makeSpecies("pikachu", "Pikachu", ["Electric"]))
 
       mockUsageRecs.mockResolvedValue([
         { pokemonId: "superMon", pokemonName: "SuperMon", score: 100, reasons: [] },
@@ -316,7 +311,7 @@ describe("getRecommendations", () => {
 
   it("returns results sorted by composite score descending", async () => {
     mockTeamFindUnique.mockResolvedValue(makeDbTeam([makeDbSlot(1, "pikachu")]))
-    mockSpeciesGet.mockReturnValue(makeDexSpecies("pikachu", "Pikachu", ["Electric"]))
+    mockGetSpecies.mockReturnValue(makeSpecies("pikachu", "Pikachu", ["Electric"]))
 
     mockUsageRecs.mockResolvedValue([
       { pokemonId: "a", pokemonName: "A", score: 90, reasons: [] },
@@ -338,7 +333,7 @@ describe("getRecommendations", () => {
 
   it("respects the limit parameter", async () => {
     mockTeamFindUnique.mockResolvedValue(makeDbTeam([makeDbSlot(1, "pikachu")]))
-    mockSpeciesGet.mockReturnValue(makeDexSpecies("pikachu", "Pikachu", ["Electric"]))
+    mockGetSpecies.mockReturnValue(makeSpecies("pikachu", "Pikachu", ["Electric"]))
 
     const usageRecs = Array.from({ length: 15 }, (_, i) => ({
       pokemonId: `mon-${i}`,
@@ -356,7 +351,7 @@ describe("getRecommendations", () => {
 
   it("defaults to limit of 10", async () => {
     mockTeamFindUnique.mockResolvedValue(makeDbTeam([makeDbSlot(1, "pikachu")]))
-    mockSpeciesGet.mockReturnValue(makeDexSpecies("pikachu", "Pikachu", ["Electric"]))
+    mockGetSpecies.mockReturnValue(makeSpecies("pikachu", "Pikachu", ["Electric"]))
 
     const usageRecs = Array.from({ length: 20 }, (_, i) => ({
       pokemonId: `mon-${i}`,
@@ -374,7 +369,7 @@ describe("getRecommendations", () => {
 
   it("returns empty array when both sub-recommenders return nothing", async () => {
     mockTeamFindUnique.mockResolvedValue(makeDbTeam([makeDbSlot(1, "pikachu")]))
-    mockSpeciesGet.mockReturnValue(makeDexSpecies("pikachu", "Pikachu", ["Electric"]))
+    mockGetSpecies.mockReturnValue(makeSpecies("pikachu", "Pikachu", ["Electric"]))
 
     mockUsageRecs.mockResolvedValue([])
     mockCoverageRecs.mockResolvedValue([])
@@ -386,7 +381,7 @@ describe("getRecommendations", () => {
   it("maps DB slot with non-existent species (species undefined)", async () => {
     const slot = makeDbSlot(1, "nonexistent")
     mockTeamFindUnique.mockResolvedValue(makeDbTeam([slot]))
-    mockSpeciesGet.mockReturnValue({ exists: false })
+    mockGetSpecies.mockReturnValue(null)
     mockUsageRecs.mockResolvedValue([])
     mockCoverageRecs.mockResolvedValue([])
 
@@ -410,7 +405,7 @@ describe("getRecommendations", () => {
     slot.evHp = 4
 
     mockTeamFindUnique.mockResolvedValue(makeDbTeam([slot]))
-    mockSpeciesGet.mockReturnValue(makeDexSpecies("garchomp", "Garchomp", ["Dragon", "Ground"]))
+    mockGetSpecies.mockReturnValue(makeSpecies("garchomp", "Garchomp", ["Dragon", "Ground"]))
     mockUsageRecs.mockResolvedValue([])
     mockCoverageRecs.mockResolvedValue([])
 
@@ -431,7 +426,7 @@ describe("getRecommendations", () => {
 
   it("returns correctly shaped Recommendation objects", async () => {
     mockTeamFindUnique.mockResolvedValue(makeDbTeam([makeDbSlot(1, "pikachu")]))
-    mockSpeciesGet.mockReturnValue(makeDexSpecies("pikachu", "Pikachu", ["Electric"]))
+    mockGetSpecies.mockReturnValue(makeSpecies("pikachu", "Pikachu", ["Electric"]))
 
     mockUsageRecs.mockResolvedValue([
       {

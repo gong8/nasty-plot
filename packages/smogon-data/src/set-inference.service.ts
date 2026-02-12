@@ -5,6 +5,7 @@ import type {
   ExtractedPokemonData,
   ExtractedTeamData,
 } from "@nasty-plot/core"
+import { getFormatFallbacks } from "@nasty-plot/formats"
 import { getAllSetsForFormat } from "./smogon-sets.service"
 
 // ---------------------------------------------------------------------------
@@ -58,51 +59,6 @@ function normalize(name: string): string {
 }
 
 /**
- * Build a prioritized list of format IDs to try for set lookup.
- * Handles VGC regulation suffixes (e.g. gen9vgc2026regfbo3 → gen9vgc2025 → gen9doublesou)
- * and other format variations.
- */
-function buildFormatFallbacks(formatId: string): string[] {
-  const candidates = [formatId]
-  const lower = formatId.toLowerCase()
-
-  // Strip bo3/bo5 suffix
-  const stripped1 = lower.replace(/bo\d+$/, "")
-  if (stripped1 !== lower) candidates.push(stripped1)
-
-  // Strip regulation suffix (regf, regg, etc.)
-  const stripped2 = stripped1.replace(/reg[a-z]$/, "")
-  if (stripped2 !== stripped1) candidates.push(stripped2)
-
-  // For VGC: try previous years
-  const vgcMatch = stripped2.match(/^(gen\d+vgc)(\d{4})$/)
-  if (vgcMatch) {
-    const base = vgcMatch[1]
-    const year = parseInt(vgcMatch[2], 10)
-    for (let y = year - 1; y >= year - 3; y--) {
-      candidates.push(`${base}${y}`)
-    }
-  }
-
-  // Game type fallbacks
-  if (
-    lower.includes("vgc") ||
-    lower.includes("doubles") ||
-    lower.includes("battlestadiumdoubles")
-  ) {
-    candidates.push("gen9doublesou", "gen9battlestadiumdoubles")
-  } else if (lower.includes("nationaldex")) {
-    candidates.push("gen9nationaldex")
-  } else {
-    // Singles fallback
-    candidates.push("gen9ou")
-  }
-
-  // Deduplicate while preserving order
-  return [...new Set(candidates)]
-}
-
-/**
  * Find the best matching format that has sets.
  * Tries the format itself, then falls back to related formats (e.g. earlier VGC years).
  * Returns sets from the *single* best match.
@@ -110,7 +66,7 @@ function buildFormatFallbacks(formatId: string): string[] {
 async function resolveFormatWithSets(
   formatId: string,
 ): Promise<{ resolvedFormat: string; sets: Record<string, SmogonSetData[]> }> {
-  const fallbacks = buildFormatFallbacks(formatId)
+  const fallbacks = getFormatFallbacks(formatId)
 
   for (const candidate of fallbacks) {
     const sets = await getAllSetsForFormat(candidate)

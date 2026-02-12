@@ -12,8 +12,7 @@
   },
   "dependencies": {
     "@smogon/calc": "^0.10.0",
-    "@pkmn/dex": "^0.10.6",
-    "@pkmn/data": "^0.10.6",
-    "@nasty-plot/core": "workspace:*"
+    "@nasty-plot/core": "workspace:*",
+    "@nasty-plot/pokemon-data": "workspace:*"
   }
 }

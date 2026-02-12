@@ -1,6 +1,4 @@
-import { Dex } from "@pkmn/dex"
-import { Generations } from "@pkmn/data"
-import { calculate, Pokemon, Move, Field } from "@smogon/calc"
+import { getRawMove } from "@nasty-plot/pokemon-data"
 import type {
   AIPlayer,
   BattleState,
@@ -12,7 +10,7 @@ import type {
 } from "../types"
 import type { PokemonType, GameType } from "@nasty-plot/core"
 import {
-  flattenDamage,
+  calculateBattleDamage,
   getSpeciesTypes,
   getTypeEffectiveness,
   fallbackMove,
@@ -23,9 +21,6 @@ import {
   HAZARD_REMOVAL_BASE,
   HAZARD_REMOVAL_PER_HAZARD,
 } from "./shared"
-
-const gens = new Generations(Dex)
-const gen = gens.get(9)
 
 /**
  * HeuristicAI uses type matchup awareness, switching logic, and situational
@@ -137,7 +132,7 @@ export class HeuristicAI implements AIPlayer {
     oppPokemon: BattlePokemon,
     state: BattleState,
   ): number {
-    const moveData = Dex.moves.get(move.name)
+    const moveData = getRawMove(move.name)
     if (!moveData?.exists) return 0
 
     if (moveData.category === "Status") {
@@ -156,25 +151,13 @@ export class HeuristicAI implements AIPlayer {
     let score = 0
 
     try {
-      const attacker = new Pokemon(gen, myPokemon.name, {
-        level: myPokemon.level,
-        ability: myPokemon.ability || undefined,
-        item: myPokemon.item || undefined,
-      })
-      const defender = new Pokemon(gen, oppPokemon.name, {
-        level: oppPokemon.level,
-        ability: oppPokemon.ability || undefined,
-        item: oppPokemon.item || undefined,
-        curHP: oppPokemon.hp,
-      })
-      const calcMove = new Move(gen, moveName)
-      const result = calculate(gen, attacker, defender, calcMove, new Field())
-      const damage = flattenDamage(result.damage)
+      const { damage, result } = calculateBattleDamage(myPokemon, oppPokemon, moveName)
       const avgDamage = damage.reduce((a, b) => a + b, 0) / damage.length
       const maxDamage = Math.max(...damage)
 
       // Base score from damage percentage
-      const dmgPercent = defender.maxHP() > 0 ? avgDamage / defender.maxHP() : 0
+      const defMaxHP = result.defender.maxHP()
+      const dmgPercent = defMaxHP > 0 ? avgDamage / defMaxHP : 0
       score += dmgPercent * 100
 
       // Bonus for KO potential
@@ -343,7 +326,7 @@ export class HeuristicAI implements AIPlayer {
     // Penalize switching into predicted coverage moves
     if (prediction && prediction.predictedMoves.length > 0) {
       for (const moveName of prediction.predictedMoves) {
-        const moveData = Dex.moves.get(moveName)
+        const moveData = getRawMove(moveName)
         if (!moveData?.exists || moveData.category === "Status") continue
         const eff = getTypeEffectiveness(moveData.type, switchTypes as string[])
         if (eff > 1) {

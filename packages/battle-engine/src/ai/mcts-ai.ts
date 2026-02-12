@@ -1,5 +1,5 @@
 import { Battle } from "@pkmn/sim"
-import type { GameType } from "@nasty-plot/core"
+import { DEFAULT_FORMAT_ID, type GameType } from "@nasty-plot/core"
 import type { AIPlayer, BattleState, BattleActionSet, BattleAction, PredictedSet } from "../types"
 import { evaluatePosition } from "./evaluator"
 import {
@@ -32,7 +32,7 @@ export class MCTSAI implements AIPlayer {
   private config: MCTSConfig
   private battleState: unknown | null = null
   private fallback = new HeuristicAI()
-  private formatId = "gen9ou"
+  private formatId = DEFAULT_FORMAT_ID
   private predictions: Record<string, PredictedSet> = {}
 
   constructor(config?: Partial<MCTSConfig>) {

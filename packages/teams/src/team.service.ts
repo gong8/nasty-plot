@@ -11,7 +11,7 @@ import type {
 
 // --- DB Row Types ---
 
-type DbSlotRow = {
+export type DbSlotRow = {
   id: number
   teamId: string
   position: number
@@ -101,7 +101,7 @@ function movesToDb(moves: TeamSlotInput["moves"]) {
   }
 }
 
-function dbSlotToDomain(dbSlot: DbSlotRow): TeamSlotData {
+export function dbSlotToDomain(dbSlot: DbSlotRow): TeamSlotData {
   const species = getSpecies(dbSlot.pokemonId)
   return {
     position: dbSlot.position,

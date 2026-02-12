@@ -6,10 +6,12 @@ import {
   type TeamSlotData,
   type TeamAnalysis,
   type SpeedTierEntry,
-  type PokemonType,
 } from "@nasty-plot/core"
 import { prisma } from "@nasty-plot/db"
 import { getFormat } from "@nasty-plot/formats"
+import { getSpecies } from "@nasty-plot/pokemon-data"
+import { getUsageStats } from "@nasty-plot/smogon-data"
+import { dbSlotToDomain } from "@nasty-plot/teams"
 import { analyzeTypeCoverage } from "./coverage.service"
 import { identifyThreats } from "./threat.service"
 import { calculateSynergy } from "./synergy.service"
@@ -27,55 +29,7 @@ export async function analyzeTeam(teamId: string): Promise<TeamAnalysis> {
     throw new Error(`Team not found: ${teamId}`)
   }
 
-  const { Dex } = await import("@pkmn/dex")
-
-  const slots: TeamSlotData[] = team.slots.map((s) => {
-    const species = Dex.species.get(s.pokemonId)
-    const speciesData = species?.exists
-      ? {
-          id: s.pokemonId,
-          name: species.name,
-          num: species.num,
-          types: species.types as [PokemonType] | [PokemonType, PokemonType],
-          baseStats: { ...species.baseStats },
-          abilities: Object.fromEntries(Object.entries(species.abilities).filter(([, v]) => v)),
-          weightkg: species.weightkg,
-        }
-      : undefined
-
-    return {
-      position: s.position,
-      pokemonId: s.pokemonId,
-      species: speciesData,
-      ability: s.ability,
-      item: s.item,
-      nature: s.nature as TeamSlotData["nature"],
-      teraType: (s.teraType as PokemonType) ?? undefined,
-      level: s.level,
-      moves: [
-        s.move1,
-        s.move2 ?? undefined,
-        s.move3 ?? undefined,
-        s.move4 ?? undefined,
-      ] as TeamSlotData["moves"],
-      evs: {
-        hp: s.evHp,
-        atk: s.evAtk,
-        def: s.evDef,
-        spa: s.evSpA,
-        spd: s.evSpD,
-        spe: s.evSpe,
-      },
-      ivs: {
-        hp: s.ivHp,
-        atk: s.ivAtk,
-        def: s.ivDef,
-        spa: s.ivSpA,
-        spd: s.ivSpD,
-        spe: s.ivSpe,
-      },
-    }
-  })
+  const slots: TeamSlotData[] = team.slots.map(dbSlotToDomain)
 
   const coverage = analyzeTypeCoverage(slots)
   const threats = await identifyThreats(slots, team.formatId)
@@ -96,7 +50,6 @@ async function calculateSpeedTiers(
   slots: TeamSlotData[],
   formatId: string,
 ): Promise<SpeedTierEntry[]> {
-  const { Dex } = await import("@pkmn/dex")
   const entries: SpeedTierEntry[] = []
 
   // Team entries
@@ -126,19 +79,15 @@ async function calculateSpeedTiers(
   const level = format?.defaultLevel ?? 100
   const teamPokemonIds = new Set(slots.map((s) => s.pokemonId))
 
-  const usageEntries = await prisma.usageStats.findMany({
-    where: { formatId },
-    orderBy: { rank: "asc" },
-    take: 20,
-  })
+  const usageEntries = await getUsageStats(formatId, { limit: 20 })
 
   let benchmarkCount = 0
   for (const entry of usageEntries) {
     if (benchmarkCount >= 10) break
     if (teamPokemonIds.has(entry.pokemonId)) continue
 
-    const species = Dex.species.get(entry.pokemonId)
-    if (!species?.exists) continue
+    const species = getSpecies(entry.pokemonId)
+    if (!species) continue
 
     // Max speed: 252 EVs, 31 IVs, +Spe nature (Jolly)
     const maxSpeed = calculateStat("spe", species.baseStats.spe, 31, 252, level, "Jolly")

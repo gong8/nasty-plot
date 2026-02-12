@@ -11,7 +11,7 @@ import type { BatchAnalytics } from "@nasty-plot/battle-engine"
 import { FormatSelector } from "@/features/battle/components/FormatSelector"
 import { TeamPicker, type TeamSelection } from "@/features/battle/components/TeamPicker"
 import { useFormat } from "@/features/battle/hooks/use-formats"
-import { parseShowdownPaste, type GameType } from "@nasty-plot/core"
+import { DEFAULT_FORMAT_ID, parseShowdownPaste, type GameType } from "@nasty-plot/core"
 
 type Phase = "setup" | "running" | "results"
 
@@ -25,66 +25,6 @@ interface BatchState {
   draws: number
   analytics: BatchAnalytics | null
 }
-
-const SAMPLE_TEAM_1 = `Garchomp @ Focus Sash
-Ability: Rough Skin
-Tera Type: Dragon
-EVs: 252 Atk / 4 SpD / 252 Spe
-Jolly Nature
-- Earthquake
-- Outrage
-- Swords Dance
-- Stealth Rock
-
-Heatran @ Leftovers
-Ability: Flash Fire
-Tera Type: Grass
-EVs: 252 SpA / 4 SpD / 252 Spe
-Timid Nature
-- Magma Storm
-- Earth Power
-- Flash Cannon
-- Stealth Rock
-
-Clefable @ Leftovers
-Ability: Magic Guard
-Tera Type: Water
-EVs: 252 HP / 252 Def / 4 SpD
-Bold Nature
-- Moonblast
-- Soft-Boiled
-- Calm Mind
-- Thunder Wave`
-
-const SAMPLE_TEAM_2 = `Great Tusk @ Booster Energy
-Ability: Protosynthesis
-Tera Type: Steel
-EVs: 252 Atk / 4 Def / 252 Spe
-Jolly Nature
-- Headlong Rush
-- Close Combat
-- Ice Spinner
-- Rapid Spin
-
-Iron Valiant @ Choice Specs
-Ability: Quark Drive
-Tera Type: Fairy
-EVs: 252 SpA / 4 SpD / 252 Spe
-Timid Nature
-- Moonblast
-- Psychic
-- Thunderbolt
-- Shadow Ball
-
-Dragapult @ Choice Band
-Ability: Clear Body
-Tera Type: Ghost
-EVs: 252 Atk / 4 SpD / 252 Spe
-Adamant Nature
-- Dragon Darts
-- Phantom Force
-- U-turn
-- Sucker Punch`
 
 const emptySelection = (paste: string): TeamSelection => ({
   teamId: null,
@@ -115,11 +55,11 @@ function validatePaste(paste: string): { valid: boolean; errors: string[] } {
 
 export default function SimulatePage() {
   const [phase, setPhase] = useState<Phase>("setup")
-  const [team1Selection, setTeam1Selection] = useState<TeamSelection>(emptySelection(SAMPLE_TEAM_1))
-  const [team2Selection, setTeam2Selection] = useState<TeamSelection>(emptySelection(SAMPLE_TEAM_2))
+  const [team1Selection, setTeam1Selection] = useState<TeamSelection>(emptySelection(""))
+  const [team2Selection, setTeam2Selection] = useState<TeamSelection>(emptySelection(""))
   const [team1Name, setTeam1Name] = useState("Team 1")
   const [team2Name, setTeam2Name] = useState("Team 2")
-  const [formatId, setFormatId] = useState("gen9ou")
+  const [formatId, setFormatId] = useState(DEFAULT_FORMAT_ID)
   const [totalGames, setTotalGames] = useState(50)
   const [aiDifficulty, setAiDifficulty] = useState("heuristic")
   const [batchState, setBatchState] = useState<BatchState | null>(null)
@@ -132,6 +72,26 @@ export default function SimulatePage() {
   const team1Validation = useMemo(() => validatePaste(team1Selection.paste), [team1Selection.paste])
   const team2Validation = useMemo(() => validatePaste(team2Selection.paste), [team2Selection.paste])
   const canStart = team1Validation.valid && team2Validation.valid
+
+  // Load sample teams from DB as defaults
+  useEffect(() => {
+    let cancelled = false
+    fetch(`/api/sample-teams?formatId=${formatId}`)
+      .then((res) => (res.ok ? res.json() : []))
+      .then((teams: Array<{ paste: string }>) => {
+        if (cancelled) return
+        if (teams.length >= 1 && !team1Selection.paste) {
+          setTeam1Selection(emptySelection(teams[0].paste))
+        }
+        if (teams.length >= 2 && !team2Selection.paste) {
+          setTeam2Selection(emptySelection(teams[1].paste))
+        }
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps -- only on mount
 
   useEffect(() => {
     return () => {

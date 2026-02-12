@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query"
 import {
   DEFAULT_EVS,
   DEFAULT_IVS,
+  DEFAULT_LEVEL,
   type UsageStatsEntry,
   type PaginatedResponse,
   type SmogonSetData,
@@ -235,7 +236,7 @@ export function useGuidedBuilder(teamId: string, formatId: string) {
         ability: "",
         item: "",
         nature: "Adamant" as NatureName,
-        level: 100,
+        level: DEFAULT_LEVEL,
         moves: [""] as TeamSlotData["moves"],
         evs: { ...DEFAULT_EVS } as StatsTable,
         ivs: { ...DEFAULT_IVS } as StatsTable,

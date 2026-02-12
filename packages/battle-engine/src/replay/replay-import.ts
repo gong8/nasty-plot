@@ -5,7 +5,12 @@
  * battle data for import into the system.
  */
 
-import type { ExtractedPokemonData, ExtractedTeamData } from "@nasty-plot/core"
+import {
+  DEFAULT_FORMAT_ID,
+  DEFAULT_LEVEL,
+  type ExtractedPokemonData,
+  type ExtractedTeamData,
+} from "@nasty-plot/core"
 import type { ShowdownReplayJSON } from "../types"
 
 export type { ExtractedPokemonData, ExtractedTeamData } from "@nasty-plot/core"
@@ -117,7 +122,7 @@ export function parseProtocolLog(log: string): ParsedBattleImport {
         if (side !== "p1" && side !== "p2") break
         const detailParts = (args[1] || "").split(",").map((s) => s.trim())
         const species = detailParts[0]
-        let level = 100
+        let level = DEFAULT_LEVEL
         for (let i = 1; i < detailParts.length; i++) {
           if (detailParts[i].startsWith("L")) {
             level = parseInt(detailParts[i].slice(1), 10)
@@ -150,7 +155,7 @@ export function parseProtocolLog(log: string): ParsedBattleImport {
         // Map nickname → species
         nicknameToSpecies[side].set(nickname, speciesId)
 
-        let level = 100
+        let level = DEFAULT_LEVEL
         for (let i = 1; i < detailParts.length; i++) {
           if (detailParts[i].startsWith("L")) {
             level = parseInt(detailParts[i].slice(1), 10)
@@ -278,7 +283,7 @@ export function parseProtocolLog(log: string): ParsedBattleImport {
   return {
     source: "raw-log",
     replayId: null,
-    formatId: formatId || "gen9ou",
+    formatId: formatId || DEFAULT_FORMAT_ID,
     gameType,
     playerNames,
     winnerId,

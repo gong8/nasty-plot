@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { Trash2 } from "lucide-react"
+import { usePokemonQuery, useLearnsetQuery } from "../hooks/use-pokemon-data"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -24,6 +25,9 @@ import {
   MAX_TOTAL_EVS,
   MAX_SINGLE_EV,
   STATS,
+  DEFAULT_LEVEL,
+  DEFAULT_EVS,
+  DEFAULT_IVS,
   calculateAllStats,
   getTotalEvs,
   type NatureName,
@@ -66,16 +70,12 @@ export function SlotEditor({
   const [item, setItem] = useState(slot?.item ?? "")
   const [nature, setNature] = useState<NatureName>(slot?.nature ?? "Hardy")
   const [teraType, setTeraType] = useState<PokemonType | undefined>(slot?.teraType)
-  const [level, setLevel] = useState(slot?.level ?? 100)
+  const [level, setLevel] = useState(slot?.level ?? DEFAULT_LEVEL)
   const [moves, setMoves] = useState<[string, string?, string?, string?]>(
     slot?.moves ?? ["", undefined, undefined, undefined],
   )
-  const [evs, setEvs] = useState<StatsTable>(
-    slot?.evs ?? { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 },
-  )
-  const [ivs, setIvs] = useState<StatsTable>(
-    slot?.ivs ?? { hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31 },
-  )
+  const [evs, setEvs] = useState<StatsTable>(slot?.evs ?? { ...DEFAULT_EVS })
+  const [ivs, setIvs] = useState<StatsTable>(slot?.ivs ?? { ...DEFAULT_IVS })
 
   // Reset form when slot changes
   useEffect(() => {
@@ -85,23 +85,14 @@ export function SlotEditor({
     setItem(slot?.item ?? "")
     setNature(slot?.nature ?? "Hardy")
     setTeraType(slot?.teraType)
-    setLevel(slot?.level ?? 100)
+    setLevel(slot?.level ?? DEFAULT_LEVEL)
     setMoves(slot?.moves ?? ["", undefined, undefined, undefined])
-    setEvs(slot?.evs ?? { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 })
-    setIvs(slot?.ivs ?? { hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31 })
+    setEvs(slot?.evs ?? { ...DEFAULT_EVS })
+    setIvs(slot?.ivs ?? { ...DEFAULT_IVS })
   }, [slot])
 
   // Fetch pokemon species data for the selected pokemonId
-  const { data: speciesData } = useQuery<PokemonSpecies>({
-    queryKey: ["pokemon", pokemonId],
-    queryFn: async () => {
-      const res = await fetch(`/api/pokemon/${pokemonId}`)
-      if (!res.ok) throw new Error("Not found")
-      const json = await res.json()
-      return json.data
-    },
-    enabled: !!pokemonId,
-  })
+  const { data: speciesData } = usePokemonQuery(pokemonId || null)
 
   // Fetch Mega form preview when item changes
   const { data: megaForm } = useQuery<PokemonSpecies | null>({
@@ -118,19 +109,7 @@ export function SlotEditor({
   })
 
   // Fetch learnset for move search
-  const { data: learnset = [] } = useQuery<string[]>({
-    queryKey: ["learnset", pokemonId, formatId],
-    queryFn: async () => {
-      let url = `/api/pokemon/${pokemonId}/learnset`
-      if (formatId) url += `?format=${encodeURIComponent(formatId)}`
-      const res = await fetch(url)
-      if (!res.ok) return []
-      const json = await res.json()
-      const moves = json.data ?? []
-      return moves.map((m: { name: string }) => m.name)
-    },
-    enabled: !!pokemonId,
-  })
+  const { data: learnset = [] } = useLearnsetQuery(pokemonId || null, formatId)
 
   // Fetch popularity data for two-tier dropdowns
   const { data: popularity } = usePopularityData(pokemonId, formatId)

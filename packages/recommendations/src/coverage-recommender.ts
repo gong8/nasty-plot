@@ -7,8 +7,8 @@ import {
   getOffensiveCoverage,
 } from "@nasty-plot/core"
 import { analyzeTypeCoverage } from "@nasty-plot/analysis"
-import { prisma } from "@nasty-plot/db"
-import { Dex } from "@pkmn/dex"
+import { getSpecies, getAllSpecies } from "@nasty-plot/pokemon-data"
+import { getUsageStats } from "@nasty-plot/smogon-data"
 
 /**
  * Get recommendations based on coverage gaps in the team.
@@ -25,11 +25,7 @@ export async function getCoverageBasedRecommendations(
   if (uncovered.length === 0 && sharedWeaknesses.length === 0) return []
 
   // Get Pokemon from usage stats for this format to limit candidates
-  const usageEntries = await prisma.usageStats.findMany({
-    where: { formatId },
-    orderBy: { rank: "asc" },
-    take: 100,
-  })
+  const usageEntries = await getUsageStats(formatId, { limit: 100 })
 
   const teamPokemonIds = new Set(slots.map((s) => s.pokemonId))
   const recommendations: Recommendation[] = []
@@ -43,8 +39,8 @@ export async function getCoverageBasedRecommendations(
   for (const pokemonId of candidateIds) {
     if (teamPokemonIds.has(pokemonId)) continue
 
-    const species = Dex.species.get(pokemonId)
-    if (!species?.exists) continue
+    const species = getSpecies(pokemonId)
+    if (!species) continue
 
     const speciesTypes = species.types as PokemonType[]
     const reasons: RecommendationReason[] = []
@@ -99,13 +95,9 @@ export async function getCoverageBasedRecommendations(
 
 function getAllLegalSpeciesIds(): string[] {
   // Return a limited set of common competitive Pokemon as fallback
-  const ids: string[] = []
-  const allSpecies = Dex.species.all()
-  for (const sp of allSpecies) {
-    if (sp.exists && sp.num > 0 && sp.num <= 1025 && !sp.isNonstandard) {
-      ids.push(sp.id)
-    }
-    if (ids.length >= 200) break
-  }
-  return ids
+  const allSpeciesList = getAllSpecies()
+  return allSpeciesList
+    .filter((sp) => sp.num <= 1025)
+    .slice(0, 200)
+    .map((sp) => sp.id)
 }

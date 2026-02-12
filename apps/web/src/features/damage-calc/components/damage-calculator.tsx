@@ -37,6 +37,14 @@ import {
   STAT_LABELS,
   STAT_COLORS,
   MAX_SINGLE_EV,
+  MAX_TOTAL_EVS,
+  DEFAULT_LEVEL,
+  DEFAULT_EVS,
+  DEFAULT_IVS,
+  WEATHERS,
+  TERRAINS,
+  STATUSES,
+  BOOST_VALUES,
   type PokemonType,
   type NatureName,
   type StatsTable,
@@ -65,39 +73,16 @@ interface PokemonConfig {
 const DEFAULT_CONFIG: PokemonConfig = {
   pokemonId: "",
   pokemonName: "",
-  level: 100,
+  level: DEFAULT_LEVEL,
   ability: "",
   item: "",
   nature: "Hardy",
-  evs: { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 },
-  ivs: { hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31 },
-  boosts: { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 },
+  evs: { ...DEFAULT_EVS },
+  ivs: { ...DEFAULT_IVS },
+  boosts: { ...DEFAULT_EVS },
   teraType: "",
   status: "",
 }
-
-const WEATHERS = [
-  "None",
-  "Sun",
-  "Rain",
-  "Sand",
-  "Snow",
-  "Harsh Sunshine",
-  "Heavy Rain",
-  "Strong Winds",
-]
-const TERRAINS = ["None", "Electric", "Grassy", "Misty", "Psychic"]
-const STATUSES = [
-  "None",
-  "Healthy",
-  "Burned",
-  "Paralyzed",
-  "Poisoned",
-  "Badly Poisoned",
-  "Asleep",
-  "Frozen",
-]
-const BOOST_VALUES = [-6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6]
 
 // --- Combobox sub-components ---
 
@@ -535,9 +520,12 @@ function PokemonPanel({
           <div className="flex items-center justify-between">
             <Label className="text-xs font-medium">EVs</Label>
             <span
-              className={cn("text-xs", totalEvs > 510 ? "text-red-500" : "text-muted-foreground")}
+              className={cn(
+                "text-xs",
+                totalEvs > MAX_TOTAL_EVS ? "text-red-500" : "text-muted-foreground",
+              )}
             >
-              {totalEvs}/510
+              {totalEvs}/{MAX_TOTAL_EVS}
             </span>
           </div>
           {STATS.map((stat) => (
@@ -556,10 +544,13 @@ function PokemonPanel({
               <Input
                 type="number"
                 min={0}
-                max={252}
+                max={MAX_SINGLE_EV}
                 value={config.evs[stat]}
                 onChange={(e) =>
-                  updateEv(stat, Math.min(252, Math.max(0, parseInt(e.target.value) || 0)))
+                  updateEv(
+                    stat,
+                    Math.min(MAX_SINGLE_EV, Math.max(0, parseInt(e.target.value) || 0)),
+                  )
                 }
                 className="w-14 h-7 text-xs text-center"
               />

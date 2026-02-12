@@ -1,5 +1,5 @@
 import { prisma } from "@nasty-plot/db"
-import { getSpecies } from "@nasty-plot/pokemon-data"
+import { STATS } from "@nasty-plot/core"
 import type {
   TeamData,
   TeamSlotData,
@@ -12,8 +12,7 @@ import type {
   ForkOptions,
   LineageNode,
 } from "@nasty-plot/core"
-import { getTeam } from "./team.service"
-import { domainSlotToDb } from "./team.service"
+import { getTeam, domainSlotToDb, dbSlotToDomain } from "./team.service"
 
 const LINEAGE_SAFETY_LIMIT = 100
 
@@ -418,8 +417,7 @@ function diffSlot(a: TeamSlotData, b: TeamSlotData): FieldChange[] {
     check(`moves[${i}]`, a.moves[i], b.moves[i])
   }
 
-  const statNames = ["hp", "atk", "def", "spa", "spd", "spe"] as const
-  for (const stat of statNames) {
+  for (const stat of STATS) {
     check(`evs.${stat}`, a.evs[stat], b.evs[stat])
     check(`ivs.${stat}`, a.ivs[stat], b.ivs[stat])
   }
@@ -478,41 +476,7 @@ function toTeamData(db: DbTeamResult): TeamData {
     parentId: db.parentId ?? undefined,
     branchName: db.branchName ?? undefined,
     isArchived: db.isArchived,
-    slots: db.slots
-      .sort((a, b) => a.position - b.position)
-      .map((s) => ({
-        position: s.position,
-        pokemonId: s.pokemonId,
-        nickname: s.nickname ?? undefined,
-        species: getSpecies(s.pokemonId) ?? undefined,
-        ability: s.ability,
-        item: s.item,
-        nature: s.nature as TeamSlotData["nature"],
-        teraType: s.teraType as TeamSlotData["teraType"],
-        level: s.level,
-        moves: [
-          s.move1,
-          s.move2 ?? undefined,
-          s.move3 ?? undefined,
-          s.move4 ?? undefined,
-        ] as TeamSlotData["moves"],
-        evs: {
-          hp: s.evHp,
-          atk: s.evAtk,
-          def: s.evDef,
-          spa: s.evSpA,
-          spd: s.evSpD,
-          spe: s.evSpe,
-        },
-        ivs: {
-          hp: s.ivHp,
-          atk: s.ivAtk,
-          def: s.ivDef,
-          spa: s.ivSpA,
-          spd: s.ivSpD,
-          spe: s.ivSpe,
-        },
-      })),
+    slots: db.slots.sort((a, b) => a.position - b.position).map(dbSlotToDomain),
     createdAt: db.createdAt.toISOString(),
     updatedAt: db.updatedAt.toISOString(),
   }

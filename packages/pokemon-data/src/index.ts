@@ -17,6 +17,11 @@ export {
   isZCrystal,
   getZCrystalType,
   getSignatureZCrystal,
+  getGen9,
+  getRawMove,
+  getRawSpecies,
+  getType,
+  resolveSpeciesName,
 } from "./dex.service"
 
 export type * from "./types"

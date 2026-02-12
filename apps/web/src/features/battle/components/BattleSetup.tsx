@@ -9,8 +9,7 @@ import { Swords, Zap, Brain, Cpu } from "lucide-react"
 import { FormatSelector } from "./FormatSelector"
 import { TeamPicker, type TeamSelection } from "./TeamPicker"
 import { useFormat } from "../hooks/use-formats"
-import type { GameType } from "@nasty-plot/core"
-import { parseShowdownPaste } from "@nasty-plot/core"
+import { DEFAULT_FORMAT_ID, parseShowdownPaste, type GameType } from "@nasty-plot/core"
 import type { TeamValidation } from "../types"
 
 interface BattleSetupProps {
@@ -49,138 +48,6 @@ const AI_OPTIONS: {
     icon: Cpu,
   },
 ]
-
-const SAMPLE_TEAM_1 = `Garchomp @ Life Orb
-Ability: Rough Skin
-Level: 100
-Tera Type: Ground
-EVs: 252 Atk / 4 SpD / 252 Spe
-Jolly Nature
-- Earthquake
-- Dragon Claw
-- Swords Dance
-- Scale Shot
-
-Heatran @ Leftovers
-Ability: Flash Fire
-Level: 100
-Tera Type: Fairy
-EVs: 252 HP / 4 SpA / 252 SpD
-Calm Nature
-- Magma Storm
-- Earth Power
-- Flash Cannon
-- Taunt
-
-Clefable @ Leftovers
-Ability: Unaware
-Level: 100
-Tera Type: Water
-EVs: 252 HP / 252 Def / 4 SpD
-Bold Nature
-- Moonblast
-- Flamethrower
-- Thunder Wave
-- Soft-Boiled
-
-Weavile @ Choice Band
-Ability: Pressure
-Level: 100
-Tera Type: Dark
-EVs: 252 Atk / 4 SpD / 252 Spe
-Jolly Nature
-- Triple Axel
-- Knock Off
-- Ice Shard
-- Low Kick
-
-Slowbro @ Colbur Berry
-Ability: Regenerator
-Level: 100
-Tera Type: Poison
-EVs: 252 HP / 252 Def / 4 SpA
-Bold Nature
-- Scald
-- Psychic
-- Slack Off
-- Thunder Wave
-
-Dragapult @ Choice Specs
-Ability: Infiltrator
-Level: 100
-Tera Type: Ghost
-EVs: 4 HP / 252 SpA / 252 Spe
-Timid Nature
-- Shadow Ball
-- Draco Meteor
-- Flamethrower
-- U-turn`
-
-const SAMPLE_TEAM_2 = `Tyranitar @ Leftovers
-Ability: Sand Stream
-Level: 100
-Tera Type: Water
-EVs: 252 HP / 4 Atk / 252 SpD
-Careful Nature
-- Stone Edge
-- Crunch
-- Stealth Rock
-- Thunder Wave
-
-Iron Valiant @ Booster Energy
-Ability: Quark Drive
-Level: 100
-Tera Type: Fairy
-EVs: 4 HP / 252 SpA / 252 Spe
-Timid Nature
-- Moonblast
-- Aura Sphere
-- Thunderbolt
-- Calm Mind
-
-Corviknight @ Leftovers
-Ability: Pressure
-Level: 100
-Tera Type: Water
-EVs: 252 HP / 168 Def / 88 SpD
-Impish Nature
-- Brave Bird
-- Body Press
-- Defog
-- Roost
-
-Toxapex @ Black Sludge
-Ability: Regenerator
-Level: 100
-Tera Type: Water
-EVs: 252 HP / 252 Def / 4 SpD
-Bold Nature
-- Scald
-- Toxic Spikes
-- Recover
-- Haze
-
-Great Tusk @ Heavy-Duty Boots
-Ability: Protosynthesis
-Level: 100
-Tera Type: Ground
-EVs: 252 HP / 252 Atk / 4 Spe
-Adamant Nature
-- Earthquake
-- Close Combat
-- Rapid Spin
-- Knock Off
-
-Gholdengo @ Air Balloon
-Ability: Good as Gold
-Level: 100
-Tera Type: Flying
-EVs: 4 HP / 252 SpA / 252 Spe
-Timid Nature
-- Shadow Ball
-- Make It Rain
-- Recover
-- Nasty Plot`
 
 const emptySelection = (paste: string): TeamSelection => ({
   teamId: null,
@@ -221,14 +88,30 @@ function validatePaste(paste: string): TeamValidation {
 }
 
 export function BattleSetup({ onStart, initialTeamId, initialFormatId }: BattleSetupProps) {
-  const [playerSelection, setPlayerSelection] = useState<TeamSelection>(
-    emptySelection(SAMPLE_TEAM_1),
-  )
-  const [opponentSelection, setOpponentSelection] = useState<TeamSelection>(
-    emptySelection(SAMPLE_TEAM_2),
-  )
-  const [formatId, setFormatId] = useState(initialFormatId || "gen9ou")
+  const [playerSelection, setPlayerSelection] = useState<TeamSelection>(emptySelection(""))
+  const [opponentSelection, setOpponentSelection] = useState<TeamSelection>(emptySelection(""))
+  const [formatId, setFormatId] = useState(initialFormatId || DEFAULT_FORMAT_ID)
   const [aiDifficulty, setAiDifficulty] = useState<AIDifficulty>("greedy")
+
+  // Load sample teams from DB as defaults
+  useEffect(() => {
+    let cancelled = false
+    fetch(`/api/sample-teams?formatId=${formatId}`)
+      .then((res) => (res.ok ? res.json() : []))
+      .then((teams: Array<{ paste: string }>) => {
+        if (cancelled) return
+        if (teams.length >= 1 && !playerSelection.paste) {
+          setPlayerSelection(emptySelection(teams[0].paste))
+        }
+        if (teams.length >= 2 && !opponentSelection.paste) {
+          setOpponentSelection(emptySelection(teams[1].paste))
+        }
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps -- only on mount
 
   // Auto-select the player team when initialTeamId is provided
   useEffect(() => {

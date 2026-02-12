@@ -1,8 +1,8 @@
 "use client"
 
 import { useState, useCallback, useMemo } from "react"
-import { useQuery } from "@tanstack/react-query"
 import { ChevronDown, ChevronUp, Info } from "lucide-react"
+import { usePokemonQuery, useLearnsetQuery } from "../../hooks/use-pokemon-data"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Slider } from "@/components/ui/slider"
@@ -22,10 +22,12 @@ import {
   MAX_TOTAL_EVS,
   MAX_SINGLE_EV,
   STATS,
+  DEFAULT_EVS,
+  DEFAULT_IVS,
+  DEFAULT_LEVEL,
   calculateAllStats,
   getTotalEvs,
   type NatureName,
-  type PokemonSpecies,
   type PokemonType,
   type StatName,
   type StatsTable,
@@ -56,31 +58,10 @@ export function SimplifiedSetEditor({
   const pokemonId = slot.pokemonId ?? ""
 
   // Fetch species data
-  const { data: speciesData } = useQuery<PokemonSpecies>({
-    queryKey: ["pokemon", pokemonId],
-    queryFn: async () => {
-      const res = await fetch(`/api/pokemon/${pokemonId}`)
-      if (!res.ok) throw new Error("Not found")
-      const json = await res.json()
-      return json.data
-    },
-    enabled: !!pokemonId,
-  })
+  const { data: speciesData } = usePokemonQuery(pokemonId || null)
 
   // Fetch learnset
-  const { data: learnset = [] } = useQuery<string[]>({
-    queryKey: ["learnset", pokemonId, formatId],
-    queryFn: async () => {
-      let url = `/api/pokemon/${pokemonId}/learnset`
-      if (formatId) url += `?format=${encodeURIComponent(formatId)}`
-      const res = await fetch(url)
-      if (!res.ok) return []
-      const json = await res.json()
-      const moves = json.data ?? []
-      return moves.map((m: { name: string }) => m.name)
-    },
-    enabled: !!pokemonId,
-  })
+  const { data: learnset = [] } = useLearnsetQuery(pokemonId || null, formatId)
 
   // Fetch popularity data for two-tier dropdowns
   const { data: popularity } = usePopularityData(pokemonId, formatId)
@@ -106,14 +87,8 @@ export function SimplifiedSetEditor({
     return { commonAbilities: common, otherAbilities: other }
   }, [abilities, popularity])
 
-  const evs = useMemo(
-    () => (slot.evs ?? { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 }) as StatsTable,
-    [slot.evs],
-  )
-  const ivs = useMemo(
-    () => (slot.ivs ?? { hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31 }) as StatsTable,
-    [slot.ivs],
-  )
+  const evs = useMemo(() => (slot.evs ?? { ...DEFAULT_EVS }) as StatsTable, [slot.evs])
+  const ivs = useMemo(() => (slot.ivs ?? { ...DEFAULT_IVS }) as StatsTable, [slot.ivs])
   const nature = slot.nature ?? "Hardy"
 
   const evTotal = getTotalEvs(evs)
@@ -121,7 +96,7 @@ export function SimplifiedSetEditor({
 
   const calculatedStats = useMemo(() => {
     if (!speciesData) return null
-    return calculateAllStats(speciesData.baseStats, ivs, evs, slot.level ?? 100, nature)
+    return calculateAllStats(speciesData.baseStats, ivs, evs, slot.level ?? DEFAULT_LEVEL, nature)
   }, [speciesData, ivs, evs, slot.level, nature])
 
   const handleEvChange = useCallback(

@@ -1,4 +1,4 @@
-import { Dex } from "@pkmn/dex"
+import { getRawSpecies } from "@nasty-plot/pokemon-data"
 import { DEFAULT_IVS, serializeShowdownPaste } from "@nasty-plot/core"
 import type { TeamSlotData, StatsTable } from "@nasty-plot/core"
 
@@ -27,7 +27,7 @@ export function teamToShowdownPaste(slots: TeamSlotData[]): string {
  */
 
 function resolveSpeciesName(pokemonId: string): string {
-  const species = Dex.species.get(pokemonId)
+  const species = getRawSpecies(pokemonId)
   if (species?.exists) return species.name
   // Fallback: split camelCase
   return pokemonId.replace(/([a-z])([A-Z])/g, "$1 $2").replace(/^./, (s) => s.toUpperCase())

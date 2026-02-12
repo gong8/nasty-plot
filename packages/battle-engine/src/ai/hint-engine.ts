@@ -1,10 +1,8 @@
-import { Generations } from "@pkmn/data"
-import { Dex } from "@pkmn/dex"
-import { calculate, Pokemon, Move, Field } from "@smogon/calc"
+import { getRawMove } from "@nasty-plot/pokemon-data"
 import type { BattleState, BattleActionSet, BattleAction, BattlePokemon, DexMove } from "../types"
 import { evaluatePosition, type EvalResult } from "./evaluator"
 import {
-  flattenDamage,
+  calculateBattleDamage,
   getSpeciesTypes,
   getTypeEffectiveness,
   HAZARD_SCORES,
@@ -14,9 +12,6 @@ import {
   HAZARD_REMOVAL_BASE,
   HAZARD_REMOVAL_PER_HAZARD,
 } from "./shared"
-
-const gens = new Generations(Dex)
-const gen = gens.get(9)
 
 export type MoveClassification = "best" | "good" | "neutral" | "inaccuracy" | "mistake" | "blunder"
 
@@ -50,7 +45,7 @@ function estimateMoveScore(
   oppActive: BattlePokemon,
   state: BattleState,
 ): { score: number; explanation: string } {
-  const moveData = Dex.moves.get(move.name)
+  const moveData = getRawMove(move.name)
   if (!moveData?.exists) {
     return { score: 0, explanation: "Unknown move" }
   }
@@ -62,23 +57,11 @@ function estimateMoveScore(
 
   // Damaging moves: use @smogon/calc
   try {
-    const attacker = new Pokemon(gen, myActive.name, {
-      level: myActive.level,
-      ability: myActive.ability || undefined,
-      item: myActive.item || undefined,
-    })
-    const defender = new Pokemon(gen, oppActive.name, {
-      level: oppActive.level,
-      ability: oppActive.ability || undefined,
-      item: oppActive.item || undefined,
-      curHP: oppActive.hp,
-    })
-    const calcMove = new Move(gen, move.name)
-    const result = calculate(gen, attacker, defender, calcMove, new Field())
-    const damage = flattenDamage(result.damage)
+    const { damage, result } = calculateBattleDamage(myActive, oppActive, move.name)
     const avgDmg = damage.reduce((a, b) => a + b, 0) / damage.length
     const maxDmg = Math.max(...damage)
-    const dmgPercent = defender.maxHP() > 0 ? (avgDmg / defender.maxHP()) * 100 : 0
+    const defMaxHP = result.defender.maxHP()
+    const dmgPercent = defMaxHP > 0 ? (avgDmg / defMaxHP) * 100 : 0
 
     let score = dmgPercent
     let explanation = `~${Math.round(dmgPercent)}% damage`

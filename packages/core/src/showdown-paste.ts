@@ -1,4 +1,4 @@
-import { DEFAULT_EVS, DEFAULT_IVS } from "./constants"
+import { DEFAULT_EVS, DEFAULT_IVS, DEFAULT_LEVEL } from "./constants"
 import { STATS } from "./types"
 import type { NatureName, PokemonType, StatsTable, TeamSlotData } from "./types"
 
@@ -70,7 +70,7 @@ function parseOneSlot(block: string, position: number): Partial<TeamSlotData> | 
     moves: ["", undefined, undefined, undefined],
     evs: { ...DEFAULT_EVS },
     ivs: { ...DEFAULT_IVS },
-    level: 100,
+    level: DEFAULT_LEVEL,
   }
 
   const moves: string[] = []
@@ -149,7 +149,7 @@ function serializeOneSlot(slot: TeamSlotData): string {
   }
 
   if (slot.ability) lines.push(`Ability: ${slot.ability}`)
-  if (slot.level !== 100) lines.push(`Level: ${slot.level}`)
+  if (slot.level !== DEFAULT_LEVEL) lines.push(`Level: ${slot.level}`)
   if (slot.teraType) lines.push(`Tera Type: ${slot.teraType}`)
 
   // EVs

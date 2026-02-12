@@ -1,4 +1,10 @@
-import { toId, type SmogonSetData, type NatureName, type PokemonType } from "@nasty-plot/core"
+import {
+  STATS,
+  toId,
+  type SmogonSetData,
+  type NatureName,
+  type PokemonType,
+} from "@nasty-plot/core"
 import { getAbility, getItem, getMove } from "@nasty-plot/pokemon-data"
 import type { SmogonChaosData } from "./usage-stats.service"
 
@@ -17,9 +23,7 @@ function parseSpread(spreadKey: string): {
   const evsRaw = parts[1] ? parts[1].split("/") : []
 
   const evs: Record<string, number> = {}
-  const stats = ["hp", "atk", "def", "spa", "spd", "spe"]
-
-  stats.forEach((stat, i) => {
+  STATS.forEach((stat, i) => {
     const val = parseInt(evsRaw[i] || "0", 10)
     if (val > 0) evs[stat] = val
   })

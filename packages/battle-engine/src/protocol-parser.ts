@@ -1,5 +1,5 @@
-import { Dex } from "@pkmn/dex"
-import type { PokemonType } from "@nasty-plot/core"
+import { getRawMove } from "@nasty-plot/pokemon-data"
+import { DEFAULT_EVS, DEFAULT_LEVEL, type PokemonType } from "@nasty-plot/core"
 import type {
   BattleState,
   BattlePokemon,
@@ -11,8 +11,6 @@ import type {
   Terrain,
   BoostTable,
 } from "./types"
-
-const dex = Dex.forGen(9)
 
 /**
  * Protocol Parser
@@ -84,7 +82,7 @@ function parseStatusFromHp(hpStr: string): StatusCondition {
 function parseDetails(details: string): { species: string; level: number; gender: string } {
   const parts = details.split(",").map((s) => s.trim())
   const species = parts[0]
-  let level = 100
+  let level = DEFAULT_LEVEL
   let gender = ""
 
   for (let i = 1; i < parts.length; i++) {
@@ -117,7 +115,7 @@ function makeEmptyPokemon(): BattlePokemon {
     speciesId: "",
     name: "",
     nickname: "",
-    level: 100,
+    level: DEFAULT_LEVEL,
     types: [],
     hp: 0,
     maxHp: 0,
@@ -128,7 +126,7 @@ function makeEmptyPokemon(): BattlePokemon {
     ability: "",
     isTerastallized: false,
     moves: [],
-    stats: { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 },
+    stats: { ...DEFAULT_EVS },
     boosts: defaultBoosts(),
     volatiles: [],
   }
@@ -907,7 +905,7 @@ export function parseRequestForSlot(
 
 function extractMoves(active: RequestActive | undefined): BattleActionSet["moves"] {
   return (active?.moves || []).map((m: RequestMove) => {
-    const moveData = dex.moves.get(m.id)
+    const moveData = getRawMove(m.id)
     return {
       name: m.move,
       id: m.id,
@@ -999,7 +997,7 @@ export function updateSideFromRequest(
     // Parse moves
     if (reqPoke.moves) {
       pokemon.moves = reqPoke.moves.map((m: string) => {
-        const moveData = dex.moves.get(m)
+        const moveData = getRawMove(m)
         return {
           id: m,
           name:

@@ -12,26 +12,16 @@ vi.mock("@nasty-plot/db", () => ({
   },
 }))
 
-vi.mock("@pkmn/dex", () => ({
-  Dex: {
-    forGen: vi.fn().mockReturnValue({
-      species: { get: vi.fn(), all: vi.fn() },
-      moves: { get: vi.fn(), all: vi.fn() },
-      abilities: { get: vi.fn(), all: vi.fn() },
-      items: { get: vi.fn(), all: vi.fn() },
-      learnsets: { get: vi.fn() },
-    }),
-    species: {
-      get: vi.fn(),
-    },
-  },
+vi.mock("@nasty-plot/pokemon-data", () => ({
+  getSpecies: vi.fn(),
+  getAllSpecies: vi.fn(),
 }))
 
 import { prisma } from "@nasty-plot/db"
-import { Dex } from "@pkmn/dex"
+import { getSpecies } from "@nasty-plot/pokemon-data"
 
 const mockCorrFindMany = prisma.teammateCorr.findMany as ReturnType<typeof vi.fn>
-const mockSpeciesGet = Dex.species.get as ReturnType<typeof vi.fn>
+const mockGetSpecies = getSpecies as ReturnType<typeof vi.fn>
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -39,8 +29,13 @@ const mockSpeciesGet = Dex.species.get as ReturnType<typeof vi.fn>
 
 function mockSpecies(id: string) {
   return {
-    exists: true,
+    id,
     name: id.charAt(0).toUpperCase() + id.slice(1),
+    num: 1,
+    types: ["Normal"] as [string],
+    baseStats: { hp: 80, atk: 80, def: 80, spa: 80, spd: 80, spe: 80 },
+    abilities: { "0": "Ability" },
+    weightkg: 50,
   }
 }
 
@@ -100,11 +95,11 @@ describe("getUsageBasedRecommendations", () => {
         { pokemonAId: "corviknight", pokemonBId: "heatran", correlationPercent: 25 },
       ])
 
-      mockSpeciesGet.mockImplementation((id: string) => {
+      mockGetSpecies.mockImplementation((id: string) => {
         if (id === "heatran") return mockSpecies("heatran")
         if (id === "garchomp") return mockSpecies("garchomp")
         if (id === "corviknight") return mockSpecies("corviknight")
-        return { exists: false }
+        return null
       })
 
       const result = await getUsageBasedRecommendations(["garchomp", "corviknight"], "gen9ou")
@@ -120,7 +115,7 @@ describe("getUsageBasedRecommendations", () => {
         { pokemonAId: "mon2", pokemonBId: "superMon", correlationPercent: 90 },
       ])
 
-      mockSpeciesGet.mockImplementation((id: string) => {
+      mockGetSpecies.mockImplementation((id: string) => {
         return mockSpecies(id)
       })
 
@@ -136,7 +131,7 @@ describe("getUsageBasedRecommendations", () => {
         { pokemonAId: "garchomp", pokemonBId: "clefable", correlationPercent: 15 },
       ])
 
-      mockSpeciesGet.mockImplementation((id: string) => mockSpecies(id))
+      mockGetSpecies.mockImplementation((id: string) => mockSpecies(id))
 
       const result = await getUsageBasedRecommendations(["garchomp"], "gen9ou")
 
@@ -156,7 +151,7 @@ describe("getUsageBasedRecommendations", () => {
         { pokemonAId: "garchomp", pokemonBId: "heatran", correlationPercent: 25.5 },
       ])
 
-      mockSpeciesGet.mockImplementation((id: string) => mockSpecies(id))
+      mockGetSpecies.mockImplementation((id: string) => mockSpecies(id))
 
       const result = await getUsageBasedRecommendations(["garchomp"], "gen9ou")
 
@@ -178,7 +173,7 @@ describe("getUsageBasedRecommendations", () => {
         { pokemonAId: "e", pokemonBId: "target", correlationPercent: 10 },
       ])
 
-      mockSpeciesGet.mockImplementation((id: string) => mockSpecies(id))
+      mockGetSpecies.mockImplementation((id: string) => mockSpecies(id))
 
       const result = await getUsageBasedRecommendations(["a", "b", "c", "d", "e"], "gen9ou")
 
@@ -192,9 +187,9 @@ describe("getUsageBasedRecommendations", () => {
         { pokemonAId: "fakemon", pokemonBId: "target", correlationPercent: 20 },
       ])
 
-      mockSpeciesGet.mockImplementation((id: string) => {
+      mockGetSpecies.mockImplementation((id: string) => {
         if (id === "target") return mockSpecies("target")
-        return { exists: false }
+        return null
       })
 
       const result = await getUsageBasedRecommendations(["fakemon"], "gen9ou")
@@ -216,7 +211,7 @@ describe("getUsageBasedRecommendations", () => {
       { pokemonAId: "garchomp", pokemonBId: "rotom", correlationPercent: 20 },
     ])
 
-    mockSpeciesGet.mockImplementation((id: string) => mockSpecies(id))
+    mockGetSpecies.mockImplementation((id: string) => mockSpecies(id))
 
     const result = await getUsageBasedRecommendations(["garchomp"], "gen9ou")
 
@@ -233,7 +228,7 @@ describe("getUsageBasedRecommendations", () => {
     }))
 
     mockCorrFindMany.mockResolvedValue(correlations)
-    mockSpeciesGet.mockImplementation((id: string) => mockSpecies(id))
+    mockGetSpecies.mockImplementation((id: string) => mockSpecies(id))
 
     const result = await getUsageBasedRecommendations(["garchomp"], "gen9ou", 5)
     expect(result.length).toBeLessThanOrEqual(5)
@@ -247,7 +242,7 @@ describe("getUsageBasedRecommendations", () => {
     }))
 
     mockCorrFindMany.mockResolvedValue(correlations)
-    mockSpeciesGet.mockImplementation((id: string) => mockSpecies(id))
+    mockGetSpecies.mockImplementation((id: string) => mockSpecies(id))
 
     const result = await getUsageBasedRecommendations(["garchomp"], "gen9ou")
     expect(result.length).toBeLessThanOrEqual(10)
@@ -263,8 +258,8 @@ describe("getUsageBasedRecommendations", () => {
       { pokemonAId: "garchomp", pokemonBId: "heatran", correlationPercent: 30 },
     ])
 
-    mockSpeciesGet.mockImplementation((id: string) => {
-      if (id === "fakemon") return { exists: false }
+    mockGetSpecies.mockImplementation((id: string) => {
+      if (id === "fakemon") return null
       return mockSpecies(id)
     })
 
@@ -280,7 +275,7 @@ describe("getUsageBasedRecommendations", () => {
       { pokemonAId: "garchomp", pokemonBId: "nullmon", correlationPercent: 40 },
     ])
 
-    mockSpeciesGet.mockImplementation((id: string) => {
+    mockGetSpecies.mockImplementation((id: string) => {
       if (id === "nullmon") return null
       return mockSpecies(id)
     })
@@ -295,7 +290,7 @@ describe("getUsageBasedRecommendations", () => {
       { pokemonAId: "garchomp", pokemonBId: "fake2", correlationPercent: 40 },
     ])
 
-    mockSpeciesGet.mockImplementation(() => ({ exists: false }))
+    mockGetSpecies.mockImplementation(() => null)
 
     const result = await getUsageBasedRecommendations(["garchomp"], "gen9ou")
     expect(result).toEqual([])
@@ -310,7 +305,7 @@ describe("getUsageBasedRecommendations", () => {
       { pokemonAId: "garchomp", pokemonBId: "heatran", correlationPercent: 25 },
     ])
 
-    mockSpeciesGet.mockImplementation((id: string) => mockSpecies(id))
+    mockGetSpecies.mockImplementation((id: string) => mockSpecies(id))
 
     const result = await getUsageBasedRecommendations(["garchomp"], "gen9ou")
 

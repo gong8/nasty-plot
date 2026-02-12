@@ -1,10 +1,10 @@
 "use client"
 
-import { Sprites } from "@pkmn/img"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Swords } from "lucide-react"
+import { PokemonSprite } from "@nasty-plot/ui"
 
 interface SampleTeamCardProps {
   name: string
@@ -41,25 +41,9 @@ export function SampleTeamCard({
       </CardHeader>
       <CardContent className="space-y-3">
         <div className="flex gap-1 justify-center flex-wrap">
-          {ids.map((id) => {
-            const spriteData = Sprites.getPokemon(id, {
-              gen: "gen5ani",
-              side: "p2",
-            })
-            return (
-              <div key={id} className="flex flex-col items-center gap-0.5">
-                <div className="flex items-center justify-center" style={{ width: 48, height: 48 }}>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={spriteData.url}
-                    alt={id}
-                    className="max-w-full max-h-full object-contain"
-                    style={{ imageRendering: "pixelated" }}
-                  />
-                </div>
-              </div>
-            )
-          })}
+          {ids.map((id) => (
+            <PokemonSprite key={id} pokemonId={id} size={48} />
+          ))}
         </div>
 
         <div className="flex items-center justify-between">

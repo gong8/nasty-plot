@@ -10,8 +10,10 @@ export {
   clearSlots,
   reorderSlots,
   domainSlotToDb,
+  dbSlotToDomain,
   cleanupEmptyTeams,
 } from "./team.service"
+export type { DbSlotRow } from "./team.service"
 export { validateTeam } from "./validation.service"
 export {
   importShowdownPaste,

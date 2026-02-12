@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Plus, Sparkles } from "lucide-react"
 import { useAddSlot } from "@/features/teams/hooks/use-teams"
-import type { Recommendation } from "@nasty-plot/core"
+import { DEFAULT_LEVEL, DEFAULT_EVS, DEFAULT_IVS, type Recommendation } from "@nasty-plot/core"
 
 interface RecommendationPanelProps {
   teamId: string
@@ -62,29 +62,15 @@ export function RecommendationPanel({
         item: set?.item ?? "",
         nature: set?.nature ?? "Adamant",
         teraType: set?.teraType,
-        level: 100,
+        level: DEFAULT_LEVEL,
         moves: [moves[0] ?? "", moves[1], moves[2], moves[3]] as [
           string,
           string?,
           string?,
           string?,
         ],
-        evs: {
-          hp: set?.evs?.hp ?? 0,
-          atk: set?.evs?.atk ?? 0,
-          def: set?.evs?.def ?? 0,
-          spa: set?.evs?.spa ?? 0,
-          spd: set?.evs?.spd ?? 0,
-          spe: set?.evs?.spe ?? 0,
-        },
-        ivs: {
-          hp: set?.ivs?.hp ?? 31,
-          atk: set?.ivs?.atk ?? 31,
-          def: set?.ivs?.def ?? 31,
-          spa: set?.ivs?.spa ?? 31,
-          spd: set?.ivs?.spd ?? 31,
-          spe: set?.ivs?.spe ?? 31,
-        },
+        evs: { ...DEFAULT_EVS, ...set?.evs },
+        ivs: { ...DEFAULT_IVS, ...set?.ivs },
       },
     })
 

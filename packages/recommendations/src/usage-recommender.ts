@@ -1,6 +1,6 @@
 import type { Recommendation, RecommendationReason } from "@nasty-plot/core"
 import { prisma } from "@nasty-plot/db"
-import { Dex } from "@pkmn/dex"
+import { getSpecies } from "@nasty-plot/pokemon-data"
 
 /**
  * Get recommendations based on teammate usage correlations from competitive data.
@@ -35,8 +35,8 @@ export async function getUsageBasedRecommendations(
     existing.total += corr.correlationPercent
     existing.count++
 
-    const partnerSpecies = Dex.species.get(corr.pokemonAId)
-    const partnerName = partnerSpecies?.exists ? partnerSpecies.name : corr.pokemonAId
+    const partnerSpecies = getSpecies(corr.pokemonAId)
+    const partnerName = partnerSpecies ? partnerSpecies.name : corr.pokemonAId
 
     existing.reasons.push({
       type: "usage",
@@ -51,8 +51,8 @@ export async function getUsageBasedRecommendations(
   const recommendations: Recommendation[] = []
 
   for (const [pokemonId, data] of scoreMap) {
-    const species = Dex.species.get(pokemonId)
-    if (!species?.exists) continue
+    const species = getSpecies(pokemonId)
+    if (!species) continue
 
     const avgCorrelation = data.total / data.count
     // Scale score: avg correlation normalized to 0-100

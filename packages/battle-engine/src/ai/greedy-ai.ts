@@ -1,12 +1,6 @@
-import { Generations } from "@pkmn/data"
-import { Dex } from "@pkmn/dex"
-import { calculate, Pokemon, Move, Field } from "@smogon/calc"
 import type { GameType } from "@nasty-plot/core"
 import type { AIPlayer, BattleState, BattleActionSet, BattleAction } from "../types"
-import { flattenDamage, fallbackMove, pickHealthiestSwitch } from "./shared"
-
-const gens = new Generations(Dex)
-const gen = gens.get(9)
+import { calculateBattleDamage, fallbackMove, pickHealthiestSwitch } from "./shared"
 
 /**
  * GreedyAI picks the move that deals the most damage to the opponent.
@@ -46,23 +40,7 @@ export class GreedyAI implements AIPlayer {
         const opponentPokemon = opponentActives[t]
 
         try {
-          const attacker = new Pokemon(gen, activePokemon.name, {
-            level: activePokemon.level,
-            ability: activePokemon.ability || undefined,
-            item: activePokemon.item || undefined,
-          })
-
-          const defender = new Pokemon(gen, opponentPokemon.name, {
-            level: opponentPokemon.level,
-            ability: opponentPokemon.ability || undefined,
-            item: opponentPokemon.item || undefined,
-            curHP: opponentPokemon.hp,
-          })
-
-          const calcMove = new Move(gen, move.name)
-          const result = calculate(gen, attacker, defender, calcMove, new Field())
-
-          const damage = flattenDamage(result.damage)
+          const { damage } = calculateBattleDamage(activePokemon, opponentPokemon, move.name)
           const avgDamage = damage.reduce((a, b) => a + b, 0) / damage.length
 
           if (avgDamage > bestDamage) {

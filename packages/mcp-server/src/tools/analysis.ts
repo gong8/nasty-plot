@@ -1,4 +1,5 @@
 import { z } from "zod"
+import { DEFAULT_FORMAT_ID } from "@nasty-plot/core"
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js"
 import { apiGet, apiPost } from "../api-client.js"
 import { handleTool } from "../tool-helpers.js"
@@ -52,7 +53,7 @@ export function registerAnalysisTools(server: McpServer): void {
         () =>
           apiPost("/recommend", {
             targetPokemonId: pokemonId,
-            formatId: formatId ?? "gen9ou",
+            formatId: formatId ?? DEFAULT_FORMAT_ID,
             type: "counters",
           }),
         `Could not suggest counters for "${pokemonId}".`,

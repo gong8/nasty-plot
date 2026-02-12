@@ -1,4 +1,4 @@
-import { Dex } from "@pkmn/dex"
+import { getRawMove } from "@nasty-plot/pokemon-data"
 import type { PokemonType, StatsTable, GameType } from "@nasty-plot/core"
 
 export interface PredictedSet {
@@ -13,7 +13,7 @@ export type BattlePhase = "setup" | "preview" | "battle" | "ended"
 export type AIDifficulty = "random" | "greedy" | "heuristic" | "expert"
 
 /** Move data from @pkmn/dex. Defined once to avoid duplication across AI modules. */
-export type DexMove = ReturnType<typeof Dex.moves.get>
+export type DexMove = ReturnType<typeof getRawMove>
 
 /** Unified Showdown replay JSON structure — superset of import and export fields. */
 export interface ShowdownReplayJSON {

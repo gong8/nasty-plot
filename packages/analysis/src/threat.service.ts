@@ -4,8 +4,8 @@ import {
   type ThreatEntry,
   type PokemonType,
 } from "@nasty-plot/core"
-import { prisma } from "@nasty-plot/db"
-import { Dex } from "@pkmn/dex"
+import { getSpecies } from "@nasty-plot/pokemon-data"
+import { getUsageStats } from "@nasty-plot/smogon-data"
 
 const THREAT_LEVEL_ORDER: Record<ThreatEntry["threatLevel"], number> = {
   high: 0,
@@ -20,11 +20,7 @@ export async function identifyThreats(
   slots: TeamSlotData[],
   formatId: string,
 ): Promise<ThreatEntry[]> {
-  const usageEntries = await prisma.usageStats.findMany({
-    where: { formatId },
-    orderBy: { rank: "asc" },
-    take: 50,
-  })
+  const usageEntries = await getUsageStats(formatId, { limit: 50 })
 
   if (usageEntries.length === 0) {
     return []
@@ -36,8 +32,8 @@ export async function identifyThreats(
   for (const entry of usageEntries) {
     if (teamPokemonIds.has(entry.pokemonId)) continue
 
-    const species = Dex.species.get(entry.pokemonId)
-    if (!species?.exists) continue
+    const species = getSpecies(entry.pokemonId)
+    if (!species) continue
 
     const threatTypes = species.types as PokemonType[]
     let threatScore = 0

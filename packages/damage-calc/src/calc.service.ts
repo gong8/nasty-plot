@@ -1,16 +1,13 @@
-import { Generations } from "@pkmn/data"
-import { Dex } from "@pkmn/dex"
 import { calculate, Field, Move, Pokemon, State } from "@smogon/calc"
-import type {
-  DamageCalcInput,
-  DamageCalcResult,
-  MatchupMatrixEntry,
-  StatsTable,
-  TeamSlotData,
+import {
+  DEFAULT_LEVEL,
+  type DamageCalcInput,
+  type DamageCalcResult,
+  type MatchupMatrixEntry,
+  type StatsTable,
+  type TeamSlotData,
 } from "@nasty-plot/core"
-
-const gens = new Generations(Dex)
-const gen = gens.get(9)
+import { getGen9, resolveSpeciesName } from "@nasty-plot/pokemon-data"
 
 // ---------------------------------------------------------------------------
 // Helpers: stat table conversion
@@ -59,21 +56,6 @@ function toCalcStatus(status?: string): CalcStatusName | undefined {
 }
 
 // ---------------------------------------------------------------------------
-// Helpers: species name resolution
-// ---------------------------------------------------------------------------
-
-/**
- * Resolve a pokemonId to a display name usable by @smogon/calc.
- * pokemonId is in camelCase (e.g. "greatTusk"), we need "Great Tusk".
- * Tries @pkmn/dex lookup first, falling back to naive conversion.
- */
-function resolveSpeciesName(pokemonId: string): string {
-  const species = Dex.species.get(pokemonId)
-  if (species?.exists) return species.name
-  return pokemonId.replace(/([a-z])([A-Z])/g, "$1 $2").replace(/^./, (s) => s.toUpperCase())
-}
-
-// ---------------------------------------------------------------------------
 // Helpers: damage array processing
 // ---------------------------------------------------------------------------
 
@@ -111,7 +93,7 @@ function deriveKoChance(damageArr: number[], defenderHp: number): string {
 type CalcPokemonInput = DamageCalcInput["attacker"]
 
 function buildCalcPokemon(input: CalcPokemonInput): Pokemon {
-  return new Pokemon(gen, resolveSpeciesName(input.pokemonId), {
+  return new Pokemon(getGen9(), resolveSpeciesName(input.pokemonId), {
     level: input.level,
     ability: input.ability || undefined,
     item: input.item || undefined,
@@ -153,10 +135,10 @@ export function calculateDamage(input: DamageCalcInput): DamageCalcResult {
 
   const attacker = buildCalcPokemon(input.attacker)
   const defender = buildCalcPokemon(input.defender)
-  const move = new Move(gen, input.move)
+  const move = new Move(getGen9(), input.move)
   const field = buildField(input.field, move)
 
-  const result = calculate(gen, attacker, defender, move, field)
+  const result = calculate(getGen9(), attacker, defender, move, field)
   const damageArr = flattenDamage(result.damage)
   const defenderHp = defender.maxHP()
   const minDamage = Math.min(...damageArr)
@@ -215,7 +197,7 @@ export function calculateMatchupMatrix(
               evs: slot.evs,
               ivs: slot.ivs,
             },
-            defender: { pokemonId: threatId, level: 100 },
+            defender: { pokemonId: threatId, level: DEFAULT_LEVEL },
             move: moveName,
           })
 

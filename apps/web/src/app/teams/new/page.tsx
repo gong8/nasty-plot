@@ -15,6 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { cn } from "@nasty-plot/ui"
+import { DEFAULT_FORMAT_ID } from "@nasty-plot/core"
 import { useCreateTeam } from "@/features/teams/hooks/use-teams"
 import { getActiveFormats } from "@nasty-plot/formats"
 
@@ -29,7 +30,7 @@ export default function NewTeamPage() {
   const router = useRouter()
   const createTeam = useCreateTeam()
   const [name, setName] = useState("")
-  const [formatId, setFormatId] = useState("gen9ou")
+  const [formatId, setFormatId] = useState(DEFAULT_FORMAT_ID)
   const [mode, setMode] = useState<BuilderMode>("freeform")
 
   const handleCreate = async () => {

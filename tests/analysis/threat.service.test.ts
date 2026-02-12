@@ -6,27 +6,13 @@ import { identifyThreats } from "@nasty-plot/analysis"
 // Mocks
 // ---------------------------------------------------------------------------
 
-vi.mock("@nasty-plot/db", () => ({
-  prisma: {
-    usageStats: {
-      findMany: vi.fn(),
-    },
-  },
+vi.mock("@nasty-plot/pokemon-data", () => ({
+  getSpecies: vi.fn(),
+  getAllSpecies: vi.fn(),
 }))
 
-vi.mock("@pkmn/dex", () => ({
-  Dex: {
-    forGen: vi.fn().mockReturnValue({
-      species: { get: vi.fn(), all: vi.fn() },
-      moves: { get: vi.fn(), all: vi.fn() },
-      abilities: { get: vi.fn(), all: vi.fn() },
-      items: { get: vi.fn(), all: vi.fn() },
-      learnsets: { get: vi.fn() },
-    }),
-    species: {
-      get: vi.fn(),
-    },
-  },
+vi.mock("@nasty-plot/smogon-data", () => ({
+  getUsageStats: vi.fn(),
 }))
 
 vi.mock("@nasty-plot/formats", () => ({
@@ -36,11 +22,11 @@ vi.mock("@nasty-plot/formats", () => ({
   }),
 }))
 
-import { prisma } from "@nasty-plot/db"
-import { Dex } from "@pkmn/dex"
+import { getSpecies } from "@nasty-plot/pokemon-data"
+import { getUsageStats } from "@nasty-plot/smogon-data"
 
-const mockUsageFindMany = prisma.usageStats.findMany as ReturnType<typeof vi.fn>
-const mockSpeciesGet = Dex.species.get as ReturnType<typeof vi.fn>
+const mockGetSpecies = getSpecies as ReturnType<typeof vi.fn>
+const mockGetUsageStats = getUsageStats as ReturnType<typeof vi.fn>
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -74,13 +60,15 @@ function makeSlot(
   }
 }
 
-function mockSpeciesData(id: string, types: string[]) {
+function makeSpecies(id: string, types: string[]) {
   return {
-    exists: true,
+    id,
     name: id.charAt(0).toUpperCase() + id.slice(1),
     types,
     num: 1,
     baseStats: defaultStats,
+    abilities: { "0": "Ability" },
+    weightkg: 50,
   }
 }
 
@@ -94,7 +82,7 @@ describe("identifyThreats", () => {
   })
 
   it("returns empty array when no usage data exists", async () => {
-    mockUsageFindMany.mockResolvedValue([])
+    mockGetUsageStats.mockResolvedValue([])
 
     const result = await identifyThreats([makeSlot("garchomp", ["Dragon", "Ground"])], "gen9ou")
 
@@ -102,14 +90,14 @@ describe("identifyThreats", () => {
   })
 
   it("excludes team members from threats", async () => {
-    mockUsageFindMany.mockResolvedValue([
+    mockGetUsageStats.mockResolvedValue([
       { pokemonId: "garchomp", usagePercent: 25, rank: 1 },
       { pokemonId: "heatran", usagePercent: 20, rank: 2 },
     ])
 
-    mockSpeciesGet.mockImplementation((id: string) => {
-      if (id === "heatran") return mockSpeciesData("heatran", ["Fire", "Steel"])
-      return { exists: false }
+    mockGetSpecies.mockImplementation((id: string) => {
+      if (id === "heatran") return makeSpecies("heatran", ["Fire", "Steel"])
+      return null
     })
 
     const result = await identifyThreats([makeSlot("garchomp", ["Dragon", "Ground"])], "gen9ou")
@@ -122,11 +110,11 @@ describe("identifyThreats", () => {
     // Team of two Water types - weak to Electric and Grass
     const team = [makeSlot("vaporeon", ["Water"]), makeSlot("starmie", ["Water", "Psychic"])]
 
-    mockUsageFindMany.mockResolvedValue([{ pokemonId: "raikou", usagePercent: 15, rank: 1 }])
+    mockGetUsageStats.mockResolvedValue([{ pokemonId: "raikou", usagePercent: 15, rank: 1 }])
 
-    mockSpeciesGet.mockImplementation((id: string) => {
-      if (id === "raikou") return mockSpeciesData("raikou", ["Electric"])
-      return { exists: false }
+    mockGetSpecies.mockImplementation((id: string) => {
+      if (id === "raikou") return makeSpecies("raikou", ["Electric"])
+      return null
     })
 
     const result = await identifyThreats(team, "gen9ou")
@@ -144,11 +132,11 @@ describe("identifyThreats", () => {
       makeSlot("starmie", ["Water", "Psychic"]),
     ]
 
-    mockUsageFindMany.mockResolvedValue([{ pokemonId: "raikou", usagePercent: 20, rank: 1 }])
+    mockGetUsageStats.mockResolvedValue([{ pokemonId: "raikou", usagePercent: 20, rank: 1 }])
 
-    mockSpeciesGet.mockImplementation((id: string) => {
-      if (id === "raikou") return mockSpeciesData("raikou", ["Electric"])
-      return { exists: false }
+    mockGetSpecies.mockImplementation((id: string) => {
+      if (id === "raikou") return makeSpecies("raikou", ["Electric"])
+      return null
     })
 
     const result = await identifyThreats(team, "gen9ou")
@@ -161,17 +149,17 @@ describe("identifyThreats", () => {
   it("sorts threats by level then usage", async () => {
     const team = [makeSlot("pikachu", ["Electric"])]
 
-    mockUsageFindMany.mockResolvedValue([
+    mockGetUsageStats.mockResolvedValue([
       { pokemonId: "garchomp", usagePercent: 25, rank: 1 },
       { pokemonId: "excadrill", usagePercent: 15, rank: 2 },
       { pokemonId: "landorus", usagePercent: 20, rank: 3 },
     ])
 
-    mockSpeciesGet.mockImplementation((id: string) => {
-      if (id === "garchomp") return mockSpeciesData("garchomp", ["Dragon", "Ground"])
-      if (id === "excadrill") return mockSpeciesData("excadrill", ["Ground", "Steel"])
-      if (id === "landorus") return mockSpeciesData("landorus", ["Ground", "Flying"])
-      return { exists: false }
+    mockGetSpecies.mockImplementation((id: string) => {
+      if (id === "garchomp") return makeSpecies("garchomp", ["Dragon", "Ground"])
+      if (id === "excadrill") return makeSpecies("excadrill", ["Ground", "Steel"])
+      if (id === "landorus") return makeSpecies("landorus", ["Ground", "Flying"])
+      return null
     })
 
     const result = await identifyThreats(team, "gen9ou")
@@ -200,9 +188,9 @@ describe("identifyThreats", () => {
       rank: i + 1,
     }))
 
-    mockUsageFindMany.mockResolvedValue(entries)
-    mockSpeciesGet.mockImplementation((id: string) => {
-      return mockSpeciesData(id, ["Ground"])
+    mockGetUsageStats.mockResolvedValue(entries)
+    mockGetSpecies.mockImplementation((id: string) => {
+      return makeSpecies(id, ["Ground"])
     })
 
     const result = await identifyThreats(team, "gen9ou")
@@ -213,9 +201,9 @@ describe("identifyThreats", () => {
   it("skips species that don't exist in Dex", async () => {
     const team = [makeSlot("pikachu", ["Electric"])]
 
-    mockUsageFindMany.mockResolvedValue([{ pokemonId: "fakemon", usagePercent: 30, rank: 1 }])
+    mockGetUsageStats.mockResolvedValue([{ pokemonId: "fakemon", usagePercent: 30, rank: 1 }])
 
-    mockSpeciesGet.mockReturnValue({ exists: false })
+    mockGetSpecies.mockReturnValue(null)
 
     const result = await identifyThreats(team, "gen9ou")
 
@@ -226,11 +214,11 @@ describe("identifyThreats", () => {
   it("returns correctly shaped ThreatEntry objects", async () => {
     const team = [makeSlot("pikachu", ["Electric"])]
 
-    mockUsageFindMany.mockResolvedValue([{ pokemonId: "garchomp", usagePercent: 25, rank: 1 }])
+    mockGetUsageStats.mockResolvedValue([{ pokemonId: "garchomp", usagePercent: 25, rank: 1 }])
 
-    mockSpeciesGet.mockImplementation((id: string) => {
-      if (id === "garchomp") return mockSpeciesData("garchomp", ["Dragon", "Ground"])
-      return { exists: false }
+    mockGetSpecies.mockImplementation((id: string) => {
+      if (id === "garchomp") return makeSpecies("garchomp", ["Dragon", "Ground"])
+      return null
     })
 
     const result = await identifyThreats(team, "gen9ou")
