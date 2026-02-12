@@ -158,6 +158,7 @@ export interface TeamData {
   formatId: string
   format?: FormatDefinition
   mode: "freeform" | "guided"
+  source?: "manual" | "imported"
   notes?: string
   parentId?: string
   branchName?: string
@@ -171,6 +172,7 @@ export type TeamCreateInput = {
   name: string
   formatId: string
   mode?: "freeform" | "guided"
+  source?: "manual" | "imported"
   notes?: string
 }
 

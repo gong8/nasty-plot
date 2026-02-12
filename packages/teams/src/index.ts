@@ -12,7 +12,20 @@ export {
   domainSlotToDb,
 } from "./team.service"
 export { validateTeam } from "./validation.service"
-export { importShowdownPaste, importIntoTeam, exportShowdownPaste } from "./import-export.service"
+export {
+  importShowdownPaste,
+  importIntoTeam,
+  exportShowdownPaste,
+  createTeamFromExtractedData,
+} from "./import-export.service"
+export {
+  fingerprintFromPaste,
+  fingerprintFromSlots,
+  fingerprintFromExtracted,
+  compareFingerprints,
+  findMatchingTeams,
+} from "./team-matcher.service"
+export type { TeamFingerprint, MatchLevel, TeamMatchResult } from "./team-matcher.service"
 export {
   createSampleTeam,
   listSampleTeams,

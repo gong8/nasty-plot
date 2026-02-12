@@ -1,4 +1,9 @@
-import { importShowdownPaste, importIntoTeam, exportShowdownPaste } from "@nasty-plot/teams"
+import {
+  importShowdownPaste,
+  importIntoTeam,
+  exportShowdownPaste,
+  createTeamFromExtractedData,
+} from "@nasty-plot/teams"
 
 // ---------------------------------------------------------------------------
 // Mocks
@@ -20,8 +25,13 @@ vi.mock("#teams/team.service", () => ({
   clearSlots: vi.fn(),
 }))
 
+vi.mock("@nasty-plot/pokemon-data", () => ({
+  getSpecies: vi.fn(),
+}))
+
 import { parseShowdownPaste, serializeShowdownPaste } from "@nasty-plot/core"
 import { createTeam, addSlot, getTeam, clearSlots } from "#teams/team.service"
+import { getSpecies } from "@nasty-plot/pokemon-data"
 
 const mockParse = parseShowdownPaste as ReturnType<typeof vi.fn>
 const mockSerialize = serializeShowdownPaste as ReturnType<typeof vi.fn>
@@ -29,6 +39,7 @@ const mockCreateTeam = createTeam as ReturnType<typeof vi.fn>
 const mockAddSlot = addSlot as ReturnType<typeof vi.fn>
 const mockGetTeam = getTeam as ReturnType<typeof vi.fn>
 const mockClearSlots = clearSlots as ReturnType<typeof vi.fn>
+const mockGetSpecies = getSpecies as ReturnType<typeof vi.fn>
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -189,5 +200,143 @@ describe("exportShowdownPaste", () => {
     mockGetTeam.mockResolvedValue(null)
 
     await expect(exportShowdownPaste("nonexistent")).rejects.toThrow("Team not found")
+  })
+})
+
+describe("createTeamFromExtractedData", () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it("creates a team with source imported", async () => {
+    const extracted = {
+      playerName: "Alice",
+      pokemon: [
+        {
+          speciesId: "garchomp",
+          species: "Garchomp",
+          level: 100,
+          moves: ["Earthquake", "Dragon Claw"],
+          ability: "Rough Skin",
+          item: "Choice Scarf",
+        },
+      ],
+    }
+    mockCreateTeam.mockResolvedValue(makeTeamData({ id: "new-team" }))
+    mockAddSlot.mockResolvedValue({})
+    mockGetTeam.mockResolvedValue(makeTeamData({ id: "new-team", source: "imported" }))
+
+    const result = await createTeamFromExtractedData(extracted, "gen9ou")
+
+    expect(mockCreateTeam).toHaveBeenCalledWith({
+      name: "Alice's Team",
+      formatId: "gen9ou",
+      source: "imported",
+    })
+    expect(result.id).toBe("new-team")
+  })
+
+  it("uses custom team name when provided", async () => {
+    const extracted = {
+      playerName: "Alice",
+      pokemon: [{ speciesId: "garchomp", species: "Garchomp", level: 100, moves: [] }],
+    }
+    mockCreateTeam.mockResolvedValue(makeTeamData())
+    mockAddSlot.mockResolvedValue({})
+    mockGetTeam.mockResolvedValue(makeTeamData())
+    mockGetSpecies.mockReturnValue({ abilities: { "0": "Rough Skin" } })
+
+    await createTeamFromExtractedData(extracted, "gen9ou", "Custom Name")
+
+    expect(mockCreateTeam).toHaveBeenCalledWith({
+      name: "Custom Name",
+      formatId: "gen9ou",
+      source: "imported",
+    })
+  })
+
+  it("resolves ability from dex when not revealed", async () => {
+    const extracted = {
+      playerName: "Alice",
+      pokemon: [{ speciesId: "garchomp", species: "Garchomp", level: 100, moves: ["Earthquake"] }],
+    }
+    mockCreateTeam.mockResolvedValue(makeTeamData({ id: "new-team" }))
+    mockAddSlot.mockResolvedValue({})
+    mockGetTeam.mockResolvedValue(makeTeamData())
+    mockGetSpecies.mockReturnValue({ abilities: { "0": "Rough Skin" } })
+
+    await createTeamFromExtractedData(extracted, "gen9ou")
+
+    const slotArg = mockAddSlot.mock.calls[0][1]
+    expect(slotArg.ability).toBe("Rough Skin")
+  })
+
+  it("uses revealed ability when provided", async () => {
+    const extracted = {
+      playerName: "Alice",
+      pokemon: [
+        {
+          speciesId: "garchomp",
+          species: "Garchomp",
+          level: 100,
+          moves: [],
+          ability: "Sand Veil",
+        },
+      ],
+    }
+    mockCreateTeam.mockResolvedValue(makeTeamData({ id: "new-team" }))
+    mockAddSlot.mockResolvedValue({})
+    mockGetTeam.mockResolvedValue(makeTeamData())
+
+    await createTeamFromExtractedData(extracted, "gen9ou")
+
+    const slotArg = mockAddSlot.mock.calls[0][1]
+    expect(slotArg.ability).toBe("Sand Veil")
+  })
+
+  it("limits to 6 pokemon", async () => {
+    const extracted = {
+      playerName: "Alice",
+      pokemon: Array.from({ length: 8 }, (_, i) => ({
+        speciesId: `mon${i}`,
+        species: `Mon${i}`,
+        level: 100,
+        moves: [],
+      })),
+    }
+    mockCreateTeam.mockResolvedValue(makeTeamData())
+    mockAddSlot.mockResolvedValue({})
+    mockGetTeam.mockResolvedValue(makeTeamData())
+    mockGetSpecies.mockReturnValue({ abilities: { "0": "Ability" } })
+
+    await createTeamFromExtractedData(extracted, "gen9ou")
+
+    expect(mockAddSlot).toHaveBeenCalledTimes(6)
+  })
+
+  it("passes tera type and item from extracted data", async () => {
+    const extracted = {
+      playerName: "Alice",
+      pokemon: [
+        {
+          speciesId: "garchomp",
+          species: "Garchomp",
+          level: 100,
+          moves: ["Earthquake"],
+          ability: "Rough Skin",
+          item: "Choice Scarf",
+          teraType: "Fire",
+        },
+      ],
+    }
+    mockCreateTeam.mockResolvedValue(makeTeamData({ id: "new-team" }))
+    mockAddSlot.mockResolvedValue({})
+    mockGetTeam.mockResolvedValue(makeTeamData())
+
+    await createTeamFromExtractedData(extracted, "gen9ou")
+
+    const slotArg = mockAddSlot.mock.calls[0][1]
+    expect(slotArg.item).toBe("Choice Scarf")
+    expect(slotArg.teraType).toBe("Fire")
   })
 })

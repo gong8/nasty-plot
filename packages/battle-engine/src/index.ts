@@ -29,6 +29,23 @@ export {
 export { cloneBattle, getLegalChoices, isBattleOver, getBattleWinner } from "./ai/battle-cloner"
 export { type MCTSConfig, type MCTSResult, DEFAULT_MCTS_CONFIG } from "./ai/mcts-types"
 export { ReplayEngine, type ReplayFrame } from "./replay/replay-engine"
+export {
+  parseReplayUrl,
+  fetchShowdownReplay,
+  parseProtocolLog,
+  importFromReplayUrl,
+  importFromRawLog,
+} from "./replay/replay-import"
+export type {
+  ShowdownReplayJson,
+  ExtractedPokemonData,
+  ExtractedTeamData,
+  ParsedBattleImport,
+} from "./replay/replay-import"
+export { formatShowdownLog, formatShowdownReplayJSON } from "./export/battle-export.service"
+export type { BattleRecord, ShowdownReplayJSON } from "./export/battle-export.service"
+export { computeTeamBattleAnalytics } from "./battle-history.service"
+export type { TeamBattleAnalytics } from "./battle-history.service"
 export { runAutomatedBattle, type SingleBattleResult } from "./simulation/automated-battle-manager"
 export {
   runBatchSimulation,

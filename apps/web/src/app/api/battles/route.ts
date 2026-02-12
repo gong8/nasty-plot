@@ -5,10 +5,14 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
   const page = parseInt(searchParams.get("page") || "1", 10)
   const limit = parseInt(searchParams.get("limit") || "20", 10)
+  const teamId = searchParams.get("teamId")
   const skip = (page - 1) * limit
+
+  const where = teamId ? { OR: [{ team1Id: teamId }, { team2Id: teamId }] } : {}
 
   const [battles, total] = await Promise.all([
     prisma.battle.findMany({
+      where,
       orderBy: { createdAt: "desc" },
       skip,
       take: limit,
@@ -20,12 +24,15 @@ export async function GET(req: NextRequest) {
         aiDifficulty: true,
         team1Name: true,
         team2Name: true,
+        team1Id: true,
+        team2Id: true,
+        batchId: true,
         winnerId: true,
         turnCount: true,
         createdAt: true,
       },
     }),
-    prisma.battle.count(),
+    prisma.battle.count({ where }),
   ])
 
   return NextResponse.json({ battles, total, page, limit })

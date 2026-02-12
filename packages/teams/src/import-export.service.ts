@@ -5,6 +5,7 @@ import {
   serializeShowdownPaste,
 } from "@nasty-plot/core"
 import type { NatureName, TeamData, TeamSlotInput } from "@nasty-plot/core"
+import { getSpecies } from "@nasty-plot/pokemon-data"
 import { addSlot, clearSlots, createTeam, getTeam } from "./team.service"
 
 /**
@@ -72,4 +73,67 @@ export async function exportShowdownPaste(teamId: string): Promise<string> {
     throw new Error("Team not found")
   }
   return serializeShowdownPaste(team.slots)
+}
+
+/**
+ * Create a team from extracted replay data (species + revealed moves/ability/item).
+ * Uses defaults for unknowns (Hardy nature, default EVs/IVs, slot 0 ability if not revealed).
+ */
+export async function createTeamFromExtractedData(
+  extracted: {
+    playerName: string
+    pokemon: {
+      speciesId: string
+      species: string
+      level: number
+      moves: string[]
+      ability?: string
+      item?: string
+      teraType?: string
+    }[]
+  },
+  formatId: string,
+  teamName?: string,
+): Promise<TeamData> {
+  const team = await createTeam({
+    name: teamName || `${extracted.playerName}'s Team`,
+    formatId,
+    source: "imported",
+  })
+
+  for (let i = 0; i < Math.min(extracted.pokemon.length, 6); i++) {
+    const p = extracted.pokemon[i]
+
+    // Resolve ability from dex if not revealed
+    let ability = p.ability || ""
+    if (!ability) {
+      const species = getSpecies(p.speciesId)
+      if (species?.abilities) {
+        ability = species.abilities["0"] || ""
+      }
+    }
+
+    const slot: TeamSlotInput = {
+      position: i + 1,
+      pokemonId: p.speciesId,
+      ability,
+      item: p.item || "",
+      nature: "Hardy" as NatureName,
+      teraType: p.teraType as TeamSlotInput["teraType"],
+      level: p.level,
+      moves: [
+        p.moves[0] || "",
+        p.moves[1] || undefined,
+        p.moves[2] || undefined,
+        p.moves[3] || undefined,
+      ] as TeamSlotInput["moves"],
+      evs: { ...DEFAULT_EVS },
+      ivs: { ...DEFAULT_IVS },
+    }
+
+    await addSlot(team.id, slot)
+  }
+
+  const result = await getTeam(team.id)
+  return result!
 }

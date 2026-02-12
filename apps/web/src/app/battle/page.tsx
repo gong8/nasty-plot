@@ -13,7 +13,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { Swords, FlaskConical, Clock, Trophy, Play, X } from "lucide-react"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { Swords, FlaskConical, Clock, Trophy, Play, X, Upload } from "lucide-react"
 import {
   hasCheckpoint,
   loadCheckpoint,
@@ -90,20 +97,37 @@ export default function BattleHubPage() {
   const router = useRouter()
   const [battles, setBattles] = useState<BattleSummary[]>([])
   const [loadingBattles, setLoadingBattles] = useState(true)
-  const [checkpoint, setCheckpoint] = useState<BattleCheckpoint | null>(null)
+  const [checkpoint, setCheckpoint] = useState<BattleCheckpoint | null>(() =>
+    hasCheckpoint() ? loadCheckpoint() : null,
+  )
   const [showNewBattleWarning, setShowNewBattleWarning] = useState(false)
+  const [teams, setTeams] = useState<{ id: string; name: string }[]>([])
+  const [filterTeamId, setFilterTeamId] = useState<string>("all")
 
   useEffect(() => {
-    if (hasCheckpoint()) {
-      setCheckpoint(loadCheckpoint())
-    }
-
-    fetch("/api/battles?limit=10")
+    fetch("/api/teams")
       .then((res) => res.json())
-      .then((data) => setBattles(data.battles || []))
+      .then((data) => setTeams(data.teams || []))
       .catch(() => {})
-      .finally(() => setLoadingBattles(false))
   }, [])
+
+  useEffect(() => {
+    let cancelled = false
+    const params = new URLSearchParams({ limit: "10" })
+    if (filterTeamId !== "all") params.set("teamId", filterTeamId)
+    fetch(`/api/battles?${params}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (!cancelled) setBattles(data.battles || [])
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setLoadingBattles(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [filterTeamId])
 
   return (
     <>
@@ -239,7 +263,7 @@ export default function BattleHubPage() {
           </div>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Link href="/battle/simulate">
             <Card className="hover:bg-accent/50 transition-colors cursor-pointer h-full p-4">
               <div className="text-base font-semibold flex items-center gap-2">
@@ -256,14 +280,39 @@ export default function BattleHubPage() {
               </div>
             </Card>
           </Link>
+          <Link href="/battle/import">
+            <Card className="hover:bg-accent/50 transition-colors cursor-pointer h-full p-4">
+              <div className="text-base font-semibold flex items-center gap-2">
+                <Upload className="h-4 w-4" />
+                Import Replay
+              </div>
+            </Card>
+          </Link>
         </div>
 
         {/* Recent Battles */}
         <div className="mt-10">
-          <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-            <Clock className="h-4 w-4" />
-            Recent Battles
-          </h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold flex items-center gap-2">
+              <Clock className="h-4 w-4" />
+              Recent Battles
+            </h2>
+            {teams.length > 0 && (
+              <Select value={filterTeamId} onValueChange={setFilterTeamId}>
+                <SelectTrigger className="w-[200px]">
+                  <SelectValue placeholder="Filter by team" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All battles</SelectItem>
+                  {teams.map((team) => (
+                    <SelectItem key={team.id} value={team.id}>
+                      {team.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          </div>
 
           {loadingBattles ? (
             <p className="text-sm text-muted-foreground">Loading...</p>

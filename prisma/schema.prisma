@@ -92,6 +92,7 @@ model Team {
   name       String
   formatId   String
   mode       String   @default("freeform") // "freeform" | "guided"
+  source     String   @default("manual") // "manual" | "imported"
   notes      String?
   parentId   String?
   branchName String?
@@ -210,6 +211,8 @@ model Battle {
 
   @@index([batchId])
   @@index([createdAt])
+  @@index([team1Id])
+  @@index([team2Id])
 }
 
 model BattleTurn {

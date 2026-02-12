@@ -3,7 +3,7 @@
 import { use, useCallback, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useQuery } from "@tanstack/react-query"
-import { ArrowLeft, Plus } from "lucide-react"
+import { ArrowLeft, Plus, Swords } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -261,6 +261,13 @@ export default function TeamEditorPage({ params }: { params: Promise<{ teamId: s
             onShowVersions={() => setVersionsOpen(true)}
           />
         </div>
+      </div>
+
+      {/* Battles Button */}
+      <div className="flex items-center gap-2">
+        <Button variant="outline" size="sm" onClick={() => router.push(`/teams/${teamId}/battles`)}>
+          <Swords className="h-4 w-4 mr-1" /> Battles
+        </Button>
       </div>
 
       {/* Team Grid */}

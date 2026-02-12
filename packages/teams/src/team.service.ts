@@ -45,6 +45,7 @@ type DbTeamRow = {
   name: string
   formatId: string
   mode: string
+  source: string
   notes: string | null
   parentId: string | null
   branchName: string | null
@@ -159,6 +160,7 @@ function dbTeamToDomain(dbTeam: DbTeamRow): TeamData {
     name: dbTeam.name,
     formatId: dbTeam.formatId,
     mode: dbTeam.mode as "freeform" | "guided",
+    source: (dbTeam.source as "manual" | "imported") ?? "manual",
     notes: dbTeam.notes ?? undefined,
     parentId: dbTeam.parentId ?? undefined,
     branchName: dbTeam.branchName ?? undefined,
@@ -199,6 +201,7 @@ export async function createTeam(input: TeamCreateInput): Promise<TeamData> {
       name: input.name,
       formatId: input.formatId,
       mode: input.mode ?? "freeform",
+      source: input.source ?? "manual",
       notes: input.notes ?? null,
     },
     include: { slots: true },
