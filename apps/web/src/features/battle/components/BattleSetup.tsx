@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef, useMemo } from "react"
+import { useState, useRef, useMemo, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
@@ -23,6 +23,8 @@ interface BattleSetupProps {
     gameType: BattleFormat
     aiDifficulty: AIDifficulty
   }) => void
+  initialTeamId?: string
+  initialFormatId?: string
 }
 
 const AI_OPTIONS: {
@@ -223,15 +225,37 @@ function validatePaste(paste: string): TeamValidation {
   return { valid: errors.length === 0, pokemonCount: parsed.length, errors }
 }
 
-export function BattleSetup({ onStart }: BattleSetupProps) {
+export function BattleSetup({ onStart, initialTeamId, initialFormatId }: BattleSetupProps) {
   const [playerSelection, setPlayerSelection] = useState<TeamSelection>(
     emptySelection(SAMPLE_TEAM_1),
   )
   const [opponentSelection, setOpponentSelection] = useState<TeamSelection>(
     emptySelection(SAMPLE_TEAM_2),
   )
-  const [formatId, setFormatId] = useState("gen9ou")
+  const [formatId, setFormatId] = useState(initialFormatId || "gen9ou")
   const [aiDifficulty, setAiDifficulty] = useState<AIDifficulty>("greedy")
+
+  // Auto-select the player team when initialTeamId is provided
+  useEffect(() => {
+    if (!initialTeamId) return
+    let cancelled = false
+    fetch(`/api/teams/${initialTeamId}/export`)
+      .then((res) => {
+        if (!res.ok) throw new Error("Failed to load team")
+        return res.text()
+      })
+      .then((paste) => {
+        if (!cancelled) {
+          setPlayerSelection({ teamId: initialTeamId, paste, source: "saved" })
+        }
+      })
+      .catch(() => {
+        // Silently fail — user can pick manually
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [initialTeamId])
   const prevGameTypeRef = useRef<GameType>("singles")
 
   const format = useFormat(formatId)

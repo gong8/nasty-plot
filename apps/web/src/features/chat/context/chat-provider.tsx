@@ -118,6 +118,8 @@ interface ChatContextValue {
   clearAutoSend: () => void
   isChatStreaming: boolean
   setIsChatStreaming: (streaming: boolean) => void
+  guidedBuilderStep: string | null
+  guidedBuilderTeamSize: number
 }
 
 const ChatContext = createContext<ChatContextValue | null>(null)
@@ -152,6 +154,8 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   >(null)
   const [autoSendMessage, setAutoSendMessage] = useState<string | null>(null)
   const [isChatStreaming, setIsChatStreaming] = useState(false)
+  const [guidedBuilderStep, setGuidedBuilderStep] = useState<string | null>(null)
+  const [guidedBuilderTeamSize, setGuidedBuilderTeamSize] = useState(0)
 
   // Hydrate from localStorage after mount (avoids SSR/client mismatch)
   useEffect(() => {
@@ -244,6 +248,8 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   // Guided builder bridge callbacks
   const setGuidedBuilderContext = useCallback((ctx: Record<string, unknown> | null) => {
     guidedBuilderContextRef.current = ctx
+    setGuidedBuilderStep((ctx?.step as string) ?? null)
+    setGuidedBuilderTeamSize((ctx?.teamSize as number) ?? 0)
   }, [])
   const queueAutoSend = useCallback((text: string) => setAutoSendMessage(text), [])
   const clearAutoSend = useCallback(() => setAutoSendMessage(null), [])
@@ -288,6 +294,8 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         clearAutoSend,
         isChatStreaming,
         setIsChatStreaming,
+        guidedBuilderStep,
+        guidedBuilderTeamSize,
       }}
     >
       {children}

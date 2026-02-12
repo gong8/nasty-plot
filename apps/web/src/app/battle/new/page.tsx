@@ -1,11 +1,16 @@
 "use client"
 
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
+import { Suspense } from "react"
 import { BattleSetup } from "@/features/battle/components/BattleSetup"
 import type { AIDifficulty, BattleFormat } from "@nasty-plot/battle-engine"
 
-export default function NewBattlePage() {
+function NewBattleContent() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+
+  const initialTeamId = searchParams.get("teamId") || undefined
+  const initialFormatId = searchParams.get("formatId") || undefined
 
   const handleStart = (config: {
     playerTeamPaste: string
@@ -33,10 +38,20 @@ export default function NewBattlePage() {
   }
 
   return (
-    <>
-      <main className="container mx-auto p-4">
-        <BattleSetup onStart={handleStart} />
-      </main>
-    </>
+    <BattleSetup
+      onStart={handleStart}
+      initialTeamId={initialTeamId}
+      initialFormatId={initialFormatId}
+    />
+  )
+}
+
+export default function NewBattlePage() {
+  return (
+    <main className="container mx-auto p-4">
+      <Suspense fallback={null}>
+        <NewBattleContent />
+      </Suspense>
+    </main>
   )
 }

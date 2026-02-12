@@ -13,6 +13,7 @@ import { ChatContextPicker } from "./chat-context-picker"
 import { ContextMismatchBanner } from "./context-mismatch-banner"
 import { ChatWizardEvent } from "./chat-wizard-event"
 import { TurnAnalysisCard } from "./turn-analysis-card"
+import { ChatGuidedPrompts } from "./chat-guided-prompts"
 import { ArrowDown, Zap, Search } from "lucide-react"
 import type { ChatStreamOptions } from "@/features/chat/hooks/use-chat-stream"
 import { cn } from "@/lib/utils"
@@ -39,6 +40,8 @@ export function ChatPanel({ sessionId }: ChatPanelProps) {
     autoSendMessage,
     clearAutoSend,
     setIsChatStreaming,
+    guidedBuilderStep,
+    guidedBuilderTeamSize,
   } = useChatSidebar()
   const effectiveSessionId = sessionId ?? activeSessionId ?? undefined
   const [isAtBottom, setIsAtBottom] = useState(true)
@@ -267,6 +270,16 @@ export function ChatPanel({ sessionId }: ChatPanelProps) {
 
       {/* Context mismatch warning */}
       {mismatch && <ContextMismatchBanner mismatch={mismatch} />}
+
+      {/* Guided builder prompt suggestions */}
+      {!showPicker && guidedBuilderStep && (
+        <ChatGuidedPrompts
+          step={guidedBuilderStep}
+          teamSize={guidedBuilderTeamSize}
+          onSend={handleSend}
+          isStreaming={isStreaming}
+        />
+      )}
 
       {/* Input area — hidden while the context picker is showing */}
       {!showPicker && (
