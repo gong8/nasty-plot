@@ -96,15 +96,17 @@ describe("scoreSetMatch", () => {
     expect(result.matchedMoves).toEqual(["Earthquake", "Dragon Claw"])
   })
 
-  it("returns score 0 when a revealed move is not in the set", () => {
+  it("heavily penalizes when a revealed move is not in the set", () => {
     const extracted = makeExtracted({
       moves: ["Earthquake", "Flamethrower"],
     })
     const set = makeSet()
     const result = scoreSetMatch(extracted, set)
 
-    expect(result.score).toBe(0)
-    expect(result.matchedMoves).toEqual([])
+    // Unmatched moves get a heavy penalty (0.6^n) but not full disqualification
+    expect(result.score).toBeGreaterThan(0)
+    expect(result.score).toBeLessThan(0.15) // heavily penalized
+    expect(result.matchedMoves).toEqual(["Earthquake"])
   })
 
   it("matches slash option moves", () => {
@@ -188,6 +190,19 @@ describe("scoreSetMatch", () => {
 
     expect(result.score).toBeGreaterThan(resultNoFields.score)
   })
+
+  it("gives a base score when nothing is revealed (team preview only)", () => {
+    const extracted = makeExtracted({
+      moves: [],
+      // no ability, item, or teraType
+    })
+    const set = makeSet()
+    const result = scoreSetMatch(extracted, set)
+
+    // Should still produce a non-zero score so the first set is selected
+    expect(result.score).toBeGreaterThan(0)
+    expect(result.matchedMoves).toEqual([])
+  })
 })
 
 // ---------------------------------------------------------------------------
@@ -227,7 +242,7 @@ describe("inferFromSets", () => {
     expect(result.confidence).toBeGreaterThan(0)
   })
 
-  it("returns null result when no sets match", () => {
+  it("returns low-confidence result when moves don't match any set", () => {
     const extracted = makeExtracted({
       moves: ["Flamethrower"],
     })
@@ -235,8 +250,9 @@ describe("inferFromSets", () => {
 
     const result = inferFromSets(extracted, [set])
 
-    expect(result.bestMatch).toBeNull()
-    expect(result.confidence).toBe(0)
+    // Still picks the best available set, but with low confidence
+    expect(result.bestMatch).not.toBeNull()
+    expect(result.confidence).toBeLessThan(15)
   })
 
   it("preserves revealed data", () => {
@@ -291,6 +307,20 @@ describe("inferFromSets", () => {
     expect(result.bestMatch).not.toBeNull()
     expect(result.setName).toBe("Swords Dance")
   })
+
+  it("picks the first set when nothing is revealed (team preview only)", () => {
+    const extracted = makeExtracted({ moves: [] })
+    const set1 = makeSet({ setName: "Swords Dance" })
+    const set2 = makeSet({ setName: "Stealth Rock" })
+
+    const result = inferFromSets(extracted, [set1, set2])
+
+    expect(result.bestMatch).not.toBeNull()
+    expect(result.setName).toBe("Swords Dance")
+    expect(result.moves).toEqual(["Earthquake", "Dragon Claw", "Swords Dance", "Scale Shot"])
+    expect(result.nature).toBe("Jolly")
+    expect(result.evs).toEqual({ atk: 252, spe: 252, hp: 4 })
+  })
 })
 
 // ---------------------------------------------------------------------------
@@ -327,6 +357,31 @@ describe("resolveMoves", () => {
       ],
     )
     expect(result).toEqual(["Earthquake", "Fire Blast"])
+  })
+
+  it("avoids duplicate moves when same option appears in multiple slots", () => {
+    // Real case: Indeedee-F has Protect as a slash option in two slots
+    const result = resolveMoves(
+      ["Protect"],
+      [
+        ["Trick Room", "Protect"],
+        ["Helping Hand", "Protect"],
+        ["Psychic", "Dazzling Gleam"],
+        "Follow Me",
+      ],
+    )
+    expect(result).toEqual(["Protect", "Helping Hand", "Psychic", "Follow Me"])
+    // Protect is picked for first slot, second slot falls back to non-duplicate
+  })
+
+  it("avoids duplicating a fixed move via slash option", () => {
+    // Protect in two slash slots — first picks Protect (revealed), second falls back to Taunt
+    const result = resolveMoves(
+      ["Protect", "Tailwind"],
+      ["Bleakwind Storm", ["Rain Dance", "Protect"], "Tailwind", ["Taunt", "Protect"]],
+    )
+    expect(result).toEqual(["Bleakwind Storm", "Protect", "Tailwind", "Taunt"])
+    // No duplicates: Protect used once, Taunt fills the other slot
   })
 })
 
@@ -456,20 +511,132 @@ describe("enrichExtractedTeam", () => {
     expect(result.pokemon[1].ability).toBe("Flash Fire")
   })
 
-  it("calls getAllSetsForFormat once", async () => {
-    mockFindMany.mockResolvedValue([])
+  it("calls getAllSetsForFormat once when exact format has sets", async () => {
+    mockFindMany.mockResolvedValue([makeDbRow()])
 
     const team = {
       playerName: "Test Player",
-      pokemon: [
-        makeExtracted({ speciesId: "garchomp" }),
-        makeExtracted({ speciesId: "heatran", species: "Heatran" }),
-      ],
+      pokemon: [makeExtracted({ speciesId: "garchomp" })],
     }
 
     await enrichExtractedTeam(team, "gen9ou")
 
     expect(mockFindMany).toHaveBeenCalledTimes(1)
     expect(mockFindMany).toHaveBeenCalledWith({ where: { formatId: "gen9ou" } })
+  })
+
+  it("falls back to related format when exact format has no sets", async () => {
+    // gen9vgc2025 has sets, everything else is empty
+    mockFindMany.mockImplementation(({ where }: { where: { formatId: string } }) => {
+      if (where.formatId === "gen9vgc2025") {
+        return Promise.resolve([
+          makeDbRow({
+            pokemonId: "fluttermane",
+            setName: "Choice Specs",
+            ability: "Protosynthesis",
+            item: "Choice Specs",
+            nature: "Timid",
+            moves: JSON.stringify(["Moonblast", "Shadow Ball", "Mystical Fire", "Dazzling Gleam"]),
+            evs: JSON.stringify({ spa: 252, spe: 252, hp: 4 }),
+          }),
+        ])
+      }
+      return Promise.resolve([])
+    })
+
+    const team = {
+      playerName: "Test Player",
+      pokemon: [
+        makeExtracted({
+          speciesId: "fluttermane",
+          species: "Flutter Mane",
+          moves: ["Moonblast"],
+        }),
+      ],
+    }
+
+    const result = await enrichExtractedTeam(team, "gen9vgc2026regfbo3")
+
+    // Should have enriched from the fallback format
+    expect(result.pokemon[0].nature).toBe("Timid")
+    expect(result.pokemon[0].evs).toEqual({ spa: 252, spe: 252, hp: 4 })
+    expect(result.pokemon[0].moves).toEqual([
+      "Moonblast",
+      "Shadow Ball",
+      "Mystical Fire",
+      "Dazzling Gleam",
+    ])
+  })
+
+  it("falls back to gen9doublesou for unknown VGC formats", async () => {
+    // All VGC-specific formats empty, but gen9doublesou has data
+    mockFindMany.mockImplementation(({ where }: { where: { formatId: string } }) => {
+      if (where.formatId === "gen9doublesou") {
+        return Promise.resolve([makeDbRow({ pokemonId: "dondozo" })])
+      }
+      return Promise.resolve([])
+    })
+
+    const team = {
+      playerName: "Test Player",
+      pokemon: [makeExtracted({ speciesId: "dondozo", species: "Dondozo", moves: ["Earthquake"] })],
+    }
+
+    const result = await enrichExtractedTeam(team, "gen9vgc2030regz")
+
+    expect(result.pokemon[0].nature).toBe("Jolly")
+  })
+
+  it("merges sets from multiple fallback formats for different species", async () => {
+    // gen9vgc2025 has Flutter Mane but NOT Iron Crown
+    // gen9vgc2024 has Iron Crown
+    mockFindMany.mockImplementation(({ where }: { where: { formatId: string } }) => {
+      if (where.formatId === "gen9vgc2025") {
+        return Promise.resolve([
+          makeDbRow({
+            pokemonId: "fluttermane",
+            setName: "Choice Specs",
+            ability: "Protosynthesis",
+            item: "Choice Specs",
+            nature: "Timid",
+            moves: JSON.stringify(["Moonblast", "Shadow Ball", "Mystical Fire", "Dazzling Gleam"]),
+            evs: JSON.stringify({ spa: 252, spe: 252, hp: 4 }),
+          }),
+        ])
+      }
+      if (where.formatId === "gen9vgc2024") {
+        return Promise.resolve([
+          makeDbRow({
+            pokemonId: "ironcrown",
+            setName: "Booster Energy",
+            ability: "Quark Drive",
+            item: "Booster Energy",
+            nature: "Timid",
+            moves: JSON.stringify(["Tachyon Cutter", "Expanding Force", "Calm Mind", "Protect"]),
+            evs: JSON.stringify({ spa: 252, spe: 252, hp: 4 }),
+          }),
+        ])
+      }
+      return Promise.resolve([])
+    })
+
+    const team = {
+      playerName: "Test Player",
+      pokemon: [
+        makeExtracted({ speciesId: "fluttermane", species: "Flutter Mane", moves: [] }),
+        makeExtracted({ speciesId: "ironcrown", species: "Iron Crown", moves: [] }),
+      ],
+    }
+
+    const result = await enrichExtractedTeam(team, "gen9vgc2026regfbo3")
+
+    // Flutter Mane from gen9vgc2025
+    expect(result.pokemon[0].nature).toBe("Timid")
+    expect(result.pokemon[0].ability).toBe("Protosynthesis")
+
+    // Iron Crown from gen9vgc2024 (merged from a later fallback)
+    expect(result.pokemon[1].nature).toBe("Timid")
+    expect(result.pokemon[1].ability).toBe("Quark Drive")
+    expect(result.pokemon[1].item).toBe("Booster Energy")
   })
 })

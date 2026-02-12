@@ -63,6 +63,83 @@ function normalize(name: string): string {
 }
 
 /**
+ * Build a prioritized list of format IDs to try for set lookup.
+ * Handles VGC regulation suffixes (e.g. gen9vgc2026regfbo3 → gen9vgc2025 → gen9doublesou)
+ * and other format variations.
+ */
+function buildFormatFallbacks(formatId: string): string[] {
+  const candidates = [formatId]
+  const lower = formatId.toLowerCase()
+
+  // Strip bo3/bo5 suffix
+  const stripped1 = lower.replace(/bo\d+$/, "")
+  if (stripped1 !== lower) candidates.push(stripped1)
+
+  // Strip regulation suffix (regf, regg, etc.)
+  const stripped2 = stripped1.replace(/reg[a-z]$/, "")
+  if (stripped2 !== stripped1) candidates.push(stripped2)
+
+  // For VGC: try previous years
+  const vgcMatch = stripped2.match(/^(gen\d+vgc)(\d{4})$/)
+  if (vgcMatch) {
+    const base = vgcMatch[1]
+    const year = parseInt(vgcMatch[2], 10)
+    for (let y = year - 1; y >= year - 3; y--) {
+      candidates.push(`${base}${y}`)
+    }
+  }
+
+  // Game type fallbacks
+  if (
+    lower.includes("vgc") ||
+    lower.includes("doubles") ||
+    lower.includes("battlestadiumdoubles")
+  ) {
+    candidates.push("gen9doublesou", "gen9battlestadiumdoubles")
+  } else if (lower.includes("nationaldex")) {
+    candidates.push("gen9nationaldex")
+  } else {
+    // Singles fallback
+    candidates.push("gen9ou")
+  }
+
+  // Deduplicate while preserving order
+  return [...new Set(candidates)]
+}
+
+/**
+ * Merge sets from all fallback formats.
+ * Earlier (more specific) formats take priority per-species: if a species
+ * already has sets from a higher-priority format, later formats won't
+ * overwrite them. This ensures e.g. Iron Crown gets sets from gen9vgc2024
+ * even when the primary fallback (gen9vgc2025) doesn't include it.
+ */
+async function resolveFormatWithSets(
+  formatId: string,
+): Promise<{ resolvedFormat: string; sets: Record<string, SmogonSetData[]> }> {
+  const fallbacks = buildFormatFallbacks(formatId)
+  const merged: Record<string, SmogonSetData[]> = {}
+  let resolvedFormat = formatId
+
+  for (const candidate of fallbacks) {
+    const sets = await getAllSetsForFormat(candidate)
+    if (Object.keys(sets).length === 0) continue
+
+    if (Object.keys(merged).length === 0) {
+      resolvedFormat = candidate
+    }
+
+    for (const [speciesId, speciesSets] of Object.entries(sets)) {
+      if (!merged[speciesId]) {
+        merged[speciesId] = speciesSets
+      }
+    }
+  }
+
+  return { resolvedFormat, sets: merged }
+}
+
+/**
  * Check if a revealed move exists in a set's move slot (which may be a
  * string or a slash-option array).
  */
@@ -79,19 +156,21 @@ function moveSlotContains(slot: string | string[], revealedNorm: string): boolea
 
 /**
  * Score how well extracted replay data matches a candidate Smogon set.
- * Returns 0 if any revealed move is not present in the set.
+ * Unmatched moves heavily penalize (but don't fully disqualify) a set,
+ * so limited/outdated data can still provide partial inference.
  */
 export function scoreSetMatch(extracted: ExtractedPokemon, set: SmogonSetData): SetMatchScore {
   const matchedMoves: string[] = []
+  let unmatchedMoves = 0
 
-  // All revealed moves must be a subset of the set's moves
   for (const move of extracted.moves) {
     const norm = normalize(move)
     const found = set.moves.some((slot) => moveSlotContains(slot, norm))
-    if (!found) {
-      return { set, score: 0, matchedMoves: [] }
+    if (found) {
+      matchedMoves.push(move)
+    } else {
+      unmatchedMoves++
     }
-    matchedMoves.push(move)
   }
 
   // Weighted scoring — only count fields that were actually revealed
@@ -122,14 +201,24 @@ export function scoreSetMatch(extracted: ExtractedPokemon, set: SmogonSetData): 
     }
   }
 
-  // Move coverage (weight 0.2) — fraction of set's moves that were revealed
-  maxScore += 0.2
-  if (set.moves.length > 0) {
-    score += 0.2 * (matchedMoves.length / set.moves.length)
+  // Move coverage (weight 0.2) — only counts when moves were actually revealed
+  if (extracted.moves.length > 0) {
+    maxScore += 0.2
+    if (set.moves.length > 0) {
+      score += 0.2 * (matchedMoves.length / set.moves.length)
+    }
   }
 
-  // Normalize to 0-1 range based on max possible score
-  const normalized = maxScore > 0 ? score / maxScore : 0
+  // Heavy penalty for unmatched moves — each unmatched move cuts score by 40%
+  if (unmatchedMoves > 0) {
+    const penalty = Math.pow(0.6, unmatchedMoves)
+    score *= penalty
+    maxScore = Math.max(maxScore, 0.01) // prevent division by zero
+  }
+
+  // When nothing is revealed, the species match alone gives a low base score
+  // so the first (most popular) set is still selected
+  const normalized = maxScore > 0 ? score / maxScore : 0.1
 
   return { set, score: normalized, matchedMoves }
 }
@@ -145,14 +234,21 @@ export function scoreSetMatch(extracted: ExtractedPokemon, set: SmogonSetData): 
 export function resolveMoves(revealedMoves: string[], setMoves: (string | string[])[]): string[] {
   const revealedNorms = new Set(revealedMoves.map(normalize))
   const resolved: string[] = []
+  const usedNorms = new Set<string>()
 
   for (const slot of setMoves) {
     if (Array.isArray(slot)) {
-      // Slash option — pick revealed move if one matches, else first option
-      const matchingRevealed = slot.find((opt) => revealedNorms.has(normalize(opt)))
-      resolved.push(matchingRevealed ?? slot[0])
+      // Slash option — pick revealed move if one matches and isn't already used
+      const matchingRevealed = slot.find(
+        (opt) => revealedNorms.has(normalize(opt)) && !usedNorms.has(normalize(opt)),
+      )
+      // Fall back to first non-duplicate option
+      const pick = matchingRevealed ?? slot.find((opt) => !usedNorms.has(normalize(opt))) ?? slot[0]
+      resolved.push(pick)
+      usedNorms.add(normalize(pick))
     } else {
       resolved.push(slot)
+      usedNorms.add(normalize(slot))
     }
   }
 
@@ -236,7 +332,7 @@ export async function enrichExtractedTeam(
   team: ExtractedTeam,
   formatId: string,
 ): Promise<EnrichedTeam> {
-  const allSets = await getAllSetsForFormat(formatId)
+  const { sets: allSets } = await resolveFormatWithSets(formatId)
 
   const enrichedPokemon: EnrichedPokemon[] = team.pokemon.map((pokemon) => {
     const candidateSets = allSets[pokemon.speciesId] ?? []

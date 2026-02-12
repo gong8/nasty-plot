@@ -226,7 +226,7 @@ All routes in `apps/web/src/app/api/`. Convention: routes import service functio
 
 ## Linear Integration
 
-**Workspace:** sentinel-dev | **Team:** nasty-plot | **Prefix:** POK
+**Workspace:** sentinel-dev | **Team:** nasty-plot | **Prefix:** NAS
 **Statuses:** Backlog → Todo → In Progress → In Review → Done (also: Canceled, Duplicate)
 **Labels:** Bug, Feature, Improvement, Test, Chore, Consideration, GTM, Misc
 
