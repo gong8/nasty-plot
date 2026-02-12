@@ -3,7 +3,17 @@ import { Dex } from "@pkmn/dex"
 import { calculate, Pokemon, Move, Field } from "@smogon/calc"
 import type { BattleState, BattleActionSet, BattleAction, BattlePokemon, DexMove } from "../types"
 import { evaluatePosition, type EvalResult } from "./evaluator"
-import { flattenDamage, getSpeciesTypes, getTypeEffectiveness } from "./shared"
+import {
+  flattenDamage,
+  getSpeciesTypes,
+  getTypeEffectiveness,
+  HAZARD_SCORES,
+  STATUS_INFLICTION_SCORES,
+  SETUP_MOVE_SCORE,
+  RECOVERY_SCORES,
+  HAZARD_REMOVAL_BASE,
+  HAZARD_REMOVAL_PER_HAZARD,
+} from "./shared"
 
 const gens = new Generations(Dex)
 const gen = gens.get(9)
@@ -119,23 +129,28 @@ function estimateStatusMoveScore(
   // Hazards
   if (id === "stealthrock") {
     const opp = state.sides.p2.sideConditions
-    if (!opp.stealthRock) return { score: 40, explanation: "Sets Stealth Rock" }
+    if (!opp.stealthRock)
+      return { score: HAZARD_SCORES.stealthrock, explanation: "Sets Stealth Rock" }
     return { score: 0, explanation: "Stealth Rock already up" }
   }
   if (id === "spikes") {
     const opp = state.sides.p2.sideConditions
-    if (opp.spikes < 3) return { score: 30, explanation: `Sets Spikes layer ${opp.spikes + 1}` }
+    if (opp.spikes < 3)
+      return { score: HAZARD_SCORES.spikes, explanation: `Sets Spikes layer ${opp.spikes + 1}` }
     return { score: 0, explanation: "Max Spikes layers" }
   }
   if (id === "toxicspikes") {
     const opp = state.sides.p2.sideConditions
     if (opp.toxicSpikes < 2)
-      return { score: 25, explanation: `Sets Toxic Spikes layer ${opp.toxicSpikes + 1}` }
+      return {
+        score: HAZARD_SCORES.toxicspikes,
+        explanation: `Sets Toxic Spikes layer ${opp.toxicSpikes + 1}`,
+      }
     return { score: 0, explanation: "Max Toxic Spikes layers" }
   }
   if (id === "stickyweb") {
     const opp = state.sides.p2.sideConditions
-    if (!opp.stickyWeb) return { score: 35, explanation: "Sets Sticky Web" }
+    if (!opp.stickyWeb) return { score: HAZARD_SCORES.stickyweb, explanation: "Sets Sticky Web" }
     return { score: 0, explanation: "Sticky Web already up" }
   }
 
@@ -145,22 +160,18 @@ function estimateStatusMoveScore(
     const hazardCount =
       (my.stealthRock ? 1 : 0) + my.spikes + my.toxicSpikes + (my.stickyWeb ? 1 : 0)
     if (hazardCount > 0)
-      return { score: 25 + hazardCount * 5, explanation: `Removes ${hazardCount} hazard(s)` }
+      return {
+        score: HAZARD_REMOVAL_BASE + hazardCount * HAZARD_REMOVAL_PER_HAZARD,
+        explanation: `Removes ${hazardCount} hazard(s)`,
+      }
     return { score: 2, explanation: "No hazards to remove" }
   }
 
   // Status moves
   if (["toxic", "willowisp", "thunderwave", "spore", "sleeppowder", "yawn"].includes(id)) {
     if (oppActive.status) return { score: 0, explanation: "Opponent already statused" }
-    const scoreMap: Record<string, number> = {
-      spore: 45,
-      sleeppowder: 40,
-      toxic: 35,
-      willowisp: 30,
-      thunderwave: 25,
-      yawn: 28,
-    }
-    return { score: scoreMap[id] || 20, explanation: `Inflicts status on opponent` }
+    const score = STATUS_INFLICTION_SCORES[id as keyof typeof STATUS_INFLICTION_SCORES] || 20
+    return { score, explanation: `Inflicts status on opponent` }
   }
 
   // Setup moves
@@ -175,7 +186,8 @@ function estimateStatusMoveScore(
       "shellsmash",
     ].includes(id)
   ) {
-    if (myActive.hpPercent > 60) return { score: 35, explanation: "Boosts stats (good HP)" }
+    if (myActive.hpPercent > 60)
+      return { score: SETUP_MOVE_SCORE, explanation: "Boosts stats (good HP)" }
     return { score: 10, explanation: "Boosts stats (low HP risk)" }
   }
 
@@ -183,9 +195,11 @@ function estimateStatusMoveScore(
   if (
     ["recover", "roost", "softboiled", "moonlight", "synthesis", "shoreup", "slackoff"].includes(id)
   ) {
-    if (myActive.hpPercent < 50) return { score: 40, explanation: "Recover HP (low)" }
-    if (myActive.hpPercent < 75) return { score: 20, explanation: "Recover HP (moderate)" }
-    return { score: 2, explanation: "Already near full HP" }
+    if (myActive.hpPercent < 50)
+      return { score: RECOVERY_SCORES.low, explanation: "Recover HP (low)" }
+    if (myActive.hpPercent < 75)
+      return { score: RECOVERY_SCORES.moderate, explanation: "Recover HP (moderate)" }
+    return { score: RECOVERY_SCORES.nearFull, explanation: "Already near full HP" }
   }
 
   return { score: 5, explanation: "Status move" }

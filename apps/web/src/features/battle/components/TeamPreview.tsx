@@ -4,13 +4,14 @@ import { useState } from "react"
 import { cn } from "@nasty-plot/ui"
 import { Button } from "@/components/ui/button"
 import { BattleSprite } from "./PokemonSprite"
-import type { BattlePokemon, BattleFormat } from "@nasty-plot/battle-engine"
+import type { BattlePokemon } from "@nasty-plot/battle-engine"
+import type { GameType } from "@nasty-plot/core"
 import { Check } from "lucide-react"
 
 interface TeamPreviewProps {
   playerTeam: BattlePokemon[]
   opponentTeam: BattlePokemon[]
-  format: BattleFormat
+  format: GameType
   onSubmit: (leadOrder: number[]) => void
   className?: string
 }

@@ -1,13 +1,14 @@
 "use client"
 
 import { useState, useCallback, useRef, useEffect } from "react"
-import { ReplayEngine, type ReplayFrame, type BattleFormat } from "@nasty-plot/battle-engine"
+import { ReplayEngine, type ReplayFrame } from "@nasty-plot/battle-engine"
+import type { GameType } from "@nasty-plot/core"
 
 const INTER_FRAME_PAUSE = 500 // ms between frames at 1x speed
 
 interface UseReplayConfig {
   protocolLog: string
-  format?: BattleFormat
+  format?: GameType
 }
 
 export function useReplay(config: UseReplayConfig) {

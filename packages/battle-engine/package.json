@@ -15,6 +15,7 @@
     "@pkmn/dex": "^0.10.6",
     "@pkmn/data": "^0.10.6",
     "@nasty-plot/core": "workspace:*",
+    "@nasty-plot/damage-calc": "workspace:*",
     "@smogon/calc": "^0.10.0"
   }
 }

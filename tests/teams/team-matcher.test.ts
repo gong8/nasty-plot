@@ -5,7 +5,8 @@ import {
   compareFingerprints,
   findMatchingTeams,
 } from "@nasty-plot/teams"
-import type { TeamSlotData, StatsTable } from "@nasty-plot/core"
+import type { TeamSlotData } from "@nasty-plot/core"
+import { DEFAULT_EVS, DEFAULT_IVS, DEFAULT_LEVEL } from "@nasty-plot/core"
 
 vi.mock("@nasty-plot/db", () => ({
   prisma: {
@@ -20,18 +21,16 @@ import { prisma } from "@nasty-plot/db"
 const mockFindMany = prisma.team.findMany as ReturnType<typeof vi.fn>
 
 function makeSlot(pokemonId: string, moves: string[]): TeamSlotData {
-  const evs: StatsTable = { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 }
-  const ivs: StatsTable = { hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31 }
   return {
     position: 1,
     pokemonId,
     ability: "Protosynthesis",
     item: "Leftovers",
     nature: "Adamant",
-    level: 100,
+    level: DEFAULT_LEVEL,
     moves: [moves[0] || "", moves[1], moves[2], moves[3]] as TeamSlotData["moves"],
-    evs,
-    ivs,
+    evs: DEFAULT_EVS,
+    ivs: DEFAULT_IVS,
   }
 }
 

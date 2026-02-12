@@ -229,6 +229,9 @@ importers:
       '@nasty-plot/core':
         specifier: workspace:*
         version: link:../core
+      '@nasty-plot/damage-calc':
+        specifier: workspace:*
+        version: link:../damage-calc
       '@pkmn/data':
         specifier: ^0.10.6
         version: 0.10.6

@@ -9,11 +9,11 @@ import {
   HeuristicAI,
   MCTSAI,
   type BattleState,
-  type BattleFormat,
   type AIDifficulty,
   type AIPlayer,
   type BattleCheckpoint,
 } from "@nasty-plot/battle-engine"
+import type { GameType } from "@nasty-plot/core"
 import { saveCheckpoint, clearCheckpoint } from "@/features/battle/lib/checkpoint-store"
 
 interface UseBattleConfig {
@@ -21,7 +21,7 @@ interface UseBattleConfig {
   opponentTeamPaste: string
   formatId: string
   simFormatId?: string
-  gameType: BattleFormat
+  gameType: GameType
   aiDifficulty: AIDifficulty
   playerName?: string
   opponentName?: string

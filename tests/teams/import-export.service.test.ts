@@ -18,6 +18,8 @@ vi.mock("@nasty-plot/core", async () => {
   }
 })
 
+import { DEFAULT_IVS, DEFAULT_LEVEL } from "@nasty-plot/core"
+
 vi.mock("#teams/team.service", () => ({
   createTeam: vi.fn(),
   addSlot: vi.fn(),
@@ -53,10 +55,10 @@ function makeParsedPokemon(overrides?: Record<string, unknown>) {
     item: "Leftovers",
     nature: "Jolly",
     teraType: undefined,
-    level: 100,
+    level: DEFAULT_LEVEL,
     moves: ["Earthquake", "Dragon Claw", "Swords Dance", "Scale Shot"],
     evs: { hp: 0, atk: 252, def: 0, spa: 0, spd: 4, spe: 252 },
-    ivs: { hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31 },
+    ivs: DEFAULT_IVS,
     ...overrides,
   }
 }
@@ -215,7 +217,7 @@ describe("createTeamFromExtractedData", () => {
         {
           speciesId: "garchomp",
           species: "Garchomp",
-          level: 100,
+          level: DEFAULT_LEVEL,
           moves: ["Earthquake", "Dragon Claw"],
           ability: "Rough Skin",
           item: "Choice Scarf",
@@ -239,7 +241,7 @@ describe("createTeamFromExtractedData", () => {
   it("uses custom team name when provided", async () => {
     const extracted = {
       playerName: "Alice",
-      pokemon: [{ speciesId: "garchomp", species: "Garchomp", level: 100, moves: [] }],
+      pokemon: [{ speciesId: "garchomp", species: "Garchomp", level: DEFAULT_LEVEL, moves: [] }],
     }
     mockCreateTeam.mockResolvedValue(makeTeamData())
     mockAddSlot.mockResolvedValue({})
@@ -258,7 +260,9 @@ describe("createTeamFromExtractedData", () => {
   it("resolves ability from dex when not revealed", async () => {
     const extracted = {
       playerName: "Alice",
-      pokemon: [{ speciesId: "garchomp", species: "Garchomp", level: 100, moves: ["Earthquake"] }],
+      pokemon: [
+        { speciesId: "garchomp", species: "Garchomp", level: DEFAULT_LEVEL, moves: ["Earthquake"] },
+      ],
     }
     mockCreateTeam.mockResolvedValue(makeTeamData({ id: "new-team" }))
     mockAddSlot.mockResolvedValue({})
@@ -278,7 +282,7 @@ describe("createTeamFromExtractedData", () => {
         {
           speciesId: "garchomp",
           species: "Garchomp",
-          level: 100,
+          level: DEFAULT_LEVEL,
           moves: [],
           ability: "Sand Veil",
         },
@@ -300,7 +304,7 @@ describe("createTeamFromExtractedData", () => {
       pokemon: Array.from({ length: 8 }, (_, i) => ({
         speciesId: `mon${i}`,
         species: `Mon${i}`,
-        level: 100,
+        level: DEFAULT_LEVEL,
         moves: [],
       })),
     }
@@ -321,7 +325,7 @@ describe("createTeamFromExtractedData", () => {
         {
           speciesId: "garchomp",
           species: "Garchomp",
-          level: 100,
+          level: DEFAULT_LEVEL,
           moves: ["Earthquake"],
           ability: "Rough Skin",
           item: "Choice Scarf",

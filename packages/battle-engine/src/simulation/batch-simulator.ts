@@ -3,12 +3,13 @@ import { RandomAI } from "../ai/random-ai"
 import { GreedyAI } from "../ai/greedy-ai"
 import { HeuristicAI } from "../ai/heuristic-ai"
 import { MCTSAI } from "../ai/mcts-ai"
-import type { AIPlayer, AIDifficulty, BattleFormat } from "../types"
+import type { GameType } from "@nasty-plot/core"
+import type { AIPlayer, AIDifficulty } from "../types"
 
 export interface BatchSimConfig {
   formatId: string
   simFormatId?: string // @pkmn/sim format ID when different from formatId
-  gameType: BattleFormat
+  gameType: GameType
   team1Paste: string
   team2Paste: string
   team1Name?: string

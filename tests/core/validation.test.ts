@@ -1,4 +1,4 @@
-import { validateTeam } from "@nasty-plot/core"
+import { validateTeam, DEFAULT_EVS, DEFAULT_IVS, DEFAULT_LEVEL } from "@nasty-plot/core"
 import type { TeamData, TeamSlotData, StatsTable } from "@nasty-plot/core"
 
 // ---------------------------------------------------------------------------
@@ -6,7 +6,7 @@ import type { TeamData, TeamSlotData, StatsTable } from "@nasty-plot/core"
 // ---------------------------------------------------------------------------
 
 function makeEvs(overrides: Partial<StatsTable> = {}): StatsTable {
-  return { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0, ...overrides }
+  return { ...DEFAULT_EVS, ...overrides }
 }
 
 function makeSlot(overrides: Partial<TeamSlotData> = {}): TeamSlotData {
@@ -16,10 +16,10 @@ function makeSlot(overrides: Partial<TeamSlotData> = {}): TeamSlotData {
     ability: "Protosynthesis",
     item: "Booster Energy",
     nature: "Jolly",
-    level: 100,
+    level: DEFAULT_LEVEL,
     moves: ["Headlong Rush", "Close Combat", "Knock Off", "Rapid Spin"],
     evs: makeEvs({ atk: 252, spe: 252, hp: 4 }),
-    ivs: { hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31 },
+    ivs: DEFAULT_IVS,
     ...overrides,
   }
 }

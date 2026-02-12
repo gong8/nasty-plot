@@ -1,4 +1,5 @@
-import type { TeamCreateInput, TeamSlotInput, StatsTable } from "@nasty-plot/core"
+import type { TeamCreateInput, TeamSlotInput } from "@nasty-plot/core"
+import { DEFAULT_EVS, DEFAULT_IVS, DEFAULT_LEVEL } from "@nasty-plot/core"
 import {
   createTeam,
   getTeam,
@@ -61,9 +62,6 @@ const mockSlotFindMany = prisma.teamSlot.findMany as ReturnType<typeof vi.fn>
 // Helpers
 // ---------------------------------------------------------------------------
 
-const defaultEvs: StatsTable = { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 }
-const defaultIvs: StatsTable = { hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31 }
-
 function makeDbTeam(overrides?: Record<string, unknown>) {
   const now = new Date()
   return {
@@ -93,7 +91,7 @@ function makeDbSlot(overrides?: Record<string, unknown>) {
     item: "Leftovers",
     nature: "Jolly",
     teraType: null,
-    level: 100,
+    level: DEFAULT_LEVEL,
     move1: "Earthquake",
     move2: "Dragon Claw",
     move3: null,
@@ -121,10 +119,10 @@ function makeSlotInput(overrides?: Partial<TeamSlotInput>): TeamSlotInput {
     ability: "Rough Skin",
     item: "Leftovers",
     nature: "Jolly",
-    level: 100,
+    level: DEFAULT_LEVEL,
     moves: ["Earthquake", "Dragon Claw", undefined, undefined],
-    evs: { ...defaultEvs, atk: 252, spe: 252 },
-    ivs: defaultIvs,
+    evs: { ...DEFAULT_EVS, atk: 252, spe: 252 },
+    ivs: DEFAULT_IVS,
     ...overrides,
   }
 }

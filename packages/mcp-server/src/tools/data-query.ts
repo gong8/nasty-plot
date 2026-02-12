@@ -41,7 +41,7 @@ export function registerDataQueryTools(server: McpServer): void {
     ({ formatId, limit }) =>
       handleTool(
         () => apiGet(`/formats/${encodeURIComponent(formatId)}/usage`, buildParams({ limit })),
-        `Could not fetch usage stats for format "${formatId}". Valid formats include: gen9ou, gen9uu, gen9uber, gen9vgc2024.`,
+        `Could not fetch usage stats for format "${formatId}". Valid formats include: gen9ou, gen9uu, gen9ubers, gen9vgc2024.`,
       ),
   )
 

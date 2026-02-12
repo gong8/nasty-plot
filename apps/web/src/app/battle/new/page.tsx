@@ -3,7 +3,8 @@
 import { useRouter, useSearchParams } from "next/navigation"
 import { Suspense } from "react"
 import { BattleSetup } from "@/features/battle/components/BattleSetup"
-import type { AIDifficulty, BattleFormat } from "@nasty-plot/battle-engine"
+import type { AIDifficulty } from "@nasty-plot/battle-engine"
+import type { GameType } from "@nasty-plot/core"
 
 function NewBattleContent() {
   const router = useRouter()
@@ -19,7 +20,7 @@ function NewBattleContent() {
     opponentTeamId: string | null
     formatId: string
     simFormatId?: string
-    gameType: BattleFormat
+    gameType: GameType
     aiDifficulty: AIDifficulty
   }) => {
     // Encode config in URL search params to pass to battle page

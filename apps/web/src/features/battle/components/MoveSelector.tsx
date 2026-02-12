@@ -3,7 +3,8 @@
 import { useState, useCallback } from "react"
 import { cn } from "@nasty-plot/ui"
 import { TYPE_COLORS, isLightTypeColor, type PokemonType } from "@nasty-plot/core"
-import type { BattleActionSet, BattleFormat, BattlePokemon } from "@nasty-plot/battle-engine"
+import type { BattleActionSet, BattlePokemon } from "@nasty-plot/battle-engine"
+import type { GameType } from "@nasty-plot/core"
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import {
@@ -72,7 +73,7 @@ interface MoveSelectorProps {
   canTera: boolean
   teraType?: PokemonType
   /** Battle format — doubles enables target selection for single-target moves */
-  format?: BattleFormat
+  format?: GameType
   /** Which active slot this selector is for in doubles (0 or 1) */
   activeSlot?: number
   /** Opponent active Pokemon (p2 side) */

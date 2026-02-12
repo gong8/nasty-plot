@@ -1,7 +1,8 @@
 import { Generations } from "@pkmn/data"
 import { Dex } from "@pkmn/dex"
 import { calculate, Pokemon, Move, Field } from "@smogon/calc"
-import type { AIPlayer, BattleState, BattleActionSet, BattleAction, BattleFormat } from "../types"
+import type { GameType } from "@nasty-plot/core"
+import type { AIPlayer, BattleState, BattleActionSet, BattleAction } from "../types"
 import { flattenDamage, fallbackMove, pickHealthiestSwitch } from "./shared"
 
 const gens = new Generations(Dex)
@@ -95,7 +96,7 @@ export class GreedyAI implements AIPlayer {
     return fallbackMove(actions)
   }
 
-  chooseLeads(teamSize: number, _gameType: BattleFormat): number[] {
+  chooseLeads(teamSize: number, _gameType: GameType): number[] {
     return Array.from({ length: teamSize }, (_, i) => i + 1)
   }
 }

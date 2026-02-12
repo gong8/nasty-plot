@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
 import { SetPredictor } from "@nasty-plot/battle-engine"
 import type { SmogonSetData } from "@nasty-plot/core"
+import { DEFAULT_EVS, DEFAULT_IVS } from "@nasty-plot/core"
 
 function makeSet(overrides: Partial<SmogonSetData> = {}): SmogonSetData {
   return {
@@ -10,8 +11,8 @@ function makeSet(overrides: Partial<SmogonSetData> = {}): SmogonSetData {
     ability: "Rough Skin",
     item: "Focus Sash",
     nature: "Jolly",
-    evs: { hp: 0, atk: 252, def: 0, spa: 0, spd: 4, spe: 252 },
-    ivs: { hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31 },
+    evs: { ...DEFAULT_EVS, atk: 252, spd: 4, spe: 252 },
+    ivs: DEFAULT_IVS,
     moves: ["Earthquake", "Outrage", "Swords Dance", "Stealth Rock"],
     teraType: "Dragon",
     ...overrides,

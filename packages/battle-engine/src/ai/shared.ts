@@ -1,21 +1,9 @@
 import { Dex } from "@pkmn/dex"
 import type { PokemonType } from "@nasty-plot/core"
+import { flattenDamage } from "@nasty-plot/damage-calc"
 import type { BattleAction, BattleActionSet, BattlePokemon, SideConditions } from "../types"
 
-/**
- * Flatten the damage output from @smogon/calc into a simple number array.
- * The calc returns number | number[] | number[][] depending on the move.
- */
-export function flattenDamage(damage: number | number[] | number[][]): number[] {
-  if (typeof damage === "number") return [damage]
-  if (Array.isArray(damage) && damage.length > 0) {
-    if (Array.isArray(damage[0])) {
-      return (damage as number[][])[0]
-    }
-    return damage as number[]
-  }
-  return [0]
-}
+export { flattenDamage }
 
 /** Look up a species' types by display name via @pkmn/dex. */
 export function getSpeciesTypes(name: string): PokemonType[] {
@@ -24,7 +12,12 @@ export function getSpeciesTypes(name: string): PokemonType[] {
   return ["Normal"]
 }
 
-/** Look up type effectiveness using @pkmn/dex damageTaken encoding. */
+/**
+ * Look up type effectiveness using @pkmn/dex damageTaken encoding.
+ * NOTE: This uses DEFENSIVE semantics (damageTaken) — returns how much damage
+ * the defTypes deal TO atkType. This is different from core's getTypeEffectiveness
+ * which uses offensive semantics (TYPE_CHART).
+ */
 export function getTypeEffectiveness(atkType: string, defTypes: string[]): number {
   let mult = 1
   for (const defType of defTypes) {
@@ -59,6 +52,44 @@ export function pickHealthiestSwitch(actions: BattleActionSet): BattleAction {
   const best = available.reduce((a, b) => (a.hp / a.maxHp > b.hp / b.maxHp ? a : b))
   return { type: "switch", pokemonIndex: best.index }
 }
+
+// ---------------------------------------------------------------------------
+// Shared base score constants for status move evaluation.
+// Used by both hint-engine and heuristic-ai for consistent scoring.
+// Each module may apply its own modifiers on top of these.
+// ---------------------------------------------------------------------------
+
+/** Base hazard scores (before turn-based or situational modifiers). */
+export const HAZARD_SCORES = {
+  stealthrock: 40,
+  spikes: 30,
+  toxicspikes: 25,
+  stickyweb: 35,
+} as const
+
+/** Base status infliction scores (when opponent has no existing status). */
+export const STATUS_INFLICTION_SCORES = {
+  spore: 45,
+  sleeppowder: 40,
+  toxic: 35,
+  willowisp: 30,
+  thunderwave: 25,
+  yawn: 28,
+} as const
+
+/** Base setup move score when HP is sufficient (>60%). */
+export const SETUP_MOVE_SCORE = 35
+
+/** Recovery move scores by HP threshold. */
+export const RECOVERY_SCORES = {
+  low: 40, // HP < 50%
+  moderate: 20, // HP < 75%
+  nearFull: 2, // HP >= 75%
+} as const
+
+/** Base hazard removal score, plus per-hazard bonus. */
+export const HAZARD_REMOVAL_BASE = 25
+export const HAZARD_REMOVAL_PER_HAZARD = 5
 
 /**
  * Calculate effective speed for a Pokemon, accounting for boosts, status, and Tailwind.

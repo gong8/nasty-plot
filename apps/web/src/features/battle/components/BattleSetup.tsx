@@ -4,7 +4,7 @@ import { useState, useRef, useMemo, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
-import type { AIDifficulty, BattleFormat } from "@nasty-plot/battle-engine"
+import type { AIDifficulty } from "@nasty-plot/battle-engine"
 import { Swords, Zap, Brain, Cpu } from "lucide-react"
 import { FormatSelector } from "./FormatSelector"
 import { TeamPicker, type TeamSelection } from "./TeamPicker"
@@ -21,7 +21,7 @@ interface BattleSetupProps {
     opponentTeamId: string | null
     formatId: string
     simFormatId?: string
-    gameType: BattleFormat
+    gameType: GameType
     aiDifficulty: AIDifficulty
   }) => void
   initialTeamId?: string
@@ -367,7 +367,7 @@ export function BattleSetup({ onStart, initialTeamId, initialFormatId }: BattleS
                 opponentSelection.source === "saved" ? opponentSelection.teamId : null,
               formatId,
               simFormatId: format?.simFormatId,
-              gameType: gameType as BattleFormat,
+              gameType: gameType as GameType,
               aiDifficulty,
             })
           }

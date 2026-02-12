@@ -10,8 +10,6 @@ export interface PredictedSet {
 }
 
 export type BattlePhase = "setup" | "preview" | "battle" | "ended"
-/** @deprecated Use GameType from @nasty-plot/core */
-export type BattleFormat = GameType
 export type AIDifficulty = "random" | "greedy" | "heuristic" | "expert"
 
 /** Move data from @pkmn/dex. Defined once to avoid duplication across AI modules. */
@@ -128,7 +126,7 @@ export interface BattleSide {
 
 export interface BattleState {
   phase: BattlePhase
-  format: BattleFormat
+  format: GameType
   turn: number
   /** p1 = player, p2 = opponent (AI) */
   sides: {
@@ -242,7 +240,7 @@ export interface BattleLogEntry {
 
 export interface BattleSetupConfig {
   formatId: string
-  gameType: BattleFormat
+  gameType: GameType
   playerTeamId: string
   opponentTeamPaste: string
   aiDifficulty: AIDifficulty
@@ -254,7 +252,7 @@ export interface BattleSetupConfig {
 export interface AIPlayer {
   readonly difficulty: AIDifficulty
   chooseAction(state: BattleState, actions: BattleActionSet): Promise<BattleAction>
-  chooseLeads(teamSize: number, gameType: BattleFormat): number[]
+  chooseLeads(teamSize: number, gameType: GameType): number[]
 }
 
 export interface BattleCheckpoint {
@@ -266,7 +264,7 @@ export interface BattleCheckpoint {
   config: {
     formatId: string
     simFormatId?: string
-    gameType: BattleFormat
+    gameType: GameType
     playerTeam: string
     opponentTeam: string
     playerName: string

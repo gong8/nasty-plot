@@ -1,7 +1,8 @@
 import { createInitialState } from "../battle-manager"
 import { processLine } from "../protocol-parser"
 import { estimateWinProbability } from "../ai/win-probability"
-import type { BattleState, BattleLogEntry, BattleFormat } from "../types"
+import type { GameType } from "@nasty-plot/core"
+import type { BattleState, BattleLogEntry } from "../types"
 
 export interface ReplayFrame {
   turnNumber: number
@@ -26,7 +27,7 @@ export class ReplayEngine {
 
   constructor(
     private protocolLog: string,
-    private format: BattleFormat = "singles",
+    private format: GameType = "singles",
   ) {}
 
   /**

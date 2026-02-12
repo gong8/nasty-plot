@@ -1,4 +1,11 @@
-import { calculateStat, calculateAllStats, getTotalEvs, validateEvs } from "@nasty-plot/core"
+import {
+  calculateStat,
+  calculateAllStats,
+  getTotalEvs,
+  validateEvs,
+  DEFAULT_EVS,
+  DEFAULT_IVS,
+} from "@nasty-plot/core"
 import type { NatureName, StatsTable } from "@nasty-plot/core"
 
 // ---------------------------------------------------------------------------
@@ -6,11 +13,11 @@ import type { NatureName, StatsTable } from "@nasty-plot/core"
 // ---------------------------------------------------------------------------
 
 function makeEvs(overrides: Partial<StatsTable> = {}): StatsTable {
-  return { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0, ...overrides }
+  return { ...DEFAULT_EVS, ...overrides }
 }
 
 function makeIvs(overrides: Partial<StatsTable> = {}): StatsTable {
-  return { hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31, ...overrides }
+  return { ...DEFAULT_IVS, ...overrides }
 }
 
 // ---------------------------------------------------------------------------

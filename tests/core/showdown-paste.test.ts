@@ -1,6 +1,6 @@
 import { parseShowdownPaste, serializeShowdownPaste, toId } from "@nasty-plot/core"
-import { DEFAULT_EVS, DEFAULT_IVS } from "@nasty-plot/core"
-import type { NatureName, TeamSlotData, StatsTable } from "@nasty-plot/core"
+import { DEFAULT_EVS, DEFAULT_IVS, DEFAULT_LEVEL } from "@nasty-plot/core"
+import type { NatureName, TeamSlotData } from "@nasty-plot/core"
 
 // ---------------------------------------------------------------------------
 // Helper to build a full TeamSlotData for serialization tests
@@ -22,10 +22,10 @@ function makeSlot(overrides: Partial<TeamSlotData> = {}): TeamSlotData {
     ability: "Rough Skin",
     item: "Rocky Helmet",
     nature: "Jolly" as NatureName,
-    level: 100,
+    level: DEFAULT_LEVEL,
     moves: ["Earthquake", "Dragon Claw", "Swords Dance", "Scale Shot"],
     evs: { hp: 0, atk: 252, def: 0, spa: 0, spd: 4, spe: 252 },
-    ivs: { hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31 },
+    ivs: DEFAULT_IVS,
     ...overrides,
   }
 }
@@ -97,11 +97,11 @@ Jolly Nature
     expect(slot.nickname).toBeUndefined()
     expect(slot.item).toBe("Rocky Helmet")
     expect(slot.ability).toBe("Rough Skin")
-    expect(slot.level).toBe(100)
+    expect(slot.level).toBe(DEFAULT_LEVEL)
     expect(slot.teraType).toBe("Steel")
     expect(slot.nature).toBe("Jolly")
     expect(slot.evs).toEqual({ hp: 0, atk: 252, def: 0, spa: 0, spd: 4, spe: 252 })
-    expect(slot.ivs).toEqual({ hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31 })
+    expect(slot.ivs).toEqual(DEFAULT_IVS)
     expect(slot.moves).toEqual(["Earthquake", "Dragon Claw", "Swords Dance", "Scale Shot"])
   })
 
@@ -176,7 +176,7 @@ Ability: Static
 - Thunderbolt`
 
     const result = parseShowdownPaste(paste)
-    expect(result[0].level).toBe(100)
+    expect(result[0].level).toBe(DEFAULT_LEVEL)
   })
 
   it("parses custom level", () => {
@@ -493,7 +493,7 @@ describe("serializeShowdownPaste", () => {
   })
 
   it("omits Level line when level is 100", () => {
-    const slot = makeSlot({ level: 100 })
+    const slot = makeSlot({ level: DEFAULT_LEVEL })
     const output = serializeShowdownPaste([slot])
     expect(output).not.toContain("Level:")
   })

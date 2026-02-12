@@ -1,4 +1,5 @@
-import type { AIPlayer, BattleState, BattleActionSet, BattleAction, BattleFormat } from "../types"
+import type { GameType } from "@nasty-plot/core"
+import type { AIPlayer, BattleState, BattleActionSet, BattleAction } from "../types"
 
 /**
  * RandomAI picks a uniformly random legal action.
@@ -50,7 +51,7 @@ export class RandomAI implements AIPlayer {
     return possibleActions[Math.floor(Math.random() * possibleActions.length)]
   }
 
-  chooseLeads(teamSize: number, _gameType: BattleFormat): number[] {
+  chooseLeads(teamSize: number, _gameType: GameType): number[] {
     // Random lead order
     const order = Array.from({ length: teamSize }, (_, i) => i + 1)
     // Fisher-Yates shuffle

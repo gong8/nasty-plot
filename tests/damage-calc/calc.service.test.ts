@@ -1,4 +1,5 @@
 import type { DamageCalcInput, StatsTable, TeamSlotData, PokemonType } from "@nasty-plot/core"
+import { DEFAULT_EVS, DEFAULT_IVS, DEFAULT_LEVEL } from "@nasty-plot/core"
 import { calculateDamage, calculateMatchupMatrix } from "@nasty-plot/damage-calc"
 
 // ---------------------------------------------------------------------------
@@ -9,14 +10,14 @@ function makeCalcInput(overrides?: Partial<DamageCalcInput>): DamageCalcInput {
   return {
     attacker: {
       pokemonId: "garchomp",
-      level: 100,
+      level: DEFAULT_LEVEL,
       nature: "Jolly",
       ability: "Rough Skin",
       evs: { hp: 0, atk: 252, def: 0, spa: 0, spd: 4, spe: 252 },
     },
     defender: {
       pokemonId: "heatran",
-      level: 100,
+      level: DEFAULT_LEVEL,
     },
     move: "Earthquake",
     ...overrides,
@@ -24,8 +25,6 @@ function makeCalcInput(overrides?: Partial<DamageCalcInput>): DamageCalcInput {
 }
 
 const defaultStats: StatsTable = { hp: 80, atk: 80, def: 80, spa: 80, spd: 80, spe: 80 }
-const defaultEvs: StatsTable = { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 }
-const defaultIvs: StatsTable = { hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31 }
 
 function makeSlot(
   pokemonId: string,
@@ -47,10 +46,10 @@ function makeSlot(
     ability: "Ability",
     item: "",
     nature: "Hardy",
-    level: 100,
+    level: DEFAULT_LEVEL,
     moves: ["Earthquake", "Dragon Claw", undefined, undefined],
-    evs: defaultEvs,
-    ivs: defaultIvs,
+    evs: DEFAULT_EVS,
+    ivs: DEFAULT_IVS,
     ...overrides,
   }
 }
@@ -118,17 +117,17 @@ describe("calculateDamage", () => {
   })
 
   it("respects field conditions", () => {
-    const resultNoWeather = calculateDamage(makeCalcInput({ move: "Flamethrower" }))
+    const _resultNoWeather = calculateDamage(makeCalcInput({ move: "Flamethrower" }))
 
     const resultWithSun = calculateDamage(
       makeCalcInput({
         attacker: {
           pokemonId: "heatran",
-          level: 100,
+          level: DEFAULT_LEVEL,
           ability: "Flash Fire",
           evs: { hp: 0, atk: 0, def: 0, spa: 252, spd: 4, spe: 252 },
         },
-        defender: { pokemonId: "corviknight", level: 100 },
+        defender: { pokemonId: "corviknight", level: DEFAULT_LEVEL },
         move: "Flamethrower",
         field: { weather: "Sun" },
       }),
@@ -144,7 +143,7 @@ describe("calculateDamage", () => {
       makeCalcInput({
         attacker: {
           pokemonId: "garchomp",
-          level: 100,
+          level: DEFAULT_LEVEL,
           nature: "Jolly",
           ability: "Rough Skin",
           evs: { hp: 0, atk: 252, def: 0, spa: 0, spd: 4, spe: 252 },
@@ -160,8 +159,8 @@ describe("calculateDamage", () => {
     // Normal vs Steel
     const result = calculateDamage(
       makeCalcInput({
-        attacker: { pokemonId: "snorlax", level: 100 },
-        defender: { pokemonId: "corviknight", level: 100 },
+        attacker: { pokemonId: "snorlax", level: DEFAULT_LEVEL },
+        defender: { pokemonId: "corviknight", level: DEFAULT_LEVEL },
         move: "Body Slam",
       }),
     )
@@ -175,7 +174,7 @@ describe("calculateDamage", () => {
       makeCalcInput({
         attacker: {
           pokemonId: "garchomp",
-          level: 100,
+          level: DEFAULT_LEVEL,
           nature: "Jolly",
           ability: "Rough Skin",
           evs: { hp: 0, atk: 252, def: 0, spa: 0, spd: 4, spe: 252 },
@@ -187,7 +186,7 @@ describe("calculateDamage", () => {
       makeCalcInput({
         attacker: {
           pokemonId: "garchomp",
-          level: 100,
+          level: DEFAULT_LEVEL,
           nature: "Jolly",
           ability: "Rough Skin",
           evs: { hp: 0, atk: 252, def: 0, spa: 0, spd: 4, spe: 252 },
@@ -205,7 +204,7 @@ describe("calculateDamage", () => {
       makeCalcInput({
         attacker: {
           pokemonId: "garchomp",
-          level: 100,
+          level: DEFAULT_LEVEL,
           nature: "Jolly",
           ability: "Rough Skin",
           evs: { hp: 0, atk: 252, def: 0, spa: 0, spd: 4, spe: 252 },
@@ -223,7 +222,7 @@ describe("calculateDamage", () => {
       makeCalcInput({
         defender: {
           pokemonId: "heatran",
-          level: 100,
+          level: DEFAULT_LEVEL,
           status: "Poisoned",
         },
       }),
@@ -237,7 +236,7 @@ describe("calculateDamage", () => {
       makeCalcInput({
         defender: {
           pokemonId: "heatran",
-          level: 100,
+          level: DEFAULT_LEVEL,
           status: "Badly Poisoned",
         },
       }),
@@ -251,7 +250,7 @@ describe("calculateDamage", () => {
       makeCalcInput({
         attacker: {
           pokemonId: "garchomp",
-          level: 100,
+          level: DEFAULT_LEVEL,
           nature: "Jolly",
           ability: "Rough Skin",
           evs: { hp: 0, atk: 252, def: 0, spa: 0, spd: 4, spe: 252 },
@@ -268,7 +267,7 @@ describe("calculateDamage", () => {
       makeCalcInput({
         attacker: {
           pokemonId: "garchomp",
-          level: 100,
+          level: DEFAULT_LEVEL,
           nature: "Jolly",
           ability: "Rough Skin",
           evs: { hp: 0, atk: 252, def: 0, spa: 0, spd: 4, spe: 252 },
@@ -286,7 +285,7 @@ describe("calculateDamage", () => {
       makeCalcInput({
         attacker: {
           pokemonId: "garchomp",
-          level: 100,
+          level: DEFAULT_LEVEL,
           nature: "Jolly",
           ability: "Rough Skin",
           evs: { hp: 0, atk: 252, def: 0, spa: 0, spd: 4, spe: 252 },
@@ -304,7 +303,7 @@ describe("calculateDamage", () => {
       makeCalcInput({
         attacker: {
           pokemonId: "garchomp",
-          level: 100,
+          level: DEFAULT_LEVEL,
           nature: "Jolly",
           ability: "Rough Skin",
           evs: { hp: 0, atk: 252, def: 0, spa: 0, spd: 4, spe: 252 },
@@ -319,8 +318,8 @@ describe("calculateDamage", () => {
   it("handles fixed-damage moves like Seismic Toss", () => {
     const result = calculateDamage(
       makeCalcInput({
-        attacker: { pokemonId: "snorlax", level: 100, ability: "Thick Fat" },
-        defender: { pokemonId: "garchomp", level: 100 },
+        attacker: { pokemonId: "snorlax", level: DEFAULT_LEVEL, ability: "Thick Fat" },
+        defender: { pokemonId: "garchomp", level: DEFAULT_LEVEL },
         move: "Seismic Toss",
       }),
     )
@@ -335,7 +334,7 @@ describe("calculateDamage", () => {
       makeCalcInput({
         attacker: {
           pokemonId: "garchomp",
-          level: 100,
+          level: DEFAULT_LEVEL,
           nature: "Jolly",
           ability: "Rough Skin",
           evs: { hp: 0, atk: 252, def: 0, spa: 0, spd: 4, spe: 252 },
@@ -356,7 +355,7 @@ describe("calculateDamage", () => {
     expect(() =>
       calculateDamage(
         makeCalcInput({
-          attacker: { pokemonId: "fakeMonster", level: 100 },
+          attacker: { pokemonId: "fakeMonster", level: DEFAULT_LEVEL },
         }),
       ),
     ).toThrow()
@@ -391,11 +390,11 @@ describe("calculateDamage", () => {
       makeCalcInput({
         attacker: {
           pokemonId: "heatran",
-          level: 100,
+          level: DEFAULT_LEVEL,
           ability: "Flash Fire",
           evs: { hp: 0, atk: 0, def: 0, spa: 252, spd: 4, spe: 252 },
         },
-        defender: { pokemonId: "corviknight", level: 100 },
+        defender: { pokemonId: "corviknight", level: DEFAULT_LEVEL },
         move: "Flamethrower",
       }),
     )
@@ -403,11 +402,11 @@ describe("calculateDamage", () => {
       makeCalcInput({
         attacker: {
           pokemonId: "heatran",
-          level: 100,
+          level: DEFAULT_LEVEL,
           ability: "Flash Fire",
           evs: { hp: 0, atk: 0, def: 0, spa: 252, spd: 4, spe: 252 },
         },
-        defender: { pokemonId: "corviknight", level: 100 },
+        defender: { pokemonId: "corviknight", level: DEFAULT_LEVEL },
         move: "Flamethrower",
         field: { isLightScreen: true },
       }),
@@ -455,12 +454,12 @@ describe("calculateDamage", () => {
       makeCalcInput({
         attacker: {
           pokemonId: "garchomp",
-          level: 100,
+          level: DEFAULT_LEVEL,
           nature: "Jolly",
           ability: "Rough Skin",
           evs: { hp: 0, atk: 252, def: 0, spa: 0, spd: 4, spe: 252 },
         },
-        defender: { pokemonId: "heatran", level: 100 },
+        defender: { pokemonId: "heatran", level: DEFAULT_LEVEL },
         move: "Earthquake",
         field: { isDoubles: true },
       }),
@@ -474,10 +473,10 @@ describe("calculateDamage", () => {
     // Low-power move against a bulky target: should require multiple hits
     const result = calculateDamage(
       makeCalcInput({
-        attacker: { pokemonId: "snorlax", level: 100 },
+        attacker: { pokemonId: "snorlax", level: DEFAULT_LEVEL },
         defender: {
           pokemonId: "corviknight",
-          level: 100,
+          level: DEFAULT_LEVEL,
           evs: { hp: 252, atk: 0, def: 252, spa: 0, spd: 4, spe: 0 },
           nature: "Impish",
         },
@@ -622,11 +621,11 @@ describe("calculateDamage - edge cases for coverage", () => {
     const result = calculateDamage({
       attacker: {
         pokemonId: "garchomp",
-        level: 100,
+        level: DEFAULT_LEVEL,
       },
       defender: {
         pokemonId: "heatran",
-        level: 100,
+        level: DEFAULT_LEVEL,
       },
       move: "Earthquake",
     })
@@ -638,12 +637,12 @@ describe("calculateDamage - edge cases for coverage", () => {
     const result = calculateDamage({
       attacker: {
         pokemonId: "garchomp",
-        level: 100,
+        level: DEFAULT_LEVEL,
         // boosts not provided — exercises undefined path in toCalcBoosts
       },
       defender: {
         pokemonId: "heatran",
-        level: 100,
+        level: DEFAULT_LEVEL,
       },
       move: "Earthquake",
     })
@@ -655,12 +654,12 @@ describe("calculateDamage - edge cases for coverage", () => {
     const result = calculateDamage({
       attacker: {
         pokemonId: "garchomp",
-        level: 100,
+        level: DEFAULT_LEVEL,
         boosts: {},
       },
       defender: {
         pokemonId: "heatran",
-        level: 100,
+        level: DEFAULT_LEVEL,
       },
       move: "Earthquake",
     })
@@ -672,8 +671,8 @@ describe("calculateDamage - edge cases for coverage", () => {
     // This is hard to trigger deterministically, but we can verify
     // the result still has a description string
     const result = calculateDamage({
-      attacker: { pokemonId: "garchomp", level: 100 },
-      defender: { pokemonId: "heatran", level: 100 },
+      attacker: { pokemonId: "garchomp", level: DEFAULT_LEVEL },
+      defender: { pokemonId: "heatran", level: DEFAULT_LEVEL },
       move: "Earthquake",
     })
 
@@ -686,14 +685,14 @@ describe("calculateDamage - edge cases for coverage", () => {
     const result = calculateDamage({
       attacker: {
         pokemonId: "garchomp",
-        level: 100,
+        level: DEFAULT_LEVEL,
         nature: "Adamant",
         ability: "Rough Skin",
         evs: { hp: 0, atk: 252, def: 0, spa: 0, spd: 0, spe: 252 },
       },
       defender: {
         pokemonId: "heatran",
-        level: 100,
+        level: DEFAULT_LEVEL,
       },
       move: "Earthquake",
     })

@@ -14,7 +14,7 @@ import { Loader2, MessageCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useChatSidebar } from "@/features/chat/context/chat-provider"
 import { useBattleStatePublisher } from "@/features/battle/context/battle-state-context"
-import type { BattleFormat } from "@nasty-plot/battle-engine"
+import type { GameType } from "@nasty-plot/core"
 
 interface BattleData {
   id: string
@@ -75,7 +75,7 @@ function ReplayViewerContent({ battleData }: { battleData: BattleData }) {
   const { openNewChatModal } = useChatSidebar()
   const replay = useReplay({
     protocolLog: battleData.protocolLog,
-    format: battleData.gameType as BattleFormat,
+    format: battleData.gameType as GameType,
   })
 
   const animState = useReplayAnimations(replay.currentFrame?.entries ?? [], replay.currentIndex, {

@@ -1,4 +1,5 @@
 import type { TeamSlotData, PokemonType, StatsTable } from "@nasty-plot/core"
+import { DEFAULT_EVS, DEFAULT_IVS, DEFAULT_LEVEL } from "@nasty-plot/core"
 import { identifyThreats } from "@nasty-plot/analysis"
 
 // ---------------------------------------------------------------------------
@@ -46,8 +47,6 @@ const mockSpeciesGet = Dex.species.get as ReturnType<typeof vi.fn>
 // ---------------------------------------------------------------------------
 
 const defaultStats: StatsTable = { hp: 80, atk: 80, def: 80, spa: 80, spd: 80, spe: 80 }
-const defaultEvs: StatsTable = { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 }
-const defaultIvs: StatsTable = { hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31 }
 
 function makeSlot(
   pokemonId: string,
@@ -68,10 +67,10 @@ function makeSlot(
     ability: "Ability",
     item: "",
     nature: "Hardy",
-    level: 100,
+    level: DEFAULT_LEVEL,
     moves: ["tackle", undefined, undefined, undefined],
-    evs: defaultEvs,
-    ivs: defaultIvs,
+    evs: DEFAULT_EVS,
+    ivs: DEFAULT_IVS,
   }
 }
 

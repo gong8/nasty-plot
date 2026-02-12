@@ -17,15 +17,10 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import {
-  NATURE_DATA,
-  TYPE_COLORS,
-  isLightTypeColor,
   STAT_LABELS,
   STAT_COLORS,
   MAX_TOTAL_EVS,
   MAX_SINGLE_EV,
-  POKEMON_TYPES,
-  NATURES,
   STATS,
   calculateAllStats,
   getTotalEvs,
@@ -38,7 +33,10 @@ import {
 } from "@nasty-plot/core"
 import { PokemonSprite, TypeBadge } from "@nasty-plot/ui"
 import { ItemCombobox } from "../item-combobox"
-import { usePopularityData, type PopularityData } from "../../hooks/use-popularity-data"
+import { MoveInput } from "../shared/move-input"
+import { NatureSelector } from "../shared/nature-selector"
+import { TeraTypePicker } from "../shared/tera-type-picker"
+import { usePopularityData } from "../../hooks/use-popularity-data"
 
 interface SimplifiedSetEditorProps {
   slot: Partial<TeamSlotData>
@@ -107,17 +105,6 @@ export function SimplifiedSetEditor({
     const other = abilities.filter((a) => !usageMap.has(a.name))
     return { commonAbilities: common, otherAbilities: other }
   }, [abilities, popularity])
-
-  // Sort natures by usage
-  const { commonNatures, otherNatures } = useMemo(() => {
-    if (!popularity?.natures?.length) {
-      return { commonNatures: [] as string[], otherNatures: NATURES as readonly NatureName[] }
-    }
-    const commonSet = new Set(popularity.natures.map((n) => n.name))
-    const common = popularity.natures.map((n) => n.name)
-    const other = NATURES.filter((n) => !commonSet.has(n))
-    return { commonNatures: common, otherNatures: other }
-  }, [popularity])
 
   const evs = useMemo(
     () => (slot.evs ?? { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 }) as StatsTable,
@@ -252,80 +239,18 @@ export function SimplifiedSetEditor({
       {/* Nature */}
       <div className="space-y-1.5">
         <Label className="text-xs">Nature</Label>
-        <Select value={nature} onValueChange={(v) => onUpdate({ nature: v as NatureName })}>
-          <SelectTrigger className="h-9">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {commonNatures.length > 0 ? (
-              <>
-                <SelectGroup>
-                  <SelectLabel>Common</SelectLabel>
-                  {commonNatures.map((n) => {
-                    const nd = NATURE_DATA[n as NatureName]
-                    const label = nd?.plus
-                      ? `${n} (+${STAT_LABELS[nd.plus]}/-${STAT_LABELS[nd.minus!]})`
-                      : `${n} (Neutral)`
-                    return (
-                      <SelectItem key={n} value={n}>
-                        {label}
-                      </SelectItem>
-                    )
-                  })}
-                </SelectGroup>
-                <SelectGroup>
-                  <SelectLabel>All Natures</SelectLabel>
-                  {otherNatures.map((n) => {
-                    const nd = NATURE_DATA[n]
-                    const label = nd.plus
-                      ? `${n} (+${STAT_LABELS[nd.plus]}/-${STAT_LABELS[nd.minus!]})`
-                      : `${n} (Neutral)`
-                    return (
-                      <SelectItem key={n} value={n}>
-                        {label}
-                      </SelectItem>
-                    )
-                  })}
-                </SelectGroup>
-              </>
-            ) : (
-              NATURES.map((n) => {
-                const nd = NATURE_DATA[n]
-                const label = nd.plus
-                  ? `${n} (+${STAT_LABELS[nd.plus]}/-${STAT_LABELS[nd.minus!]})`
-                  : `${n} (Neutral)`
-                return (
-                  <SelectItem key={n} value={n}>
-                    {label}
-                  </SelectItem>
-                )
-              })
-            )}
-          </SelectContent>
-        </Select>
+        <NatureSelector
+          value={nature as NatureName}
+          onChange={(v) => onUpdate({ nature: v })}
+          popularity={popularity}
+          triggerClassName="h-9"
+        />
       </div>
 
       {/* Tera Type */}
       <div className="space-y-1.5">
         <Label className="text-xs">Tera Type</Label>
-        <div className="grid grid-cols-6 gap-1">
-          {POKEMON_TYPES.map((t) => (
-            <button
-              key={t}
-              onClick={() => onUpdate({ teraType: t })}
-              className={`rounded px-1 py-0.5 text-[10px] font-medium transition-all ${
-                isLightTypeColor(TYPE_COLORS[t]) ? "text-gray-900" : "text-white"
-              } ${
-                slot.teraType === t
-                  ? "ring-2 ring-offset-1 ring-primary scale-105"
-                  : "opacity-70 hover:opacity-100"
-              }`}
-              style={{ backgroundColor: TYPE_COLORS[t] }}
-            >
-              {t}
-            </button>
-          ))}
-        </div>
+        <TeraTypePicker value={slot.teraType} onChange={(t) => onUpdate({ teraType: t })} />
       </div>
 
       <Separator />
@@ -343,6 +268,7 @@ export function SimplifiedSetEditor({
               selectedMoves={slot.moves ?? ["", undefined, undefined, undefined]}
               onChange={(val) => handleMoveChange(i, val)}
               popularity={popularity}
+              compact
             />
           ))}
         </div>
@@ -439,144 +365,6 @@ export function SimplifiedSetEditor({
               ))}
             </div>
           </div>
-        </div>
-      )}
-    </div>
-  )
-}
-
-// --- Move Input with two-tier autocomplete ---
-
-function MoveInput({
-  index,
-  value,
-  learnset,
-  selectedMoves,
-  onChange,
-  popularity,
-}: {
-  index: number
-  value: string
-  learnset: string[]
-  selectedMoves: [string, string?, string?, string?]
-  onChange: (val: string) => void
-  popularity?: PopularityData
-}) {
-  const [search, setSearch] = useState("")
-  const [open, setOpen] = useState(false)
-
-  // Moves already picked in other slots (exclude current slot's value)
-  const otherMoves = useMemo(() => {
-    const others = new Set<string>()
-    for (let i = 0; i < 4; i++) {
-      if (i !== index && selectedMoves[i]) {
-        others.add(selectedMoves[i]!.toLowerCase())
-      }
-    }
-    return others
-  }, [selectedMoves, index])
-
-  const { commonMoves, otherFilteredMoves } = useMemo(() => {
-    let available = learnset.filter((m) => !otherMoves.has(m.toLowerCase()))
-    if (search) {
-      const lower = search.toLowerCase()
-      available = available.filter((m) => m.toLowerCase().includes(lower))
-    }
-
-    if (!popularity?.moves?.length) {
-      return { commonMoves: [] as string[], otherFilteredMoves: available.slice(0, 20) }
-    }
-
-    const availableSet = new Set(available)
-
-    const common = popularity.moves
-      .filter((m) => availableSet.has(m.name))
-      .slice(0, 12)
-      .map((m) => m.name)
-
-    const commonSet = new Set(common)
-    const other = available.filter((m) => !commonSet.has(m)).slice(0, 20)
-
-    return { commonMoves: common, otherFilteredMoves: other }
-  }, [search, learnset, otherMoves, popularity])
-
-  const isDuplicate = value && otherMoves.has(value.toLowerCase())
-
-  const popularityMap = useMemo(() => {
-    if (!popularity?.moves?.length) return null
-    return new Map(popularity.moves.map((m) => [m.name, m.usagePercent]))
-  }, [popularity])
-
-  return (
-    <div className="relative">
-      <Input
-        placeholder={`Move ${index + 1}`}
-        value={open ? search : value}
-        onChange={(e) => {
-          setSearch(e.target.value)
-          if (!open) setOpen(true)
-        }}
-        onFocus={() => {
-          setSearch(value)
-          setOpen(true)
-        }}
-        onBlur={() => {
-          setTimeout(() => setOpen(false), 150)
-        }}
-        className={`h-8 text-sm ${isDuplicate ? "border-destructive" : ""}`}
-      />
-      {isDuplicate && <p className="text-[10px] text-destructive mt-0.5">Duplicate move</p>}
-      {open && (commonMoves.length > 0 || otherFilteredMoves.length > 0) && (
-        <div className="absolute z-50 mt-1 w-full rounded-md border bg-popover shadow-md max-h-[200px] overflow-y-auto">
-          {commonMoves.length > 0 && (
-            <>
-              <div className="px-3 py-1 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider bg-muted/50">
-                Common
-              </div>
-              {commonMoves.map((move) => (
-                <button
-                  key={move}
-                  className="w-full px-3 py-1.5 text-sm text-left hover:bg-accent transition-colors flex items-center justify-between"
-                  onMouseDown={(e) => {
-                    e.preventDefault()
-                    onChange(move)
-                    setSearch(move)
-                    setOpen(false)
-                  }}
-                >
-                  <span>{move}</span>
-                  {popularityMap && (
-                    <span className="text-xs text-muted-foreground">
-                      {popularityMap.get(move)?.toFixed(1)}%
-                    </span>
-                  )}
-                </button>
-              ))}
-            </>
-          )}
-          {otherFilteredMoves.length > 0 && (
-            <>
-              {commonMoves.length > 0 && (
-                <div className="px-3 py-1 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider bg-muted/50">
-                  All Moves
-                </div>
-              )}
-              {otherFilteredMoves.map((move) => (
-                <button
-                  key={move}
-                  className="w-full px-3 py-1.5 text-sm text-left hover:bg-accent transition-colors"
-                  onMouseDown={(e) => {
-                    e.preventDefault()
-                    onChange(move)
-                    setSearch(move)
-                    setOpen(false)
-                  }}
-                >
-                  {move}
-                </button>
-              ))}
-            </>
-          )}
         </div>
       )}
     </div>

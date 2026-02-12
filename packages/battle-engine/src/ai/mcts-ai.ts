@@ -1,12 +1,6 @@
 import { Battle } from "@pkmn/sim"
-import type {
-  AIPlayer,
-  BattleState,
-  BattleActionSet,
-  BattleAction,
-  BattleFormat,
-  PredictedSet,
-} from "../types"
+import type { GameType } from "@nasty-plot/core"
+import type { AIPlayer, BattleState, BattleActionSet, BattleAction, PredictedSet } from "../types"
 import { evaluatePosition } from "./evaluator"
 import {
   cloneBattle,
@@ -72,7 +66,7 @@ export class MCTSAI implements AIPlayer {
     }
   }
 
-  chooseLeads(teamSize: number, _gameType: BattleFormat): number[] {
+  chooseLeads(teamSize: number, _gameType: GameType): number[] {
     // Use default ordering for now; could be improved with search
     return Array.from({ length: teamSize }, (_, i) => i + 1)
   }

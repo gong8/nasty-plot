@@ -6,13 +6,23 @@ import type {
   BattleState,
   BattleActionSet,
   BattleAction,
-  BattleFormat,
   BattlePokemon,
   PredictedSet,
   DexMove,
 } from "../types"
-import type { PokemonType } from "@nasty-plot/core"
-import { flattenDamage, getSpeciesTypes, getTypeEffectiveness, fallbackMove } from "./shared"
+import type { PokemonType, GameType } from "@nasty-plot/core"
+import {
+  flattenDamage,
+  getSpeciesTypes,
+  getTypeEffectiveness,
+  fallbackMove,
+  HAZARD_SCORES,
+  STATUS_INFLICTION_SCORES,
+  SETUP_MOVE_SCORE,
+  RECOVERY_SCORES,
+  HAZARD_REMOVAL_BASE,
+  HAZARD_REMOVAL_PER_HAZARD,
+} from "./shared"
 
 const gens = new Generations(Dex)
 const gen = gens.get(9)
@@ -111,7 +121,7 @@ export class HeuristicAI implements AIPlayer {
     return topChoices[Math.floor(Math.random() * topChoices.length)].action
   }
 
-  chooseLeads(teamSize: number, gameType: BattleFormat): number[] {
+  chooseLeads(teamSize: number, gameType: GameType): number[] {
     const order = Array.from({ length: teamSize }, (_, i) => i + 1)
     if (gameType !== "doubles") return order
 
@@ -218,7 +228,7 @@ export class HeuristicAI implements AIPlayer {
     ) {
       const matchup = this.evaluateMatchup(myPokemon, oppPokemon)
       if (matchup > 0.2 && myPokemon.hpPercent > 70) {
-        return 35
+        return SETUP_MOVE_SCORE
       }
       return 0
     }
@@ -229,8 +239,8 @@ export class HeuristicAI implements AIPlayer {
         moveName,
       )
     ) {
-      if (myPokemon.hpPercent < 50) return 40
-      if (myPokemon.hpPercent < 75) return 20
+      if (myPokemon.hpPercent < 50) return RECOVERY_SCORES.low
+      if (myPokemon.hpPercent < 75) return RECOVERY_SCORES.moderate
       return 0
     }
 
@@ -243,7 +253,9 @@ export class HeuristicAI implements AIPlayer {
         mySide.toxicSpikes +
         (mySide.stickyWeb ? 1 : 0)
       if (hazardCount > 0) {
-        return 30 + hazardCount * 5
+        return (
+          HAZARD_REMOVAL_BASE + HAZARD_REMOVAL_PER_HAZARD + hazardCount * HAZARD_REMOVAL_PER_HAZARD
+        )
       }
       return 0
     }
@@ -254,16 +266,18 @@ export class HeuristicAI implements AIPlayer {
 
   private scoreHazardMove(moveName: string, state: BattleState): number {
     const oppSide = state.sides.p1.sideConditions
+    const base = HAZARD_SCORES[moveName as keyof typeof HAZARD_SCORES] ?? 0
+    const earlyBonus = 5 // extra score for setting hazards early
 
     switch (moveName) {
       case "stealthrock":
-        return !oppSide.stealthRock ? (state.turn <= 3 ? 45 : 25) : 0
+        return !oppSide.stealthRock ? (state.turn <= 3 ? base + earlyBonus : base - 15) : 0
       case "spikes":
-        return oppSide.spikes < 3 ? (state.turn <= 5 ? 35 : 15) : 0
+        return oppSide.spikes < 3 ? (state.turn <= 5 ? base + earlyBonus : base - 15) : 0
       case "toxicspikes":
-        return oppSide.toxicSpikes < 2 ? (state.turn <= 4 ? 30 : 12) : 0
+        return oppSide.toxicSpikes < 2 ? (state.turn <= 4 ? base + earlyBonus : base - 13) : 0
       case "stickyweb":
-        return !oppSide.stickyWeb ? (state.turn <= 2 ? 40 : 20) : 0
+        return !oppSide.stickyWeb ? (state.turn <= 2 ? base + earlyBonus : base - 15) : 0
       default:
         return 0
     }
@@ -271,22 +285,7 @@ export class HeuristicAI implements AIPlayer {
 
   private scoreStatusInfliction(moveName: string, oppPokemon: BattlePokemon): number {
     if (oppPokemon.status !== "") return 0
-
-    switch (moveName) {
-      case "spore":
-      case "sleeppowder":
-        return 40
-      case "toxic":
-        return 35
-      case "willowisp":
-        return 28
-      case "thunderwave":
-        return 25
-      case "yawn":
-        return 30
-      default:
-        return 0
-    }
+    return STATUS_INFLICTION_SCORES[moveName as keyof typeof STATUS_INFLICTION_SCORES] ?? 0
   }
 
   private evaluateMatchup(myPokemon: BattlePokemon, oppPokemon: BattlePokemon): number {

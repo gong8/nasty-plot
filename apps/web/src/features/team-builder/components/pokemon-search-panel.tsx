@@ -4,14 +4,9 @@ import { useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { Search } from "lucide-react"
 import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import {
-  TYPE_COLORS,
-  isLightTypeColor,
-  type PokemonSpecies,
-  type PokemonType,
-} from "@nasty-plot/core"
+import { type PokemonSpecies, type PokemonType } from "@nasty-plot/core"
+import { TypeBadge } from "@nasty-plot/ui"
 
 interface PokemonSearchPanelProps {
   onSelect: (pokemon: PokemonSpecies) => void
@@ -67,13 +62,7 @@ export function PokemonSearchPanel({ onSelect, formatId }: PokemonSearchPanelPro
                   <div className="text-sm font-medium truncate">{pokemon.name}</div>
                   <div className="flex gap-1 mt-0.5">
                     {pokemon.types.map((t: PokemonType) => (
-                      <Badge
-                        key={t}
-                        className={`text-[9px] px-1 py-0 ${isLightTypeColor(TYPE_COLORS[t]) ? "text-gray-900" : "text-white"}`}
-                        style={{ backgroundColor: TYPE_COLORS[t] }}
-                      >
-                        {t}
-                      </Badge>
+                      <TypeBadge key={t} type={t} size="sm" />
                     ))}
                   </div>
                 </div>

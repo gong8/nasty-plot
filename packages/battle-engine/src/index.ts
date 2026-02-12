@@ -1,5 +1,6 @@
 export * from "./types"
 export * from "./battle-manager"
+export { serializeBattleState } from "./battle-state-serializer"
 export {
   processLine,
   processChunk,

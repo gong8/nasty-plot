@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@nasty-plot/db"
 import { runBatchSimulation } from "@nasty-plot/battle-engine"
-import type { AIDifficulty, BattleFormat } from "@nasty-plot/battle-engine"
+import type { AIDifficulty } from "@nasty-plot/battle-engine"
+import type { GameType } from "@nasty-plot/core"
 import { parseShowdownPaste } from "@nasty-plot/core"
 
 export async function POST(req: NextRequest) {
@@ -68,7 +69,7 @@ export async function POST(req: NextRequest) {
       {
         formatId,
         simFormatId: simFormatId || undefined,
-        gameType: (gameType || "singles") as BattleFormat,
+        gameType: (gameType || "singles") as GameType,
         aiDifficulty: (aiDifficulty || "heuristic") as AIDifficulty,
         team1Paste,
         team2Paste,

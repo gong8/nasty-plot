@@ -1,4 +1,5 @@
 import type { TeamData, StatsTable, PokemonType } from "@nasty-plot/core"
+import { DEFAULT_EVS, DEFAULT_IVS, DEFAULT_LEVEL } from "@nasty-plot/core"
 import { validateTeam } from "@nasty-plot/teams"
 
 // ---------------------------------------------------------------------------
@@ -47,8 +48,6 @@ vi.mock("@nasty-plot/pokemon-data", () => ({
 // ---------------------------------------------------------------------------
 
 const defaultStats: StatsTable = { hp: 80, atk: 80, def: 80, spa: 80, spd: 80, spe: 80 }
-const defaultEvs: StatsTable = { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 }
-const defaultIvs: StatsTable = { hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31 }
 
 function makeTeam(overrides?: Partial<TeamData>): TeamData {
   return {
@@ -79,15 +78,15 @@ function makeSlot(pokemonId: string, overrides?: Record<string, unknown>) {
     ability: "Ability",
     item: "Leftovers",
     nature: "Hardy" as const,
-    level: 100,
+    level: DEFAULT_LEVEL,
     moves: ["tackle", undefined, undefined, undefined] as [
       string,
       string | undefined,
       string | undefined,
       string | undefined,
     ],
-    evs: defaultEvs,
-    ivs: defaultIvs,
+    evs: DEFAULT_EVS,
+    ivs: DEFAULT_IVS,
     ...overrides,
   }
 }

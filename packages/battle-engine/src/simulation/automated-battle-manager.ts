@@ -6,7 +6,8 @@ import {
   updateSideFromRequest,
 } from "../protocol-parser"
 import { createInitialState } from "../battle-manager"
-import type { BattleState, BattleFormat, BattleActionSet, AIPlayer } from "../types"
+import type { GameType } from "@nasty-plot/core"
+import type { BattleState, BattleActionSet, AIPlayer } from "../types"
 
 export interface SingleBattleResult {
   winner: "p1" | "p2" | "draw"
@@ -23,7 +24,7 @@ export interface SingleBattleResult {
 export interface AutomatedBattleConfig {
   formatId: string
   simFormatId?: string // @pkmn/sim format ID when different from formatId
-  gameType: BattleFormat
+  gameType: GameType
   team1Paste: string
   team2Paste: string
   team1Name?: string

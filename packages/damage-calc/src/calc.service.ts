@@ -77,7 +77,7 @@ function resolveSpeciesName(pokemonId: string): string {
 // Helpers: damage array processing
 // ---------------------------------------------------------------------------
 
-function flattenDamage(damage: number | number[] | number[][]): number[] {
+export function flattenDamage(damage: number | number[] | number[][]): number[] {
   if (typeof damage === "number") return [damage]
   if (!Array.isArray(damage) || damage.length === 0) return [0]
   // number[][] (doubles spread moves) -- use first sub-array

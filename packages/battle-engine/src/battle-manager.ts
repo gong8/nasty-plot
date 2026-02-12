@@ -6,9 +6,9 @@ import {
   updateSideFromRequest,
 } from "./protocol-parser"
 import type { SetPredictor } from "./ai/set-predictor"
+import type { GameType } from "@nasty-plot/core"
 import type {
   BattleState,
-  BattleFormat,
   BattleAction,
   BattleActionSet,
   BattleLogEntry,
@@ -32,7 +32,7 @@ function defaultSideConditions(): SideConditions {
   }
 }
 
-export function createInitialState(id: string, format: BattleFormat): BattleState {
+export function createInitialState(id: string, format: GameType): BattleState {
   function makeEmptySide(name: string) {
     return {
       active: format === "doubles" ? [null, null] : [null],
@@ -71,7 +71,7 @@ export function createInitialState(id: string, format: BattleFormat): BattleStat
 interface BattleManagerConfig {
   formatId: string
   simFormatId?: string // @pkmn/sim format ID when different from formatId
-  gameType: BattleFormat
+  gameType: GameType
   playerTeam: string // Packed or paste format
   opponentTeam: string
   playerName?: string

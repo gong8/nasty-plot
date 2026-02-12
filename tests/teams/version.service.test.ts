@@ -1,11 +1,11 @@
 import type {
   TeamData,
   TeamSlotData,
-  StatsTable,
   NatureName,
   ForkOptions,
   MergeDecision,
 } from "@nasty-plot/core"
+import { DEFAULT_EVS, DEFAULT_IVS, DEFAULT_LEVEL } from "@nasty-plot/core"
 import {
   compareTeams,
   forkTeam,
@@ -58,9 +58,6 @@ const mockTransaction = prisma.$transaction as ReturnType<typeof vi.fn>
 // Helpers
 // ---------------------------------------------------------------------------
 
-const defaultEvs: StatsTable = { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 }
-const defaultIvs: StatsTable = { hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31 }
-
 function makeSlotData(overrides?: Partial<TeamSlotData>): TeamSlotData {
   return {
     position: 1,
@@ -68,10 +65,10 @@ function makeSlotData(overrides?: Partial<TeamSlotData>): TeamSlotData {
     ability: "Rough Skin",
     item: "Leftovers",
     nature: "Jolly" as NatureName,
-    level: 100,
+    level: DEFAULT_LEVEL,
     moves: ["Earthquake", "Dragon Claw", undefined, undefined],
-    evs: { ...defaultEvs, atk: 252, spe: 252 },
-    ivs: defaultIvs,
+    evs: { ...DEFAULT_EVS, atk: 252, spe: 252 },
+    ivs: DEFAULT_IVS,
     ...overrides,
   }
 }
@@ -118,7 +115,7 @@ function makeDbSlot(overrides?: Record<string, unknown>) {
     item: "Leftovers",
     nature: "Jolly",
     teraType: null,
-    level: 100,
+    level: DEFAULT_LEVEL,
     move1: "Earthquake",
     move2: "Dragon Claw",
     move3: null,
@@ -181,7 +178,7 @@ describe("compareTeams", () => {
           item: "Air Balloon",
           nature: "Timid" as NatureName,
           moves: ["Magma Storm", "Earth Power", undefined, undefined],
-          evs: { ...defaultEvs, spa: 252, spe: 252 },
+          evs: { ...DEFAULT_EVS, spa: 252, spe: 252 },
         }),
       ],
     })
@@ -224,10 +221,10 @@ describe("compareTeams", () => {
 
   it("detects EV spread changes", () => {
     const slotA = makeSlotData({
-      evs: { ...defaultEvs, atk: 252, spe: 252 },
+      evs: { ...DEFAULT_EVS, atk: 252, spe: 252 },
     })
     const slotB = makeSlotData({
-      evs: { ...defaultEvs, hp: 252, def: 252 },
+      evs: { ...DEFAULT_EVS, hp: 252, def: 252 },
     })
     const teamA = makeTeamData({ id: "team-a", slots: [slotA] })
     const teamB = makeTeamData({ id: "team-b", slots: [slotB] })
@@ -387,12 +384,14 @@ describe("forkTeam", () => {
     const txSlotCreate = vi.fn().mockResolvedValue({})
     const txTeamFindUnique = vi.fn().mockResolvedValue(forkedDbTeam)
 
-    mockTransaction.mockImplementation(async (cb: Function) => {
-      return cb({
-        team: { create: txTeamCreate, findUnique: txTeamFindUnique },
-        teamSlot: { create: txSlotCreate },
-      })
-    })
+    mockTransaction.mockImplementation(
+      async (cb: (prisma: Record<string, Record<string, unknown>>) => Promise<unknown>) => {
+        return cb({
+          team: { create: txTeamCreate, findUnique: txTeamFindUnique },
+          teamSlot: { create: txSlotCreate },
+        })
+      },
+    )
 
     return { txTeamCreate, txSlotCreate, txTeamFindUnique }
   }
@@ -717,12 +716,14 @@ describe("mergeTeams", () => {
       }),
     )
 
-    mockTransaction.mockImplementation(async (cb: Function) => {
-      return cb({
-        team: { create: txTeamCreate, findUnique: txTeamFindUnique },
-        teamSlot: { create: txSlotCreate },
-      })
-    })
+    mockTransaction.mockImplementation(
+      async (cb: (prisma: Record<string, Record<string, unknown>>) => Promise<unknown>) => {
+        return cb({
+          team: { create: txTeamCreate, findUnique: txTeamFindUnique },
+          teamSlot: { create: txSlotCreate },
+        })
+      },
+    )
 
     // Decisions: keep garchomp from A (unchanged), pick landorus from B
     const decisions: MergeDecision[] = [{ pokemonId: "landorus", source: "teamB" }]

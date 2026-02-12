@@ -1,17 +1,32 @@
 import { packOneSlot, packTeam, teamToShowdownPaste } from "@nasty-plot/battle-engine"
-import type { TeamSlotData } from "@nasty-plot/core"
+import type { TeamSlotData, PokemonSpecies } from "@nasty-plot/core"
+import { DEFAULT_IVS, DEFAULT_LEVEL } from "@nasty-plot/core"
+
+const minimalSpecies: Pick<
+  PokemonSpecies,
+  "id" | "name" | "num" | "types" | "baseStats" | "abilities" | "weightkg"
+> = {
+  id: "garchomp",
+  name: "Garchomp",
+  num: 445,
+  types: ["Dragon", "Ground"],
+  baseStats: { hp: 108, atk: 130, def: 95, spa: 80, spd: 85, spe: 102 },
+  abilities: { "0": "Sand Veil", H: "Rough Skin" },
+  weightkg: 95,
+}
 
 const makeSlot = (overrides: Partial<TeamSlotData> = {}): TeamSlotData => ({
   position: 1,
   pokemonId: "garchomp",
+  species: minimalSpecies as PokemonSpecies,
   ability: "Rough Skin",
   item: "Life Orb",
   nature: "Jolly",
-  level: 100,
+  level: DEFAULT_LEVEL,
   teraType: "Ground",
   moves: ["Earthquake", "Dragon Claw", "Swords Dance", "Scale Shot"],
   evs: { hp: 0, atk: 252, def: 0, spa: 0, spd: 4, spe: 252 },
-  ivs: { hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31 },
+  ivs: DEFAULT_IVS,
   ...overrides,
 })
 
@@ -40,7 +55,7 @@ describe("team-packer", () => {
     })
 
     it("omits level when 100", () => {
-      const slot = makeSlot({ level: 100 })
+      const slot = makeSlot({ level: DEFAULT_LEVEL })
       const packed = packOneSlot(slot)
       // Level field should be empty (between last two pipes for that section)
       const parts = packed.split("|")
@@ -122,7 +137,7 @@ describe("team-packer", () => {
     })
 
     it("omits level when 100", () => {
-      const team = [makeSlot({ level: 100 })]
+      const team = [makeSlot({ level: DEFAULT_LEVEL })]
       const paste = teamToShowdownPaste(team)
       expect(paste).not.toContain("Level:")
     })

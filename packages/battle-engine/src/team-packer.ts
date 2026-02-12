@@ -1,6 +1,20 @@
 import { Dex } from "@pkmn/dex"
-import { DEFAULT_IVS, STATS, STAT_LABELS } from "@nasty-plot/core"
+import { DEFAULT_IVS, serializeShowdownPaste } from "@nasty-plot/core"
 import type { TeamSlotData, StatsTable } from "@nasty-plot/core"
+
+/**
+ * Convert team data to Showdown paste format.
+ * Hydrates species display names via @pkmn/dex before delegating to core's serializer.
+ * @deprecated Prefer `serializeShowdownPaste` from `@nasty-plot/core` with hydrated species.
+ */
+export function teamToShowdownPaste(slots: TeamSlotData[]): string {
+  const hydrated = slots.map((slot) => {
+    if (slot.species?.name) return slot
+    const name = resolveSpeciesName(slot.pokemonId)
+    return { ...slot, species: { name } }
+  })
+  return serializeShowdownPaste(hydrated as TeamSlotData[])
+}
 
 /**
  * Convert a TeamSlotData[] into the packed team string that @pkmn/sim expects.
@@ -77,55 +91,4 @@ export function packOneSlot(slot: TeamSlotData): string {
  */
 export function packTeam(slots: TeamSlotData[]): string {
   return slots.map(packOneSlot).join("]")
-}
-
-/**
- * Convert team data to Showdown paste format (plain text).
- * This is an alternative to packed format that @pkmn/sim also accepts.
- */
-export function teamToShowdownPaste(slots: TeamSlotData[]): string {
-  return slots
-    .map((slot) => {
-      const lines: string[] = []
-      const speciesName = resolveSpeciesName(slot.pokemonId)
-      const displayName = slot.nickname ? `${slot.nickname} (${speciesName})` : speciesName
-
-      if (slot.item) {
-        lines.push(`${displayName} @ ${slot.item}`)
-      } else {
-        lines.push(displayName)
-      }
-
-      if (slot.ability) lines.push(`Ability: ${slot.ability}`)
-      if (slot.level !== 100) lines.push(`Level: ${slot.level}`)
-      if (slot.teraType) lines.push(`Tera Type: ${slot.teraType}`)
-
-      // EVs
-      const evParts: string[] = []
-      for (const stat of STATS) {
-        if (slot.evs[stat] > 0) {
-          evParts.push(`${slot.evs[stat]} ${STAT_LABELS[stat]}`)
-        }
-      }
-      if (evParts.length > 0) lines.push(`EVs: ${evParts.join(" / ")}`)
-
-      lines.push(`${slot.nature} Nature`)
-
-      // IVs
-      const ivParts: string[] = []
-      for (const stat of STATS) {
-        if ((slot.ivs?.[stat] ?? 31) !== 31) {
-          ivParts.push(`${slot.ivs[stat]} ${STAT_LABELS[stat]}`)
-        }
-      }
-      if (ivParts.length > 0) lines.push(`IVs: ${ivParts.join(" / ")}`)
-
-      // Moves
-      for (const move of slot.moves) {
-        if (move) lines.push(`- ${move}`)
-      }
-
-      return lines.join("\n")
-    })
-    .join("\n\n")
 }

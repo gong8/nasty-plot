@@ -1,4 +1,5 @@
 import { registerTeamCrudTools } from "#mcp-server/tools/team-crud"
+import { DEFAULT_EVS, DEFAULT_IVS, DEFAULT_LEVEL } from "@nasty-plot/core"
 
 // ---------------------------------------------------------------------------
 // Mocks
@@ -190,7 +191,7 @@ describe("registerTeamCrudTools", () => {
         item: "Booster Energy",
         nature: "Jolly",
         teraType: "Ground",
-        level: 100,
+        level: DEFAULT_LEVEL,
         moves: ["Headlong Rush", "Close Combat", "Knock Off", "Rapid Spin"],
         evs: { hp: 0, atk: 252, def: 0, spa: 0, spd: 4, spe: 252 },
       })) as { content: Array<{ text: string }> }
@@ -202,10 +203,10 @@ describe("registerTeamCrudTools", () => {
         item: "Booster Energy",
         nature: "Jolly",
         teraType: "Ground",
-        level: 100,
+        level: DEFAULT_LEVEL,
         moves: ["Headlong Rush", "Close Combat", "Knock Off", "Rapid Spin"],
         evs: { hp: 0, atk: 252, def: 0, spa: 0, spd: 4, spe: 252 },
-        ivs: { hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31 },
+        ivs: DEFAULT_IVS,
       })
       expect(result).not.toHaveProperty("isError")
     })
@@ -231,10 +232,10 @@ describe("registerTeamCrudTools", () => {
         item: "Light Ball",
         nature: "Timid",
         teraType: undefined,
-        level: 100,
+        level: DEFAULT_LEVEL,
         moves: ["Thunderbolt"],
-        evs: { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 },
-        ivs: { hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31 },
+        evs: DEFAULT_EVS,
+        ivs: DEFAULT_IVS,
       })
     })
 
