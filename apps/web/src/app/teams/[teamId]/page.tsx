@@ -51,7 +51,7 @@ import { RecommendationPanel } from "@/features/recommendations/components/recom
 import { MergeWizard } from "@/features/team-builder/components/merge-wizard"
 import { VersionPanel } from "@/features/team-builder/components/version-panel"
 import { OpponentSelector } from "@/features/damage-calc/components/opponent-selector"
-import { QuickBattleCard } from "@/features/battle/components/quick-battle-card"
+import { QuickBattleCard } from "@/features/battle/components/QuickBattleCard"
 import type {
   TeamSlotInput,
   TeamAnalysis,
