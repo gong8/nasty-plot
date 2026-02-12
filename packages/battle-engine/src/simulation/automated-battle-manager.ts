@@ -20,7 +20,7 @@ export interface SingleBattleResult {
   finalState: BattleState
 }
 
-interface AutomatedBattleConfig {
+export interface AutomatedBattleConfig {
   formatId: string
   simFormatId?: string // @pkmn/sim format ID when different from formatId
   gameType: BattleFormat
@@ -32,6 +32,8 @@ interface AutomatedBattleConfig {
   ai2: AIPlayer
   /** Max turns before declaring draw. Default: 500 */
   maxTurns?: number
+  /** PRNG seed for the battle simulator. If omitted, uses default (deterministic). */
+  seed?: [number, number, number, number]
 }
 
 /**
@@ -144,7 +146,9 @@ export async function runAutomatedBattle(
 
   // Start the battle
   const format = config.simFormatId || config.formatId || "gen9ou"
-  stream.write(`>start {"formatid":"${format}"}`)
+  const startSpec: Record<string, unknown> = { formatid: format }
+  if (config.seed) startSpec.seed = config.seed
+  stream.write(`>start ${JSON.stringify(startSpec)}`)
   stream.write(`>player p1 {"name":"${state.sides.p1.name}","team":"${escapeTeam(team1Packed)}"}`)
   stream.write(`>player p2 {"name":"${state.sides.p2.name}","team":"${escapeTeam(team2Packed)}"}`)
 

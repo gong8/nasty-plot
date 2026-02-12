@@ -7,6 +7,7 @@ interface ImportInput {
   rawLog?: string
   autoMatchTeams?: boolean
   autoCreateTeams?: boolean
+  inferSets?: boolean
 }
 
 interface ImportResult {

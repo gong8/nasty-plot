@@ -90,6 +90,9 @@ export async function createTeamFromExtractedData(
       ability?: string
       item?: string
       teraType?: string
+      nature?: string
+      evs?: Partial<Record<string, number>>
+      ivs?: Partial<Record<string, number>>
     }[]
   },
   formatId: string,
@@ -118,7 +121,7 @@ export async function createTeamFromExtractedData(
       pokemonId: p.speciesId,
       ability,
       item: p.item || "",
-      nature: "Hardy" as NatureName,
+      nature: (p.nature || "Hardy") as NatureName,
       teraType: p.teraType as TeamSlotInput["teraType"],
       level: p.level,
       moves: [
@@ -127,8 +130,8 @@ export async function createTeamFromExtractedData(
         p.moves[2] || undefined,
         p.moves[3] || undefined,
       ] as TeamSlotInput["moves"],
-      evs: { ...DEFAULT_EVS },
-      ivs: { ...DEFAULT_IVS },
+      evs: p.evs ? { ...DEFAULT_EVS, ...p.evs } : { ...DEFAULT_EVS },
+      ivs: p.ivs ? { ...DEFAULT_IVS, ...p.ivs } : { ...DEFAULT_IVS },
     }
 
     await addSlot(team.id, slot)

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@nasty-plot/db"
 import { runBatchSimulation } from "@nasty-plot/battle-engine"
 import type { AIDifficulty, BattleFormat } from "@nasty-plot/battle-engine"
+import { parseShowdownPaste } from "@nasty-plot/core"
 
 export async function POST(req: NextRequest) {
   try {
@@ -20,6 +21,29 @@ export async function POST(req: NextRequest) {
 
     if (!formatId || !team1Paste || !team2Paste || !totalGames) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
+    }
+
+    // Validate both teams have valid Pokemon with moves
+    const pasteErrors: string[] = []
+    for (const [label, paste] of [
+      ["Team 1", team1Paste],
+      ["Team 2", team2Paste],
+    ] as const) {
+      const parsed = parseShowdownPaste(paste)
+      if (parsed.length === 0) {
+        pasteErrors.push(`${label}: could not parse team`)
+        continue
+      }
+      for (const slot of parsed) {
+        if (!slot.pokemonId) continue
+        const moves = slot.moves?.filter(Boolean) ?? []
+        if (moves.length === 0) {
+          pasteErrors.push(`${label}: ${slot.pokemonId} needs at least 1 move`)
+        }
+      }
+    }
+    if (pasteErrors.length > 0) {
+      return NextResponse.json({ error: pasteErrors.join("; ") }, { status: 400 })
     }
 
     const games = Math.min(totalGames, 500) // Cap at 500

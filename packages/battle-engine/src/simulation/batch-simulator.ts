@@ -87,6 +87,14 @@ export async function runBatchSimulation(
     const ai1 = createAI(config.aiDifficulty)
     const ai2 = createAI(config.aiDifficulty)
 
+    // Generate a unique PRNG seed so each game has different RNG (damage rolls, accuracy, etc.)
+    const seed: [number, number, number, number] = [
+      (Math.random() * 0x10000) >>> 0,
+      (Math.random() * 0x10000) >>> 0,
+      (Math.random() * 0x10000) >>> 0,
+      (Math.random() * 0x10000) >>> 0,
+    ]
+
     try {
       const result = await runAutomatedBattle({
         formatId: config.formatId,
@@ -99,6 +107,7 @@ export async function runBatchSimulation(
         ai1,
         ai2,
         maxTurns: 300,
+        seed,
       })
 
       results[index] = result

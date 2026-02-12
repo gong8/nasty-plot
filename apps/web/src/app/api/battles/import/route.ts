@@ -2,11 +2,18 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@nasty-plot/db"
 import { importFromReplayUrl, importFromRawLog } from "@nasty-plot/battle-engine"
 import { findMatchingTeams, createTeamFromExtractedData } from "@nasty-plot/teams"
+import { enrichExtractedTeam } from "@nasty-plot/smogon-data"
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
-    const { replayUrl, rawLog, autoMatchTeams = true, autoCreateTeams = true } = body
+    const {
+      replayUrl,
+      rawLog,
+      autoMatchTeams = true,
+      autoCreateTeams = true,
+      inferSets = true,
+    } = body
 
     if (!replayUrl && !rawLog) {
       return NextResponse.json({ error: "Either replayUrl or rawLog is required" }, { status: 400 })
@@ -14,6 +21,16 @@ export async function POST(req: NextRequest) {
 
     // Parse the battle data
     const parsed = replayUrl ? await importFromReplayUrl(replayUrl) : importFromRawLog(rawLog)
+
+    // Optionally enrich teams with inferred Smogon set data
+    if (inferSets) {
+      const [enriched1, enriched2] = await Promise.all([
+        enrichExtractedTeam(parsed.team1, parsed.formatId),
+        enrichExtractedTeam(parsed.team2, parsed.formatId),
+      ])
+      parsed.team1 = enriched1 as typeof parsed.team1
+      parsed.team2 = enriched2 as typeof parsed.team2
+    }
 
     // Team matching
     const teamMatching: {

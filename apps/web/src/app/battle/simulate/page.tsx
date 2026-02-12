@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -11,7 +11,7 @@ import type { BatchAnalytics } from "@nasty-plot/battle-engine"
 import { FormatSelector } from "@/features/battle/components/FormatSelector"
 import { TeamPicker, type TeamSelection } from "@/features/battle/components/TeamPicker"
 import { useFormat } from "@/features/battle/hooks/use-formats"
-import type { GameType } from "@nasty-plot/core"
+import { parseShowdownPaste, type GameType } from "@nasty-plot/core"
 
 type Phase = "setup" | "running" | "results"
 
@@ -92,6 +92,27 @@ const emptySelection = (paste: string): TeamSelection => ({
   source: "paste",
 })
 
+function validatePaste(paste: string): { valid: boolean; errors: string[] } {
+  const trimmed = paste.trim()
+  if (!trimmed) return { valid: false, errors: ["No team selected"] }
+
+  const parsed = parseShowdownPaste(trimmed)
+  if (parsed.length === 0) return { valid: false, errors: ["Could not parse team"] }
+
+  const errors: string[] = []
+  for (const slot of parsed) {
+    if (!slot.pokemonId) {
+      errors.push(`Slot ${slot.position}: missing Pokemon`)
+      continue
+    }
+    const moves = slot.moves?.filter(Boolean) ?? []
+    if (moves.length === 0) {
+      errors.push(`${slot.pokemonId}: needs at least 1 move`)
+    }
+  }
+  return { valid: errors.length === 0, errors }
+}
+
 export default function SimulatePage() {
   const [phase, setPhase] = useState<Phase>("setup")
   const [team1Selection, setTeam1Selection] = useState<TeamSelection>(emptySelection(SAMPLE_TEAM_1))
@@ -107,6 +128,10 @@ export default function SimulatePage() {
 
   const format = useFormat(formatId)
   const gameType: GameType = format?.gameType ?? "singles"
+
+  const team1Validation = useMemo(() => validatePaste(team1Selection.paste), [team1Selection.paste])
+  const team2Validation = useMemo(() => validatePaste(team2Selection.paste), [team2Selection.paste])
+  const canStart = team1Validation.valid && team2Validation.valid
 
   useEffect(() => {
     return () => {
@@ -272,12 +297,19 @@ export default function SimulatePage() {
               </Card>
             </div>
 
+            {(!team1Validation.valid || !team2Validation.valid) && (
+              <div className="text-destructive text-sm space-y-1">
+                {team1Validation.errors.map((e, i) => (
+                  <p key={`t1-${i}`}>Team 1: {e}</p>
+                ))}
+                {team2Validation.errors.map((e, i) => (
+                  <p key={`t2-${i}`}>Team 2: {e}</p>
+                ))}
+              </div>
+            )}
+
             <div className="flex justify-center">
-              <Button
-                onClick={startSimulation}
-                disabled={!team1Selection.paste || !team2Selection.paste}
-                className="gap-1.5"
-              >
+              <Button onClick={startSimulation} disabled={!canStart} className="gap-1.5">
                 <Play className="h-4 w-4" />
                 Run Simulation
               </Button>

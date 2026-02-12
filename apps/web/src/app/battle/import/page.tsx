@@ -9,6 +9,8 @@ import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Label } from "@/components/ui/label"
+import { Switch } from "@/components/ui/switch"
 import { useBattleImport, type ImportResult } from "@/features/battle/hooks/use-battle-import"
 
 function isValidReplayUrl(url: string): boolean {
@@ -27,12 +29,13 @@ export default function BattleImportPage() {
 
   const [replayUrl, setReplayUrl] = useState("")
   const [rawLog, setRawLog] = useState("")
+  const [inferSets, setInferSets] = useState(true)
   const [result, setResult] = useState<ImportResult | null>(null)
 
   const handleImportUrl = async () => {
     if (!replayUrl.trim() || !isValidReplayUrl(replayUrl)) return
     try {
-      const data = await importMut.mutateAsync({ replayUrl: replayUrl.trim() })
+      const data = await importMut.mutateAsync({ replayUrl: replayUrl.trim(), inferSets })
       setResult(data)
     } catch {
       // Error handled by mutation state
@@ -42,7 +45,7 @@ export default function BattleImportPage() {
   const handleImportLog = async () => {
     if (!rawLog.trim()) return
     try {
-      const data = await importMut.mutateAsync({ rawLog: rawLog.trim() })
+      const data = await importMut.mutateAsync({ rawLog: rawLog.trim(), inferSets })
       setResult(data)
     } catch {
       // Error handled by mutation state
@@ -201,6 +204,12 @@ export default function BattleImportPage() {
               </p>
             )}
           </div>
+          <div className="flex items-center gap-2">
+            <Switch id="infer-sets-url" checked={inferSets} onCheckedChange={setInferSets} />
+            <Label htmlFor="infer-sets-url" className="text-sm">
+              Infer full sets from Smogon data
+            </Label>
+          </div>
           <Button
             onClick={handleImportUrl}
             disabled={!replayUrl.trim() || !isValidReplayUrl(replayUrl) || importMut.isPending}
@@ -220,6 +229,12 @@ export default function BattleImportPage() {
               rows={12}
               className="mt-1 font-mono text-xs"
             />
+          </div>
+          <div className="flex items-center gap-2">
+            <Switch id="infer-sets-log" checked={inferSets} onCheckedChange={setInferSets} />
+            <Label htmlFor="infer-sets-log" className="text-sm">
+              Infer full sets from Smogon data
+            </Label>
           </div>
           <Button
             onClick={handleImportLog}
