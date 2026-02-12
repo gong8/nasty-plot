@@ -10,6 +10,7 @@ import { ChatSessionList } from "@/features/chat/components/chat-session-list"
 import { NewChatModal } from "@/features/chat/components/new-chat-modal"
 import { X, History, Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { PECHARUNT_SPRITE_URL } from "@/lib/constants"
 
 interface ChatSidebarProps {
   fullPage?: boolean
@@ -58,7 +59,7 @@ export function ChatSidebar({ fullPage = false }: ChatSidebarProps) {
           </Button>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/1025.png"
+            src={PECHARUNT_SPRITE_URL}
             alt="Pecharunt"
             width={20}
             height={20}
@@ -76,7 +77,13 @@ export function ChatSidebar({ fullPage = false }: ChatSidebarProps) {
           >
             <Plus className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={closeSidebar}>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7"
+            onClick={closeSidebar}
+            title="Close chat"
+          >
             <X className="h-4 w-4" />
           </Button>
         </div>

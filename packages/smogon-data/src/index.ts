@@ -7,6 +7,7 @@ export {
   getMoveUsage,
   getItemUsage,
   getAbilityUsage,
+  getTopCores,
 } from "./usage-stats.service"
 
 export {

@@ -324,6 +324,30 @@ export async function getTeammates(
 }
 
 /**
+ * Get top correlated Pokemon pairs (cores) for a format.
+ */
+export async function getTopCores(
+  formatId: string,
+  options: { pokemonId?: string; limit?: number } = {},
+): Promise<{ pokemonAId: string; pokemonBId: string; correlationPercent: number }[]> {
+  const { pokemonId, limit = 20 } = options
+  const rows = await prisma.teammateCorr.findMany({
+    where: {
+      formatId,
+      ...(pokemonId ? { pokemonAId: pokemonId } : {}),
+    },
+    orderBy: { correlationPercent: "desc" },
+    take: limit,
+  })
+
+  return rows.map((r) => ({
+    pokemonAId: r.pokemonAId,
+    pokemonBId: r.pokemonBId,
+    correlationPercent: r.correlationPercent,
+  }))
+}
+
+/**
  * Get move usage data for a specific Pokemon in a format, ordered by usage descending.
  */
 export async function getMoveUsage(

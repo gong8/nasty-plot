@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { ThemeToggle } from "./theme-toggle"
 import { cn } from "@/lib/utils"
+import { PECHARUNT_SPRITE_URL } from "@/lib/constants"
 
 const NAV_LINKS = [
   { href: "/teams", label: "Teams" },
@@ -29,7 +30,7 @@ export function SiteHeader() {
           <div className="relative flex items-center justify-center w-8 h-8 transition-transform group-hover:scale-110 duration-300">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/1025.png"
+              src={PECHARUNT_SPRITE_URL}
               alt="Pecharunt"
               width={32}
               height={32}

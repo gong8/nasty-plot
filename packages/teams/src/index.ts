@@ -10,6 +10,7 @@ export {
   clearSlots,
   reorderSlots,
   domainSlotToDb,
+  cleanupEmptyTeams,
 } from "./team.service"
 export { validateTeam } from "./validation.service"
 export {

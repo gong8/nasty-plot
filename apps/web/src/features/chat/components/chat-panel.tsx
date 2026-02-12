@@ -17,6 +17,7 @@ import { ChatGuidedPrompts } from "./chat-guided-prompts"
 import { ArrowDown, Zap, Search } from "lucide-react"
 import type { ChatStreamOptions } from "@/features/chat/hooks/use-chat-stream"
 import { cn } from "@/lib/utils"
+import { PECHARUNT_SPRITE_URL } from "@/lib/constants"
 
 interface ChatPanelProps {
   teamId?: string
@@ -192,7 +193,7 @@ export function ChatPanel({ sessionId }: ChatPanelProps) {
             <div className="text-center py-12">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/1025.png"
+                src={PECHARUNT_SPRITE_URL}
                 alt="Pecharunt"
                 width={64}
                 height={64}

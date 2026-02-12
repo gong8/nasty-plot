@@ -16,6 +16,14 @@ vi.mock("@nasty-plot/battle-engine", () => ({
   ),
 }))
 
+vi.mock("@nasty-plot/core", () => ({
+  parseShowdownPaste: vi
+    .fn()
+    .mockReturnValue([
+      { pokemonId: "garchomp", moves: ["earthquake", "dragonclaw", "swordsDance", "stealthRock"] },
+    ]),
+}))
+
 import { prisma } from "@nasty-plot/db"
 import { POST } from "../../apps/web/src/app/api/battles/batch/route"
 

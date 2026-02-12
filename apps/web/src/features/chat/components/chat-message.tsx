@@ -7,6 +7,7 @@ import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism"
 import { User, Copy, Check } from "lucide-react"
 import { useState, useCallback } from "react"
 import { cn } from "@/lib/utils"
+import { PECHARUNT_SPRITE_URL } from "@/lib/constants"
 
 interface ChatMessageProps {
   role: "user" | "assistant"
@@ -53,7 +54,7 @@ export function ChatMessage({ role, content, isStreaming }: ChatMessageProps) {
       <div className="flex-shrink-0 rounded-full flex items-center justify-center w-9 h-9 bg-accent/15 text-accent">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/1025.png"
+          src={PECHARUNT_SPRITE_URL}
           alt="Pecharunt"
           width={24}
           height={24}

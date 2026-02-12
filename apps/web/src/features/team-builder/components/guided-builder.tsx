@@ -234,13 +234,8 @@ export function GuidedBuilder() {
         <div className="flex items-center gap-2">
           {/* Switch to freeform escape hatch */}
           {ctx.step !== "start" && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={ctx.handleSwitchToFreeform}
-              className="text-xs text-muted-foreground"
-            >
-              <Shuffle className="mr-1 h-3 w-3" />
+            <Button variant="outline" size="sm" onClick={ctx.handleSwitchToFreeform}>
+              <Shuffle className="mr-1 h-3.5 w-3.5" />
               Freeform
             </Button>
           )}

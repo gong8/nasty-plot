@@ -300,7 +300,7 @@ export function TeamHeader({
             {importError && <p className="text-sm text-destructive">{importError}</p>}
             <DialogFooter>
               <p className="text-xs text-muted-foreground mr-auto self-center">
-                Press Ctrl+Enter to import
+                Press ⌘+Enter / Ctrl+Enter to import
               </p>
               <Button onClick={handleImportSubmit} disabled={!importPaste.trim() || importLoading}>
                 {importLoading ? "Importing..." : "Import"}
@@ -312,7 +312,12 @@ export function TeamHeader({
         {/* Export */}
         <Dialog open={exportOpen} onOpenChange={setExportOpen}>
           <DialogTrigger asChild>
-            <Button variant="outline" size="sm" onClick={handleExport}>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleExport}
+              disabled={team.slots.length === 0}
+            >
               <Download className="h-4 w-4 mr-1" /> Export
             </Button>
           </DialogTrigger>
@@ -368,7 +373,7 @@ export function TeamHeader({
         {/* Delete */}
         <Dialog>
           <DialogTrigger asChild>
-            <Button variant="outline" size="sm" className="text-destructive">
+            <Button variant="destructive" size="sm">
               <Trash2 className="h-4 w-4 mr-1" /> Delete
             </Button>
           </DialogTrigger>

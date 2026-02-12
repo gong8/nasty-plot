@@ -2,6 +2,7 @@
 
 import { usePathname } from "next/navigation"
 import { useChatSidebar } from "@/features/chat/context/chat-provider"
+import { PECHARUNT_SPRITE_URL } from "@/lib/constants"
 
 export function ChatFab() {
   const pathname = usePathname()
@@ -18,7 +19,7 @@ export function ChatFab() {
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/1025.png"
+        src={PECHARUNT_SPRITE_URL}
         alt="Pecharunt"
         width={32}
         height={32}

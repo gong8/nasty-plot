@@ -80,6 +80,7 @@ function ReplayViewerContent({ battleData }: { battleData: BattleData }) {
 
   const animState = useReplayAnimations(replay.currentFrame?.entries ?? [], replay.currentIndex, {
     speed: replay.speed,
+    onComplete: replay.onFrameAnimationsComplete,
   })
 
   useBattleStatePublisher(replay.currentFrame?.state ?? null)

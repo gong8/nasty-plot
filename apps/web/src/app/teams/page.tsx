@@ -10,6 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Switch } from "@/components/ui/switch"
 import { PokemonSprite } from "@nasty-plot/ui"
 import { useTeams, useRestoreTeam } from "@/features/teams/hooks/use-teams"
+import { PECHARUNT_SPRITE_URL } from "@/lib/constants"
 
 export default function TeamsPage() {
   const router = useRouter()
@@ -61,7 +62,7 @@ export default function TeamsPage() {
             <CardContent className="flex flex-col items-center gap-4 text-center">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/1025.png"
+                src={PECHARUNT_SPRITE_URL}
                 alt="Pecharunt"
                 width={48}
                 height={48}
@@ -74,9 +75,10 @@ export default function TeamsPage() {
                   Pecharunt is waiting for your first team. Create one to get started.
                 </p>
               </div>
-              <Button onClick={() => router.push("/teams/new")}>
-                <Plus className="h-4 w-4 mr-2" /> Create Team
-              </Button>
+              <p className="text-sm text-muted-foreground">
+                Get started by clicking{" "}
+                <span className="font-medium text-foreground">New Team</span> above.
+              </p>
             </CardContent>
           </Card>
         )}

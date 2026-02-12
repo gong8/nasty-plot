@@ -187,5 +187,13 @@ describe("registerResources", () => {
       expect(data).toHaveProperty("error")
       expect(data.error).toContain("gen9fake")
     })
+
+    it("viability resource is registered with a ResourceTemplate", () => {
+      const entry = resourceCalls.find((r) => r.name === "viability")
+      expect(entry).toBeDefined()
+      // The second arg is a ResourceTemplate instance (not a plain string URI)
+      expect(entry!.uriOrTemplate).toBeDefined()
+      expect(typeof entry!.uriOrTemplate).toBe("object")
+    })
   })
 })

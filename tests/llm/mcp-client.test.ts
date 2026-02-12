@@ -170,5 +170,50 @@ describe("mcp-client", () => {
 
       expect(context).toBe("")
     })
+
+    it("returns cached context on subsequent calls", async () => {
+      mockReadResource.mockImplementation(({ uri }: { uri: string }) => {
+        const data: Record<string, string> = {
+          "pokemon://type-chart": '{"Fire":{"Water":0.5}}',
+          "pokemon://formats": '[{"id":"gen9ou"}]',
+          "pokemon://natures": '{"Adamant":{"plus":"atk"}}',
+          "pokemon://stat-formulas": "# Stat Formulas\nHP = ...",
+        }
+        return Promise.resolve({
+          contents: [{ text: data[uri] || "" }],
+        })
+      })
+
+      const first = await getMcpResourceContext()
+      expect(first).toContain("# Reference Data")
+
+      // Reset mocks to verify they're not called again
+      mockReadResource.mockClear()
+
+      const second = await getMcpResourceContext()
+      expect(second).toBe(first)
+      expect(mockReadResource).not.toHaveBeenCalled()
+    })
+
+    it("handles individual resource failure gracefully", async () => {
+      let callCount = 0
+      mockReadResource.mockImplementation(({ uri }: { uri: string }) => {
+        callCount++
+        if (uri === "pokemon://type-chart") {
+          return Promise.reject(new Error("Resource unavailable"))
+        }
+        return Promise.resolve({
+          contents: [{ text: `data for ${uri}` }],
+        })
+      })
+
+      const context = await getMcpResourceContext()
+
+      // Should still have data from the successful resources
+      expect(context).toContain("# Reference Data")
+      expect(context).not.toContain("type chart")
+      expect(context).toContain("formats")
+      expect(callCount).toBeGreaterThan(1)
+    })
   })
 })

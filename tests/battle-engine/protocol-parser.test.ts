@@ -1533,6 +1533,57 @@ describe("protocol-parser", () => {
     })
   })
 
+  describe("processChunk - |split| handling", () => {
+    it("processes owner line and skips spectator line after |split|", () => {
+      const state = makeState()
+      processLine(state, "|switch|p1a: Garchomp|Garchomp, L100|319/319")
+      const chunk = [
+        "|split|p1",
+        "|-damage|p1a: Garchomp|200/319",
+        "|-damage|p1a: Garchomp|63/100",
+      ].join("\n")
+
+      const entries = processChunk(state, chunk)
+
+      // Should produce one entry (owner line), not two
+      expect(entries).toHaveLength(1)
+      expect(entries[0].type).toBe("damage")
+      // HP should be from owner line (200/319), not spectator (63/100)
+      expect(state.sides.p1.active[0]!.hp).toBe(200)
+    })
+
+    it("handles |split| at the end of chunk with no following lines", () => {
+      const state = makeState()
+      const chunk = "|split|p1"
+
+      const entries = processChunk(state, chunk)
+
+      // No lines after split, should not crash
+      expect(entries).toHaveLength(0)
+    })
+
+    it("handles multiple splits in a single chunk", () => {
+      const state = makeState()
+      processLine(state, "|switch|p1a: Garchomp|Garchomp, L100|319/319")
+      processLine(state, "|switch|p2a: Heatran|Heatran, L100|311/311")
+      const chunk = [
+        "|split|p1",
+        "|-damage|p1a: Garchomp|250/319",
+        "|-damage|p1a: Garchomp|78/100",
+        "|split|p2",
+        "|-damage|p2a: Heatran|200/311",
+        "|-damage|p2a: Heatran|64/100",
+      ].join("\n")
+
+      const entries = processChunk(state, chunk)
+
+      // Two owner damage entries
+      expect(entries).toHaveLength(2)
+      expect(state.sides.p1.active[0]!.hp).toBe(250)
+      expect(state.sides.p2.active[0]!.hp).toBe(200)
+    })
+  })
+
   describe("processLine - weather edge cases", () => {
     it("parses special weather types: DesolateLand, PrimordialSea, DeltaStream", () => {
       const state = makeState()

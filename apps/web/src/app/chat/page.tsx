@@ -2,6 +2,7 @@
 
 import { useEffect } from "react"
 import { useChatSidebar } from "@/features/chat/context/chat-provider"
+import { PECHARUNT_SPRITE_URL } from "@/lib/constants"
 
 // The /chat route opens the sidebar automatically.
 // Full-page chat mode is preserved in ChatSidebar (fullPage prop) but disabled.
@@ -16,7 +17,7 @@ export default function ChatPage() {
     <div className="flex flex-col items-center justify-center min-h-[60vh] px-4">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/1025.png"
+        src={PECHARUNT_SPRITE_URL}
         alt="Pecharunt"
         width={96}
         height={96}

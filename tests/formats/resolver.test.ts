@@ -41,6 +41,6 @@ describe("Format Resolver", () => {
     const format = getFormat("gen9vgc2026regfbo3")
     expect(format).toBeDefined()
     expect(format?.id).toBe("gen9vgc2026")
-    expect(format?.name).toBe("VGC 2026")
+    expect(format?.name).toBe("VGC 2026 Reg F")
   })
 })

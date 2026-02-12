@@ -5,6 +5,8 @@ import { streamChat } from "@nasty-plot/llm"
 // ---------------------------------------------------------------------------
 
 const mockStreamCliChat = vi.fn()
+const mockGetTeam = vi.fn()
+const mockGetUsageStats = vi.fn()
 
 vi.mock("#llm/cli-chat", () => ({
   streamCliChat: (...args: unknown[]) => mockStreamCliChat(...args),
@@ -12,7 +14,17 @@ vi.mock("#llm/cli-chat", () => ({
 
 vi.mock("#llm/tool-context", () => ({
   getDisallowedMcpTools: vi.fn().mockReturnValue([]),
+  getDisallowedMcpToolsForContextMode: vi.fn().mockReturnValue([]),
+  getAllMcpToolNames: vi.fn().mockReturnValue([]),
   getPageTypeFromPath: vi.fn().mockReturnValue("other"),
+}))
+
+vi.mock("@nasty-plot/teams", () => ({
+  getTeam: (...args: unknown[]) => mockGetTeam(...args),
+}))
+
+vi.mock("@nasty-plot/smogon-data", () => ({
+  getUsageStats: (...args: unknown[]) => mockGetUsageStats(...args),
 }))
 
 // ---------------------------------------------------------------------------
@@ -50,12 +62,9 @@ async function collectStream(stream: ReadableStream<Uint8Array>): Promise<string
 describe("streamChat", () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    vi.stubGlobal("fetch", vi.fn())
     mockStreamCliChat.mockReturnValue(makeStream('data: {"type":"content","content":"Hello"}\n\n'))
-  })
-
-  afterEach(() => {
-    vi.unstubAllGlobals()
+    mockGetTeam.mockResolvedValue(null)
+    mockGetUsageStats.mockResolvedValue([])
   })
 
   it("returns a readable stream", async () => {
@@ -110,22 +119,15 @@ describe("streamChat", () => {
   })
 
   it("fetches team context when teamId is provided", async () => {
-    const mockFetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: () =>
-        Promise.resolve({
-          data: {
-            id: "team-1",
-            name: "Test",
-            formatId: "gen9ou",
-            mode: "freeform",
-            slots: [],
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-          },
-        }),
+    mockGetTeam.mockResolvedValue({
+      id: "team-1",
+      name: "Test",
+      formatId: "gen9ou",
+      mode: "freeform",
+      slots: [],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     })
-    vi.stubGlobal("fetch", mockFetch)
 
     const stream = await streamChat({
       messages: [{ role: "user", content: "Hi" }],
@@ -133,26 +135,19 @@ describe("streamChat", () => {
     })
     await collectStream(stream)
 
-    expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining("/api/teams/team-1"))
+    expect(mockGetTeam).toHaveBeenCalledWith("team-1")
   })
 
   it("includes team data in system prompt", async () => {
-    const mockFetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: () =>
-        Promise.resolve({
-          data: {
-            id: "team-1",
-            name: "My OU Team",
-            formatId: "gen9ou",
-            mode: "freeform",
-            slots: [],
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-          },
-        }),
+    mockGetTeam.mockResolvedValue({
+      id: "team-1",
+      name: "My OU Team",
+      formatId: "gen9ou",
+      mode: "freeform",
+      slots: [],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     })
-    vi.stubGlobal("fetch", mockFetch)
 
     const stream = await streamChat({
       messages: [{ role: "user", content: "Hi" }],
@@ -168,11 +163,7 @@ describe("streamChat", () => {
   })
 
   it("fetches meta context when formatId is provided", async () => {
-    const mockFetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve({ data: [] }),
-    })
-    vi.stubGlobal("fetch", mockFetch)
+    mockGetUsageStats.mockResolvedValue([])
 
     const stream = await streamChat({
       messages: [{ role: "user", content: "Hi" }],
@@ -180,7 +171,7 @@ describe("streamChat", () => {
     })
     await collectStream(stream)
 
-    expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining("/api/formats/gen9ou/usage"))
+    expect(mockGetUsageStats).toHaveBeenCalledWith("gen9ou", { limit: 20 })
   })
 
   it("includes page context in system prompt when provided", async () => {
@@ -214,8 +205,7 @@ describe("streamChat", () => {
   })
 
   it("handles team fetch failure gracefully", async () => {
-    const mockFetch = vi.fn().mockResolvedValue({ ok: false })
-    vi.stubGlobal("fetch", mockFetch)
+    mockGetTeam.mockResolvedValue(null)
 
     const stream = await streamChat({
       messages: [{ role: "user", content: "Hi" }],
@@ -228,8 +218,7 @@ describe("streamChat", () => {
   })
 
   it("handles team fetch network error gracefully", async () => {
-    const mockFetch = vi.fn().mockRejectedValue(new Error("Network error"))
-    vi.stubGlobal("fetch", mockFetch)
+    mockGetTeam.mockRejectedValue(new Error("Network error"))
 
     const stream = await streamChat({
       messages: [{ role: "user", content: "Hi" }],
@@ -258,6 +247,220 @@ describe("streamChat", () => {
     expect(mockStreamCliChat).toHaveBeenCalledWith(
       expect.objectContaining({
         disallowedMcpTools: ["mcp__nasty-plot__create_team"],
+      }),
+    )
+  })
+
+  it("includes meta context when formatId has usage data", async () => {
+    mockGetUsageStats.mockResolvedValue([
+      { pokemonId: "garchomp", pokemonName: "Garchomp", usagePercent: 25.5, rank: 1 },
+    ])
+
+    const stream = await streamChat({
+      messages: [{ role: "user", content: "Hi" }],
+      formatId: "gen9ou",
+    })
+    await collectStream(stream)
+
+    expect(mockStreamCliChat).toHaveBeenCalledWith(
+      expect.objectContaining({
+        systemPrompt: expect.stringContaining("Meta Overview: gen9ou"),
+      }),
+    )
+  })
+
+  it("handles usage stats fetch failure gracefully", async () => {
+    mockGetUsageStats.mockRejectedValue(new Error("DB error"))
+
+    const stream = await streamChat({
+      messages: [{ role: "user", content: "Hi" }],
+      formatId: "gen9ou",
+    })
+
+    expect(stream).toBeInstanceOf(ReadableStream)
+    await collectStream(stream)
+  })
+
+  it("extracts teamId and formatId from contextData when contextMode is set", async () => {
+    const contextData = JSON.stringify({ teamId: "team-ctx", formatId: "gen9uu" })
+
+    mockGetTeam.mockResolvedValue({
+      id: "team-ctx",
+      name: "Context Team",
+      formatId: "gen9uu",
+      mode: "freeform",
+      slots: [],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    })
+
+    const stream = await streamChat({
+      messages: [{ role: "user", content: "Hi" }],
+      contextMode: "guided-builder",
+      contextData,
+    })
+    await collectStream(stream)
+
+    expect(mockGetTeam).toHaveBeenCalledWith("team-ctx")
+    expect(mockGetUsageStats).toHaveBeenCalledWith("gen9uu", { limit: 20 })
+  })
+
+  it("extracts teamId/formatId from contextData without contextMode when not already set", async () => {
+    const contextData = JSON.stringify({ teamId: "team-fallback", formatId: "gen9ru" })
+
+    mockGetTeam.mockResolvedValue(null)
+
+    const stream = await streamChat({
+      messages: [{ role: "user", content: "Hi" }],
+      contextData,
+    })
+    await collectStream(stream)
+
+    expect(mockGetTeam).toHaveBeenCalledWith("team-fallback")
+    expect(mockGetUsageStats).toHaveBeenCalledWith("gen9ru", { limit: 20 })
+  })
+
+  it("does not override existing teamId/formatId from contextData without contextMode", async () => {
+    const contextData = JSON.stringify({ teamId: "team-override", formatId: "gen9uu" })
+
+    mockGetTeam.mockResolvedValue(null)
+
+    const stream = await streamChat({
+      messages: [{ role: "user", content: "Hi" }],
+      teamId: "team-original",
+      formatId: "gen9ou",
+      contextData,
+    })
+    await collectStream(stream)
+
+    // Should use original values since they were already provided
+    expect(mockGetTeam).toHaveBeenCalledWith("team-original")
+    expect(mockGetUsageStats).toHaveBeenCalledWith("gen9ou", { limit: 20 })
+  })
+
+  it("handles invalid JSON contextData gracefully with contextMode", async () => {
+    const stream = await streamChat({
+      messages: [{ role: "user", content: "Hi" }],
+      contextMode: "guided-builder",
+      contextData: "not-json",
+    })
+    await collectStream(stream)
+
+    expect(stream).toBeInstanceOf(ReadableStream)
+  })
+
+  it("handles invalid JSON contextData gracefully without contextMode", async () => {
+    const stream = await streamChat({
+      messages: [{ role: "user", content: "Hi" }],
+      contextData: "not-json",
+    })
+    await collectStream(stream)
+
+    expect(stream).toBeInstanceOf(ReadableStream)
+  })
+
+  it("includes context mode prompt when contextMode is set", async () => {
+    const { getDisallowedMcpToolsForContextMode } = await import("#llm/tool-context")
+    ;(getDisallowedMcpToolsForContextMode as ReturnType<typeof vi.fn>).mockReturnValue([])
+
+    const stream = await streamChat({
+      messages: [{ role: "user", content: "Hi" }],
+      contextMode: "battle-live",
+      contextData: JSON.stringify({ formatId: "gen9ou" }),
+    })
+    await collectStream(stream)
+
+    expect(mockStreamCliChat).toHaveBeenCalledWith(
+      expect.objectContaining({
+        systemPrompt: expect.stringContaining("real-time battle coach"),
+      }),
+    )
+  })
+
+  it("uses context mode tool filtering instead of page-based when contextMode is set", async () => {
+    const { getDisallowedMcpToolsForContextMode } = await import("#llm/tool-context")
+    ;(getDisallowedMcpToolsForContextMode as ReturnType<typeof vi.fn>).mockReturnValue([
+      "mcp__nasty-plot__create_team",
+    ])
+
+    const stream = await streamChat({
+      messages: [{ role: "user", content: "Hi" }],
+      contextMode: "battle-live",
+      context: {
+        pageType: "team-editor",
+        contextSummary: "Live battle",
+      },
+    })
+    await collectStream(stream)
+
+    expect(mockStreamCliChat).toHaveBeenCalledWith(
+      expect.objectContaining({
+        disallowedMcpTools: ["mcp__nasty-plot__create_team"],
+      }),
+    )
+  })
+
+  it("includes guided-builder live context when contextMode is guided-builder", async () => {
+    const stream = await streamChat({
+      messages: [{ role: "user", content: "Hi" }],
+      contextMode: "guided-builder",
+      contextData: JSON.stringify({ teamId: "t1", formatId: "gen9ou" }),
+      context: {
+        pageType: "guided-builder",
+        contextSummary: "",
+        guidedBuilder: {
+          step: "build",
+          teamSize: 2,
+          currentBuildSlot: 3,
+          slotSummaries: ["Garchomp", "Heatran"],
+          formatId: "gen9ou",
+        },
+      },
+    })
+    await collectStream(stream)
+
+    expect(mockStreamCliChat).toHaveBeenCalledWith(
+      expect.objectContaining({
+        systemPrompt: expect.stringContaining("Guided Team Builder"),
+      }),
+    )
+  })
+
+  it("includes live state summary for non-guided context modes", async () => {
+    const stream = await streamChat({
+      messages: [{ role: "user", content: "Hi" }],
+      contextMode: "battle-replay",
+      contextData: JSON.stringify({ formatId: "gen9ou" }),
+      context: {
+        pageType: "battle-replay",
+        contextSummary: "Reviewing battle replay",
+      },
+    })
+    await collectStream(stream)
+
+    expect(mockStreamCliChat).toHaveBeenCalledWith(
+      expect.objectContaining({
+        systemPrompt: expect.stringContaining("Live State"),
+      }),
+    )
+  })
+
+  it("disables all tools when disableAllTools is true", async () => {
+    const { getAllMcpToolNames } = await import("#llm/tool-context")
+    ;(getAllMcpToolNames as ReturnType<typeof vi.fn>).mockReturnValue([
+      "mcp__nasty-plot__get_pokemon",
+      "mcp__nasty-plot__create_team",
+    ])
+
+    const stream = await streamChat({
+      messages: [{ role: "user", content: "Hi" }],
+      disableAllTools: true,
+    })
+    await collectStream(stream)
+
+    expect(mockStreamCliChat).toHaveBeenCalledWith(
+      expect.objectContaining({
+        disallowedMcpTools: ["mcp__nasty-plot__get_pokemon", "mcp__nasty-plot__create_team"],
       }),
     )
   })

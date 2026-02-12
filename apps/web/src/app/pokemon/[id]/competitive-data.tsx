@@ -91,7 +91,11 @@ export function CompetitiveData({ usageByFormat, setsByFormat }: CompetitiveData
   const formatsWithSets = setsByFormat.filter((f) => f.sets.length > 0)
 
   if (formatsWithUsage.length === 0 && formatsWithSets.length === 0) {
-    return null
+    return (
+      <p className="text-sm text-muted-foreground py-4">
+        No competitive data available for this Pokemon.
+      </p>
+    )
   }
 
   return (

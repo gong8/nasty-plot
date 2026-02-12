@@ -2,7 +2,7 @@ import { ReplayEngine } from "@nasty-plot/battle-engine"
 import { createInitialState } from "#battle-engine/battle-manager"
 import * as protocolParser from "#battle-engine/protocol-parser"
 import * as winProb from "#battle-engine/ai/win-probability"
-import type { BattleLogEntry, BattleState } from "@nasty-plot/battle-engine"
+import type { BattleState } from "@nasty-plot/battle-engine"
 
 // Mock dependencies
 vi.mock("#battle-engine/battle-manager", () => ({
@@ -351,6 +351,145 @@ describe("ReplayEngine", () => {
         // Before parse, frames is empty
         expect(emptyEngine.maxTurn).toBe(0)
       })
+    })
+  })
+
+  describe("parse() - |split| handling", () => {
+    it("processes owner line from split marker and skips spectator line", () => {
+      let callCount = 0
+      vi.mocked(protocolParser.processLine).mockImplementation(() => {
+        callCount++
+        if (callCount === 1) {
+          // This is the owner line after |split|
+          return { type: "damage", message: "Garchomp lost HP! (200/319)", turn: 0 }
+        }
+        return null
+      })
+
+      // |split|p1 followed by owner line then spectator line
+      const log = "|split|p1\n|-damage|p1a: Garchomp|200/319\n|-damage|p1a: Garchomp|63/100"
+      const engine = new ReplayEngine(log)
+      engine.parse()
+
+      // processLine should only be called once (for the owner line)
+      expect(protocolParser.processLine).toHaveBeenCalledTimes(1)
+      // Initial frame + no turn boundary frame = 1 frame with entries in trailing
+      expect(engine.totalFrames).toBeGreaterThanOrEqual(1)
+    })
+
+    it("handles split with turn boundary inside owner line", () => {
+      let callCount = 0
+      vi.mocked(protocolParser.processLine).mockImplementation((state) => {
+        callCount++
+        if (callCount === 1) {
+          return { type: "switch", message: "sent out Garchomp", turn: 0 }
+        }
+        if (callCount === 2) {
+          // Owner line after split is a turn marker
+          state.turn = 1
+          return { type: "turn", message: "=== Turn 1 ===", turn: 1 }
+        }
+        return null
+      })
+
+      const log = "|switch|p1a: Garchomp|Garchomp, L100|319/319\n|split|p1\n|turn|1\n|turn|1"
+      const engine = new ReplayEngine(log)
+      engine.parse()
+
+      // Initial frame + frame at turn 1 from split
+      expect(engine.totalFrames).toBeGreaterThanOrEqual(2)
+      const frame1 = engine.getFrame(1)
+      expect(frame1).not.toBeNull()
+      expect(frame1!.turnNumber).toBe(1)
+    })
+
+    it("handles split with win inside owner line", () => {
+      let callCount = 0
+      vi.mocked(protocolParser.processLine).mockImplementation((state) => {
+        callCount++
+        if (callCount === 1) {
+          return { type: "move", message: "Garchomp used Earthquake!", turn: 0 }
+        }
+        if (callCount === 2) {
+          // Owner line after split is a win
+          state.phase = "ended"
+          state.winner = "p1"
+          return { type: "win", message: "Player won!", turn: 0 }
+        }
+        return null
+      })
+
+      const log = "|move|p1a: Garchomp|Earthquake\n|split|p1\n|win|Player\n|win|Player"
+      const engine = new ReplayEngine(log)
+      engine.parse()
+
+      // Initial frame + win frame
+      expect(engine.totalFrames).toBe(2)
+      const winFrame = engine.getFrame(1)
+      expect(winFrame).not.toBeNull()
+      expect(winFrame!.entries.some((e) => e.type === "win")).toBe(true)
+    })
+
+    it("handles split with win probability failure inside split turn", () => {
+      let callCount = 0
+      vi.mocked(protocolParser.processLine).mockImplementation((state) => {
+        callCount++
+        if (callCount === 1) {
+          return { type: "switch", message: "sent out Garchomp", turn: 0 }
+        }
+        if (callCount === 2) {
+          state.turn = 1
+          return { type: "turn", message: "=== Turn 1 ===", turn: 1 }
+        }
+        return null
+      })
+      vi.mocked(winProb.estimateWinProbability).mockImplementation(() => {
+        throw new Error("eval failed")
+      })
+
+      const log = "|switch|p1a: Garchomp|Garchomp\n|split|p1\n|turn|1\n|turn|1"
+      const engine = new ReplayEngine(log)
+      engine.parse()
+
+      // Should still create frame with null win prob
+      expect(engine.totalFrames).toBeGreaterThanOrEqual(2)
+      expect(engine.getFrame(1)!.winProbTeam1).toBeNull()
+    })
+
+    it("handles split where owner line returns null", () => {
+      vi.mocked(protocolParser.processLine).mockReturnValue(null)
+
+      const log = "|split|p1\n|some-unknown|data\n|some-unknown-spectator|data"
+      const engine = new ReplayEngine(log)
+      engine.parse()
+
+      // processLine was called for owner line but returned null
+      expect(protocolParser.processLine).toHaveBeenCalledTimes(1)
+      expect(engine.totalFrames).toBe(1) // Only initial frame
+    })
+
+    it("handles split at end of log (no owner line available)", () => {
+      vi.mocked(protocolParser.processLine).mockReturnValue(null)
+
+      // split is the last line, no owner or spectator lines follow
+      const log = "|split|p1"
+      const engine = new ReplayEngine(log)
+      engine.parse()
+
+      // processLine should not be called (no i+1 line exists)
+      expect(protocolParser.processLine).not.toHaveBeenCalled()
+      expect(engine.totalFrames).toBe(1)
+    })
+
+    it("skips stream marker lines (update, sideupdate, p1, p2)", () => {
+      vi.mocked(protocolParser.processLine).mockReturnValue(null)
+
+      const log = "update\nsideupdate\np1\np2"
+      const engine = new ReplayEngine(log)
+      engine.parse()
+
+      // All these lines should be skipped
+      expect(protocolParser.processLine).not.toHaveBeenCalled()
     })
   })
 

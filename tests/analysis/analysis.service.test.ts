@@ -323,6 +323,106 @@ describe("analyzeTeam", () => {
     expect(synergySuggestion).toBeUndefined()
   })
 
+  it("includes benchmark speed tiers from format usage data", async () => {
+    mockTeamFindUnique.mockResolvedValue(makeDbTeam([makeDbSlot()]))
+    mockSpeciesGet.mockImplementation((id: string) => {
+      if (id === "garchomp") return mockSpeciesData("garchomp", ["Dragon", "Ground"])
+      if (id === "ironValiant")
+        return {
+          ...mockSpeciesData("ironValiant", ["Fairy", "Fighting"]),
+          baseStats: { hp: 74, atk: 130, def: 90, spa: 120, spd: 60, spe: 116 },
+        }
+      if (id === "greatTusk")
+        return {
+          ...mockSpeciesData("greatTusk", ["Ground", "Fighting"]),
+          baseStats: { hp: 115, atk: 131, def: 131, spa: 53, spd: 53, spe: 87 },
+        }
+      return { exists: false }
+    })
+
+    mockUsageFindMany.mockResolvedValue([
+      { pokemonId: "ironValiant", rank: 1, formatId: "gen9ou", usagePercent: 20 },
+      { pokemonId: "greatTusk", rank: 2, formatId: "gen9ou", usagePercent: 15 },
+    ])
+
+    const result = await analyzeTeam("team-1")
+
+    const benchmarks = result.speedTiers.filter(
+      (entry: { isBenchmark?: boolean }) => entry.isBenchmark,
+    )
+    expect(benchmarks.length).toBe(2)
+    expect(benchmarks[0].nature).toBe("Jolly")
+    expect(benchmarks[0].evs).toBe(252)
+  })
+
+  it("skips benchmark entries for Pokemon already on the team", async () => {
+    mockTeamFindUnique.mockResolvedValue(makeDbTeam([makeDbSlot()]))
+    mockSpeciesGet.mockReturnValue(mockSpeciesData("garchomp", ["Dragon", "Ground"]))
+
+    // garchomp is already on the team — it should be skipped as a benchmark
+    mockUsageFindMany.mockResolvedValue([
+      { pokemonId: "garchomp", rank: 1, formatId: "gen9ou", usagePercent: 25 },
+    ])
+
+    const result = await analyzeTeam("team-1")
+
+    const benchmarks = result.speedTiers.filter(
+      (entry: { isBenchmark?: boolean }) => entry.isBenchmark,
+    )
+    expect(benchmarks.length).toBe(0)
+  })
+
+  it("limits benchmarks to 10 entries", async () => {
+    mockTeamFindUnique.mockResolvedValue(makeDbTeam([makeDbSlot()]))
+    mockSpeciesGet.mockImplementation((id: string) => {
+      if (id === "garchomp") return mockSpeciesData("garchomp", ["Dragon", "Ground"])
+      return {
+        exists: true,
+        name: id.charAt(0).toUpperCase() + id.slice(1),
+        num: 1,
+        types: ["Normal"],
+        baseStats: { hp: 80, atk: 80, def: 80, spa: 80, spd: 80, spe: 80 },
+        abilities: { "0": "Pressure" },
+        weightkg: 50,
+      }
+    })
+
+    // 15 usage entries that are NOT on the team
+    const usageEntries = Array.from({ length: 15 }, (_, i) => ({
+      pokemonId: `pokemon${i}`,
+      rank: i + 1,
+      formatId: "gen9ou",
+      usagePercent: 20 - i,
+    }))
+    mockUsageFindMany.mockResolvedValue(usageEntries)
+
+    const result = await analyzeTeam("team-1")
+
+    const benchmarks = result.speedTiers.filter(
+      (entry: { isBenchmark?: boolean }) => entry.isBenchmark,
+    )
+    expect(benchmarks.length).toBe(10)
+  })
+
+  it("skips benchmark entries for non-existent species", async () => {
+    mockTeamFindUnique.mockResolvedValue(makeDbTeam([makeDbSlot()]))
+    mockSpeciesGet.mockImplementation((id: string) => {
+      if (id === "garchomp") return mockSpeciesData("garchomp", ["Dragon", "Ground"])
+      return { exists: false }
+    })
+
+    mockUsageFindMany.mockResolvedValue([
+      { pokemonId: "fakemon", rank: 1, formatId: "gen9ou", usagePercent: 25 },
+    ])
+
+    const result = await analyzeTeam("team-1")
+
+    const benchmarks = result.speedTiers.filter(
+      (entry: { isBenchmark?: boolean }) => entry.isBenchmark,
+    )
+    expect(benchmarks.length).toBe(0)
+  })
+
   it("speed tiers are sorted by speed descending", async () => {
     mockTeamFindUnique.mockResolvedValue(
       makeDbTeam([

@@ -1,5 +1,9 @@
-import { getDisallowedMcpTools, getPageTypeFromPath } from "@nasty-plot/llm"
-import type { PageType } from "@nasty-plot/llm"
+import {
+  getDisallowedMcpTools,
+  getDisallowedMcpToolsForContextMode,
+  getAllMcpToolNames,
+  getPageTypeFromPath,
+} from "@nasty-plot/llm"
 
 const MCP_PREFIX = "mcp__nasty-plot__"
 
@@ -154,6 +158,76 @@ describe("getDisallowedMcpTools", () => {
 
   it("returns all disallowed tools with MCP prefix", () => {
     const result = getDisallowedMcpTools("pokemon-detail")
+    for (const tool of result) {
+      expect(tool).toMatch(/^mcp__nasty-plot__/)
+    }
+  })
+})
+
+describe("getAllMcpToolNames", () => {
+  it("returns all MCP tool names with prefix", () => {
+    const result = getAllMcpToolNames()
+    expect(result.length).toBeGreaterThan(0)
+    for (const tool of result) {
+      expect(tool).toMatch(/^mcp__nasty-plot__/)
+    }
+  })
+
+  it("includes tools from all categories", () => {
+    const result = getAllMcpToolNames()
+    // Check representative tools from each category
+    expect(result).toContain(`${MCP_PREFIX}get_pokemon`)
+    expect(result).toContain(`${MCP_PREFIX}analyze_team_coverage`)
+    expect(result).toContain(`${MCP_PREFIX}create_team`)
+    expect(result).toContain(`${MCP_PREFIX}get_usage_stats`)
+  })
+
+  it("returns a copy (not the original array)", () => {
+    const a = getAllMcpToolNames()
+    const b = getAllMcpToolNames()
+    expect(a).not.toBe(b)
+    expect(a).toEqual(b)
+  })
+})
+
+describe("getDisallowedMcpToolsForContextMode", () => {
+  it("returns empty array for unknown context mode (allow all)", () => {
+    const result = getDisallowedMcpToolsForContextMode("unknown-mode")
+    expect(result).toEqual([])
+  })
+
+  it("returns empty array for guided-builder (all categories allowed)", () => {
+    const result = getDisallowedMcpToolsForContextMode("guided-builder")
+    expect(result).toEqual([])
+  })
+
+  it("returns empty array for team-editor (all categories allowed)", () => {
+    const result = getDisallowedMcpToolsForContextMode("team-editor")
+    expect(result).toEqual([])
+  })
+
+  it("disallows teamCrud and metaRecs for battle-live", () => {
+    const result = getDisallowedMcpToolsForContextMode("battle-live")
+
+    // battle-live allows: dataQuery, analysis
+    expect(result).toContain(`${MCP_PREFIX}create_team`)
+    expect(result).toContain(`${MCP_PREFIX}suggest_teammates`)
+    expect(result).not.toContain(`${MCP_PREFIX}get_pokemon`)
+    expect(result).not.toContain(`${MCP_PREFIX}calculate_damage`)
+  })
+
+  it("disallows teamCrud and metaRecs for battle-replay", () => {
+    const result = getDisallowedMcpToolsForContextMode("battle-replay")
+
+    // battle-replay allows: dataQuery, analysis
+    expect(result).toContain(`${MCP_PREFIX}create_team`)
+    expect(result).toContain(`${MCP_PREFIX}get_usage_stats`)
+    expect(result).not.toContain(`${MCP_PREFIX}search_pokemon`)
+    expect(result).not.toContain(`${MCP_PREFIX}find_team_weaknesses`)
+  })
+
+  it("returns all disallowed tools with MCP prefix", () => {
+    const result = getDisallowedMcpToolsForContextMode("battle-live")
     for (const tool of result) {
       expect(tool).toMatch(/^mcp__nasty-plot__/)
     }

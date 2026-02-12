@@ -10,6 +10,7 @@ import {
   buildMetaContext,
   buildPokemonContext,
   buildPageContextPrompt,
+  buildContextModePrompt,
   buildPlanModePrompt,
 } from "@nasty-plot/llm"
 
@@ -379,6 +380,139 @@ describe("buildPageContextPrompt", () => {
     expect(result).toContain("Team editor page")
     expect(result).toContain("Guided Team Builder")
     expect(result).toContain("Pikachu - Electric")
+  })
+})
+
+describe("buildContextModePrompt", () => {
+  it("returns empty string for unknown context mode", () => {
+    const result = buildContextModePrompt("nonexistent-mode")
+    expect(result).toBe("")
+  })
+
+  it("returns guided-builder prompt", () => {
+    const result = buildContextModePrompt("guided-builder")
+    expect(result).toContain("team building advisor")
+  })
+
+  it("returns team-editor prompt", () => {
+    const result = buildContextModePrompt("team-editor")
+    expect(result).toContain("team optimization expert")
+  })
+
+  it("returns battle-live prompt", () => {
+    const result = buildContextModePrompt("battle-live")
+    expect(result).toContain("real-time battle coach")
+  })
+
+  it("returns battle-replay prompt", () => {
+    const result = buildContextModePrompt("battle-replay")
+    expect(result).toContain("post-battle analyst")
+  })
+
+  it("parses guided-builder contextData with team info", () => {
+    const contextData = JSON.stringify({
+      teamName: "My OU Team",
+      formatId: "gen9ou",
+      paste: "Garchomp @ Choice Scarf",
+      slotsFilled: 3,
+      slots: ["Garchomp", "Heatran", "Toxapex"],
+    })
+    const result = buildContextModePrompt("guided-builder", contextData)
+
+    expect(result).toContain('Team: "My OU Team"')
+    expect(result).toContain("Format: gen9ou")
+    expect(result).toContain("Garchomp @ Choice Scarf")
+    expect(result).toContain("Slots filled: 3/6")
+    expect(result).toContain("Current team:")
+    expect(result).toContain("1. Garchomp")
+    expect(result).toContain("2. Heatran")
+    expect(result).toContain("3. Toxapex")
+  })
+
+  it("parses team-editor contextData with team info", () => {
+    const contextData = JSON.stringify({
+      teamName: "Rain Team",
+      formatId: "gen9uu",
+    })
+    const result = buildContextModePrompt("team-editor", contextData)
+
+    expect(result).toContain('Team: "Rain Team"')
+    expect(result).toContain("Format: gen9uu")
+  })
+
+  it("parses battle-live contextData", () => {
+    const contextData = JSON.stringify({
+      formatId: "gen9ou",
+      team1Name: "Player Team",
+      team2Name: "Opponent Team",
+      aiDifficulty: "expert",
+    })
+    const result = buildContextModePrompt("battle-live", contextData)
+
+    expect(result).toContain("Format: gen9ou")
+    expect(result).toContain("Player: Player Team")
+    expect(result).toContain("Opponent: Opponent Team")
+    expect(result).toContain("AI Difficulty: expert")
+  })
+
+  it("parses battle-replay contextData", () => {
+    const contextData = JSON.stringify({
+      formatId: "gen9ou",
+      team1Name: "Team Alpha",
+      team2Name: "Team Beta",
+      turnCount: 25,
+      winnerId: "team1",
+    })
+    const result = buildContextModePrompt("battle-replay", contextData)
+
+    expect(result).toContain("Format: gen9ou")
+    expect(result).toContain("Team Alpha vs Team Beta")
+    expect(result).toContain("25 turns")
+    expect(result).toContain("Winner: Team Alpha")
+  })
+
+  it("parses battle-replay contextData with team2 winner", () => {
+    const contextData = JSON.stringify({
+      formatId: "gen9ou",
+      team1Name: "Team Alpha",
+      team2Name: "Team Beta",
+      turnCount: 10,
+      winnerId: "team2",
+    })
+    const result = buildContextModePrompt("battle-replay", contextData)
+
+    expect(result).toContain("Winner: Team Beta")
+  })
+
+  it("handles invalid JSON contextData gracefully", () => {
+    const result = buildContextModePrompt("guided-builder", "not-valid-json")
+    // Should still return the mode prompt without data
+    expect(result).toContain("team building advisor")
+    expect(result).not.toContain("Team:")
+  })
+
+  it("handles contextData without optional fields", () => {
+    const contextData = JSON.stringify({})
+    const result = buildContextModePrompt("guided-builder", contextData)
+    expect(result).toContain("team building advisor")
+    expect(result).not.toContain("Team:")
+    expect(result).not.toContain("Format:")
+  })
+
+  it("handles guided-builder contextData with empty slots array", () => {
+    const contextData = JSON.stringify({
+      teamName: "My Team",
+      slots: [],
+    })
+    const result = buildContextModePrompt("guided-builder", contextData)
+    expect(result).toContain('Team: "My Team"')
+    expect(result).not.toContain("Current team:")
+  })
+
+  it("returns empty string for unknown mode even with contextData", () => {
+    const contextData = JSON.stringify({ formatId: "gen9ou" })
+    const result = buildContextModePrompt("unknown-mode", contextData)
+    expect(result).toBe("")
   })
 })
 

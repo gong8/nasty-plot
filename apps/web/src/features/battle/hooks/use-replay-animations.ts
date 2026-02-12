@@ -19,7 +19,7 @@ import {
 export function useReplayAnimations(
   entries: BattleLogEntry[],
   frameIndex: number,
-  options?: { speed?: number },
+  options?: { speed?: number; onComplete?: () => void },
 ): AnimationState {
   const speed = options?.speed ?? 1
   const [animState, setAnimState] = useState<AnimationState>(INITIAL_ANIMATION_STATE)
@@ -29,11 +29,14 @@ export function useReplayAnimations(
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const speedRef = useRef(speed)
   speedRef.current = speed
+  const onCompleteRef = useRef(options?.onComplete)
+  onCompleteRef.current = options?.onComplete
 
   const processQueue = useCallback(() => {
     if (isProcessingRef.current || queueRef.current.length === 0) {
       if (queueRef.current.length === 0) {
         setAnimState((prev) => (prev.isAnimating ? INITIAL_ANIMATION_STATE : prev))
+        onCompleteRef.current?.()
       }
       return
     }
@@ -82,6 +85,8 @@ export function useReplayAnimations(
 
     if (queueRef.current.length > 0) {
       processQueue()
+    } else {
+      onCompleteRef.current?.()
     }
   }, [frameIndex, entries, processQueue])
 

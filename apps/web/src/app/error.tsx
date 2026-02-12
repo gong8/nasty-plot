@@ -2,6 +2,7 @@
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { PECHARUNT_SPRITE_URL } from "@/lib/constants"
 
 export default function Error({ error, reset }: { error: Error; reset: () => void }) {
   return (
@@ -10,7 +11,7 @@ export default function Error({ error, reset }: { error: Error; reset: () => voi
         <CardHeader>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/1025.png"
+            src={PECHARUNT_SPRITE_URL}
             alt="Pecharunt"
             width={64}
             height={64}

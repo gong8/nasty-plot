@@ -4,6 +4,9 @@ import {
   getUsageStatsCount,
   getTopPokemon,
   getTeammates,
+  getMoveUsage,
+  getItemUsage,
+  getAbilityUsage,
 } from "@nasty-plot/smogon-data"
 
 // ---------------------------------------------------------------------------
@@ -24,6 +27,18 @@ vi.mock("@nasty-plot/db", () => ({
     checkCounter: {
       upsert: vi.fn(),
     },
+    moveUsage: {
+      upsert: vi.fn(),
+      findMany: vi.fn(),
+    },
+    itemUsage: {
+      upsert: vi.fn(),
+      findMany: vi.fn(),
+    },
+    abilityUsage: {
+      upsert: vi.fn(),
+      findMany: vi.fn(),
+    },
     dataSyncLog: {
       upsert: vi.fn(),
     },
@@ -38,6 +53,18 @@ const mockUsageCount = prisma.usageStats.count as ReturnType<typeof vi.fn>
 const mockTeammateCorrUpsert = prisma.teammateCorr.upsert as ReturnType<typeof vi.fn>
 const mockTeammateCorrFindMany = prisma.teammateCorr.findMany as ReturnType<typeof vi.fn>
 const mockCheckCounterUpsert = prisma.checkCounter.upsert as ReturnType<typeof vi.fn>
+const mockMoveUsageUpsert = (prisma as Record<string, Record<string, unknown>>).moveUsage
+  .upsert as ReturnType<typeof vi.fn>
+const mockMoveUsageFindMany = (prisma as Record<string, Record<string, unknown>>).moveUsage
+  .findMany as ReturnType<typeof vi.fn>
+const mockItemUsageUpsert = (prisma as Record<string, Record<string, unknown>>).itemUsage
+  .upsert as ReturnType<typeof vi.fn>
+const mockItemUsageFindMany = (prisma as Record<string, Record<string, unknown>>).itemUsage
+  .findMany as ReturnType<typeof vi.fn>
+const mockAbilityUsageUpsert = (prisma as Record<string, Record<string, unknown>>).abilityUsage
+  .upsert as ReturnType<typeof vi.fn>
+const mockAbilityUsageFindMany = (prisma as Record<string, Record<string, unknown>>).abilityUsage
+  .findMany as ReturnType<typeof vi.fn>
 const mockSyncLogUpsert = prisma.dataSyncLog.upsert as ReturnType<typeof vi.fn>
 
 // ---------------------------------------------------------------------------
@@ -603,5 +630,389 @@ describe("fetchUsageStats auto-detection (resolveYearMonth)", () => {
       "https://www.smogon.com/stats/2024-06/chaos/gen9ou-1500.json",
       "https://www.smogon.com/stats/2024-06/chaos/gen9ou-0.json",
     ])
+  })
+})
+
+// ---------------------------------------------------------------------------
+// getMoveUsage
+// ---------------------------------------------------------------------------
+
+describe("getMoveUsage", () => {
+  beforeEach(() => vi.clearAllMocks())
+
+  it("returns move usage data ordered by usage descending", async () => {
+    mockMoveUsageFindMany.mockResolvedValue([
+      { moveName: "Earthquake", usagePercent: 0.85 },
+      { moveName: "Swords Dance", usagePercent: 0.65 },
+      { moveName: "Scale Shot", usagePercent: 0.45 },
+    ])
+
+    const result = await getMoveUsage("gen9ou", "garchomp")
+
+    expect(result).toEqual([
+      { moveName: "Earthquake", usagePercent: 0.85 },
+      { moveName: "Swords Dance", usagePercent: 0.65 },
+      { moveName: "Scale Shot", usagePercent: 0.45 },
+    ])
+  })
+
+  it("queries with correct formatId and pokemonId", async () => {
+    mockMoveUsageFindMany.mockResolvedValue([])
+
+    await getMoveUsage("gen9ou", "garchomp")
+
+    expect(mockMoveUsageFindMany).toHaveBeenCalledWith({
+      where: { formatId: "gen9ou", pokemonId: "garchomp" },
+      orderBy: { usagePercent: "desc" },
+    })
+  })
+
+  it("returns empty array when no data", async () => {
+    mockMoveUsageFindMany.mockResolvedValue([])
+
+    const result = await getMoveUsage("gen9ou", "garchomp")
+
+    expect(result).toEqual([])
+  })
+})
+
+// ---------------------------------------------------------------------------
+// getItemUsage
+// ---------------------------------------------------------------------------
+
+describe("getItemUsage", () => {
+  beforeEach(() => vi.clearAllMocks())
+
+  it("returns item usage data ordered by usage descending", async () => {
+    mockItemUsageFindMany.mockResolvedValue([
+      { itemName: "Leftovers", usagePercent: 0.55 },
+      { itemName: "Rocky Helmet", usagePercent: 0.25 },
+    ])
+
+    const result = await getItemUsage("gen9ou", "garchomp")
+
+    expect(result).toEqual([
+      { itemName: "Leftovers", usagePercent: 0.55 },
+      { itemName: "Rocky Helmet", usagePercent: 0.25 },
+    ])
+  })
+
+  it("queries with correct formatId and pokemonId", async () => {
+    mockItemUsageFindMany.mockResolvedValue([])
+
+    await getItemUsage("gen9ou", "garchomp")
+
+    expect(mockItemUsageFindMany).toHaveBeenCalledWith({
+      where: { formatId: "gen9ou", pokemonId: "garchomp" },
+      orderBy: { usagePercent: "desc" },
+    })
+  })
+
+  it("returns empty array when no data", async () => {
+    mockItemUsageFindMany.mockResolvedValue([])
+
+    const result = await getItemUsage("gen9ou", "garchomp")
+
+    expect(result).toEqual([])
+  })
+})
+
+// ---------------------------------------------------------------------------
+// getAbilityUsage
+// ---------------------------------------------------------------------------
+
+describe("getAbilityUsage", () => {
+  beforeEach(() => vi.clearAllMocks())
+
+  it("returns ability usage data ordered by usage descending", async () => {
+    mockAbilityUsageFindMany.mockResolvedValue([
+      { abilityName: "Rough Skin", usagePercent: 0.85 },
+      { abilityName: "Sand Veil", usagePercent: 0.15 },
+    ])
+
+    const result = await getAbilityUsage("gen9ou", "garchomp")
+
+    expect(result).toEqual([
+      { abilityName: "Rough Skin", usagePercent: 0.85 },
+      { abilityName: "Sand Veil", usagePercent: 0.15 },
+    ])
+  })
+
+  it("queries with correct formatId and pokemonId", async () => {
+    mockAbilityUsageFindMany.mockResolvedValue([])
+
+    await getAbilityUsage("gen9ou", "garchomp")
+
+    expect(mockAbilityUsageFindMany).toHaveBeenCalledWith({
+      where: { formatId: "gen9ou", pokemonId: "garchomp" },
+      orderBy: { usagePercent: "desc" },
+    })
+  })
+
+  it("returns empty array when no data", async () => {
+    mockAbilityUsageFindMany.mockResolvedValue([])
+
+    const result = await getAbilityUsage("gen9ou", "garchomp")
+
+    expect(result).toEqual([])
+  })
+})
+
+// ---------------------------------------------------------------------------
+// fetchUsageStats - move/item/ability usage saving
+// ---------------------------------------------------------------------------
+
+describe("fetchUsageStats move/item/ability upserts", () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.stubGlobal("fetch", vi.fn())
+    vi.spyOn(console, "log").mockImplementation(() => {})
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+    vi.restoreAllMocks()
+  })
+
+  it("saves move usage data", async () => {
+    const mockData = {
+      info: { metagame: "gen9ou", cutoff: 1695 },
+      data: {
+        Garchomp: {
+          usage: 0.25,
+          "Raw count": 1000,
+          Abilities: {},
+          Items: {},
+          Moves: { Earthquake: 0.85, "Swords Dance": 0.65 },
+          Teammates: {},
+          "Checks and Counters": {},
+        },
+      },
+    }
+
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve(mockData),
+    })
+    vi.stubGlobal("fetch", mockFetch)
+
+    mockUsageUpsert.mockResolvedValue({})
+    mockMoveUsageUpsert.mockResolvedValue({})
+    mockSyncLogUpsert.mockResolvedValue({})
+
+    await fetchUsageStats("gen9ou", { year: 2024, month: 6 })
+
+    expect(mockMoveUsageUpsert).toHaveBeenCalledTimes(2)
+    expect(mockMoveUsageUpsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        create: expect.objectContaining({
+          formatId: "gen9ou",
+          pokemonId: "garchomp",
+          moveName: "Earthquake",
+          usagePercent: 0.85,
+        }),
+      }),
+    )
+  })
+
+  it("skips moves with zero or negative usage", async () => {
+    const mockData = {
+      info: { metagame: "gen9ou", cutoff: 1695 },
+      data: {
+        Garchomp: {
+          usage: 0.25,
+          "Raw count": 1000,
+          Abilities: {},
+          Items: {},
+          Moves: { Earthquake: 0.85, "Swords Dance": 0, "Fire Fang": -0.1 },
+          Teammates: {},
+          "Checks and Counters": {},
+        },
+      },
+    }
+
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve(mockData),
+    })
+    vi.stubGlobal("fetch", mockFetch)
+
+    mockUsageUpsert.mockResolvedValue({})
+    mockMoveUsageUpsert.mockResolvedValue({})
+    mockSyncLogUpsert.mockResolvedValue({})
+
+    await fetchUsageStats("gen9ou", { year: 2024, month: 6 })
+
+    expect(mockMoveUsageUpsert).toHaveBeenCalledTimes(1)
+  })
+
+  it("saves item usage data", async () => {
+    const mockData = {
+      info: { metagame: "gen9ou", cutoff: 1695 },
+      data: {
+        Garchomp: {
+          usage: 0.25,
+          "Raw count": 1000,
+          Abilities: {},
+          Items: { Leftovers: 0.55, "Rocky Helmet": 0.25 },
+          Moves: {},
+          Teammates: {},
+          "Checks and Counters": {},
+        },
+      },
+    }
+
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve(mockData),
+    })
+    vi.stubGlobal("fetch", mockFetch)
+
+    mockUsageUpsert.mockResolvedValue({})
+    mockItemUsageUpsert.mockResolvedValue({})
+    mockSyncLogUpsert.mockResolvedValue({})
+
+    await fetchUsageStats("gen9ou", { year: 2024, month: 6 })
+
+    expect(mockItemUsageUpsert).toHaveBeenCalledTimes(2)
+    expect(mockItemUsageUpsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        create: expect.objectContaining({
+          formatId: "gen9ou",
+          pokemonId: "garchomp",
+          itemName: "Leftovers",
+          usagePercent: 0.55,
+        }),
+      }),
+    )
+  })
+
+  it("skips items with zero usage", async () => {
+    const mockData = {
+      info: { metagame: "gen9ou", cutoff: 1695 },
+      data: {
+        Garchomp: {
+          usage: 0.25,
+          "Raw count": 1000,
+          Abilities: {},
+          Items: { Leftovers: 0.55, "Focus Sash": 0 },
+          Moves: {},
+          Teammates: {},
+          "Checks and Counters": {},
+        },
+      },
+    }
+
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve(mockData),
+    })
+    vi.stubGlobal("fetch", mockFetch)
+
+    mockUsageUpsert.mockResolvedValue({})
+    mockItemUsageUpsert.mockResolvedValue({})
+    mockSyncLogUpsert.mockResolvedValue({})
+
+    await fetchUsageStats("gen9ou", { year: 2024, month: 6 })
+
+    expect(mockItemUsageUpsert).toHaveBeenCalledTimes(1)
+  })
+
+  it("saves ability usage data", async () => {
+    const mockData = {
+      info: { metagame: "gen9ou", cutoff: 1695 },
+      data: {
+        Garchomp: {
+          usage: 0.25,
+          "Raw count": 1000,
+          Abilities: { "Rough Skin": 0.85, "Sand Veil": 0.15 },
+          Items: {},
+          Moves: {},
+          Teammates: {},
+          "Checks and Counters": {},
+        },
+      },
+    }
+
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve(mockData),
+    })
+    vi.stubGlobal("fetch", mockFetch)
+
+    mockUsageUpsert.mockResolvedValue({})
+    mockAbilityUsageUpsert.mockResolvedValue({})
+    mockSyncLogUpsert.mockResolvedValue({})
+
+    await fetchUsageStats("gen9ou", { year: 2024, month: 6 })
+
+    expect(mockAbilityUsageUpsert).toHaveBeenCalledTimes(2)
+    expect(mockAbilityUsageUpsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        create: expect.objectContaining({
+          formatId: "gen9ou",
+          pokemonId: "garchomp",
+          abilityName: "Rough Skin",
+          usagePercent: 0.85,
+        }),
+      }),
+    )
+  })
+
+  it("skips abilities with zero usage", async () => {
+    const mockData = {
+      info: { metagame: "gen9ou", cutoff: 1695 },
+      data: {
+        Garchomp: {
+          usage: 0.25,
+          "Raw count": 1000,
+          Abilities: { "Rough Skin": 0.85, "Sand Veil": 0 },
+          Items: {},
+          Moves: {},
+          Teammates: {},
+          "Checks and Counters": {},
+        },
+      },
+    }
+
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve(mockData),
+    })
+    vi.stubGlobal("fetch", mockFetch)
+
+    mockUsageUpsert.mockResolvedValue({})
+    mockAbilityUsageUpsert.mockResolvedValue({})
+    mockSyncLogUpsert.mockResolvedValue({})
+
+    await fetchUsageStats("gen9ou", { year: 2024, month: 6 })
+
+    expect(mockAbilityUsageUpsert).toHaveBeenCalledTimes(1)
+  })
+
+  it("uses smogonStatsId to override Smogon URL format", async () => {
+    const mockData = {
+      info: { metagame: "gen9vgc2026regf", cutoff: 1695 },
+      data: {},
+    }
+
+    const mockFetch = vi
+      .fn()
+      // HEAD for resolveYearMonth
+      .mockResolvedValueOnce({ ok: true })
+      // GET for the data
+      .mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(mockData),
+      })
+    vi.stubGlobal("fetch", mockFetch)
+
+    mockSyncLogUpsert.mockResolvedValue({})
+
+    await fetchUsageStats("gen9vgc2025", { smogonStatsId: "gen9vgc2026regf" })
+
+    // HEAD should use the override ID
+    const firstCallUrl = mockFetch.mock.calls[0][0] as string
+    expect(firstCallUrl).toContain("gen9vgc2026regf")
   })
 })

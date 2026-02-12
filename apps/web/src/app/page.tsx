@@ -1,6 +1,7 @@
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { PECHARUNT_SPRITE_URL } from "@/lib/constants"
 
 export default function Home() {
   return (
@@ -9,7 +10,7 @@ export default function Home() {
         <div className="max-w-3xl mx-auto text-center space-y-6">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/1025.png"
+            src={PECHARUNT_SPRITE_URL}
             alt="Pecharunt"
             width={96}
             height={96}
@@ -26,14 +27,12 @@ export default function Home() {
             Every great team starts with a nasty plot. Pecharunt approves.
           </p>
           <div className="flex gap-4 justify-center">
-            <Link href="/teams/new">
-              <Button size="lg">Build a Team</Button>
-            </Link>
-            <Link href="/pokemon">
-              <Button size="lg" variant="outline">
-                Browse Pokemon
-              </Button>
-            </Link>
+            <Button size="lg" asChild>
+              <Link href="/teams/new">Build a Team</Link>
+            </Button>
+            <Button size="lg" variant="outline" asChild>
+              <Link href="/pokemon">Browse Pokemon</Link>
+            </Button>
           </div>
         </div>
 

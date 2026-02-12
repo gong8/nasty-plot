@@ -207,6 +207,7 @@ describe("addMessage", () => {
         role: "user",
         content: "Hello",
         toolCalls: null,
+        metadata: null,
       },
     })
     expect(mockSessionUpdate).toHaveBeenCalledWith({
@@ -232,6 +233,7 @@ describe("addMessage", () => {
         role: "assistant",
         content: "Let me search",
         toolCalls: JSON.stringify(toolCalls),
+        metadata: null,
       },
     })
   })

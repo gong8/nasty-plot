@@ -1,4 +1,10 @@
-import { parseReplayUrl, parseProtocolLog, importFromRawLog } from "@nasty-plot/battle-engine"
+import {
+  parseReplayUrl,
+  parseProtocolLog,
+  importFromRawLog,
+  importFromReplayUrl,
+  fetchShowdownReplay,
+} from "@nasty-plot/battle-engine"
 
 describe("replay-import", () => {
   describe("parseReplayUrl", () => {
@@ -170,6 +176,77 @@ describe("replay-import", () => {
     })
   })
 
+  describe("parseProtocolLog - p1 winner", () => {
+    it("sets winnerId to p1 when p1 wins", () => {
+      const log = ["|player|p1|Alice|", "|player|p2|Bob|", "|win|Alice"].join("\n")
+      const result = parseProtocolLog(log)
+      expect(result.winnerId).toBe("p1")
+    })
+  })
+
+  describe("parseProtocolLog - enditem", () => {
+    it("extracts item from -enditem when item not already set", () => {
+      const log = [
+        "|player|p1|Alice|",
+        "|player|p2|Bob|",
+        "|switch|p1a: Garchomp|Garchomp, L100|319/319",
+        "|-enditem|p1a: Garchomp|Focus Sash",
+      ].join("\n")
+      const result = parseProtocolLog(log)
+      const garchomp = result.team1.pokemon.find((p) => p.speciesId === "garchomp")
+      expect(garchomp?.item).toBe("Focus Sash")
+    })
+
+    it("does not overwrite existing item from -item with -enditem", () => {
+      const log = [
+        "|player|p1|Alice|",
+        "|player|p2|Bob|",
+        "|switch|p1a: Garchomp|Garchomp, L100|319/319",
+        "|-item|p1a: Garchomp|Life Orb",
+        "|-enditem|p1a: Garchomp|Life Orb",
+      ].join("\n")
+      const result = parseProtocolLog(log)
+      const garchomp = result.team1.pokemon.find((p) => p.speciesId === "garchomp")
+      // item should remain "Life Orb" from -item, enditem should not overwrite
+      expect(garchomp?.item).toBe("Life Orb")
+    })
+  })
+
+  describe("parseProtocolLog - drag and replace", () => {
+    it("handles drag lines like switch", () => {
+      const log = [
+        "|player|p1|Alice|",
+        "|player|p2|Bob|",
+        "|drag|p1a: Garchomp|Garchomp, L100|319/319",
+        "|turn|1",
+        "|move|p1a: Garchomp|Earthquake|",
+      ].join("\n")
+      const result = parseProtocolLog(log)
+      const garchomp = result.team1.pokemon.find((p) => p.speciesId === "garchomp")
+      expect(garchomp).toBeDefined()
+      expect(garchomp?.moves).toContain("Earthquake")
+    })
+
+    it("handles replace lines like switch", () => {
+      const log = [
+        "|player|p1|Alice|",
+        "|player|p2|Bob|",
+        "|replace|p1a: Zoroark|Zoroark, L100|255/255",
+      ].join("\n")
+      const result = parseProtocolLog(log)
+      const zoroark = result.team1.pokemon.find((p) => p.speciesId === "zoroark")
+      expect(zoroark).toBeDefined()
+    })
+  })
+
+  describe("parseProtocolLog - tier without gen bracket", () => {
+    it("handles tier format without [Gen X] prefix", () => {
+      const log = ["|tier|randombattle"].join("\n")
+      const result = parseProtocolLog(log)
+      expect(result.formatId).toBe("randombattle")
+    })
+  })
+
   describe("importFromRawLog", () => {
     it("sets source to raw-log", () => {
       const result = importFromRawLog("|player|p1|Alice|\n|player|p2|Bob|\n|turn|1")
@@ -180,6 +257,69 @@ describe("replay-import", () => {
     it("defaults format to gen9ou when missing", () => {
       const result = importFromRawLog("|player|p1|Alice|\n|turn|1")
       expect(result.formatId).toBe("gen9ou")
+    })
+  })
+
+  describe("importFromReplayUrl", () => {
+    it("throws for invalid URL", async () => {
+      await expect(importFromReplayUrl("not a valid url")).rejects.toThrow(
+        "Invalid Showdown replay URL",
+      )
+    })
+
+    it("fetches and parses a replay from valid URL", async () => {
+      const mockReplayJson = {
+        id: "gen9ou-12345",
+        formatid: "gen9ou",
+        players: ["Alice", "Bob"],
+        log: [
+          "|player|p1|OldAlice|",
+          "|player|p2|OldBob|",
+          "|tier|[Gen 9] OU",
+          "|switch|p1a: Garchomp|Garchomp, L100|319/319",
+          "|turn|1",
+          "|win|OldAlice",
+        ].join("\n"),
+        uploadtime: 1700000000,
+        rating: 1500,
+      }
+
+      // Mock global fetch
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve(mockReplayJson),
+      })
+      vi.stubGlobal("fetch", mockFetch)
+
+      const result = await importFromReplayUrl("https://replay.pokemonshowdown.com/gen9ou-12345")
+
+      expect(result.source).toBe("replay-url")
+      expect(result.replayId).toBe("gen9ou-12345")
+      expect(result.formatId).toBe("gen9ou")
+      expect(result.playerNames).toEqual(["Alice", "Bob"])
+      expect(result.team1.playerName).toBe("Alice")
+      expect(result.team2.playerName).toBe("Bob")
+      expect(result.uploadTime).toBe(1700000000)
+      expect(result.rating).toBe(1500)
+
+      vi.unstubAllGlobals()
+    })
+  })
+
+  describe("fetchShowdownReplay", () => {
+    it("throws when fetch returns non-ok response", async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 404,
+        statusText: "Not Found",
+      })
+      vi.stubGlobal("fetch", mockFetch)
+
+      await expect(fetchShowdownReplay("nonexistent-12345")).rejects.toThrow(
+        "Failed to fetch replay: 404 Not Found",
+      )
+
+      vi.unstubAllGlobals()
     })
   })
 })

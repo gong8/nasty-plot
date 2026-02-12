@@ -3,6 +3,8 @@
 import { useState, useCallback, useRef, useEffect } from "react"
 import { ReplayEngine, type ReplayFrame, type BattleFormat } from "@nasty-plot/battle-engine"
 
+const INTER_FRAME_PAUSE = 500 // ms between frames at 1x speed
+
 interface UseReplayConfig {
   protocolLog: string
   format?: BattleFormat
@@ -16,7 +18,43 @@ export function useReplay(config: UseReplayConfig) {
   const [isPlaying, setIsPlaying] = useState(false)
   const [speed, setSpeed] = useState(1)
   const [isReady, setIsReady] = useState(false)
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const speedRef = useRef(speed)
+  useEffect(() => {
+    speedRef.current = speed
+  }, [speed])
+  const isPlayingRef = useRef(isPlaying)
+  useEffect(() => {
+    isPlayingRef.current = isPlaying
+  }, [isPlaying])
+  const wasPlayingRef = useRef(false)
+
+  const clearPendingTimeout = useCallback(() => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current)
+      timeoutRef.current = null
+    }
+  }, [])
+
+  const advance = useCallback(() => {
+    const engine = engineRef.current
+    if (!engine || !isPlayingRef.current) return
+
+    const next = engine.nextFrame()
+    if (next) {
+      setCurrentFrame(next)
+      setCurrentIndex(engine.getCurrentIndex())
+    } else {
+      setIsPlaying(false)
+    }
+  }, [])
+
+  // Signal from useReplayAnimations that current frame's animations are done
+  const onFrameAnimationsComplete = useCallback(() => {
+    if (!isPlayingRef.current) return
+    clearPendingTimeout()
+    timeoutRef.current = setTimeout(advance, INTER_FRAME_PAUSE / speedRef.current)
+  }, [advance, clearPendingTimeout])
 
   // Initialize engine
   useEffect(() => {
@@ -35,38 +73,22 @@ export function useReplay(config: UseReplayConfig) {
       setCurrentIndex(0)
     }
 
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current)
-    }
-  }, [config.protocolLog, config.format])
+    return () => clearPendingTimeout()
+  }, [config.protocolLog, config.format, clearPendingTimeout])
 
-  // Auto-advance when playing
+  // Play/pause transitions
   useEffect(() => {
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current)
-      intervalRef.current = null
+    if (isPlaying && !wasPlayingRef.current) {
+      // Just started playing — schedule first advance after inter-frame pause
+      // (current frame is already displayed)
+      clearPendingTimeout()
+      timeoutRef.current = setTimeout(advance, INTER_FRAME_PAUSE / speedRef.current)
     }
-
-    if (!isPlaying || !engineRef.current) return
-
-    const interval = 1500 / speed
-    intervalRef.current = setInterval(() => {
-      const engine = engineRef.current
-      if (!engine) return
-
-      const next = engine.nextFrame()
-      if (next) {
-        setCurrentFrame(next)
-        setCurrentIndex(engine.getCurrentIndex())
-      } else {
-        setIsPlaying(false)
-      }
-    }, interval)
-
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current)
+    if (!isPlaying) {
+      clearPendingTimeout()
     }
-  }, [isPlaying, speed])
+    wasPlayingRef.current = isPlaying
+  }, [isPlaying, advance, clearPendingTimeout])
 
   const goToFirst = useCallback(() => {
     const engine = engineRef.current
@@ -147,5 +169,6 @@ export function useReplay(config: UseReplayConfig) {
     togglePlay,
     changeSpeed,
     getAllFrames,
+    onFrameAnimationsComplete,
   }
 }

@@ -94,9 +94,9 @@ export function ChatInput({
         {isStreaming ? (
           <Button
             onClick={onStop}
-            size="icon"
+            size="icon-lg"
             variant="destructive"
-            className="flex-shrink-0 h-[44px] w-[44px]"
+            className="flex-shrink-0"
             title="Stop generation"
           >
             <Square className="w-4 h-4" />
@@ -104,9 +104,10 @@ export function ChatInput({
         ) : (
           <Button
             onClick={handleSend}
-            size="icon"
-            className="flex-shrink-0 h-[44px] w-[44px]"
+            size="icon-lg"
+            className="flex-shrink-0"
             disabled={disabled}
+            title="Send message"
           >
             <Send className="w-4 h-4" />
           </Button>

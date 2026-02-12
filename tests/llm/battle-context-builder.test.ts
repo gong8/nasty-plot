@@ -2,6 +2,7 @@ import {
   buildTurnCommentaryContext,
   buildPostBattleContext,
   buildTurnAnalysisContext,
+  buildAutoAnalyzePrompt,
 } from "@nasty-plot/llm"
 import type {
   BattleState,
@@ -464,5 +465,330 @@ describe("buildTurnAnalysisContext", () => {
     expect(result).toContain("detailed analysis")
     expect(result).toContain("optimal")
     expect(result).toContain("alternatives")
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Tests: describePokemon — uncovered branches
+// ---------------------------------------------------------------------------
+
+describe("describePokemon (via buildTurnCommentaryContext)", () => {
+  it("describes Pokemon with tera type but not terastallized", () => {
+    const pokemon = makePokemon({
+      isTerastallized: false,
+      teraType: "Water",
+    })
+    const state = makeState({
+      sides: {
+        p1: makeSide({ active: [pokemon], team: [pokemon] }),
+        p2: makeSide(),
+      },
+    })
+    const result = buildTurnCommentaryContext(state, [], "T1", "T2")
+    expect(result.turnContext).toContain("Tera type: Water")
+  })
+
+  it("describes Pokemon with known moves", () => {
+    const pokemon = makePokemon({
+      moves: [
+        { name: "Earthquake", type: "Ground", category: "Physical", pp: 10, maxPp: 10 },
+        { name: "Dragon Claw", type: "Dragon", category: "Physical", pp: 15, maxPp: 15 },
+      ],
+    })
+    const state = makeState({
+      sides: {
+        p1: makeSide({ active: [pokemon], team: [pokemon] }),
+        p2: makeSide(),
+      },
+    })
+    const result = buildTurnCommentaryContext(state, [], "T1", "T2")
+    expect(result.turnContext).toContain("Moves: Earthquake (Ground), Dragon Claw (Dragon)")
+  })
+
+  it("describes Pokemon with volatiles", () => {
+    const pokemon = makePokemon({
+      volatiles: ["confusion", "substitute"],
+    })
+    const state = makeState({
+      sides: {
+        p1: makeSide({ active: [pokemon], team: [pokemon] }),
+        p2: makeSide(),
+      },
+    })
+    const result = buildTurnCommentaryContext(state, [], "T1", "T2")
+    expect(result.turnContext).toContain("Volatiles: confusion, substitute")
+  })
+
+  it("shows bench pokemon details", () => {
+    const active = makePokemon({ name: "Garchomp" })
+    const bench1 = makePokemon({
+      speciesId: "heatran",
+      name: "Heatran",
+      types: ["Fire", "Steel"],
+      status: "tox",
+      hpPercent: 75,
+    })
+    const bench2 = makePokemon({
+      speciesId: "toxapex",
+      name: "Toxapex",
+      types: ["Poison", "Water"],
+      hpPercent: 100,
+    })
+    const state = makeState({
+      sides: {
+        p1: makeSide({
+          active: [active],
+          team: [active, bench1, bench2],
+        }),
+        p2: makeSide(),
+      },
+    })
+    const result = buildTurnCommentaryContext(state, [], "T1", "T2")
+    expect(result.turnContext).toContain("Heatran (Fire/Steel, tox, 75% HP)")
+    expect(result.turnContext).toContain("Toxapex (Poison/Water, 100% HP)")
+  })
+
+  it("shows tera status for side", () => {
+    const state = makeState({
+      sides: {
+        p1: makeSide({ canTera: true, hasTerastallized: false }),
+        p2: makeSide({ canTera: false, hasTerastallized: true }),
+      },
+    })
+    const result = buildTurnCommentaryContext(state, [], "T1", "T2")
+    expect(result.turnContext).toContain("Tera available")
+    expect(result.turnContext).toContain("Tera used")
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Tests: buildAutoAnalyzePrompt
+// ---------------------------------------------------------------------------
+
+describe("buildAutoAnalyzePrompt", () => {
+  it("returns quick mode prompt with move recommendation format", () => {
+    const state = makeState({
+      availableActions: {
+        forceSwitch: false,
+        canTera: false,
+        moves: [
+          {
+            name: "Earthquake",
+            type: "Ground",
+            category: "Physical",
+            basePower: 100,
+            accuracy: 100,
+            pp: 10,
+            maxPp: 10,
+            disabled: false,
+          },
+          {
+            name: "Dragon Claw",
+            type: "Dragon",
+            category: "Physical",
+            basePower: 80,
+            accuracy: true,
+            pp: 15,
+            maxPp: 15,
+            disabled: false,
+          },
+        ],
+        switches: [],
+      },
+    })
+    const result = buildAutoAnalyzePrompt(state, "quick", [])
+
+    expect(result).toContain("CONCISE advice")
+    expect(result).toContain("**Recommended: [Move Name]**")
+    expect(result).toContain("Do NOT use any tools")
+    expect(result).toContain("Earthquake (Ground, Physical, 100 BP, 100% acc, 10/10 PP)")
+    expect(result).toContain("Dragon Claw (Dragon, Physical, 80 BP, — acc, 15/15 PP)")
+  })
+
+  it("returns quick mode prompt with force switch format", () => {
+    const state = makeState({
+      availableActions: {
+        forceSwitch: true,
+        canTera: false,
+        moves: [],
+        switches: [
+          {
+            name: "Heatran",
+            hp: 200,
+            maxHp: 300,
+            status: "brn",
+            speciesId: "heatran",
+            types: ["Fire", "Steel"],
+          },
+          {
+            name: "Toxapex",
+            hp: 300,
+            maxHp: 300,
+            status: "",
+            speciesId: "toxapex",
+            types: ["Poison", "Water"],
+          },
+        ],
+      },
+    })
+    const result = buildAutoAnalyzePrompt(state, "quick", [])
+
+    expect(result).toContain("FORCED SWITCH")
+    expect(result).toContain("**Recommended: [Pokemon Name]**")
+    expect(result).toContain("Heatran (67% HP, brn)")
+    expect(result).toContain("Toxapex (100% HP)")
+  })
+
+  it("returns deep mode prompt with move analysis structure", () => {
+    const state = makeState({
+      availableActions: {
+        forceSwitch: false,
+        canTera: true,
+        moves: [
+          {
+            name: "Earthquake",
+            type: "Ground",
+            category: "Physical",
+            basePower: 100,
+            accuracy: 100,
+            pp: 10,
+            maxPp: 10,
+            disabled: false,
+          },
+        ],
+        switches: [
+          {
+            name: "Heatran",
+            hp: 300,
+            maxHp: 300,
+            status: "",
+            speciesId: "heatran",
+            types: ["Fire", "Steel"],
+          },
+        ],
+      },
+    })
+    const result = buildAutoAnalyzePrompt(state, "deep", [])
+
+    expect(result).toContain("IN-DEPTH strategic analysis")
+    expect(result).toContain("### Opponent Read")
+    expect(result).toContain("### Recommendation")
+    expect(result).toContain("**Recommended: [Move Name]**")
+    expect(result).toContain("### Strategic Plan")
+    expect(result).toContain("### Alternatives")
+    expect(result).toContain("Tera: Available this turn")
+    expect(result).toContain("Switch options: Heatran (100% HP)")
+  })
+
+  it("returns deep mode prompt with force switch structure", () => {
+    const state = makeState({
+      availableActions: {
+        forceSwitch: true,
+        canTera: false,
+        moves: [],
+        switches: [
+          {
+            name: "Toxapex",
+            hp: 150,
+            maxHp: 300,
+            status: "psn",
+            speciesId: "toxapex",
+            types: ["Poison", "Water"],
+          },
+        ],
+      },
+    })
+    const result = buildAutoAnalyzePrompt(state, "deep", [])
+
+    expect(result).toContain("FORCED SWITCH")
+    expect(result).toContain("**Recommended: [Pokemon Name]**")
+    expect(result).toContain("Check type matchups for each switch-in")
+    expect(result).toContain("safest or most advantageous switch-in")
+  })
+
+  it("includes recent events in prompt", () => {
+    const state = makeState({
+      availableActions: {
+        forceSwitch: false,
+        canTera: false,
+        moves: [],
+        switches: [],
+      },
+    })
+    const entries: BattleLogEntry[] = [
+      makeLogEntry({ type: "move", message: "Garchomp used Earthquake!" }),
+      makeLogEntry({ type: "damage", message: "Heatran lost 50% HP!" }),
+    ]
+    const result = buildAutoAnalyzePrompt(state, "quick", entries)
+
+    expect(result).toContain("Garchomp used Earthquake!")
+    expect(result).toContain("Heatran lost 50% HP!")
+  })
+
+  it("shows 'Battle just started' when no recent events in quick mode", () => {
+    const state = makeState({
+      availableActions: {
+        forceSwitch: false,
+        canTera: false,
+        moves: [],
+        switches: [],
+      },
+    })
+    const result = buildAutoAnalyzePrompt(state, "quick", [])
+    expect(result).toContain("Battle just started")
+  })
+
+  it("handles disabled moves", () => {
+    const state = makeState({
+      availableActions: {
+        forceSwitch: false,
+        canTera: false,
+        moves: [
+          {
+            name: "Earthquake",
+            type: "Ground",
+            category: "Physical",
+            basePower: 100,
+            accuracy: 100,
+            pp: 10,
+            maxPp: 10,
+            disabled: true,
+          },
+        ],
+        switches: [],
+      },
+    })
+    const result = buildAutoAnalyzePrompt(state, "quick", [])
+    expect(result).toContain("[DISABLED]")
+  })
+
+  it("handles null availableActions gracefully", () => {
+    const state = makeState({ availableActions: null })
+    const result = buildAutoAnalyzePrompt(state, "quick", [])
+
+    // Should not crash, and should show something
+    expect(result).toContain("CONCISE advice")
+  })
+
+  it("handles 0 maxHp switch option", () => {
+    const state = makeState({
+      availableActions: {
+        forceSwitch: true,
+        canTera: false,
+        moves: [],
+        switches: [
+          {
+            name: "Shedinja",
+            hp: 0,
+            maxHp: 0,
+            status: "",
+            speciesId: "shedinja",
+            types: ["Bug", "Ghost"],
+          },
+        ],
+      },
+    })
+    const result = buildAutoAnalyzePrompt(state, "quick", [])
+    expect(result).toContain("Shedinja (0% HP)")
   })
 })

@@ -183,7 +183,7 @@ export function CommentaryPanel({
               onClick={() => onAutoModeChange?.(!autoMode)}
               className="h-6 text-[11px] px-2"
             >
-              {autoMode ? "Live" : "Live"}
+              {autoMode ? "Live" : "Auto"}
             </Button>
           )}
           {!autoMode && (

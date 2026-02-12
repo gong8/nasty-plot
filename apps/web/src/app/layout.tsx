@@ -6,6 +6,7 @@ import { ChatProvider } from "@/features/chat/context/chat-provider"
 import { PageContextProvider } from "@/features/chat/context/page-context-provider"
 import { BattleStateProvider } from "@/features/battle/context/battle-state-context"
 import { AppShell } from "@/components/app-shell"
+import { PECHARUNT_SPRITE_URL } from "@/lib/constants"
 import "./globals.css"
 
 const geistSans = Geist({
@@ -23,7 +24,7 @@ export const metadata: Metadata = {
   title: "Nasty Plot",
   description: "Competitive Pokemon team builder for Scarlet/Violet",
   icons: {
-    icon: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/1025.png",
+    icon: PECHARUNT_SPRITE_URL,
   },
 }
 

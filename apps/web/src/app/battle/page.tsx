@@ -247,7 +247,7 @@ export default function BattleHubPage() {
                     Resume
                   </Button>
                   <Button
-                    variant="ghost"
+                    variant="outline"
                     className="gap-2 text-destructive hover:text-destructive"
                     onClick={() => {
                       clearCheckpoint()

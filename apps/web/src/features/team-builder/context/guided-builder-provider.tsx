@@ -375,14 +375,11 @@ export function GuidedBuilderProvider({ teamId, formatId, children }: GuidedBuil
 
     const analysisSummary = guided.analysis
       ? [
-          guided.analysis.typeWeaknesses?.length
-            ? `Weak to: ${guided.analysis.typeWeaknesses.map((w) => `${w.type} (${w.count}x)`).join(", ")}`
+          guided.analysis.coverage?.sharedWeaknesses?.length
+            ? `Shared weaknesses: ${guided.analysis.coverage.sharedWeaknesses.join(", ")}`
             : null,
-          guided.analysis.typeResistances?.length
-            ? `Resists: ${guided.analysis.typeResistances.map((r) => `${r.type} (${r.count}x)`).join(", ")}`
-            : null,
-          guided.analysis.uncoveredTypes?.length
-            ? `Missing coverage: ${guided.analysis.uncoveredTypes.join(", ")}`
+          guided.analysis.coverage?.uncoveredTypes?.length
+            ? `Missing coverage: ${guided.analysis.coverage.uncoveredTypes.join(", ")}`
             : null,
         ]
           .filter(Boolean)
@@ -445,14 +442,22 @@ export function GuidedBuilderProvider({ teamId, formatId, children }: GuidedBuil
       if (name === "update_pokemon_set") {
         const position = input.position as number
         if (!position) return
+        const moves = input.moves as string[] | undefined
+        const movesTuple = moves
+          ? ([moves[0], moves[1], moves[2], moves[3]] as [string, string?, string?, string?])
+          : undefined
         guided.updateSlot(position, {
           ability: (input.ability as string) || undefined,
           item: (input.item as string) || undefined,
-          nature: (input.nature as string) || undefined,
-          teraType: (input.teraType as string) || undefined,
-          moves: input.moves as string[] | undefined,
-          evs: input.evs as Record<string, number> | undefined,
-          ivs: input.ivs as Record<string, number> | undefined,
+          nature: ((input.nature as string) || undefined) as
+            | import("@nasty-plot/core").NatureName
+            | undefined,
+          teraType: ((input.teraType as string) || undefined) as
+            | import("@nasty-plot/core").PokemonType
+            | undefined,
+          moves: movesTuple,
+          evs: input.evs as import("@nasty-plot/core").StatsTable | undefined,
+          ivs: input.ivs as import("@nasty-plot/core").StatsTable | undefined,
         })
         queryClient.invalidateQueries({ queryKey: ["team"] })
       }

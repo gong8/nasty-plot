@@ -259,6 +259,19 @@ export async function deleteTeam(id: string): Promise<void> {
   await prisma.team.delete({ where: { id } })
 }
 
+export async function cleanupEmptyTeams(): Promise<number> {
+  const emptyTeams = await prisma.team.findMany({
+    where: { slots: { none: {} } },
+    select: { id: true },
+  })
+
+  for (const team of emptyTeams) {
+    await deleteTeam(team.id)
+  }
+
+  return emptyTeams.length
+}
+
 export async function addSlot(teamId: string, slot: TeamSlotInput): Promise<TeamSlotData> {
   const existingCount = await prisma.teamSlot.count({ where: { teamId } })
   if (existingCount >= 6) {

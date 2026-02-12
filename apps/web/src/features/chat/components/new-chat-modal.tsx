@@ -14,6 +14,7 @@ import { useBattleStateContext } from "@/features/battle/context/battle-state-co
 import { ContextModeBadge } from "./context-mode-badge"
 import { MessageCircle, Lock, Globe, Loader2 } from "lucide-react"
 import type { ChatContextMode, ChatSessionData } from "@nasty-plot/core"
+import { PECHARUNT_SPRITE_URL } from "@/lib/constants"
 
 const PAGE_TO_CONTEXT_MODE: Record<string, ChatContextMode> = {
   "guided-builder": "guided-builder",
@@ -179,7 +180,7 @@ export function NewChatModal() {
           <DialogTitle className="flex items-center gap-2">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/1025.png"
+              src={PECHARUNT_SPRITE_URL}
               alt="Pecharunt"
               width={24}
               height={24}

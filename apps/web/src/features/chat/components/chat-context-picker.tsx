@@ -6,6 +6,7 @@ import { useBattleStateContext } from "@/features/battle/context/battle-state-co
 import type { ChatContextMode } from "@nasty-plot/core"
 import { cn } from "@/lib/utils"
 import { Globe, Lock } from "lucide-react"
+import { PECHARUNT_SPRITE_URL } from "@/lib/constants"
 
 const PAGE_TO_CONTEXT_MODE: Record<string, ChatContextMode> = {
   "guided-builder": "guided-builder",
@@ -97,7 +98,7 @@ export function ChatContextPicker({ onModeChosen }: ChatContextPickerProps) {
     <div className="text-center py-8 px-4">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/1025.png"
+        src={PECHARUNT_SPRITE_URL}
         alt="Pecharunt"
         width={64}
         height={64}

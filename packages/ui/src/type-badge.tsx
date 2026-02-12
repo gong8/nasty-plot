@@ -1,5 +1,6 @@
 "use client"
 
+import React from "react"
 import { cn } from "./utils"
 import { TYPE_COLORS, isLightTypeColor } from "@nasty-plot/core"
 import type { PokemonType } from "@nasty-plot/core"
@@ -28,6 +29,17 @@ export function TypeBadge({ type, size = "md", className, onClick }: TypeBadgePr
       style={{ backgroundColor: color, boxShadow: `0 0 8px ${color}80` }}
       onClick={onClick}
       role={onClick ? "button" : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      onKeyDown={
+        onClick
+          ? (e: React.KeyboardEvent) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault()
+                onClick()
+              }
+            }
+          : undefined
+      }
     >
       {type}
     </span>

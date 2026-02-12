@@ -1,4 +1,9 @@
-import { fetchSmogonSets, getSetsForPokemon, getAllSetsForFormat } from "@nasty-plot/smogon-data"
+import {
+  fetchSmogonSets,
+  getSetsForPokemon,
+  getAllSetsForFormat,
+  getNatureUsage,
+} from "@nasty-plot/smogon-data"
 
 // ---------------------------------------------------------------------------
 // Mocks
@@ -16,11 +21,25 @@ vi.mock("@nasty-plot/db", () => ({
   },
 }))
 
+vi.mock("#smogon-data/usage-stats.service", async (importOriginal) => {
+  const actual = await importOriginal<Record<string, unknown>>()
+  return { ...actual, resolveYearMonth: vi.fn() }
+})
+
+vi.mock("#smogon-data/chaos-sets.service", async (importOriginal) => {
+  const actual = await importOriginal<Record<string, unknown>>()
+  return { ...actual, generateSetsFromChaos: vi.fn() }
+})
+
 import { prisma } from "@nasty-plot/db"
+import { resolveYearMonth } from "#smogon-data/usage-stats.service"
+import { generateSetsFromChaos } from "#smogon-data/chaos-sets.service"
 
 const mockSetUpsert = prisma.smogonSet.upsert as ReturnType<typeof vi.fn>
 const mockSetFindMany = prisma.smogonSet.findMany as ReturnType<typeof vi.fn>
 const mockSyncLogUpsert = prisma.dataSyncLog.upsert as ReturnType<typeof vi.fn>
+const mockResolveYearMonth = resolveYearMonth as ReturnType<typeof vi.fn>
+const mockGenerateSetsFromChaos = generateSetsFromChaos as ReturnType<typeof vi.fn>
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -190,8 +209,8 @@ describe("fetchSmogonSets", () => {
   it("throws when fetch fails", async () => {
     const mockFetch = vi.fn().mockResolvedValue({
       ok: false,
-      status: 404,
-      statusText: "Not Found",
+      status: 500,
+      statusText: "Internal Server Error",
     })
     vi.stubGlobal("fetch", mockFetch)
 
@@ -547,5 +566,265 @@ describe("fetchSmogonSets", () => {
     await fetchSmogonSets("gen9ou")
 
     expect(mockSetUpsert).toHaveBeenCalledTimes(3)
+  })
+
+  it("uses pkmnSetsId option to override URL format ID", async () => {
+    const mockJson = {
+      Garchomp: {
+        SD: {
+          ability: "Rough Skin",
+          item: "Leftovers",
+          nature: "Jolly",
+          moves: ["Earthquake"],
+          evs: {},
+        },
+      },
+    }
+
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve(mockJson),
+    })
+    vi.stubGlobal("fetch", mockFetch)
+
+    mockSetUpsert.mockResolvedValue({})
+    mockSyncLogUpsert.mockResolvedValue({})
+
+    await fetchSmogonSets("gen9vgc2025", { pkmnSetsId: "gen9doublesou" })
+
+    // URL should use the override ID
+    expect(mockFetch).toHaveBeenCalledWith("https://data.pkmn.cc/sets/gen9doublesou.json")
+    // DB should use the original format ID
+    expect(mockSetUpsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        create: expect.objectContaining({ formatId: "gen9vgc2025" }),
+      }),
+    )
+  })
+
+  it("falls back to chaos sets on 404", async () => {
+    const mockFetch = vi
+      .fn()
+      // First fetch: 404 from pkmn.cc
+      .mockResolvedValueOnce({ ok: false, status: 404, statusText: "Not Found" })
+      // Second fetch: chaos data from Smogon (inside fetchAndSaveChaosSets)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            info: { metagame: "gen9vgc2025", cutoff: 1695 },
+            data: {},
+          }),
+      })
+
+    vi.stubGlobal("fetch", mockFetch)
+
+    mockResolveYearMonth.mockResolvedValue({
+      year: 2025,
+      month: 1,
+      rating: 1695,
+      url: "https://www.smogon.com/stats/2025-01/chaos/gen9vgc2025-1695.json",
+    })
+    mockGenerateSetsFromChaos.mockReturnValue([
+      {
+        pokemonId: "fluttermane",
+        setName: "Standard Usage",
+        ability: "Protosynthesis",
+        item: "Choice Specs",
+        nature: "Timid",
+        evs: { spa: 252, spe: 252 },
+        moves: ["Moonblast", "Shadow Ball", "Mystical Fire", "Dazzling Gleam"],
+        teraType: "Fairy",
+      },
+    ])
+
+    mockSetUpsert.mockResolvedValue({})
+    mockSyncLogUpsert.mockResolvedValue({})
+
+    await fetchSmogonSets("gen9vgc2025")
+
+    // Should have generated sets from chaos
+    expect(mockGenerateSetsFromChaos).toHaveBeenCalled()
+    expect(mockSetUpsert).toHaveBeenCalledTimes(1)
+    expect(mockSetUpsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        create: expect.objectContaining({
+          formatId: "gen9vgc2025",
+          pokemonId: "fluttermane",
+          setName: "Standard Usage",
+        }),
+      }),
+    )
+  })
+
+  it("uses smogonStatsId option in chaos fallback", async () => {
+    const mockFetch = vi
+      .fn()
+      .mockResolvedValueOnce({ ok: false, status: 404, statusText: "Not Found" })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: () =>
+          Promise.resolve({ info: { metagame: "gen9vgc2026regf", cutoff: 1695 }, data: {} }),
+      })
+    vi.stubGlobal("fetch", mockFetch)
+
+    mockResolveYearMonth.mockResolvedValue({
+      year: 2025,
+      month: 12,
+      rating: 1695,
+      url: "https://www.smogon.com/stats/2025-12/chaos/gen9vgc2026regf-1695.json",
+    })
+    mockGenerateSetsFromChaos.mockReturnValue([])
+    mockSyncLogUpsert.mockResolvedValue({})
+
+    await fetchSmogonSets("gen9vgc2025", { smogonStatsId: "gen9vgc2026regf" })
+
+    // Should use the smogonStatsId for resolveYearMonth
+    expect(mockResolveYearMonth).toHaveBeenCalledWith("gen9vgc2026regf")
+  })
+
+  it("throws when chaos stats fetch also fails", async () => {
+    const mockFetch = vi
+      .fn()
+      // 404 from pkmn.cc
+      .mockResolvedValueOnce({ ok: false, status: 404, statusText: "Not Found" })
+      // Chaos fetch fails too
+      .mockResolvedValueOnce({ ok: false, status: 500, statusText: "Internal Server Error" })
+
+    vi.stubGlobal("fetch", mockFetch)
+
+    mockResolveYearMonth.mockResolvedValue({
+      year: 2025,
+      month: 1,
+      rating: 1695,
+      url: "https://www.smogon.com/stats/2025-01/chaos/gen9vgc2025-1695.json",
+    })
+
+    await expect(fetchSmogonSets("gen9vgc2025")).rejects.toThrow("Failed to fetch chaos stats")
+  })
+
+  it("handles missing ability, item, nature fields gracefully", async () => {
+    const mockJson = {
+      Garchomp: {
+        SD: {
+          moves: ["Earthquake"],
+          evs: {},
+        },
+      },
+    }
+
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve(mockJson),
+    })
+    vi.stubGlobal("fetch", mockFetch)
+
+    mockSetUpsert.mockResolvedValue({})
+    mockSyncLogUpsert.mockResolvedValue({})
+
+    await fetchSmogonSets("gen9ou")
+
+    expect(mockSetUpsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        create: expect.objectContaining({
+          ability: "",
+          item: "",
+          nature: "Serious",
+          teraType: null,
+        }),
+      }),
+    )
+  })
+})
+
+// ---------------------------------------------------------------------------
+// getNatureUsage
+// ---------------------------------------------------------------------------
+
+describe("getNatureUsage", () => {
+  beforeEach(() => vi.clearAllMocks())
+
+  it("returns nature usage counts sorted by count descending", async () => {
+    mockSetFindMany.mockResolvedValue([
+      { nature: "Jolly" },
+      { nature: "Jolly" },
+      { nature: "Adamant" },
+      { nature: "Jolly" },
+      { nature: "Adamant" },
+    ])
+
+    const result = await getNatureUsage("gen9ou", "garchomp")
+
+    expect(result).toEqual([
+      { natureName: "Jolly", count: 3 },
+      { natureName: "Adamant", count: 2 },
+    ])
+  })
+
+  it("returns empty array when no sets exist", async () => {
+    mockSetFindMany.mockResolvedValue([])
+
+    const result = await getNatureUsage("gen9ou", "garchomp")
+
+    expect(result).toEqual([])
+  })
+
+  it("queries with correct formatId, pokemonId, and select", async () => {
+    mockSetFindMany.mockResolvedValue([])
+
+    await getNatureUsage("gen9ou", "garchomp")
+
+    expect(mockSetFindMany).toHaveBeenCalledWith({
+      where: { formatId: "gen9ou", pokemonId: "garchomp" },
+      select: { nature: true },
+    })
+  })
+
+  it("handles a single nature", async () => {
+    mockSetFindMany.mockResolvedValue([{ nature: "Bold" }])
+
+    const result = await getNatureUsage("gen9ou", "clefable")
+
+    expect(result).toEqual([{ natureName: "Bold", count: 1 }])
+  })
+})
+
+// ---------------------------------------------------------------------------
+// rowToSetData (tested indirectly through getSetsForPokemon)
+// ---------------------------------------------------------------------------
+
+describe("rowToSetData malformed JSON handling", () => {
+  beforeEach(() => vi.clearAllMocks())
+
+  it("returns empty moves array for malformed moves JSON", async () => {
+    mockSetFindMany.mockResolvedValue([makeDbSetRow({ moves: "not-valid-json{" })])
+
+    const result = await getSetsForPokemon("gen9ou", "garchomp")
+
+    expect(result[0].moves).toEqual([])
+  })
+
+  it("returns empty evs object for malformed evs JSON", async () => {
+    mockSetFindMany.mockResolvedValue([makeDbSetRow({ evs: "invalid{json" })])
+
+    const result = await getSetsForPokemon("gen9ou", "garchomp")
+
+    expect(result[0].evs).toEqual({})
+  })
+
+  it("returns undefined ivs for malformed ivs JSON", async () => {
+    mockSetFindMany.mockResolvedValue([makeDbSetRow({ ivs: "not-json" })])
+
+    const result = await getSetsForPokemon("gen9ou", "garchomp")
+
+    expect(result[0].ivs).toBeUndefined()
+  })
+
+  it("maps teraType undefined when null", async () => {
+    mockSetFindMany.mockResolvedValue([makeDbSetRow({ teraType: null })])
+
+    const result = await getSetsForPokemon("gen9ou", "garchomp")
+
+    expect(result[0].teraType).toBeUndefined()
   })
 })
