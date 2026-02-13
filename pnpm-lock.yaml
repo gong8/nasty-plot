@@ -238,6 +238,9 @@ importers:
       '@nasty-plot/damage-calc':
         specifier: workspace:*
         version: link:../damage-calc
+      '@nasty-plot/db':
+        specifier: workspace:*
+        version: link:../db
       '@nasty-plot/pokemon-data':
         specifier: workspace:*
         version: link:../pokemon-data

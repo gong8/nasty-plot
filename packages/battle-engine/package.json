@@ -14,6 +14,7 @@
     "@pkmn/sim": "^0.10.6",
     "@nasty-plot/core": "workspace:*",
     "@nasty-plot/damage-calc": "workspace:*",
+    "@nasty-plot/db": "workspace:*",
     "@nasty-plot/pokemon-data": "workspace:*",
     "@smogon/calc": "^0.10.0"
   }
