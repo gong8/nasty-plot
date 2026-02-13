@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
+import { DataStateRenderer } from "@/components/data-state-renderer"
 import { PokemonSprite, TypeBadge } from "@nasty-plot/ui"
 import {
   getBaseStatTotal,
@@ -161,62 +162,70 @@ export default function PokemonBrowserPage() {
         )}
 
         {/* Pokemon grid */}
-        {isLoading ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-            {Array.from({ length: 20 }).map((_, i) => (
-              <Card key={i}>
-                <CardContent className="p-4 flex flex-col items-center gap-2">
-                  <Skeleton className="w-20 h-20 rounded-md" />
-                  <Skeleton className="h-4 w-24" />
-                  <Skeleton className="h-4 w-16" />
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        ) : pokemonData?.data.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 text-center">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-12 w-12 text-muted-foreground/50 mb-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={1.5}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"
-              />
-            </svg>
-            <p className="text-muted-foreground text-sm">
-              No Pokemon match your filters. Try adjusting your search or type filter.
-            </p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-            {pokemonData?.data.map((pokemon) => (
-              <Link key={pokemon.id} href={`/pokemon/${pokemon.id}`}>
-                <Card className="hover:shadow-md transition-shadow cursor-pointer h-full">
+        <DataStateRenderer
+          data={pokemonData ?? null}
+          loading={isLoading}
+          isEmpty={(d) => d.data.length === 0}
+          loadingContent={
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+              {Array.from({ length: 20 }).map((_, i) => (
+                <Card key={i}>
                   <CardContent className="p-4 flex flex-col items-center gap-2">
-                    <PokemonSprite pokemonId={pokemon.id} size={80} />
-                    <span className="font-medium text-sm text-center leading-tight">
-                      {pokemon.name}
-                    </span>
-                    <div className="flex gap-1">
-                      {pokemon.types.map((type) => (
-                        <TypeBadge key={type} type={type} size="sm" />
-                      ))}
-                    </div>
-                    <span className="text-xs text-muted-foreground">
-                      BST: {getBaseStatTotal(pokemon.baseStats)}
-                    </span>
+                    <Skeleton className="w-20 h-20 rounded-md" />
+                    <Skeleton className="h-4 w-24" />
+                    <Skeleton className="h-4 w-16" />
                   </CardContent>
                 </Card>
-              </Link>
-            ))}
-          </div>
-        )}
+              ))}
+            </div>
+          }
+          emptyContent={
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-12 w-12 text-muted-foreground/50 mb-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={1.5}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"
+                />
+              </svg>
+              <p className="text-muted-foreground text-sm">
+                No Pokemon match your filters. Try adjusting your search or type filter.
+              </p>
+            </div>
+          }
+        >
+          {(pokemonData) => (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+              {pokemonData.data.map((pokemon) => (
+                <Link key={pokemon.id} href={`/pokemon/${pokemon.id}`}>
+                  <Card className="hover:shadow-md transition-shadow cursor-pointer h-full">
+                    <CardContent className="p-4 flex flex-col items-center gap-2">
+                      <PokemonSprite pokemonId={pokemon.id} size={80} />
+                      <span className="font-medium text-sm text-center leading-tight">
+                        {pokemon.name}
+                      </span>
+                      <div className="flex gap-1">
+                        {pokemon.types.map((type) => (
+                          <TypeBadge key={type} type={type} size="sm" />
+                        ))}
+                      </div>
+                      <span className="text-xs text-muted-foreground">
+                        BST: {getBaseStatTotal(pokemon.baseStats)}
+                      </span>
+                    </CardContent>
+                  </Card>
+                </Link>
+              ))}
+            </div>
+          )}
+        </DataStateRenderer>
 
         {/* Pagination */}
         {totalPages > 1 && (

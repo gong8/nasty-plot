@@ -215,7 +215,7 @@ describe("syncSmogonSets", () => {
     })
     vi.stubGlobal("fetch", mockFetch)
 
-    await expect(syncSmogonSets("gen9ou")).rejects.toThrow("Failed to fetch sets")
+    await expect(syncSmogonSets("gen9ou")).rejects.toThrow("Failed to fetch:")
   })
 
   it("handles array fields (ability, item, nature)", async () => {
@@ -701,7 +701,7 @@ describe("syncSmogonSets", () => {
       url: "https://www.smogon.com/stats/2025-01/chaos/gen9vgc2025-1695.json",
     })
 
-    await expect(syncSmogonSets("gen9vgc2025")).rejects.toThrow("Failed to fetch chaos stats")
+    await expect(syncSmogonSets("gen9vgc2025")).rejects.toThrow("Failed to fetch:")
   })
 
   it("handles missing ability, item, nature fields gracefully", async () => {

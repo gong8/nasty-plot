@@ -13,6 +13,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { EmptyState } from "@/components/empty-state"
+import { DataStateRenderer } from "@/components/data-state-renderer"
 import { SampleTeamCard } from "@/features/battle/components/SampleTeamCard"
 import { ArrowLeft, Search } from "lucide-react"
 import Link from "next/link"
@@ -125,29 +126,35 @@ export default function SampleTeamsPage() {
       </div>
 
       {/* Team grid */}
-      {loading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="h-48 rounded-xl border bg-muted/50 animate-pulse" />
-          ))}
-        </div>
-      ) : !teams || teams.length === 0 ? (
-        <EmptyState>No sample teams found. Try adjusting your filters.</EmptyState>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {teams.map((team) => (
-            <SampleTeamCard
-              key={team.id}
-              name={team.name}
-              pokemonIds={team.pokemonIds}
-              archetype={team.archetype}
-              source={team.source}
-              paste={team.paste}
-              onUse={handleUseInBattle}
-            />
-          ))}
-        </div>
-      )}
+      <DataStateRenderer
+        data={teams}
+        loading={loading}
+        isEmpty={(d) => d.length === 0}
+        loadingContent={
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="h-48 rounded-xl border bg-muted/50 animate-pulse" />
+            ))}
+          </div>
+        }
+        emptyContent={<EmptyState>No sample teams found. Try adjusting your filters.</EmptyState>}
+      >
+        {(teams) => (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {teams.map((team) => (
+              <SampleTeamCard
+                key={team.id}
+                name={team.name}
+                pokemonIds={team.pokemonIds}
+                archetype={team.archetype}
+                source={team.source}
+                paste={team.paste}
+                onUse={handleUseInBattle}
+              />
+            ))}
+          </div>
+        )}
+      </DataStateRenderer>
     </main>
   )
 }

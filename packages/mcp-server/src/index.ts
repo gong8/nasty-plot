@@ -1,3 +1,4 @@
+import { DEFAULT_MCP_PORT } from "@nasty-plot/core"
 import express from "express"
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js"
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js"
@@ -88,7 +89,7 @@ app.get("/health", (_req, res) => {
   })
 })
 
-const PORT = process.env.MCP_PORT || 3001
+const PORT = process.env.MCP_PORT || DEFAULT_MCP_PORT
 app.listen(Number(PORT), () => {
   console.log(`MCP server running on http://localhost:${PORT}/mcp`)
   console.log(`Health check: http://localhost:${PORT}/health`)

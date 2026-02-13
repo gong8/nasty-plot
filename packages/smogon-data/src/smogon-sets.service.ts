@@ -1,6 +1,7 @@
 import { prisma } from "@nasty-plot/db"
 import { toId } from "@nasty-plot/core"
 import type { SmogonSetData, NatureName, PokemonType } from "@nasty-plot/core"
+import { fetchSmogonData } from "./fetch-helper"
 import { resolveYearMonth, type SmogonChaosData } from "./usage-stats.service"
 import { generateSetsFromChaos } from "./chaos-sets.service"
 import { upsertSyncLog } from "./sync-log.service"
@@ -55,7 +56,7 @@ export async function syncSmogonSets(
       )
       return fetchAndSaveChaosSets(formatId, options?.smogonStatsId ?? setsId)
     }
-    throw new Error(`Failed to fetch sets: ${res.status} ${res.statusText} (${url})`)
+    throw new Error(`Failed to fetch: ${res.status} ${res.statusText} (${url})`)
   }
 
   const json: RawSetsJson = await res.json()
@@ -113,10 +114,7 @@ async function fetchAndSaveChaosSets(formatId: string, smogonStatsId: string): P
   const { url } = await resolveYearMonth(smogonStatsId)
   console.log(`[smogon-sets] Fetching chaos stats from ${url}`)
 
-  const res = await fetch(url)
-  if (!res.ok) {
-    throw new Error(`Failed to fetch chaos stats: ${res.status} ${res.statusText} (${url})`)
-  }
+  const res = await fetchSmogonData(url)
 
   const chaos: SmogonChaosData = await res.json()
   const sets = generateSetsFromChaos(chaos)

@@ -1,6 +1,7 @@
 import { prisma } from "@nasty-plot/db"
 import { toId } from "@nasty-plot/core"
 import type { UsageStatsEntry, TeammateCorrelation } from "@nasty-plot/core"
+import { fetchSmogonData } from "./fetch-helper"
 import { upsertSyncLog } from "./sync-log.service"
 
 // Build Smogon stats URL for a given format/year/month
@@ -185,10 +186,7 @@ export async function syncUsageStats(
 
   console.log(`[usage-stats] Fetching ${url}`)
 
-  const res = await fetch(url)
-  if (!res.ok) {
-    throw new Error(`Failed to fetch usage stats: ${res.status} ${res.statusText} (${url})`)
-  }
+  const res = await fetchSmogonData(url)
 
   const json: SmogonChaosData = await res.json()
   const entries = Object.entries(json.data)

@@ -252,7 +252,7 @@ describe("syncUsageStats", () => {
     vi.stubGlobal("fetch", mockFetch)
 
     await expect(syncUsageStats("gen9ou", { year: 2024, month: 6 })).rejects.toThrow(
-      "Failed to fetch usage stats",
+      "Failed to fetch:",
     )
   })
 

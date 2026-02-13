@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/select"
 import { LoadingSpinner } from "@/components/loading-spinner"
 import { EmptyState } from "@/components/empty-state"
+import { DataStateRenderer } from "@/components/data-state-renderer"
 import { Swords, FlaskConical, Clock, Trophy, Play, X, Upload } from "lucide-react"
 import {
   hasCheckpoint,
@@ -296,37 +297,41 @@ export default function BattleHubPage() {
             )}
           </div>
 
-          {loadingBattles ? (
-            <LoadingSpinner size="sm" />
-          ) : battles.length === 0 ? (
-            <EmptyState>No battles yet. Start one above!</EmptyState>
-          ) : (
-            <div className="space-y-2">
-              {battles.map((battle) => (
-                <Link key={battle.id} href={`/battle/replay/${battle.id}`}>
-                  <Card className="hover:bg-accent/50 transition-colors cursor-pointer">
-                    <CardContent className="py-3 px-4 flex items-center justify-between">
-                      <div className="flex items-center gap-3 min-w-0">
-                        <Trophy className="h-4 w-4 text-muted-foreground shrink-0" />
-                        <div className="min-w-0">
-                          <div className="text-sm font-medium truncate">
-                            {battle.team1Name} vs {battle.team2Name}
-                          </div>
-                          <div className="text-xs text-muted-foreground">
-                            {battle.formatId} &middot; {battle.turnCount} turns &middot; Winner:{" "}
-                            {winnerLabel(battle.winnerId, battle.team1Name, battle.team2Name)}
+          <DataStateRenderer
+            data={battles}
+            loading={loadingBattles}
+            isEmpty={(d) => d.length === 0}
+            loadingContent={<LoadingSpinner size="sm" />}
+            emptyContent={<EmptyState>No battles yet. Start one above!</EmptyState>}
+          >
+            {(battles) => (
+              <div className="space-y-2">
+                {battles.map((battle) => (
+                  <Link key={battle.id} href={`/battle/replay/${battle.id}`}>
+                    <Card className="hover:bg-accent/50 transition-colors cursor-pointer">
+                      <CardContent className="py-3 px-4 flex items-center justify-between">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <Trophy className="h-4 w-4 text-muted-foreground shrink-0" />
+                          <div className="min-w-0">
+                            <div className="text-sm font-medium truncate">
+                              {battle.team1Name} vs {battle.team2Name}
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              {battle.formatId} &middot; {battle.turnCount} turns &middot; Winner:{" "}
+                              {winnerLabel(battle.winnerId, battle.team1Name, battle.team2Name)}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                      <span className="text-xs text-muted-foreground shrink-0 ml-4">
-                        {timeAgo(battle.createdAt)}
-                      </span>
-                    </CardContent>
-                  </Card>
-                </Link>
-              ))}
-            </div>
-          )}
+                        <span className="text-xs text-muted-foreground shrink-0 ml-4">
+                          {timeAgo(battle.createdAt)}
+                        </span>
+                      </CardContent>
+                    </Card>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </DataStateRenderer>
         </div>
       </main>
     </>

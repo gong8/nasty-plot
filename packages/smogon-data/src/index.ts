@@ -24,6 +24,7 @@ export {
   enrichExtractedTeam,
 } from "./set-inference.service"
 
+export { fetchSmogonData } from "./fetch-helper"
 export { upsertSyncLog } from "./sync-log.service"
 export type {
   ExtractedPokemon,

@@ -146,6 +146,7 @@ export const DEFAULT_ABILITY = ""
 export const DEFAULT_ITEM = ""
 export const DEFAULT_NATURE = "Hardy" as const
 export const DEFAULT_API_URL = "http://localhost:3000"
+export const DEFAULT_MCP_PORT = 3001
 
 // --- Team Size ---
 
