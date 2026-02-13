@@ -277,3 +277,8 @@ export interface BattleCheckpoint {
     chatSessionId: string | null
   }
 }
+
+/** Calculate HP as a rounded percentage (0-100), returning 0 if maxHp is 0. */
+export function calcHpPercent(hp: number, maxHp: number): number {
+  return maxHp > 0 ? Math.round((hp / maxHp) * 100) : 0
+}

@@ -30,6 +30,7 @@ import { useProactiveReactions } from "../hooks/use-proactive-reactions"
 import { useAddSlot, useUpdateSlot } from "@/features/teams/hooks/use-teams"
 import { useChatSidebar } from "@/features/chat/context/chat-provider"
 import { useQueryClient } from "@tanstack/react-query"
+import { fetchApiData } from "@/lib/api-client"
 
 // --- Types ---
 
@@ -326,10 +327,9 @@ export function GuidedBuilderProvider({ teamId, formatId, children }: GuidedBuil
     sessionInitRef.current = true
     ;(async () => {
       try {
-        const res = await fetch(`/api/chat/sessions?teamId=${teamId}&contextMode=guided-builder`)
-        if (!res.ok) throw new Error()
-        const data = await res.json()
-        const sessions = data.data as Array<{ id: string }>
+        const sessions = await fetchApiData<Array<{ id: string }>>(
+          `/api/chat/sessions?teamId=${teamId}&contextMode=guided-builder`,
+        )
         if (sessions.length > 0) {
           switchSession(sessions[0].id)
           openSidebar()
@@ -417,59 +417,59 @@ export function GuidedBuilderProvider({ teamId, formatId, children }: GuidedBuil
     guidedActionNotifyRef.current = (notification) => {
       const { name, input } = notification
 
-      if (name === "add_pokemon_to_team") {
-        const pokemonId = input.pokemonId as string
-        const position = (input.position as number) || guided.filledSlots.length + 1
-        const usageEntry = guided.usageData.find((u) => u.pokemonId === pokemonId)
-        const pick: GuidedPokemonPick = {
-          pokemonId,
-          pokemonName: usageEntry?.pokemonName ?? pokemonId,
-          types: (usageEntry?.types ?? []) as GuidedPokemonPick["types"],
-          usagePercent: usageEntry?.usagePercent,
-        }
-        guided.addSlotPick(position, pick)
-        if (guided.step === "lead" && position === 1) {
-          guided.goToStep("build")
-        } else if (guided.step === "build") {
-          if (guided.filledSlots.length + 1 >= 6) {
-            guided.goToStep("sets")
-          } else {
-            guided.nextBuildSlot()
+      switch (name) {
+        case "add_pokemon_to_team": {
+          const pokemonId = input.pokemonId as string
+          const position = (input.position as number) || guided.filledSlots.length + 1
+          const usageEntry = guided.usageData.find((u) => u.pokemonId === pokemonId)
+          guided.addSlotPick(position, {
+            pokemonId,
+            pokemonName: usageEntry?.pokemonName ?? pokemonId,
+            types: (usageEntry?.types ?? []) as GuidedPokemonPick["types"],
+            usagePercent: usageEntry?.usagePercent,
+          })
+          if (guided.step === "lead" && position === 1) {
+            guided.goToStep("build")
+          } else if (guided.step === "build") {
+            if (guided.filledSlots.length + 1 >= 6) {
+              guided.goToStep("sets")
+            } else {
+              guided.nextBuildSlot()
+            }
           }
+          break
         }
-        queryClient.invalidateQueries({ queryKey: ["team"] })
-      }
-
-      if (name === "update_pokemon_set") {
-        const position = input.position as number
-        if (!position) return
-        const moves = input.moves as string[] | undefined
-        const movesTuple = moves
-          ? ([moves[0], moves[1], moves[2], moves[3]] as [string, string?, string?, string?])
-          : undefined
-        guided.updateSlot(position, {
-          ability: (input.ability as string) || undefined,
-          item: (input.item as string) || undefined,
-          nature: ((input.nature as string) || undefined) as
-            | import("@nasty-plot/core").NatureName
-            | undefined,
-          teraType: ((input.teraType as string) || undefined) as
-            | import("@nasty-plot/core").PokemonType
-            | undefined,
-          moves: movesTuple,
-          evs: input.evs as import("@nasty-plot/core").StatsTable | undefined,
-          ivs: input.ivs as import("@nasty-plot/core").StatsTable | undefined,
-        })
-        queryClient.invalidateQueries({ queryKey: ["team"] })
-      }
-
-      if (name === "remove_pokemon_from_team") {
-        const position = input.position as number
-        if (position) {
+        case "update_pokemon_set": {
+          const position = input.position as number
+          if (!position) return
+          const moves = input.moves as string[] | undefined
+          guided.updateSlot(position, {
+            ability: (input.ability as string) || undefined,
+            item: (input.item as string) || undefined,
+            nature: ((input.nature as string) || undefined) as
+              | import("@nasty-plot/core").NatureName
+              | undefined,
+            teraType: ((input.teraType as string) || undefined) as
+              | import("@nasty-plot/core").PokemonType
+              | undefined,
+            moves: moves
+              ? ([moves[0], moves[1], moves[2], moves[3]] as [string, string?, string?, string?])
+              : undefined,
+            evs: input.evs as import("@nasty-plot/core").StatsTable | undefined,
+            ivs: input.ivs as import("@nasty-plot/core").StatsTable | undefined,
+          })
+          break
+        }
+        case "remove_pokemon_from_team": {
+          const position = input.position as number
+          if (!position) return
           guided.removeSlot(position)
-          queryClient.invalidateQueries({ queryKey: ["team"] })
+          break
         }
+        default:
+          return
       }
+      queryClient.invalidateQueries({ queryKey: ["team"] })
     }
     return () => {
       guidedActionNotifyRef.current = null

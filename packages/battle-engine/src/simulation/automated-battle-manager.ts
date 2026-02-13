@@ -52,9 +52,6 @@ export async function runAutomatedBattle(
 
   let protocolLog = ""
   const turnActions: SingleBattleResult["turnActions"] = []
-  let currentTurnP1 = ""
-  let currentTurnP2 = ""
-
   let pendingP1Actions: BattleActionSet | null = null
   let pendingP2Actions: BattleActionSet | null = null
   let pendingP1Slot2Actions: BattleActionSet | null = null
@@ -63,8 +60,6 @@ export async function runAutomatedBattle(
   let p2TeamPreview = false
   let lastProtocolChunk = ""
   const isDoubles = config.gameType === "doubles"
-  let _lastP1ReqJson = ""
-  let _lastP2ReqJson = ""
 
   // Convert pastes to packed format
   const team1Packed = pasteToPackedTeam(config.team1Paste)
@@ -72,6 +67,14 @@ export async function runAutomatedBattle(
 
   if (!team1Packed || !team2Packed) {
     throw new Error("Failed to parse team pastes")
+  }
+
+  function processDeduplicatedProtocol(proto: string) {
+    const trimmed = proto.trim()
+    if (!trimmed || trimmed === lastProtocolChunk) return
+    lastProtocolChunk = trimmed
+    protocolLog += proto
+    processChunk(state, proto)
   }
 
   // Collect and process output
@@ -82,12 +85,7 @@ export async function runAutomatedBattle(
 
       for (const line of lines) {
         if (line.startsWith("|request|")) {
-          // Process accumulated protocol (deduplicated — sim emits for both players)
-          if (protoLines.trim() && protoLines.trim() !== lastProtocolChunk) {
-            lastProtocolChunk = protoLines.trim()
-            protocolLog += protoLines
-            processChunk(state, protoLines)
-          }
+          processDeduplicatedProtocol(protoLines)
           protoLines = ""
 
           // Parse request
@@ -101,26 +99,17 @@ export async function runAutomatedBattle(
               updateSideFromRequest(state, sideId, parsed.side)
             }
 
-            if (sideId === "p1") {
+            if (sideId === "p1" || sideId === "p2") {
               if (parsed.teamPreview) {
-                p1TeamPreview = true
+                if (sideId === "p1") p1TeamPreview = true
+                else p2TeamPreview = true
               } else if (!parsed.wait && parsed.actions) {
-                pendingP1Actions = parsed.actions
-                if (isDoubles) {
-                  _lastP1ReqJson = reqJson
-                  const slot2 = parseRequestForSlot(reqJson, 1)
-                  pendingP1Slot2Actions = slot2.actions
-                }
-              }
-            } else if (sideId === "p2") {
-              if (parsed.teamPreview) {
-                p2TeamPreview = true
-              } else if (!parsed.wait && parsed.actions) {
-                pendingP2Actions = parsed.actions
-                if (isDoubles) {
-                  _lastP2ReqJson = reqJson
-                  const slot2 = parseRequestForSlot(reqJson, 1)
-                  pendingP2Slot2Actions = slot2.actions
+                if (sideId === "p1") {
+                  pendingP1Actions = parsed.actions
+                  if (isDoubles) pendingP1Slot2Actions = parseRequestForSlot(reqJson, 1).actions
+                } else {
+                  pendingP2Actions = parsed.actions
+                  if (isDoubles) pendingP2Slot2Actions = parseRequestForSlot(reqJson, 1).actions
                 }
               }
             }
@@ -129,19 +118,11 @@ export async function runAutomatedBattle(
           }
           continue
         }
-        // Skip stream markers that differ per player and break deduplication
-        if (line === "update" || line === "sideupdate" || /^p[1-4]$/.test(line)) {
-          continue
-        }
+        if (STREAM_MARKER_RE.test(line)) continue
         protoLines += line + "\n"
       }
 
-      // Process remaining (deduplicated)
-      if (protoLines.trim() && protoLines.trim() !== lastProtocolChunk) {
-        lastProtocolChunk = protoLines.trim()
-        protocolLog += protoLines
-        processChunk(state, protoLines)
-      }
+      processDeduplicatedProtocol(protoLines)
     }
   })()
 
@@ -153,17 +134,13 @@ export async function runAutomatedBattle(
   stream.write(`>player p1 {"name":"${state.sides.p1.name}","team":"${escapeTeam(team1Packed)}"}`)
   stream.write(`>player p2 {"name":"${state.sides.p2.name}","team":"${escapeTeam(team2Packed)}"}`)
 
-  // Wait for requests
   await tick()
 
-  // Handle team preview
   if (p1TeamPreview) {
-    const p1Leads = config.ai1.chooseLeads(6, config.gameType)
-    stream.write(`>p1 team ${p1Leads.join("")}`)
+    stream.write(`>p1 team ${config.ai1.chooseLeads(6, config.gameType).join("")}`)
   }
   if (p2TeamPreview) {
-    const p2Leads = config.ai2.chooseLeads(6, config.gameType)
-    stream.write(`>p2 team ${p2Leads.join("")}`)
+    stream.write(`>p2 team ${config.ai2.chooseLeads(6, config.gameType).join("")}`)
   }
 
   await tick()
@@ -173,72 +150,43 @@ export async function runAutomatedBattle(
   while (state.phase !== "ended" && turns < maxTurns) {
     await tick()
 
-    await processActions()
+    if (pendingP1Actions && pendingP2Actions) {
+      const p1Choice = await resolvePlayerChoice(
+        config.ai1,
+        state,
+        pendingP1Actions,
+        pendingP1Slot2Actions,
+        isDoubles,
+      )
+      const p2Choice = await resolvePlayerChoice(
+        config.ai2,
+        state,
+        pendingP2Actions,
+        pendingP2Slot2Actions,
+        isDoubles,
+      )
 
-    async function processActions() {
-      if (pendingP1Actions && pendingP2Actions) {
-        if (isDoubles) {
-          // Doubles: get actions for both slots of each player
-          const p1a1 = await config.ai1.chooseAction(state, pendingP1Actions)
-          let p1Choice = actionToChoice(p1a1)
-          if (pendingP1Slot2Actions) {
-            const p1a2 = await config.ai1.chooseAction(state, pendingP1Slot2Actions)
-            p1Choice = `${p1Choice}, ${actionToChoice(p1a2)}`
-          }
+      stream.write(`>p1 ${p1Choice}`)
+      stream.write(`>p2 ${p2Choice}`)
+      turnActions.push({ turn: state.turn, p1: p1Choice, p2: p2Choice })
 
-          const p2a1 = await config.ai2.chooseAction(state, pendingP2Actions)
-          let p2Choice = actionToChoice(p2a1)
-          if (pendingP2Slot2Actions) {
-            const p2a2 = await config.ai2.chooseAction(state, pendingP2Slot2Actions)
-            p2Choice = `${p2Choice}, ${actionToChoice(p2a2)}`
-          }
-
-          currentTurnP1 = p1Choice
-          currentTurnP2 = p2Choice
-        } else {
-          const p1Action = await config.ai1.chooseAction(state, pendingP1Actions)
-          const p2Action = await config.ai2.chooseAction(state, pendingP2Actions)
-          currentTurnP1 = actionToChoice(p1Action)
-          currentTurnP2 = actionToChoice(p2Action)
-        }
-
-        stream.write(`>p1 ${currentTurnP1}`)
-        stream.write(`>p2 ${currentTurnP2}`)
-
-        turnActions.push({ turn: state.turn, p1: currentTurnP1, p2: currentTurnP2 })
-
-        pendingP1Actions = null
-        pendingP2Actions = null
-        pendingP1Slot2Actions = null
-        pendingP2Slot2Actions = null
-        turns++
-        return
-      }
-      if (pendingP1Actions && pendingP1Actions.forceSwitch) {
-        if (isDoubles && pendingP1Slot2Actions) {
-          const p1a1 = await config.ai1.chooseAction(state, pendingP1Actions)
-          const p1a2 = await config.ai1.chooseAction(state, pendingP1Slot2Actions)
-          stream.write(`>p1 ${actionToChoice(p1a1)}, ${actionToChoice(p1a2)}`)
-          pendingP1Slot2Actions = null
-        } else {
-          const p1Action = await config.ai1.chooseAction(state, pendingP1Actions)
-          stream.write(`>p1 ${actionToChoice(p1Action)}`)
-        }
-        pendingP1Actions = null
-        return
-      }
-      if (pendingP2Actions && pendingP2Actions.forceSwitch) {
-        if (isDoubles && pendingP2Slot2Actions) {
-          const p2a1 = await config.ai2.chooseAction(state, pendingP2Actions)
-          const p2a2 = await config.ai2.chooseAction(state, pendingP2Slot2Actions)
-          stream.write(`>p2 ${actionToChoice(p2a1)}, ${actionToChoice(p2a2)}`)
-          pendingP2Slot2Actions = null
-        } else {
-          const p2Action = await config.ai2.chooseAction(state, pendingP2Actions)
-          stream.write(`>p2 ${actionToChoice(p2Action)}`)
-        }
-        pendingP2Actions = null
-      }
+      pendingP1Actions = null
+      pendingP2Actions = null
+      pendingP1Slot2Actions = null
+      pendingP2Slot2Actions = null
+      turns++
+    } else if (pendingP1Actions?.forceSwitch) {
+      stream.write(
+        `>p1 ${await resolvePlayerChoice(config.ai1, state, pendingP1Actions, pendingP1Slot2Actions, isDoubles)}`,
+      )
+      pendingP1Actions = null
+      pendingP1Slot2Actions = null
+    } else if (pendingP2Actions?.forceSwitch) {
+      stream.write(
+        `>p2 ${await resolvePlayerChoice(config.ai2, state, pendingP2Actions, pendingP2Slot2Actions, isDoubles)}`,
+      )
+      pendingP2Actions = null
+      pendingP2Slot2Actions = null
     }
 
     await tick()
@@ -265,6 +213,24 @@ export async function runAutomatedBattle(
   }
 }
 
+const STREAM_MARKER_RE = /^(?:update|sideupdate|p[1-4])$/
+
+async function resolvePlayerChoice(
+  ai: AIPlayer,
+  state: BattleState,
+  actions: BattleActionSet,
+  slot2Actions: BattleActionSet | null,
+  isDoubles: boolean,
+): Promise<string> {
+  const action1 = await ai.chooseAction(state, actions)
+  const choice1 = actionToChoice(action1)
+
+  if (!isDoubles || !slot2Actions) return choice1
+
+  const action2 = await ai.chooseAction(state, slot2Actions)
+  return `${choice1}, ${actionToChoice(action2)}`
+}
+
 function actionToChoice(action: {
   type: string
   moveIndex?: number
@@ -274,7 +240,6 @@ function actionToChoice(action: {
   mega?: boolean
 }): string {
   if (action.type === "move") {
-    // @pkmn/sim format: move [index] [target] [mega|terastallize]
     let choice = `move ${action.moveIndex}`
     if (action.targetSlot != null) choice += ` ${action.targetSlot}`
     if (action.tera) choice += " terastallize"

@@ -75,6 +75,11 @@ export async function exportShowdownPaste(teamId: string): Promise<string> {
   return serializeShowdownPaste(team.slots)
 }
 
+function resolveDefaultAbility(speciesId: string): string {
+  const species = getSpecies(speciesId)
+  return species?.abilities?.["0"] ?? ""
+}
+
 /**
  * Create a team from extracted replay data (species + revealed moves/ability/item).
  * Uses defaults for unknowns (Hardy nature, default EVs/IVs, slot 0 ability if not revealed).
@@ -104,22 +109,11 @@ export async function createTeamFromExtractedData(
     source: "imported",
   })
 
-  for (let i = 0; i < Math.min(extracted.pokemon.length, 6); i++) {
-    const p = extracted.pokemon[i]
-
-    // Resolve ability from dex if not revealed
-    let ability = p.ability || ""
-    if (!ability) {
-      const species = getSpecies(p.speciesId)
-      if (species?.abilities) {
-        ability = species.abilities["0"] || ""
-      }
-    }
-
-    const slot: TeamSlotInput = {
+  const slotInputs = extracted.pokemon.slice(0, 6).map(
+    (p, i): TeamSlotInput => ({
       position: i + 1,
       pokemonId: p.speciesId,
-      ability,
+      ability: p.ability || resolveDefaultAbility(p.speciesId),
       item: p.item || "",
       nature: (p.nature || "Hardy") as NatureName,
       teraType: p.teraType as TeamSlotInput["teraType"],
@@ -130,11 +124,13 @@ export async function createTeamFromExtractedData(
         p.moves[2] || undefined,
         p.moves[3] || undefined,
       ] as TeamSlotInput["moves"],
-      evs: p.evs ? { ...DEFAULT_EVS, ...p.evs } : { ...DEFAULT_EVS },
-      ivs: p.ivs ? { ...DEFAULT_IVS, ...p.ivs } : { ...DEFAULT_IVS },
-    }
+      evs: { ...DEFAULT_EVS, ...p.evs },
+      ivs: { ...DEFAULT_IVS, ...p.ivs },
+    }),
+  )
 
-    await addSlot(team.id, slot)
+  for (const slotInput of slotInputs) {
+    await addSlot(team.id, slotInput)
   }
 
   const result = await getTeam(team.id)

@@ -3,6 +3,7 @@ import { calculateMatchupMatrix } from "@nasty-plot/damage-calc"
 import { getTeam } from "@nasty-plot/teams"
 import { getUsageStats } from "@nasty-plot/smogon-data"
 import type { ApiResponse, MatchupMatrixEntry, ApiError } from "@nasty-plot/core"
+import { apiErrorResponse } from "../../../../lib/api-error"
 
 export async function POST(request: NextRequest) {
   try {
@@ -50,9 +51,9 @@ export async function POST(request: NextRequest) {
       data: matrix,
     } satisfies ApiResponse<MatchupMatrixEntry[][]>)
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Matrix calculation failed"
-    return NextResponse.json({ error: message, code: "CALC_ERROR" } satisfies ApiError, {
-      status: 500,
+    return apiErrorResponse(error, {
+      fallback: "Matrix calculation failed",
+      code: "CALC_ERROR",
     })
   }
 }

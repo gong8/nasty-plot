@@ -61,6 +61,14 @@ interface SeedResult {
   setsError?: string
 }
 
+async function logSyncError(source: string, formatId: string, message: string): Promise<void> {
+  await prisma.dataSyncLog.upsert({
+    where: { source_formatId: { source, formatId } },
+    update: { lastSynced: new Date(), status: "error", message },
+    create: { source, formatId, lastSynced: new Date(), status: "error", message },
+  })
+}
+
 async function seedFormat(
   format: {
     id: string
@@ -101,17 +109,7 @@ async function seedFormat(
         console.error(`[seed] Failed to fetch usage stats for ${format.id}: ${msg}`)
         result.statsOk = false
         result.statsError = msg
-        await prisma.dataSyncLog.upsert({
-          where: { source_formatId: { source: "smogon-stats", formatId: format.id } },
-          update: { lastSynced: new Date(), status: "error", message: msg },
-          create: {
-            source: "smogon-stats",
-            formatId: format.id,
-            lastSynced: new Date(),
-            status: "error",
-            message: msg,
-          },
-        })
+        await logSyncError("smogon-stats", format.id, msg)
       }
     } else {
       console.log(`[seed] Usage stats for ${format.id} are fresh, skipping.`)
@@ -133,17 +131,7 @@ async function seedFormat(
         console.error(`[seed] Failed to fetch sets for ${format.id}: ${msg}`)
         result.setsOk = false
         result.setsError = msg
-        await prisma.dataSyncLog.upsert({
-          where: { source_formatId: { source: "smogon-sets", formatId: format.id } },
-          update: { lastSynced: new Date(), status: "error", message: msg },
-          create: {
-            source: "smogon-sets",
-            formatId: format.id,
-            lastSynced: new Date(),
-            status: "error",
-            message: msg,
-          },
-        })
+        await logSyncError("smogon-sets", format.id, msg)
       }
     } else {
       console.log(`[seed] Smogon sets for ${format.id} are fresh, skipping.`)

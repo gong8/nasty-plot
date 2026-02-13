@@ -2,20 +2,15 @@
 
 import { useQuery } from "@tanstack/react-query"
 import type { SampleTeamData } from "@nasty-plot/teams"
+import { fetchJson } from "@/lib/api-client"
 
 /** API returns SampleTeamData without the Date-typed createdAt field */
 type SampleTeamApiData = Omit<SampleTeamData, "createdAt">
 
-async function fetchSampleTeams(formatId: string): Promise<SampleTeamApiData[]> {
-  const res = await fetch(`/api/sample-teams?formatId=${formatId}`)
-  if (!res.ok) throw new Error("Failed to fetch sample teams")
-  return res.json()
-}
-
 export function useSampleTeams(formatId?: string) {
   return useQuery<SampleTeamApiData[]>({
     queryKey: ["sample-teams", formatId],
-    queryFn: () => fetchSampleTeams(formatId!),
+    queryFn: () => fetchJson<SampleTeamApiData[]>(`/api/sample-teams?formatId=${formatId}`),
     enabled: !!formatId,
     staleTime: 5 * 60 * 1000,
   })

@@ -16,6 +16,7 @@ import {
   CommandSeparator,
 } from "@/components/ui/command"
 import type { ItemData, PaginatedResponse } from "@nasty-plot/core"
+import { fetchJson } from "@/lib/api-client"
 import { usePopularityData } from "../hooks/use-popularity-data"
 
 interface ItemComboboxProps {
@@ -32,20 +33,26 @@ export function ItemCombobox({ value, onChange, formatId, pokemonId }: ItemCombo
     queryKey: ["all-items", formatId],
     queryFn: async () => {
       const formatParam = formatId ? `&format=${encodeURIComponent(formatId)}` : ""
-      const res = await fetch(`/api/items?pageSize=100&page=1${formatParam}`)
-      if (!res.ok) return []
-      const json: PaginatedResponse<ItemData> = await res.json()
-      // Fetch all pages if needed
-      const allItems = [...json.data]
-      const totalPages = Math.ceil(json.total / json.pageSize)
-      for (let p = 2; p <= totalPages; p++) {
-        const r = await fetch(`/api/items?pageSize=100&page=${p}${formatParam}`)
-        if (r.ok) {
-          const j: PaginatedResponse<ItemData> = await r.json()
-          allItems.push(...j.data)
+      try {
+        const json = await fetchJson<PaginatedResponse<ItemData>>(
+          `/api/items?pageSize=100&page=1${formatParam}`,
+        )
+        const allItems = [...json.data]
+        const totalPages = Math.ceil(json.total / json.pageSize)
+        for (let p = 2; p <= totalPages; p++) {
+          try {
+            const j = await fetchJson<PaginatedResponse<ItemData>>(
+              `/api/items?pageSize=100&page=${p}${formatParam}`,
+            )
+            allItems.push(...j.data)
+          } catch {
+            // Skip failed pages
+          }
         }
+        return allItems
+      } catch {
+        return []
       }
-      return allItems
     },
     staleTime: Infinity,
   })

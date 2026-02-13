@@ -156,6 +156,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   const [isChatStreaming, setIsChatStreaming] = useState(false)
   const [guidedBuilderStep, setGuidedBuilderStep] = useState<string | null>(null)
   const [guidedBuilderTeamSize, setGuidedBuilderTeamSize] = useState(0)
+  const [isAutoAnalyzing, setIsAutoAnalyzing] = useState(false)
 
   // Hydrate from localStorage after mount (avoids SSR/client mismatch)
   useEffect(() => {
@@ -253,8 +254,6 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   }, [])
   const queueAutoSend = useCallback((text: string) => setAutoSendMessage(text), [])
   const clearAutoSend = useCallback(() => setAutoSendMessage(null), [])
-
-  const [isAutoAnalyzing, setIsAutoAnalyzing] = useState(false)
 
   return (
     <ChatContext.Provider

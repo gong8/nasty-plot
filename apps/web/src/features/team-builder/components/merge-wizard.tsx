@@ -62,9 +62,13 @@ export function MergeWizard({ open, onOpenChange, diff, onMerge, isLoading }: Me
 
   const hasConflicts = diff.changed.length > 0 || diff.added.length > 0 || diff.removed.length > 0
 
-  const truncate = (s: string, max = 24) => (s.length > max ? s.slice(0, max - 1) + "\u2026" : s)
-  const nameA = truncate(diff.teamAName)
-  const nameB = truncate(diff.teamBName)
+  const MAX_DISPLAY_NAME_LENGTH = 24
+  const truncateName = (name: string) =>
+    name.length > MAX_DISPLAY_NAME_LENGTH
+      ? name.slice(0, MAX_DISPLAY_NAME_LENGTH - 1) + "\u2026"
+      : name
+  const nameA = truncateName(diff.teamAName)
+  const nameB = truncateName(diff.teamBName)
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

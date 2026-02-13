@@ -2,7 +2,12 @@
 
 import { useState, useMemo } from "react"
 import { Input } from "@/components/ui/input"
+import { cn } from "@nasty-plot/ui"
 import type { PopularityData } from "../../hooks/use-popularity-data"
+
+const MAX_COMMON_MOVES = 12
+const MAX_OTHER_MOVES = 20
+const BLUR_CLOSE_DELAY_MS = 150
 
 interface MoveInputProps {
   index: number
@@ -45,18 +50,21 @@ export function MoveInput({
     }
 
     if (!popularity?.moves?.length) {
-      return { commonMoves: [] as string[], otherFilteredMoves: available.slice(0, 20) }
+      return {
+        commonMoves: [] as string[],
+        otherFilteredMoves: available.slice(0, MAX_OTHER_MOVES),
+      }
     }
 
     const availableSet = new Set(available)
 
     const common = popularity.moves
       .filter((m) => availableSet.has(m.name))
-      .slice(0, 12)
+      .slice(0, MAX_COMMON_MOVES)
       .map((m) => m.name)
 
     const commonSet = new Set(common)
-    const other = available.filter((m) => !commonSet.has(m)).slice(0, 20)
+    const other = available.filter((m) => !commonSet.has(m)).slice(0, MAX_OTHER_MOVES)
 
     return { commonMoves: common, otherFilteredMoves: other }
   }, [search, learnset, otherMoves, popularity])
@@ -82,10 +90,10 @@ export function MoveInput({
           setOpen(true)
         }}
         onBlur={() => {
-          // Delay to allow click
-          setTimeout(() => setOpen(false), 150)
+          // Delay to allow click on dropdown items before closing
+          setTimeout(() => setOpen(false), BLUR_CLOSE_DELAY_MS)
         }}
-        className={`${compact ? "h-8 text-sm " : ""}${isDuplicate ? "border-destructive" : ""}`}
+        className={cn(compact && "h-8 text-sm", isDuplicate && "border-destructive")}
       />
       {isDuplicate && <p className="text-[10px] text-destructive mt-0.5">Duplicate move</p>}
       {open && (commonMoves.length > 0 || otherFilteredMoves.length > 0) && (

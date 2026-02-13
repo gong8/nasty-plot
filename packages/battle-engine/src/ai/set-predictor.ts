@@ -1,5 +1,8 @@
 import type { SmogonSetData } from "@nasty-plot/core"
 
+/** Near-zero probability for sets that contradict observations */
+const MISMATCH_PROBABILITY_FACTOR = 0.01
+
 interface PredictedSet {
   set: SmogonSetData
   probability: number
@@ -47,25 +50,17 @@ export class SetPredictor {
     if (!preds) return
 
     for (const pred of preds) {
-      if (observation.moveUsed) {
-        const moves = Array.isArray(pred.set.moves) ? pred.set.moves.flat() : []
-        const hasMove = moves.some(
-          (m) =>
-            typeof m === "string" &&
-            m.toLowerCase().replace(/\s/g, "") ===
-              observation.moveUsed!.toLowerCase().replace(/\s/g, ""),
-        )
-        if (!hasMove) pred.probability *= 0.01 // Near-zero but not zero
+      if (observation.moveUsed && !setContainsMove(pred.set, observation.moveUsed)) {
+        pred.probability *= MISMATCH_PROBABILITY_FACTOR
       }
-      if (observation.itemRevealed) {
-        if (pred.set.item.toLowerCase() !== observation.itemRevealed.toLowerCase()) {
-          pred.probability *= 0.01
-        }
+      if (observation.itemRevealed && !matchesIgnoreCase(pred.set.item, observation.itemRevealed)) {
+        pred.probability *= MISMATCH_PROBABILITY_FACTOR
       }
-      if (observation.abilityRevealed) {
-        if (pred.set.ability.toLowerCase() !== observation.abilityRevealed.toLowerCase()) {
-          pred.probability *= 0.01
-        }
+      if (
+        observation.abilityRevealed &&
+        !matchesIgnoreCase(pred.set.ability, observation.abilityRevealed)
+      ) {
+        pred.probability *= MISMATCH_PROBABILITY_FACTOR
       }
     }
 
@@ -97,4 +92,18 @@ export class SetPredictor {
   hasPredictions(pokemonId: string): boolean {
     return (this.predictions.get(pokemonId)?.length ?? 0) > 0
   }
+}
+
+function normalizeMoveName(s: string): string {
+  return s.toLowerCase().replace(/\s/g, "")
+}
+
+function matchesIgnoreCase(a: string, b: string): boolean {
+  return a.toLowerCase() === b.toLowerCase()
+}
+
+function setContainsMove(set: SmogonSetData, moveName: string): boolean {
+  const moves = Array.isArray(set.moves) ? set.moves.flat() : []
+  const normalized = normalizeMoveName(moveName)
+  return moves.some((m) => typeof m === "string" && normalizeMoveName(m) === normalized)
 }

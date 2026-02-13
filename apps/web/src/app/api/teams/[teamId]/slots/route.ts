@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { addSlot } from "@nasty-plot/teams"
 import type { TeamSlotInput } from "@nasty-plot/core"
+import { apiErrorResponse } from "../../../../../lib/api-error"
 
 export async function POST(request: Request, { params }: { params: Promise<{ teamId: string }> }) {
   try {
@@ -9,9 +10,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ tea
     const slot = await addSlot(teamId, body)
     return NextResponse.json(slot, { status: 201 })
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown error"
-    const status =
-      message === "Team already has 6 slots" || message.startsWith("Duplicate move") ? 400 : 500
-    return NextResponse.json({ error: message }, { status })
+    return apiErrorResponse(error, {
+      clientErrorPatterns: ["Team already has 6 slots", "Duplicate move"],
+    })
   }
 }

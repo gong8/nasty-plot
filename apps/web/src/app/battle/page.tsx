@@ -27,6 +27,7 @@ import {
   clearCheckpoint,
 } from "@/features/battle/lib/checkpoint-store"
 import { BattleSprite } from "@/features/battle/components/PokemonSprite"
+import { getHealthColorHex } from "@/features/battle/components/HealthBar"
 import type { BattleCheckpoint, BattlePokemon } from "@nasty-plot/battle-engine"
 import type { BattleSummary } from "@/features/battle/types"
 
@@ -69,8 +70,7 @@ function PokemonRow({ pokemon, side }: { pokemon: BattlePokemon[]; side: "p1" | 
                 className="h-full rounded-full"
                 style={{
                   width: `${p.hpPercent}%`,
-                  backgroundColor:
-                    p.hpPercent > 50 ? "#22c55e" : p.hpPercent > 20 ? "#eab308" : "#ef4444",
+                  backgroundColor: getHealthColorHex(p.hpPercent),
                 }}
               />
             </div>

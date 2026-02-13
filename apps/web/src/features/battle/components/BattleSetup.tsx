@@ -149,15 +149,9 @@ export function BattleSetup({ onStart, initialTeamId, initialFormatId }: BattleS
   )
   const canStart = playerValidation.valid && opponentValidation.valid
 
-  const handleFormatChange = (newFormatId: string) => {
-    setFormatId(newFormatId)
-  }
-
-  // Clear selections when gameType changes (e.g. switching from singles to doubles)
-  // but keep them when staying in the same gameType (e.g. OU to UU)
+  // Clear saved-team selections when gameType changes (e.g. singles -> doubles)
   if (gameType !== prevGameTypeRef.current) {
     prevGameTypeRef.current = gameType
-    // If selections reference saved teams, clear them since they may be incompatible
     if (playerSelection.source === "saved") {
       setPlayerSelection(emptySelection(""))
     }
@@ -179,7 +173,7 @@ export function BattleSetup({ onStart, initialTeamId, initialFormatId }: BattleS
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label>Format</Label>
-              <FormatSelector value={formatId} onChange={handleFormatChange} activeOnly />
+              <FormatSelector value={formatId} onChange={setFormatId} activeOnly />
             </div>
 
             <div>

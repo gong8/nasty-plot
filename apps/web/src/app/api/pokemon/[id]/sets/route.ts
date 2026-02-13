@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
+import { apiErrorResponse } from "../../../../../lib/api-error"
 import { getSetsForPokemon } from "@nasty-plot/smogon-data"
 import type { ApiResponse, SmogonSetData } from "@nasty-plot/core"
 
@@ -24,7 +25,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const response: ApiResponse<SmogonSetData[]> = { data: sets }
     return NextResponse.json(response)
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Unknown error"
-    return NextResponse.json({ error: message, code: "SETS_ERROR" }, { status: 500 })
+    return apiErrorResponse(err, { code: "SETS_ERROR" })
   }
 }

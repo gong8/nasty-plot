@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { createSampleTeam, listSampleTeams } from "@nasty-plot/teams"
+import { apiErrorResponse } from "../../../lib/api-error"
 
 export async function GET(request: Request) {
   try {
@@ -10,8 +11,7 @@ export async function GET(request: Request) {
     const teams = await listSampleTeams({ formatId, archetype, search })
     return NextResponse.json(teams)
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown error"
-    return NextResponse.json({ error: message }, { status: 500 })
+    return apiErrorResponse(error)
   }
 }
 
@@ -31,7 +31,6 @@ export async function POST(request: Request) {
     })
     return NextResponse.json(team, { status: 201 })
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown error"
-    return NextResponse.json({ error: message }, { status: 500 })
+    return apiErrorResponse(error)
   }
 }

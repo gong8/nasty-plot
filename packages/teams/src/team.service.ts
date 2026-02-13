@@ -154,7 +154,7 @@ export function domainSlotToDb(slot: TeamSlotInput) {
   }
 }
 
-function dbTeamToDomain(dbTeam: DbTeamRow): TeamData {
+export function dbTeamToDomain(dbTeam: DbTeamRow): TeamData {
   return {
     id: dbTeam.id,
     name: dbTeam.name,
@@ -171,11 +171,15 @@ function dbTeamToDomain(dbTeam: DbTeamRow): TeamData {
   }
 }
 
+const MAX_TEAM_SLOTS = 6
+const REORDER_TEMP_OFFSET = 100
+const DEFAULT_GENERATION = 9
+
 // --- Service Functions ---
 
 function parseGeneration(formatId: string): number {
-  const digits = formatId.replace(/[^0-9]/g, "")
-  return parseInt(digits.charAt(0) || "9")
+  const firstDigit = formatId.match(/\d/)?.[0]
+  return firstDigit ? parseInt(firstDigit) : DEFAULT_GENERATION
 }
 
 function inferGameType(formatId: string): "singles" | "doubles" {
@@ -274,8 +278,8 @@ export async function cleanupEmptyTeams(): Promise<number> {
 
 export async function addSlot(teamId: string, slot: TeamSlotInput): Promise<TeamSlotData> {
   const existingCount = await prisma.teamSlot.count({ where: { teamId } })
-  if (existingCount >= 6) {
-    throw new Error("Team already has 6 slots")
+  if (existingCount >= MAX_TEAM_SLOTS) {
+    throw new Error(`Team already has ${MAX_TEAM_SLOTS} slots`)
   }
 
   const dbData = domainSlotToDb(slot)
@@ -285,6 +289,9 @@ export async function addSlot(teamId: string, slot: TeamSlotInput): Promise<Team
   return dbSlotToDomain(created)
 }
 
+const SCALAR_FIELDS = ["pokemonId", "ability", "item", "nature", "level"] as const
+const NULLABLE_FIELDS = ["nickname", "teraType"] as const
+
 export async function updateSlot(
   teamId: string,
   position: number,
@@ -292,13 +299,12 @@ export async function updateSlot(
 ): Promise<TeamSlotData> {
   const updateData: Record<string, unknown> = {}
 
-  if (data.pokemonId !== undefined) updateData.pokemonId = data.pokemonId
-  if (data.nickname !== undefined) updateData.nickname = data.nickname ?? null
-  if (data.ability !== undefined) updateData.ability = data.ability
-  if (data.item !== undefined) updateData.item = data.item
-  if (data.nature !== undefined) updateData.nature = data.nature
-  if (data.teraType !== undefined) updateData.teraType = data.teraType ?? null
-  if (data.level !== undefined) updateData.level = data.level
+  for (const field of SCALAR_FIELDS) {
+    if (data[field] !== undefined) updateData[field] = data[field]
+  }
+  for (const field of NULLABLE_FIELDS) {
+    if (data[field] !== undefined) updateData[field] = data[field] ?? null
+  }
 
   if (data.moves !== undefined) Object.assign(updateData, movesToDb(data.moves))
   if (data.evs !== undefined) Object.assign(updateData, evsToDb(data.evs))
@@ -345,11 +351,10 @@ export async function reorderSlots(teamId: string, newOrder: number[]): Promise<
   const posToId = new Map(slots.map((s) => [s.position, s.id]))
 
   // Use temporary positions to avoid unique constraint conflicts
-  const tempOffset = 100
   for (let i = 0; i < slots.length; i++) {
     await prisma.teamSlot.update({
       where: { id: slots[i].id },
-      data: { position: tempOffset + i },
+      data: { position: REORDER_TEMP_OFFSET + i },
     })
   }
 

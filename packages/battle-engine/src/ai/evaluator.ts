@@ -52,6 +52,15 @@ const W = {
 
 const NORMALIZATION_FACTOR = 1400
 
+const STATUS_WEIGHTS: Record<string, number> = {
+  brn: W.STATUS_BRN,
+  par: W.STATUS_PAR,
+  slp: W.STATUS_SLP,
+  tox: W.STATUS_TOX,
+  psn: W.STATUS_PSN,
+  frz: W.STATUS_FRZ,
+}
+
 function isAlive(p: BattlePokemon): boolean {
   return !p.fainted && p.hp > 0
 }
@@ -99,27 +108,8 @@ function evalScreens(sc: SideConditions): number {
 function evalStatus(team: BattlePokemon[]): number {
   let score = 0
   for (const p of team) {
-    if (!isAlive(p)) continue
-    switch (p.status) {
-      case "brn":
-        score += W.STATUS_BRN
-        break
-      case "par":
-        score += W.STATUS_PAR
-        break
-      case "slp":
-        score += W.STATUS_SLP
-        break
-      case "tox":
-        score += W.STATUS_TOX
-        break
-      case "psn":
-        score += W.STATUS_PSN
-        break
-      case "frz":
-        score += W.STATUS_FRZ
-        break
-    }
+    if (!isAlive(p) || !p.status) continue
+    score += STATUS_WEIGHTS[p.status] ?? 0
   }
   return score
 }
@@ -167,8 +157,8 @@ function evalActiveMatchup(
   }
 
   // Stat boosts
-  const myBoostTotal = Object.values(myActive.boosts).reduce((a, b) => a + b, 0)
-  const oppBoostTotal = Object.values(oppActive.boosts).reduce((a, b) => a + b, 0)
+  const myBoostTotal = Object.values(myActive.boosts).reduce((sum, val) => sum + val, 0)
+  const oppBoostTotal = Object.values(oppActive.boosts).reduce((sum, val) => sum + val, 0)
   score += (myBoostTotal - oppBoostTotal) * W.BOOST_PER_STAGE
 
   // Substitute

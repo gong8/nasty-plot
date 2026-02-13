@@ -201,6 +201,35 @@ async function verifySmogonSets(
   return { issues, total: rows.length }
 }
 
+function verifyPokemonIdPairs(
+  table: string,
+  rows: { formatId: string; idA: string; idB: string; fieldA: string; fieldB: string }[],
+): Issue[] {
+  const issues: Issue[] = []
+  const checked = new Map<string, boolean>()
+  for (const row of rows) {
+    for (const { id, field } of [
+      { id: row.idA, field: row.fieldA },
+      { id: row.idB, field: row.fieldB },
+    ]) {
+      if (!checked.has(id)) {
+        checked.set(id, speciesExists(id))
+      }
+      if (!checked.get(id)) {
+        issues.push({
+          table,
+          formatId: row.formatId,
+          pokemonId: id,
+          field,
+          value: id,
+          message: `Species "${id}" not found in @pkmn/dex`,
+        })
+      }
+    }
+  }
+  return issues
+}
+
 async function verifyTeammateCorr(
   formatFilter?: string,
 ): Promise<{ issues: Issue[]; total: number }> {
@@ -211,27 +240,14 @@ async function verifyTeammateCorr(
     distinct: ["formatId", "pokemonAId", "pokemonBId"],
   })
 
-  const issues: Issue[] = []
-  // Collect unique IDs to avoid repeated checks
-  const checked = new Map<string, boolean>()
-  for (const row of rows) {
-    for (const id of [row.pokemonAId, row.pokemonBId]) {
-      if (!checked.has(id)) {
-        checked.set(id, speciesExists(id))
-      }
-      if (!checked.get(id)) {
-        issues.push({
-          table: "TeammateCorr",
-          formatId: row.formatId,
-          pokemonId: id,
-          field: id === row.pokemonAId ? "pokemonAId" : "pokemonBId",
-          value: id,
-          message: `Species "${id}" not found in @pkmn/dex`,
-        })
-      }
-    }
-  }
-  return { issues, total: rows.length }
+  const mapped = rows.map((r) => ({
+    formatId: r.formatId,
+    idA: r.pokemonAId,
+    idB: r.pokemonBId,
+    fieldA: "pokemonAId",
+    fieldB: "pokemonBId",
+  }))
+  return { issues: verifyPokemonIdPairs("TeammateCorr", mapped), total: rows.length }
 }
 
 async function verifyCheckCounters(
@@ -244,26 +260,14 @@ async function verifyCheckCounters(
     distinct: ["formatId", "targetId", "counterId"],
   })
 
-  const issues: Issue[] = []
-  const checked = new Map<string, boolean>()
-  for (const row of rows) {
-    for (const id of [row.targetId, row.counterId]) {
-      if (!checked.has(id)) {
-        checked.set(id, speciesExists(id))
-      }
-      if (!checked.get(id)) {
-        issues.push({
-          table: "CheckCounter",
-          formatId: row.formatId,
-          pokemonId: id,
-          field: id === row.targetId ? "targetId" : "counterId",
-          value: id,
-          message: `Species "${id}" not found in @pkmn/dex`,
-        })
-      }
-    }
-  }
-  return { issues, total: rows.length }
+  const mapped = rows.map((r) => ({
+    formatId: r.formatId,
+    idA: r.targetId,
+    idB: r.counterId,
+    fieldA: "targetId",
+    fieldB: "counterId",
+  }))
+  return { issues: verifyPokemonIdPairs("CheckCounter", mapped), total: rows.length }
 }
 
 async function verifyMoveUsage(formatFilter?: string): Promise<{ issues: Issue[]; total: number }> {
@@ -371,17 +375,18 @@ async function verifyAbilityUsage(
 
 // ─── Fix: delete rows with unresolvable Pokemon IDs ─────────────────────────
 
+const POKEMON_ID_FIELDS = new Set([
+  "pokemonId",
+  "pokemonAId",
+  "pokemonBId",
+  "targetId",
+  "counterId",
+])
+
 async function fixBadPokemonIds(issues: Issue[]): Promise<void> {
-  // Collect unique bad Pokemon IDs per table
   const badIds = new Map<string, Set<string>>()
   for (const issue of issues) {
-    if (
-      issue.field === "pokemonId" ||
-      issue.field === "pokemonAId" ||
-      issue.field === "pokemonBId" ||
-      issue.field === "targetId" ||
-      issue.field === "counterId"
-    ) {
+    if (POKEMON_ID_FIELDS.has(issue.field)) {
       const key = issue.table
       if (!badIds.has(key)) badIds.set(key, new Set())
       badIds.get(key)!.add(issue.value)
@@ -498,13 +503,7 @@ async function main(): Promise<void> {
   const badAbilities = new Set<string>()
 
   for (const issue of allIssues) {
-    if (
-      issue.field === "pokemonId" ||
-      issue.field === "pokemonAId" ||
-      issue.field === "pokemonBId" ||
-      issue.field === "targetId" ||
-      issue.field === "counterId"
-    ) {
+    if (POKEMON_ID_FIELDS.has(issue.field)) {
       badPokemonIds.add(issue.value)
     } else if (issue.field === "moves" || issue.field === "moveName") {
       badMoves.add(issue.value)

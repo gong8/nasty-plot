@@ -8,6 +8,7 @@
 import {
   DEFAULT_FORMAT_ID,
   DEFAULT_LEVEL,
+  toId,
   type ExtractedPokemonData,
   type ExtractedTeamData,
 } from "@nasty-plot/core"
@@ -51,9 +52,23 @@ export async function fetchShowdownReplay(replayId: string): Promise<ShowdownRep
   return res.json() as Promise<ShowdownReplayJson>
 }
 
-/** Convert a display name to a species ID */
-function toSpeciesId(name: string): string {
-  return name.toLowerCase().replace(/[^a-z0-9]/g, "")
+type SideId = "p1" | "p2"
+
+const IDENT_RE = /^(p[12])[a-d]?:\s*(.+)$/
+
+function parseIdentifier(raw: string | undefined): { side: SideId; nickname: string } | null {
+  const match = raw?.match(IDENT_RE)
+  if (!match) return null
+  return { side: match[1] as SideId, nickname: match[2].trim() }
+}
+
+function parseLevelFromDetails(detailParts: string[]): number {
+  for (let i = 1; i < detailParts.length; i++) {
+    if (detailParts[i].startsWith("L")) {
+      return parseInt(detailParts[i].slice(1), 10)
+    }
+  }
+  return DEFAULT_LEVEL
 }
 
 /**
@@ -69,16 +84,34 @@ export function parseProtocolLog(log: string): ParsedBattleImport {
   let winnerId: "p1" | "p2" | "draw" | null = null
   let turnCount = 0
 
-  // Track pokemon by side
-  const teams: Record<"p1" | "p2", Map<string, ExtractedPokemonData>> = {
+  const teams: Record<SideId, Map<string, ExtractedPokemonData>> = {
     p1: new Map(),
     p2: new Map(),
   }
 
-  // Map nicknames to species for each side
-  const nicknameToSpecies: Record<"p1" | "p2", Map<string, string>> = {
+  const nicknameToSpecies: Record<SideId, Map<string, string>> = {
     p1: new Map(),
     p2: new Map(),
+  }
+
+  function ensurePokemon(
+    side: SideId,
+    speciesId: string,
+    species: string,
+    level: number,
+  ): ExtractedPokemonData {
+    let pokemon = teams[side].get(speciesId)
+    if (!pokemon) {
+      pokemon = { speciesId, species, level, moves: [] }
+      teams[side].set(speciesId, pokemon)
+    }
+    return pokemon
+  }
+
+  function resolvePokemon(side: SideId, nickname: string): ExtractedPokemonData | null {
+    const speciesId = nicknameToSpecies[side].get(nickname)
+    if (!speciesId) return null
+    return teams[side].get(speciesId) ?? null
   }
 
   for (const line of lines) {
@@ -89,7 +122,7 @@ export function parseProtocolLog(log: string): ParsedBattleImport {
 
     switch (cmd) {
       case "player": {
-        const side = args[0] as "p1" | "p2"
+        const side = args[0] as SideId
         if ((side === "p1" || side === "p2") && args[1]) {
           playerNames[side === "p1" ? 0 : 1] = args[1]
         }
@@ -108,153 +141,93 @@ export function parseProtocolLog(log: string): ParsedBattleImport {
         const genMatch = tier.match(/\[Gen\s*(\d+)\]\s*(.+)/i)
         if (genMatch) {
           const gen = genMatch[1]
-          const format = genMatch[2].toLowerCase().replace(/[^a-z0-9]/g, "")
+          const format = toId(genMatch[2])
           formatId = `gen${gen}${format}`
         } else {
-          formatId = tier.toLowerCase().replace(/[^a-z0-9]/g, "")
+          formatId = toId(tier)
         }
         break
       }
 
       case "poke": {
-        // |poke|p1|Garchomp, L100, M|
-        const side = args[0] as "p1" | "p2"
+        const side = args[0] as SideId
         if (side !== "p1" && side !== "p2") break
         const detailParts = (args[1] || "").split(",").map((s) => s.trim())
         const species = detailParts[0]
-        let level = DEFAULT_LEVEL
-        for (let i = 1; i < detailParts.length; i++) {
-          if (detailParts[i].startsWith("L")) {
-            level = parseInt(detailParts[i].slice(1), 10)
-          }
-        }
-        const speciesId = toSpeciesId(species)
-        if (!teams[side].has(speciesId)) {
-          teams[side].set(speciesId, {
-            speciesId,
-            species,
-            level,
-            moves: [],
-          })
-        }
+        ensurePokemon(side, toId(species), species, parseLevelFromDetails(detailParts))
         break
       }
 
       case "switch":
       case "drag":
       case "replace": {
-        // |switch|p1a: Garchomp|Garchomp, L100, M|319/319
-        const identMatch = args[0]?.match(/^(p[12])[a-d]?:\s*(.+)$/)
-        if (!identMatch) break
-        const side = identMatch[1] as "p1" | "p2"
-        const nickname = identMatch[2].trim()
+        const ident = parseIdentifier(args[0])
+        if (!ident) break
         const detailParts = (args[1] || "").split(",").map((s) => s.trim())
         const species = detailParts[0]
-        const speciesId = toSpeciesId(species)
+        const speciesId = toId(species)
 
-        // Map nickname → species
-        nicknameToSpecies[side].set(nickname, speciesId)
+        nicknameToSpecies[ident.side].set(ident.nickname, speciesId)
 
-        let level = DEFAULT_LEVEL
-        for (let i = 1; i < detailParts.length; i++) {
-          if (detailParts[i].startsWith("L")) {
-            level = parseInt(detailParts[i].slice(1), 10)
-          }
-        }
-
-        if (!teams[side].has(speciesId)) {
-          teams[side].set(speciesId, {
-            speciesId,
-            species,
-            level,
-            moves: [],
-          })
-        }
-        const pokemon = teams[side].get(speciesId)!
-        if (nickname !== species) {
-          pokemon.nickname = nickname
+        const pokemon = ensurePokemon(
+          ident.side,
+          speciesId,
+          species,
+          parseLevelFromDetails(detailParts),
+        )
+        if (ident.nickname !== species) {
+          pokemon.nickname = ident.nickname
         }
         break
       }
 
       case "move": {
-        // |move|p1a: Garchomp|Earthquake|p2a: Heatran
-        const moveIdentMatch = args[0]?.match(/^(p[12])[a-d]?:\s*(.+)$/)
-        if (!moveIdentMatch) break
-        const side = moveIdentMatch[1] as "p1" | "p2"
-        const nickname = moveIdentMatch[2].trim()
+        const ident = parseIdentifier(args[0])
+        if (!ident) break
         const moveName = args[1]
         if (!moveName) break
 
-        // Resolve nickname to species
-        const speciesId = nicknameToSpecies[side].get(nickname)
-        if (speciesId) {
-          const pokemon = teams[side].get(speciesId)
-          if (pokemon && !pokemon.moves.includes(moveName)) {
-            pokemon.moves.push(moveName)
-          }
+        const pokemon = resolvePokemon(ident.side, ident.nickname)
+        if (pokemon && !pokemon.moves.includes(moveName)) {
+          pokemon.moves.push(moveName)
         }
         break
       }
 
       case "-ability": {
-        const abilityIdentMatch = args[0]?.match(/^(p[12])[a-d]?:\s*(.+)$/)
-        if (!abilityIdentMatch) break
-        const side = abilityIdentMatch[1] as "p1" | "p2"
-        const nickname = abilityIdentMatch[2].trim()
-        const abilityName = args[1]
+        const ident = parseIdentifier(args[0])
+        if (!ident) break
 
-        const speciesId = nicknameToSpecies[side].get(nickname)
-        if (speciesId && abilityName) {
-          const pokemon = teams[side].get(speciesId)
-          if (pokemon) pokemon.ability = abilityName
-        }
+        const pokemon = resolvePokemon(ident.side, ident.nickname)
+        if (pokemon && args[1]) pokemon.ability = args[1]
         break
       }
 
       case "-item": {
-        const itemIdentMatch = args[0]?.match(/^(p[12])[a-d]?:\s*(.+)$/)
-        if (!itemIdentMatch) break
-        const side = itemIdentMatch[1] as "p1" | "p2"
-        const nickname = itemIdentMatch[2].trim()
-        const itemName = args[1]
+        const ident = parseIdentifier(args[0])
+        if (!ident) break
 
-        const speciesId = nicknameToSpecies[side].get(nickname)
-        if (speciesId && itemName) {
-          const pokemon = teams[side].get(speciesId)
-          if (pokemon) pokemon.item = itemName
-        }
+        const pokemon = resolvePokemon(ident.side, ident.nickname)
+        if (pokemon && args[1]) pokemon.item = args[1]
         break
       }
 
       case "-enditem": {
-        const endItemIdentMatch = args[0]?.match(/^(p[12])[a-d]?:\s*(.+)$/)
-        if (!endItemIdentMatch) break
-        const side = endItemIdentMatch[1] as "p1" | "p2"
-        const nickname = endItemIdentMatch[2].trim()
-        const itemName = args[1]
+        const ident = parseIdentifier(args[0])
+        if (!ident) break
 
-        const speciesId = nicknameToSpecies[side].get(nickname)
-        if (speciesId && itemName) {
-          const pokemon = teams[side].get(speciesId)
-          // Only set item if not already set (first reveal is more reliable)
-          if (pokemon && !pokemon.item) pokemon.item = itemName
-        }
+        const pokemon = resolvePokemon(ident.side, ident.nickname)
+        // Only set item if not already set (first reveal is more reliable)
+        if (pokemon && !pokemon.item && args[1]) pokemon.item = args[1]
         break
       }
 
       case "-terastallize": {
-        const teraIdentMatch = args[0]?.match(/^(p[12])[a-d]?:\s*(.+)$/)
-        if (!teraIdentMatch) break
-        const side = teraIdentMatch[1] as "p1" | "p2"
-        const nickname = teraIdentMatch[2].trim()
-        const teraType = args[1]
+        const ident = parseIdentifier(args[0])
+        if (!ident) break
 
-        const speciesId = nicknameToSpecies[side].get(nickname)
-        if (speciesId && teraType) {
-          const pokemon = teams[side].get(speciesId)
-          if (pokemon) pokemon.teraType = teraType
-        }
+        const pokemon = resolvePokemon(ident.side, ident.nickname)
+        if (pokemon && args[1]) pokemon.teraType = args[1]
         break
       }
 
@@ -264,12 +237,8 @@ export function parseProtocolLog(log: string): ParsedBattleImport {
       }
 
       case "win": {
-        const winnerName = args[0]
-        if (winnerName === playerNames[0]) {
-          winnerId = "p1"
-        } else if (winnerName === playerNames[1]) {
-          winnerId = "p2"
-        }
+        if (args[0] === playerNames[0]) winnerId = "p1"
+        else if (args[0] === playerNames[1]) winnerId = "p2"
         break
       }
 

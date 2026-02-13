@@ -15,6 +15,7 @@ import {
 } from "@nasty-plot/battle-engine"
 import type { GameType } from "@nasty-plot/core"
 import { saveCheckpoint, clearCheckpoint } from "@/features/battle/lib/checkpoint-store"
+import { postJson } from "@/lib/api-client"
 
 interface UseBattleConfig {
   playerTeamPaste: string
@@ -122,58 +123,50 @@ export function useBattle() {
     }
   }, [])
 
-  const chooseLead = useCallback(async (leadOrder: number[]) => {
-    const manager = managerRef.current
-    if (!manager) return
+  const withManagerAction = useCallback(
+    async (action: (manager: BattleManager) => Promise<void>, errorLabel: string) => {
+      const manager = managerRef.current
+      if (!manager) return
 
-    setIsLoading(true)
-    try {
-      await manager.chooseLead(leadOrder)
-      setState({ ...manager.getState() })
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to choose lead")
-    } finally {
-      setIsLoading(false)
-    }
-  }, [])
+      setIsLoading(true)
+      try {
+        await action(manager)
+        setState({ ...manager.getState() })
+      } catch (err) {
+        setError(err instanceof Error ? err.message : errorLabel)
+      } finally {
+        setIsLoading(false)
+      }
+    },
+    [],
+  )
 
-  const submitMove = useCallback(async (moveIndex: number, tera?: boolean, targetSlot?: number) => {
-    const manager = managerRef.current
-    if (!manager) return
+  const chooseLead = useCallback(
+    async (leadOrder: number[]) => {
+      await withManagerAction((m) => m.chooseLead(leadOrder), "Failed to choose lead")
+    },
+    [withManagerAction],
+  )
 
-    setIsLoading(true)
-    try {
-      await manager.submitAction({
-        type: "move",
-        moveIndex,
-        tera,
-        targetSlot,
-      })
-      setState({ ...manager.getState() })
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to submit move")
-    } finally {
-      setIsLoading(false)
-    }
-  }, [])
+  const submitMove = useCallback(
+    async (moveIndex: number, tera?: boolean, targetSlot?: number) => {
+      await withManagerAction(
+        (m) => m.submitAction({ type: "move", moveIndex, tera, targetSlot }),
+        "Failed to submit move",
+      )
+    },
+    [withManagerAction],
+  )
 
-  const submitSwitch = useCallback(async (pokemonIndex: number) => {
-    const manager = managerRef.current
-    if (!manager) return
-
-    setIsLoading(true)
-    try {
-      await manager.submitAction({
-        type: "switch",
-        pokemonIndex,
-      })
-      setState({ ...manager.getState() })
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to submit switch")
-    } finally {
-      setIsLoading(false)
-    }
-  }, [])
+  const submitSwitch = useCallback(
+    async (pokemonIndex: number) => {
+      await withManagerAction(
+        (m) => m.submitAction({ type: "switch", pokemonIndex }),
+        "Failed to submit switch",
+      )
+    },
+    [withManagerAction],
+  )
 
   const rematch = useCallback(async () => {
     if (!configRef.current) return
@@ -241,30 +234,23 @@ export function useBattle() {
         const protocolLog = manager.getProtocolLog()
         const winnerId = state.winner === "p1" ? "team1" : state.winner === "p2" ? "team2" : null
 
-        const res = await fetch("/api/battles", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            formatId: config.formatId,
-            gameType: config.gameType,
-            mode: "play",
-            aiDifficulty: config.aiDifficulty,
-            team1Paste: config.playerTeamPaste,
-            team1Name: config.playerName || "Player",
-            team2Paste: config.opponentTeamPaste,
-            team2Name: config.opponentName || "Opponent",
-            team1Id: config.playerTeamId || null,
-            team2Id: config.opponentTeamId || null,
-            winnerId,
-            turnCount: state.turn,
-            protocolLog,
-            commentary: commentary ?? null,
-            chatSessionId: chatSessionId ?? null,
-          }),
+        const data = await postJson<{ id: string }>("/api/battles", {
+          formatId: config.formatId,
+          gameType: config.gameType,
+          mode: "play",
+          aiDifficulty: config.aiDifficulty,
+          team1Paste: config.playerTeamPaste,
+          team1Name: config.playerName || "Player",
+          team2Paste: config.opponentTeamPaste,
+          team2Name: config.opponentName || "Opponent",
+          team1Id: config.playerTeamId || null,
+          team2Id: config.opponentTeamId || null,
+          winnerId,
+          turnCount: state.turn,
+          protocolLog,
+          commentary: commentary ?? null,
+          chatSessionId: chatSessionId ?? null,
         })
-
-        if (!res.ok) throw new Error("Failed to save battle")
-        const data = await res.json()
         return data.id
       } catch (err) {
         console.error("[useBattle] Save error:", err)

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { exportShowdownPaste } from "@nasty-plot/teams"
+import { apiErrorResponse } from "../../../../../lib/api-error"
 
 export async function GET(_request: Request, { params }: { params: Promise<{ teamId: string }> }) {
   try {
@@ -9,8 +10,6 @@ export async function GET(_request: Request, { params }: { params: Promise<{ tea
       headers: { "Content-Type": "text/plain" },
     })
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown error"
-    const status = message === "Team not found" ? 404 : 500
-    return NextResponse.json({ error: message }, { status })
+    return apiErrorResponse(error, { inferNotFound: true })
   }
 }

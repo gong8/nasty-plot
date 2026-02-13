@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { updateSlot, removeSlot } from "@nasty-plot/teams"
+import { apiErrorResponse } from "../../../../../../lib/api-error"
 
 function parsePosition(position: string): number | null {
   const pos = parseInt(position, 10)
@@ -21,9 +22,7 @@ export async function PUT(
     const slot = await updateSlot(teamId, pos, body)
     return NextResponse.json(slot)
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown error"
-    const status = message.startsWith("Duplicate move") ? 400 : 500
-    return NextResponse.json({ error: message }, { status })
+    return apiErrorResponse(error, { clientErrorPatterns: ["Duplicate move"] })
   }
 }
 
@@ -40,7 +39,6 @@ export async function DELETE(
     await removeSlot(teamId, pos)
     return NextResponse.json({ success: true })
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown error"
-    return NextResponse.json({ error: message }, { status: 500 })
+    return apiErrorResponse(error)
   }
 }

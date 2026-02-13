@@ -28,28 +28,27 @@ export function BattleExportDialog({ battleId, open, onOpenChange }: BattleExpor
   useEffect(() => {
     if (!open || !battleId) return
     let cancelled = false
+    setLoading(true)
 
-    Promise.resolve()
-      .then(() => {
-        if (!cancelled) setLoading(true)
-        return Promise.all([
+    const loadExports = async () => {
+      try {
+        const [showdownLog, jsonData] = await Promise.all([
           fetch(`/api/battles/${battleId}/export?format=showdown`).then((r) => r.text()),
           fetch(`/api/battles/${battleId}/export?format=json`).then((r) => r.json()),
         ])
-      })
-      .then(([log, json]) => {
         if (cancelled) return
-        setLogContent(log)
-        setJsonContent(JSON.stringify(json, null, 2))
-      })
-      .catch(() => {
+        setLogContent(showdownLog)
+        setJsonContent(JSON.stringify(jsonData, null, 2))
+      } catch {
         if (cancelled) return
         setLogContent("Error loading battle log")
         setJsonContent("{}")
-      })
-      .finally(() => {
+      } finally {
         if (!cancelled) setLoading(false)
-      })
+      }
+    }
+
+    loadExports()
     return () => {
       cancelled = true
     }
@@ -59,14 +58,14 @@ export function BattleExportDialog({ battleId, open, onOpenChange }: BattleExpor
     navigator.clipboard.writeText(content)
   }
 
-  const handleDownload = (content: string, filename: string, type: string) => {
-    const blob = new Blob([content], { type })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement("a")
-    a.href = url
-    a.download = filename
-    a.click()
-    URL.revokeObjectURL(url)
+  const handleDownload = (content: string, filename: string, mimeType: string) => {
+    const blob = new Blob([content], { type: mimeType })
+    const blobUrl = URL.createObjectURL(blob)
+    const link = document.createElement("a")
+    link.href = blobUrl
+    link.download = filename
+    link.click()
+    URL.revokeObjectURL(blobUrl)
   }
 
   return (

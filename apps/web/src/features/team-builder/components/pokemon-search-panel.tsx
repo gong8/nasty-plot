@@ -5,8 +5,9 @@ import { useQuery } from "@tanstack/react-query"
 import { Search } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { type PokemonSpecies, type PokemonType } from "@nasty-plot/core"
+import { type PokemonSpecies, type PokemonType, type PaginatedResponse } from "@nasty-plot/core"
 import { TypeBadge } from "@nasty-plot/ui"
+import { fetchJson } from "@/lib/api-client"
 
 interface PokemonSearchPanelProps {
   onSelect: (pokemon: PokemonSpecies) => void
@@ -22,10 +23,12 @@ export function PokemonSearchPanel({ onSelect, formatId }: PokemonSearchPanelPro
       if (!search || search.length < 2) return []
       let url = `/api/pokemon?search=${encodeURIComponent(search)}`
       if (formatId) url += `&format=${encodeURIComponent(formatId)}`
-      const res = await fetch(url)
-      if (!res.ok) return []
-      const json = await res.json()
-      return json.data ?? []
+      try {
+        const json = await fetchJson<PaginatedResponse<PokemonSpecies>>(url)
+        return json.data ?? []
+      } catch {
+        return []
+      }
     },
     enabled: search.length >= 2,
   })

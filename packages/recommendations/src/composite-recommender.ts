@@ -4,6 +4,9 @@ import { dbSlotToDomain } from "@nasty-plot/teams"
 import { getCoverageBasedRecommendations } from "./coverage-recommender"
 import { getUsageBasedRecommendations } from "./usage-recommender"
 
+const MAX_SCORE = 100
+const CANDIDATE_MULTIPLIER = 2
+
 interface CompositeWeights {
   usage: number
   coverage: number
@@ -38,25 +41,26 @@ export async function getRecommendations(
 
   const slots = team.slots.map(dbSlotToDomain)
   const teamPokemonIds = slots.map((s) => s.pokemonId)
+  const candidateLimit = limit * CANDIDATE_MULTIPLIER
 
   const [usageRecs, coverageRecs] = await Promise.all([
-    getUsageBasedRecommendations(teamPokemonIds, team.formatId, limit * 2),
-    getCoverageBasedRecommendations(slots, team.formatId, limit * 2),
+    getUsageBasedRecommendations(teamPokemonIds, team.formatId, candidateLimit),
+    getCoverageBasedRecommendations(slots, team.formatId, candidateLimit),
   ])
 
   const scoreMap = mergeRecommendations(usageRecs, coverageRecs)
 
   const combined: Recommendation[] = []
-  for (const [pokemonId, data] of scoreMap) {
+  for (const [pokemonId, entry] of scoreMap) {
     const compositeScore = Math.round(
-      data.usageScore * weights.usage + data.coverageScore * weights.coverage,
+      entry.usageScore * weights.usage + entry.coverageScore * weights.coverage,
     )
 
     combined.push({
       pokemonId,
-      pokemonName: data.pokemonName,
-      score: Math.min(100, compositeScore),
-      reasons: data.reasons,
+      pokemonName: entry.pokemonName,
+      score: Math.min(MAX_SCORE, compositeScore),
+      reasons: entry.reasons,
     })
   }
 

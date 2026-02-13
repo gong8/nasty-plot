@@ -22,10 +22,8 @@ export function calculateStat(
     return core + level + 10
   }
 
-  const natureData = NATURE_DATA[nature]
-  let natureMod = 1.0
-  if (natureData.plus === stat) natureMod = 1.1
-  if (natureData.minus === stat) natureMod = 0.9
+  const { plus, minus } = NATURE_DATA[nature]
+  const natureMod = plus === stat ? 1.1 : minus === stat ? 0.9 : 1.0
 
   return Math.floor((core + 5) * natureMod)
 }

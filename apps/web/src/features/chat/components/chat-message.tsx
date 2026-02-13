@@ -9,6 +9,8 @@ import { useState, useCallback } from "react"
 import { cn } from "@nasty-plot/ui"
 import { PECHARUNT_SPRITE_URL } from "@/lib/constants"
 
+const COPY_FEEDBACK_MS = 2000
+
 interface ChatMessageProps {
   role: "user" | "assistant"
   content: string
@@ -21,7 +23,7 @@ function CopyButton({ text }: { text: string }) {
   const handleCopy = useCallback(() => {
     navigator.clipboard.writeText(text)
     setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
+    setTimeout(() => setCopied(false), COPY_FEEDBACK_MS)
   }, [text])
 
   return (

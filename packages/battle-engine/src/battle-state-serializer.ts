@@ -1,4 +1,10 @@
-import type { BattleState, BattlePokemon, BattleSide, SideConditions } from "./types"
+import {
+  calcHpPercent,
+  type BattleState,
+  type BattlePokemon,
+  type BattleSide,
+  type SideConditions,
+} from "./types"
 
 /**
  * Serialize a BattleState into a comprehensive text snapshot for the LLM.
@@ -51,7 +57,7 @@ export function serializeBattleState(state: BattleState): string {
       lines.push("Switches:")
       for (const sw of acts.switches) {
         if (sw.fainted) continue
-        const hpPct = sw.maxHp > 0 ? Math.round((sw.hp / sw.maxHp) * 100) : 0
+        const hpPct = calcHpPercent(sw.hp, sw.maxHp)
         const sts = sw.status ? ` ${sw.status.toUpperCase()}` : ""
         lines.push(`  - ${sw.name} (${hpPct}% HP${sts})`)
       }
@@ -160,7 +166,11 @@ function serializePokemon(p: BattlePokemon, full: boolean): string {
   return parts.join(" | ")
 }
 
-function serializeSideConditions(sc: SideConditions): string {
+/**
+ * Format side conditions into a comma-separated string.
+ * Returns empty string if no conditions are active.
+ */
+export function formatSideConditions(sc: SideConditions): string {
   const parts: string[] = []
   if (sc.stealthRock) parts.push("Stealth Rock")
   if (sc.spikes > 0) parts.push(`Spikes x${sc.spikes}`)
@@ -170,5 +180,10 @@ function serializeSideConditions(sc: SideConditions): string {
   if (sc.lightScreen > 0) parts.push(`Light Screen (${sc.lightScreen}t)`)
   if (sc.auroraVeil > 0) parts.push(`Aurora Veil (${sc.auroraVeil}t)`)
   if (sc.tailwind > 0) parts.push(`Tailwind (${sc.tailwind}t)`)
-  return parts.length > 0 ? `Hazards/Screens: ${parts.join(", ")}` : ""
+  return parts.join(", ")
+}
+
+function serializeSideConditions(sc: SideConditions): string {
+  const formatted = formatSideConditions(sc)
+  return formatted ? `Hazards/Screens: ${formatted}` : ""
 }

@@ -3,6 +3,9 @@
 import { useState, useEffect, useRef } from "react"
 import { cn } from "@nasty-plot/ui"
 
+const MIN_CHAR_DELAY_MS = 3
+const BASE_CHAR_DELAY_MS = 8
+
 interface BattleTextBoxProps {
   message: string | null
   speed?: number
@@ -15,10 +18,14 @@ export function BattleTextBox({ message, speed = 1, className }: BattleTextBoxPr
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   useEffect(() => {
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current)
-      intervalRef.current = null
+    const clearTypingInterval = () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current)
+        intervalRef.current = null
+      }
     }
+
+    clearTypingInterval()
 
     if (!message) {
       setDisplayedText("")
@@ -30,27 +37,19 @@ export function BattleTextBox({ message, speed = 1, className }: BattleTextBoxPr
     setIsTyping(true)
     let charIndex = 0
 
-    const charDelay = Math.max(3, 8 / speed)
+    const charDelay = Math.max(MIN_CHAR_DELAY_MS, BASE_CHAR_DELAY_MS / speed)
     intervalRef.current = setInterval(() => {
       charIndex++
       if (charIndex >= message.length) {
         setDisplayedText(message)
         setIsTyping(false)
-        if (intervalRef.current) {
-          clearInterval(intervalRef.current)
-          intervalRef.current = null
-        }
+        clearTypingInterval()
       } else {
         setDisplayedText(message.slice(0, charIndex))
       }
     }, charDelay)
 
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current)
-        intervalRef.current = null
-      }
-    }
+    return clearTypingInterval
   }, [message, speed])
 
   if (!message) return null

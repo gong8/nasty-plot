@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dialog"
 import { ArrowLeftRight, Sparkles, Target, Swords, Wand2, Circle } from "lucide-react"
 import { BattleSprite } from "./PokemonSprite"
+import { getHealthColor } from "./HealthBar"
 
 /** Move targets that require the player to pick a specific target slot in doubles */
 const TARGETABLE_MOVE_TARGETS = new Set([
@@ -50,6 +51,8 @@ function formatTargetType(target: string): string {
       return target
   }
 }
+
+const FALLBACK_TYPE_COLOR = FALLBACK_TYPE_COLOR
 
 const CATEGORY_ICONS = {
   Physical: Swords,
@@ -158,10 +161,10 @@ export function MoveSelector({
 
   // Build 2x2 grid slots for the target modal
   // @pkmn/sim target slots: positive (1,2) = foe slots, negative (-1,-2) = self/ally slots
-  const allySlot = (activeSlot ?? 0) === 0 ? -2 : -1
-  const selfSlot = (activeSlot ?? 0) === 0 ? -1 : -2
   const mySlotIndex = activeSlot ?? 0
   const allySlotIndex = mySlotIndex === 0 ? 1 : 0
+  const selfSlot = mySlotIndex === 0 ? -1 : -2
+  const allySlot = mySlotIndex === 0 ? -2 : -1
 
   const pendingMove = pendingMoveIndex !== null ? actions.moves[pendingMoveIndex] : null
   const pendingTarget = pendingMove?.target ?? ""
@@ -171,7 +174,7 @@ export function MoveSelector({
     if (!pendingMove) return false
     switch (pendingTarget) {
       case "normal":
-        return isFoe || (!isSelf && !isFoe) // foes + ally
+        return !isSelf // foes + ally
       case "adjacentFoe":
         return isFoe
       case "any":
@@ -222,7 +225,7 @@ export function MoveSelector({
       <TooltipProvider>
         <div className="grid grid-cols-2 gap-2">
           {actions.moves.map((move, i) => {
-            const color = TYPE_COLORS[move.type] || "#A8A878"
+            const color = TYPE_COLORS[move.type] || FALLBACK_TYPE_COLOR
             const light = isLightTypeColor(color)
             const isDamaging = move.category !== "Status" && move.basePower > 0
             const CategoryIcon = CATEGORY_ICONS[move.category] || Circle
@@ -337,7 +340,9 @@ export function MoveSelector({
                 <span className="flex items-center gap-2">
                   <span
                     className="inline-block w-2.5 h-2.5 rounded-full shrink-0"
-                    style={{ backgroundColor: TYPE_COLORS[pendingMove.type] || "#A8A878" }}
+                    style={{
+                      backgroundColor: TYPE_COLORS[pendingMove.type] || FALLBACK_TYPE_COLOR,
+                    }}
                   />
                   {pendingMove.name}
                 </span>
@@ -412,7 +417,7 @@ function TargetCard({
   }
 
   const hpPercent = pokemon.maxHp > 0 ? (pokemon.hp / pokemon.maxHp) * 100 : 0
-  const hpColor = hpPercent > 50 ? "bg-green-500" : hpPercent > 20 ? "bg-yellow-500" : "bg-red-500"
+  const hpColor = getHealthColor(hpPercent)
 
   return (
     <button
@@ -458,8 +463,8 @@ function TargetCard({
         {pokemon.types.map((t) => (
           <span
             key={t}
-            className={`text-[9px] px-1 py-px rounded font-medium ${isLightTypeColor(TYPE_COLORS[t] || "#A8A878") ? "text-gray-900" : "text-white"}`}
-            style={{ backgroundColor: TYPE_COLORS[t] || "#A8A878" }}
+            className={`text-[9px] px-1 py-px rounded font-medium ${isLightTypeColor(TYPE_COLORS[t] || FALLBACK_TYPE_COLOR) ? "text-gray-900" : "text-white"}`}
+            style={{ backgroundColor: TYPE_COLORS[t] || FALLBACK_TYPE_COLOR }}
           >
             {t}
           </span>

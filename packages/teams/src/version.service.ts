@@ -12,7 +12,7 @@ import type {
   ForkOptions,
   LineageNode,
 } from "@nasty-plot/core"
-import { getTeam, domainSlotToDb, dbSlotToDomain } from "./team.service"
+import { getTeam, domainSlotToDb, dbTeamToDomain } from "./team.service"
 
 const LINEAGE_SAFETY_LIMIT = 100
 
@@ -35,28 +35,14 @@ export async function forkTeam(teamId: string, options?: ForkOptions): Promise<T
     })
 
     for (const slot of source.slots) {
+      const mod = options?.modifySlots?.find(
+        (m) => m.position === slot.position || m.pokemonId === slot.pokemonId,
+      )
+      const { species: _species, ...rest } = slot
       const slotInput = {
-        position: slot.position,
-        pokemonId: slot.pokemonId,
-        nickname: slot.nickname,
-        ability: slot.ability,
-        item: slot.item,
-        nature: slot.nature,
-        teraType: slot.teraType,
-        level: slot.level,
+        ...rest,
         moves: slot.moves as [string, string?, string?, string?],
-        evs: slot.evs,
-        ivs: slot.ivs,
-      }
-
-      // Apply modifications if provided
-      if (options?.modifySlots) {
-        const mod = options.modifySlots.find(
-          (m) => m.position === slot.position || m.pokemonId === slot.pokemonId,
-        )
-        if (mod) {
-          Object.assign(slotInput, mod)
-        }
+        ...mod,
       }
 
       const dbData = domainSlotToDb(slotInput)
@@ -70,7 +56,7 @@ export async function forkTeam(teamId: string, options?: ForkOptions): Promise<T
       include: { slots: { orderBy: { position: "asc" } } },
     })
 
-    return toTeamData(result!)
+    return dbTeamToDomain(result!)
   })
 }
 
@@ -176,7 +162,7 @@ export async function mergeTeams(
   }
 
   return prisma.$transaction(async (tx) => {
-    const mergeNotes = options?.notes ? options.notes : `Merged from ${teamB.name} (${teamBId})`
+    const mergeNotes = options?.notes ?? `Merged from ${teamB.name} (${teamBId})`
 
     const newTeam = await tx.team.create({
       data: {
@@ -190,21 +176,7 @@ export async function mergeTeams(
     })
 
     for (let i = 0; i < slots.length; i++) {
-      const slot = slots[i]
-      const slotInput = {
-        position: i + 1,
-        pokemonId: slot.pokemonId,
-        nickname: slot.nickname,
-        ability: slot.ability,
-        item: slot.item,
-        nature: slot.nature,
-        teraType: slot.teraType,
-        level: slot.level,
-        moves: slot.moves as [string, string?, string?, string?],
-        evs: slot.evs,
-        ivs: slot.ivs,
-      }
-      const dbData = domainSlotToDb(slotInput)
+      const dbData = slotToDbData(slots[i], i + 1)
       await tx.teamSlot.create({
         data: { teamId: newTeam.id, ...dbData },
       })
@@ -215,7 +187,7 @@ export async function mergeTeams(
       include: { slots: { orderBy: { position: "asc" } } },
     })
 
-    return toTeamData(result!)
+    return dbTeamToDomain(result!)
   })
 }
 
@@ -236,52 +208,37 @@ export async function getLineageTree(teamId: string): Promise<LineageNode> {
   }
   const rootId = currentId
 
+  const lineageSelect = {
+    id: true,
+    name: true,
+    branchName: true,
+    parentId: true,
+    isArchived: true,
+    createdAt: true,
+    slots: { select: { pokemonId: true } },
+  } as const
+
   // Batch-load all teams in lineage by traversing down from root
-  const allTeams = new Map<
-    string,
-    {
-      id: string
-      name: string
-      branchName: string | null
-      parentId: string | null
-      isArchived: boolean
-      createdAt: Date
-      slots: { pokemonId: string }[]
-    }
-  >()
+  type LineageTeam = Awaited<
+    ReturnType<typeof prisma.team.findMany<{ select: typeof lineageSelect }>>
+  >[number]
+  const allTeams = new Map<string, LineageTeam>()
 
   const queue = [rootId]
   while (queue.length > 0 && allTeams.size < LINEAGE_SAFETY_LIMIT) {
     const batch = queue.splice(0, 50)
     const teams = await prisma.team.findMany({
       where: { id: { in: batch } },
-      select: {
-        id: true,
-        name: true,
-        branchName: true,
-        parentId: true,
-        isArchived: true,
-        createdAt: true,
-        slots: { select: { pokemonId: true } },
-      },
+      select: lineageSelect,
     })
 
     for (const t of teams) {
       allTeams.set(t.id, t)
     }
 
-    // Find children of these teams
     const children = await prisma.team.findMany({
       where: { parentId: { in: batch } },
-      select: {
-        id: true,
-        name: true,
-        branchName: true,
-        parentId: true,
-        isArchived: true,
-        createdAt: true,
-        slots: { select: { pokemonId: true } },
-      },
+      select: lineageSelect,
     })
 
     for (const c of children) {
@@ -353,6 +310,15 @@ export async function restoreTeam(teamId: string): Promise<void> {
 
 // --- Internal Helpers ---
 
+function slotToDbData(slot: TeamSlotData, position: number) {
+  const { species: _species, ...rest } = slot
+  return domainSlotToDb({
+    ...rest,
+    position,
+    moves: slot.moves as [string, string?, string?, string?],
+  })
+}
+
 function buildSlotMap(slots: TeamSlotData[]): Map<string, TeamSlotData[]> {
   const map = new Map<string, TeamSlotData[]>()
   for (const slot of slots) {
@@ -423,61 +389,4 @@ function diffSlot(a: TeamSlotData, b: TeamSlotData): FieldChange[] {
   }
 
   return changes
-}
-
-type DbTeamResult = {
-  id: string
-  name: string
-  formatId: string
-  mode: string
-  notes: string | null
-  parentId: string | null
-  branchName: string | null
-  isArchived: boolean
-  createdAt: Date
-  updatedAt: Date
-  slots: {
-    id: number
-    teamId: string
-    position: number
-    pokemonId: string
-    nickname: string | null
-    ability: string
-    item: string
-    nature: string
-    teraType: string | null
-    level: number
-    move1: string
-    move2: string | null
-    move3: string | null
-    move4: string | null
-    evHp: number
-    evAtk: number
-    evDef: number
-    evSpA: number
-    evSpD: number
-    evSpe: number
-    ivHp: number
-    ivAtk: number
-    ivDef: number
-    ivSpA: number
-    ivSpD: number
-    ivSpe: number
-  }[]
-}
-
-function toTeamData(db: DbTeamResult): TeamData {
-  return {
-    id: db.id,
-    name: db.name,
-    formatId: db.formatId,
-    mode: db.mode as "freeform" | "guided",
-    notes: db.notes ?? undefined,
-    parentId: db.parentId ?? undefined,
-    branchName: db.branchName ?? undefined,
-    isArchived: db.isArchived,
-    slots: db.slots.sort((a, b) => a.position - b.position).map(dbSlotToDomain),
-    createdAt: db.createdAt.toISOString(),
-    updatedAt: db.updatedAt.toISOString(),
-  }
 }

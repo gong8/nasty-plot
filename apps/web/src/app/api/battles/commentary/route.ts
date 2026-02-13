@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
+import { apiErrorResponse } from "../../../../lib/api-error"
 import {
   buildTurnCommentaryContext,
   buildPostBattleContext,
@@ -88,9 +89,6 @@ export async function POST(req: NextRequest) {
     })
   } catch (err) {
     console.error("[Commentary API]", err)
-    return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Commentary failed" },
-      { status: 500 },
-    )
+    return apiErrorResponse(err, { fallback: "Commentary failed" })
   }
 }

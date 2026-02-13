@@ -6,7 +6,7 @@ import {
   updateSideFromRequest,
 } from "./protocol-parser"
 import type { SetPredictor } from "./ai/set-predictor"
-import { DEFAULT_FORMAT_ID, type GameType } from "@nasty-plot/core"
+import { DEFAULT_FORMAT_ID, toId, type GameType } from "@nasty-plot/core"
 import type {
   BattleState,
   BattleAction,
@@ -553,7 +553,7 @@ export class BattleManager {
       if (!arg0.startsWith("p2")) continue
 
       const pokemonName = arg0.replace(/^p2[a-d]?:\s*/, "").trim()
-      const pokemonId = pokemonName.toLowerCase().replace(/[^a-z0-9]/g, "")
+      const pokemonId = toId(pokemonName)
 
       if (cmd === "move" && parts[3]) {
         this.setPredictor.updateFromObservation(pokemonId, { moveUsed: parts[3] })

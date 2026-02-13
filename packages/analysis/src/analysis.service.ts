@@ -16,6 +16,13 @@ import { analyzeTypeCoverage } from "./coverage.service"
 import { identifyThreats } from "./threat.service"
 import { calculateSynergy } from "./synergy.service"
 
+const TOP_USAGE_FOR_BENCHMARKS = 20
+const MAX_BENCHMARKS = 10
+const MAX_SPEED_EVS = 252
+const PERFECT_IV = 31
+const LOW_SYNERGY_THRESHOLD = 40
+const FULL_TEAM_SIZE = 6
+
 /**
  * Full team analysis orchestrator.
  */
@@ -52,7 +59,6 @@ async function calculateSpeedTiers(
 ): Promise<SpeedTierEntry[]> {
   const entries: SpeedTierEntry[] = []
 
-  // Team entries
   for (const slot of slots) {
     if (!slot.species) continue
 
@@ -74,23 +80,28 @@ async function calculateSpeedTiers(
     })
   }
 
-  // Dynamic benchmarks from format usage data
   const format = getFormat(formatId)
   const level = format?.defaultLevel ?? 100
   const teamPokemonIds = new Set(slots.map((s) => s.pokemonId))
 
-  const usageEntries = await getUsageStats(formatId, { limit: 20 })
+  const usageEntries = await getUsageStats(formatId, { limit: TOP_USAGE_FOR_BENCHMARKS })
 
   let benchmarkCount = 0
   for (const entry of usageEntries) {
-    if (benchmarkCount >= 10) break
+    if (benchmarkCount >= MAX_BENCHMARKS) break
     if (teamPokemonIds.has(entry.pokemonId)) continue
 
     const species = getSpecies(entry.pokemonId)
     if (!species) continue
 
-    // Max speed: 252 EVs, 31 IVs, +Spe nature (Jolly)
-    const maxSpeed = calculateStat("spe", species.baseStats.spe, 31, 252, level, "Jolly")
+    const maxSpeed = calculateStat(
+      "spe",
+      species.baseStats.spe,
+      PERFECT_IV,
+      MAX_SPEED_EVS,
+      level,
+      "Jolly",
+    )
 
     entries.push({
       pokemonId: entry.pokemonId,
@@ -98,7 +109,7 @@ async function calculateSpeedTiers(
       pokemonNum: species.num,
       speed: maxSpeed,
       nature: "Jolly",
-      evs: 252,
+      evs: MAX_SPEED_EVS,
       isBenchmark: true,
     })
     benchmarkCount++
@@ -129,25 +140,25 @@ function generateSuggestions(
     )
   }
 
-  const highThreats = threats.filter((t) => t.threatLevel === "high")
+  const highThreats = threats.filter((threat) => threat.threatLevel === "high")
   if (highThreats.length > 0) {
     const threatNames = highThreats
       .slice(0, 2)
-      .map((t) => t.pokemonName)
+      .map((threat) => threat.pokemonName)
       .join(" and ")
-    const plural = highThreats.length !== 1
+    const isMultiple = highThreats.length !== 1
     suggestions.push(
-      `${threatNames} ${plural ? "are" : "is a"} significant threat${plural ? "s" : ""}. Consider adding a check or counter.`,
+      `${threatNames} ${isMultiple ? "are" : "is a"} significant threat${isMultiple ? "s" : ""}. Consider adding a check or counter.`,
     )
   }
 
-  if (synergyScore < 40) {
+  if (synergyScore < LOW_SYNERGY_THRESHOLD) {
     suggestions.push(
       "Team synergy is low. Consider Pokemon that complement each other's weaknesses and resistances.",
     )
   }
 
-  if (slots.length < 6) {
+  if (slots.length < FULL_TEAM_SIZE) {
     suggestions.push(
       `Your team only has ${slots.length} Pokemon. Fill the remaining slots for a complete team.`,
     )

@@ -13,6 +13,15 @@ const THREAT_LEVEL_ORDER: Record<ThreatEntry["threatLevel"], number> = {
   low: 2,
 }
 
+const TOP_USAGE_LIMIT = 50
+const MAX_RESULTS = 20
+const MULTI_WEAK_SCORE_PER_SLOT = 15
+const SINGLE_WEAK_SCORE = 5
+const MAX_USAGE_SCORE = 30
+const HIGH_THREAT_THRESHOLD = 40
+const MEDIUM_THREAT_THRESHOLD = 20
+const MIN_LOW_THREAT_SCORE = 10
+
 /**
  * Identify threats to the team based on usage stats and type matchups.
  */
@@ -20,7 +29,7 @@ export async function identifyThreats(
   slots: TeamSlotData[],
   formatId: string,
 ): Promise<ThreatEntry[]> {
-  const usageEntries = await getUsageStats(formatId, { limit: 50 })
+  const usageEntries = await getUsageStats(formatId, { limit: TOP_USAGE_LIMIT })
 
   if (usageEntries.length === 0) {
     return []
@@ -35,50 +44,47 @@ export async function identifyThreats(
     const species = getSpecies(entry.pokemonId)
     if (!species) continue
 
-    const threatTypes = species.types as PokemonType[]
+    const stabTypes = species.types as PokemonType[]
     let threatScore = 0
     const reasons: string[] = []
     const threatenedSlotIds = new Set<string>()
 
-    // Check if this threat exploits team weaknesses with STAB
-    for (const tType of threatTypes) {
-      let weakSlots = 0
+    for (const stabType of stabTypes) {
+      let weakSlotCount = 0
       for (const slot of slots) {
-        const defTypes = slot.species?.types ?? []
-        if (defTypes.length === 0) continue
-        if (getTypeEffectiveness(tType, defTypes) > 1) {
-          weakSlots++
+        const defenderTypes = slot.species?.types ?? []
+        if (defenderTypes.length === 0) continue
+        if (getTypeEffectiveness(stabType, defenderTypes) > 1) {
+          weakSlotCount++
           threatenedSlotIds.add(slot.pokemonId)
         }
       }
-      if (weakSlots >= 2) {
-        threatScore += weakSlots * 15
-        reasons.push(`${tType}-type STAB hits ${weakSlots} team members super-effectively`)
-      } else if (weakSlots === 1) {
-        threatScore += 5
+      if (weakSlotCount >= 2) {
+        threatScore += weakSlotCount * MULTI_WEAK_SCORE_PER_SLOT
+        reasons.push(`${stabType}-type STAB hits ${weakSlotCount} team members super-effectively`)
+      } else if (weakSlotCount === 1) {
+        threatScore += SINGLE_WEAK_SCORE
       }
     }
 
-    // Higher usage = higher threat baseline
-    threatScore += Math.min(entry.usagePercent * 2, 30)
+    threatScore += Math.min(entry.usagePercent * 2, MAX_USAGE_SCORE)
 
     let threatLevel: ThreatEntry["threatLevel"]
-    if (threatScore >= 40) {
+    if (threatScore >= HIGH_THREAT_THRESHOLD) {
       threatLevel = "high"
-    } else if (threatScore >= 20) {
+    } else if (threatScore >= MEDIUM_THREAT_THRESHOLD) {
       threatLevel = "medium"
     } else {
       threatLevel = "low"
     }
 
-    // Only include medium+ threats or low threats with meaningful scores
-    if (threatLevel === "low" && threatScore < 10) continue
+    if (threatLevel === "low" && threatScore < MIN_LOW_THREAT_SCORE) continue
 
     threats.push({
       pokemonId: entry.pokemonId,
       pokemonName: species.name,
       pokemonNum: species.num,
-      types: threatTypes,
+      types: stabTypes,
       usagePercent: entry.usagePercent,
       threatLevel,
       reason:
@@ -95,5 +101,5 @@ export async function identifyThreats(
     return b.usagePercent - a.usagePercent
   })
 
-  return threats.slice(0, 20)
+  return threats.slice(0, MAX_RESULTS)
 }

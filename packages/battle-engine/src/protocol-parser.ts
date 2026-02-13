@@ -1,15 +1,17 @@
 import { getRawMove } from "@nasty-plot/pokemon-data"
-import { DEFAULT_EVS, DEFAULT_LEVEL, type PokemonType } from "@nasty-plot/core"
-import type {
-  BattleState,
-  BattlePokemon,
-  BattleLogEntry,
-  BattleLogType,
-  BattleActionSet,
-  StatusCondition,
-  Weather,
-  Terrain,
-  BoostTable,
+import { DEFAULT_EVS, DEFAULT_LEVEL, toId, type PokemonType } from "@nasty-plot/core"
+import {
+  calcHpPercent,
+  type BattleState,
+  type BattlePokemon,
+  type BattleLogEntry,
+  type BattleLogType,
+  type BattleActionSet,
+  type StatusCondition,
+  type Weather,
+  type Terrain,
+  type BoostTable,
+  type SideConditions,
 } from "./types"
 
 /**
@@ -30,6 +32,103 @@ const BOOST_STAT_NAMES: Record<string, string> = {
 }
 
 const STAT_BOOST_ABILITIES = ["quarkdrive", "protosynthesis"] as const
+
+const STATUS_NAMES: Record<string, string> = {
+  brn: "burned",
+  par: "paralyzed",
+  slp: "fell asleep",
+  frz: "was frozen",
+  psn: "was poisoned",
+  tox: "was badly poisoned",
+}
+
+const WEATHER_MAP: Record<string, Weather> = {
+  Sandstorm: "Sand",
+  SunnyDay: "Sun",
+  RainDance: "Rain",
+  Snow: "Snow",
+  Hail: "Snow",
+  DesolateLand: "Desolate Land",
+  PrimordialSea: "Primordial Sea",
+  DeltaStream: "Delta Stream",
+}
+
+const TERRAIN_MAP: Record<string, Terrain> = {
+  "Electric Terrain": "Electric",
+  "Grassy Terrain": "Grassy",
+  "Misty Terrain": "Misty",
+  "Psychic Terrain": "Psychic",
+}
+
+const SIDE_CONDITION_HANDLERS: Record<
+  string,
+  { set: (sc: SideConditions) => void; clear: (sc: SideConditions) => void }
+> = {
+  "Stealth Rock": {
+    set: (sc) => {
+      sc.stealthRock = true
+    },
+    clear: (sc) => {
+      sc.stealthRock = false
+    },
+  },
+  Spikes: {
+    set: (sc) => {
+      sc.spikes = Math.min(3, sc.spikes + 1)
+    },
+    clear: (sc) => {
+      sc.spikes = 0
+    },
+  },
+  "Toxic Spikes": {
+    set: (sc) => {
+      sc.toxicSpikes = Math.min(2, sc.toxicSpikes + 1)
+    },
+    clear: (sc) => {
+      sc.toxicSpikes = 0
+    },
+  },
+  "Sticky Web": {
+    set: (sc) => {
+      sc.stickyWeb = true
+    },
+    clear: (sc) => {
+      sc.stickyWeb = false
+    },
+  },
+  Reflect: {
+    set: (sc) => {
+      sc.reflect = 5
+    },
+    clear: (sc) => {
+      sc.reflect = 0
+    },
+  },
+  "Light Screen": {
+    set: (sc) => {
+      sc.lightScreen = 5
+    },
+    clear: (sc) => {
+      sc.lightScreen = 0
+    },
+  },
+  "Aurora Veil": {
+    set: (sc) => {
+      sc.auroraVeil = 5
+    },
+    clear: (sc) => {
+      sc.auroraVeil = 0
+    },
+  },
+  Tailwind: {
+    set: (sc) => {
+      sc.tailwind = 4
+    },
+    clear: (sc) => {
+      sc.tailwind = 0
+    },
+  },
+}
 
 /** Parse "quarkdrivespe" → { ability: "Quark Drive", stat: "Speed" } or null */
 function parseStatBoostCondition(condition: string): { ability: string; stat: string } | null {
@@ -96,11 +195,6 @@ function parseDetails(details: string): { species: string; level: number; gender
   return { species, level, gender }
 }
 
-/** Convert a species display name like "Great Tusk" to an ID like "greattusk". */
-function toSpeciesId(name: string): string {
-  return name.toLowerCase().replace(/[^a-z0-9]/g, "")
-}
-
 /** Slot letter to 0-based index */
 function slotIndex(slot: string): number {
   return slot.charCodeAt(0) - "a".charCodeAt(0)
@@ -130,6 +224,22 @@ function makeEmptyPokemon(): BattlePokemon {
     boosts: defaultBoosts(),
     volatiles: [],
   }
+}
+
+/**
+ * Apply HP data to a pokemon, only increasing maxHp to avoid
+ * corruption from percentage-format HP in opponent's perspective.
+ */
+function applyHpUpdate(
+  pokemon: BattlePokemon,
+  hpData: { hp: number; maxHp: number },
+  status?: StatusCondition,
+) {
+  pokemon.hp = hpData.hp
+  if (hpData.maxHp > pokemon.maxHp) pokemon.maxHp = hpData.maxHp
+  pokemon.hpPercent = calcHpPercent(pokemon.hp, pokemon.maxHp)
+  if (status) pokemon.status = status
+  pokemon.fainted = pokemon.hp === 0
 }
 
 /**
@@ -187,20 +297,13 @@ export function processLine(state: BattleState, line: string): BattleLogEntry | 
         // New pokemon we haven't seen
         pokemon = makeEmptyPokemon()
         pokemon.name = details.species
-        pokemon.speciesId = toSpeciesId(details.species)
+        pokemon.speciesId = toId(details.species)
         pokemon.nickname = ident.name
         pokemon.level = details.level
         side.team.push(pokemon)
       }
 
-      pokemon.hp = hpData.hp
-      // Only increase maxHp — the sim outputs percentage HP (X/100) for the
-      // opponent's perspective, so a second chunk can corrupt absolute values.
-      // The authoritative source is updateSideFromRequest (|request| data).
-      if (hpData.maxHp > pokemon.maxHp) pokemon.maxHp = hpData.maxHp
-      pokemon.hpPercent = pokemon.maxHp > 0 ? Math.round((pokemon.hp / pokemon.maxHp) * 100) : 0
-      pokemon.status = status
-      pokemon.fainted = hpData.hp === 0
+      applyHpUpdate(pokemon, hpData, status || undefined)
       pokemon.boosts = defaultBoosts()
       pokemon.volatiles = []
 
@@ -232,13 +335,7 @@ export function processLine(state: BattleState, line: string): BattleLogEntry | 
       const prevPercent = pokemon?.hpPercent ?? 100
 
       if (pokemon) {
-        pokemon.hp = hpData.hp
-        // Only increase maxHp — percentage-format HP from the opponent's
-        // perspective (X/100) must not overwrite the real absolute value.
-        if (hpData.maxHp > pokemon.maxHp) pokemon.maxHp = hpData.maxHp
-        pokemon.hpPercent = pokemon.maxHp > 0 ? Math.round((pokemon.hp / pokemon.maxHp) * 100) : 0
-        if (status) pokemon.status = status
-        pokemon.fainted = pokemon.hp === 0
+        applyHpUpdate(pokemon, hpData, status || undefined)
       }
 
       const isHeal = cmd === "-heal"
@@ -276,17 +373,9 @@ export function processLine(state: BattleState, line: string): BattleLogEntry | 
       const pokemon = findPokemon(state, ident.side, ident.name)
       if (pokemon) pokemon.status = statusId
 
-      const statusNames: Record<string, string> = {
-        brn: "burned",
-        par: "paralyzed",
-        slp: "fell asleep",
-        frz: "was frozen",
-        psn: "was poisoned",
-        tox: "was badly poisoned",
-      }
       return logEntry(
         "status",
-        `${ident.name} ${statusNames[statusId] || `got ${statusId}`}!`,
+        `${ident.name} ${STATUS_NAMES[statusId] || `got ${statusId}`}!`,
         state.turn,
         ident.side,
       )
@@ -337,17 +426,7 @@ export function processLine(state: BattleState, line: string): BattleLogEntry | 
         state.field.weatherTurns = 0
         return logEntry("weather", "The weather cleared!", state.turn)
       }
-      const weatherMap: Record<string, Weather> = {
-        Sandstorm: "Sand",
-        SunnyDay: "Sun",
-        RainDance: "Rain",
-        Snow: "Snow",
-        Hail: "Snow",
-        DesolateLand: "Desolate Land",
-        PrimordialSea: "Primordial Sea",
-        DeltaStream: "Delta Stream",
-      }
-      state.field.weather = weatherMap[weather] || (weather as Weather)
+      state.field.weather = WEATHER_MAP[weather] || (weather as Weather)
       if (args[1] !== "[upkeep]") {
         state.field.weatherTurns = 5 // Default, abilities may modify
       } else {
@@ -359,14 +438,8 @@ export function processLine(state: BattleState, line: string): BattleLogEntry | 
     case "-fieldstart": {
       // |-fieldstart|move: Electric Terrain
       const fieldName = args[0]?.replace("move: ", "")
-      const terrainMap: Record<string, Terrain> = {
-        "Electric Terrain": "Electric",
-        "Grassy Terrain": "Grassy",
-        "Misty Terrain": "Misty",
-        "Psychic Terrain": "Psychic",
-      }
-      if (fieldName in terrainMap) {
-        state.field.terrain = terrainMap[fieldName]
+      if (fieldName in TERRAIN_MAP) {
+        state.field.terrain = TERRAIN_MAP[fieldName]
         state.field.terrainTurns = 5
       }
       if (fieldName === "Trick Room") {
@@ -393,34 +466,8 @@ export function processLine(state: BattleState, line: string): BattleLogEntry | 
       if (!sideMatch) return null
       const side = sideMatch[1] as Side
       const hazard = args[1]?.replace("move: ", "")
-      const sc = state.sides[side].sideConditions
-
-      switch (hazard) {
-        case "Stealth Rock":
-          sc.stealthRock = true
-          break
-        case "Spikes":
-          sc.spikes = Math.min(3, sc.spikes + 1)
-          break
-        case "Toxic Spikes":
-          sc.toxicSpikes = Math.min(2, sc.toxicSpikes + 1)
-          break
-        case "Sticky Web":
-          sc.stickyWeb = true
-          break
-        case "Reflect":
-          sc.reflect = 5
-          break
-        case "Light Screen":
-          sc.lightScreen = 5
-          break
-        case "Aurora Veil":
-          sc.auroraVeil = 5
-          break
-        case "Tailwind":
-          sc.tailwind = 4
-          break
-      }
+      const handler = hazard ? SIDE_CONDITION_HANDLERS[hazard] : undefined
+      if (handler) handler.set(state.sides[side].sideConditions)
 
       return logEntry("hazard", `${hazard} was set on ${side}'s side!`, state.turn, side)
     }
@@ -430,34 +477,8 @@ export function processLine(state: BattleState, line: string): BattleLogEntry | 
       if (!sideMatch) return null
       const side = sideMatch[1] as Side
       const hazard = args[1]?.replace("move: ", "")
-      const sc = state.sides[side].sideConditions
-
-      switch (hazard) {
-        case "Stealth Rock":
-          sc.stealthRock = false
-          break
-        case "Spikes":
-          sc.spikes = 0
-          break
-        case "Toxic Spikes":
-          sc.toxicSpikes = 0
-          break
-        case "Sticky Web":
-          sc.stickyWeb = false
-          break
-        case "Reflect":
-          sc.reflect = 0
-          break
-        case "Light Screen":
-          sc.lightScreen = 0
-          break
-        case "Aurora Veil":
-          sc.auroraVeil = 0
-          break
-        case "Tailwind":
-          sc.tailwind = 0
-          break
-      }
+      const handler = hazard ? SIDE_CONDITION_HANDLERS[hazard] : undefined
+      if (handler) handler.clear(state.sides[side].sideConditions)
 
       return logEntry("hazard", `${hazard} ended on ${side}'s side!`, state.turn, side)
     }
@@ -931,7 +952,7 @@ function extractSwitches(pokemon: RequestPokemon[]): BattleActionSet["switches"]
       return {
         index: i + 1, // 1-indexed
         name: details.species,
-        speciesId: toSpeciesId(details.species),
+        speciesId: toId(details.species),
         hp: hpData.hp,
         maxHp: hpData.maxHp,
         status,
@@ -958,26 +979,22 @@ export function updateSideFromRequest(
 
     // Find existing or create
     let pokemon = state.sides[side].team.find(
-      (p) => p.name === details.species || p.speciesId === toSpeciesId(details.species),
+      (p) => p.name === details.species || p.speciesId === toId(details.species),
     )
 
     if (!pokemon) {
       pokemon = makeEmptyPokemon()
       pokemon.name = details.species
-      pokemon.speciesId = toSpeciesId(details.species)
+      pokemon.speciesId = toId(details.species)
       pokemon.nickname = reqPoke.ident?.replace(/^p[12][a-d]?: /, "") || details.species
       pokemon.level = details.level
       state.sides[side].team.push(pokemon)
     }
 
-    pokemon.hp = hpData.hp
-    // Request data is authoritative (absolute HP), but "0 fnt" returns
-    // maxHp=0 — preserve the existing maxHp so fainted Pokemon show 0/maxHp
-    // instead of 0/0.
-    if (hpData.maxHp > 0) pokemon.maxHp = hpData.maxHp
-    pokemon.hpPercent = pokemon.maxHp > 0 ? Math.round((pokemon.hp / pokemon.maxHp) * 100) : 0
-    pokemon.status = status
-    pokemon.fainted = hpData.hp === 0
+    // Request data is authoritative, but "0 fnt" returns maxHp=0 — preserve
+    // existing maxHp so fainted Pokemon show 0/maxHp instead of 0/0.
+    const effectiveMaxHp = hpData.maxHp > 0 ? hpData.maxHp : pokemon.maxHp
+    applyHpUpdate(pokemon, { hp: hpData.hp, maxHp: effectiveMaxHp }, status)
     pokemon.item = reqPoke.item || ""
     pokemon.ability = reqPoke.baseAbility || reqPoke.ability || ""
     pokemon.teraType = reqPoke.teraType as PokemonType | undefined

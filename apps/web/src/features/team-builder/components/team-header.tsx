@@ -103,6 +103,21 @@ export function TeamHeader({
     }
   }
 
+  const handleForkSubmit = async () => {
+    if (!forkName.trim() || !onFork) return
+    setForkLoading(true)
+    try {
+      await onFork({
+        name: forkName.trim(),
+        branchName: forkBranch.trim() || undefined,
+        notes: forkNotes.trim() || undefined,
+      })
+      setForkOpen(false)
+    } finally {
+      setForkLoading(false)
+    }
+  }
+
   return (
     <div className="flex flex-wrap items-center gap-3">
       {/* Team Name */}
@@ -242,23 +257,7 @@ export function TeamHeader({
                 </div>
               </div>
               <DialogFooter>
-                <Button
-                  onClick={async () => {
-                    if (!forkName.trim()) return
-                    setForkLoading(true)
-                    try {
-                      await onFork({
-                        name: forkName.trim(),
-                        branchName: forkBranch.trim() || undefined,
-                        notes: forkNotes.trim() || undefined,
-                      })
-                      setForkOpen(false)
-                    } finally {
-                      setForkLoading(false)
-                    }
-                  }}
-                  disabled={!forkName.trim() || forkLoading}
-                >
+                <Button onClick={handleForkSubmit} disabled={!forkName.trim() || forkLoading}>
                   {forkLoading ? "Forking..." : "Fork & Edit"}
                 </Button>
               </DialogFooter>

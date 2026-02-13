@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { restoreTeam } from "@nasty-plot/teams"
+import { apiErrorResponse } from "../../../../../lib/api-error"
 
 export async function POST(_request: Request, { params }: { params: Promise<{ teamId: string }> }) {
   try {
@@ -7,10 +8,6 @@ export async function POST(_request: Request, { params }: { params: Promise<{ te
     await restoreTeam(teamId)
     return NextResponse.json({ success: true })
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown error"
-    if (message.includes("not found")) {
-      return NextResponse.json({ error: message }, { status: 404 })
-    }
-    return NextResponse.json({ error: message }, { status: 500 })
+    return apiErrorResponse(error, { inferNotFound: true })
   }
 }

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
+import { apiErrorResponse } from "../../../lib/api-error"
 import { prisma } from "@nasty-plot/db"
 
 export async function GET(req: NextRequest) {
@@ -106,6 +107,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(battle, { status: 201 })
   } catch (err) {
     console.error("[POST /api/battles]", err)
-    return NextResponse.json({ error: "Failed to save battle" }, { status: 500 })
+    return apiErrorResponse(err, { fallback: "Failed to save battle" })
   }
 }

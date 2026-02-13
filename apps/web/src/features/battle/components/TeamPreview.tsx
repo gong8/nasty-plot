@@ -38,13 +38,8 @@ export function TeamPreview({
 
   const handleSinglesSubmit = () => {
     if (selectedLead === null) return
-    const order: number[] = [selectedLead + 1]
-    for (let i = 0; i < playerTeam.length; i++) {
-      if (i !== selectedLead) {
-        order.push(i + 1)
-      }
-    }
-    onSubmit(order)
+    const rest = playerTeam.map((_, i) => i + 1).filter((pos) => pos !== selectedLead + 1)
+    onSubmit([selectedLead + 1, ...rest])
   }
 
   // --- Doubles handlers ---

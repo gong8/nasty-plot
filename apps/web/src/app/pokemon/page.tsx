@@ -25,7 +25,7 @@ import { useFormats } from "@/features/battle/hooks/use-formats"
 import type { SortMode } from "@/features/pokemon/types"
 
 function getBaseStatTotal(stats: PokemonSpecies["baseStats"]): number {
-  return stats.hp + stats.atk + stats.def + stats.spa + stats.spd + stats.spe
+  return Object.values(stats).reduce((sum, val) => sum + val, 0)
 }
 
 export default function PokemonBrowserPage() {

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { getDataStatus } from "@nasty-plot/data-pipeline"
 import type { ApiResponse } from "@nasty-plot/core"
+import { apiErrorResponse } from "../../../../lib/api-error"
 
 export async function GET() {
   try {
@@ -9,7 +10,6 @@ export async function GET() {
     const response: ApiResponse<typeof status> = { data: status }
     return NextResponse.json(response)
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Unknown error"
-    return NextResponse.json({ error: message, code: "STATUS_ERROR" }, { status: 500 })
+    return apiErrorResponse(err, { code: "STATUS_ERROR" })
   }
 }

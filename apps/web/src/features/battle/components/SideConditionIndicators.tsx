@@ -10,69 +10,71 @@ interface SideConditionIndicatorsProps {
   className?: string
 }
 
+type ConditionDef = {
+  key: keyof SideConditions
+  Icon: typeof Flame
+  color: string
+  label: (value: number | boolean) => string
+}
+
+const CONDITION_DEFS: ConditionDef[] = [
+  {
+    key: "stealthRock",
+    Icon: Flame,
+    color: "text-amber-600 dark:text-amber-400",
+    label: () => "SR",
+  },
+  {
+    key: "spikes",
+    Icon: Bug,
+    color: "text-amber-600 dark:text-amber-400",
+    label: (v) => `Spk\u00d7${v}`,
+  },
+  {
+    key: "toxicSpikes",
+    Icon: Bug,
+    color: "text-purple-600 dark:text-purple-400",
+    label: (v) => `TSpk\u00d7${v}`,
+  },
+  { key: "stickyWeb", Icon: Bug, color: "text-amber-600 dark:text-amber-400", label: () => "Web" },
+  {
+    key: "reflect",
+    Icon: Shield,
+    color: "text-blue-500 dark:text-blue-400",
+    label: (v) => `Ref(${v})`,
+  },
+  {
+    key: "lightScreen",
+    Icon: Shield,
+    color: "text-yellow-500 dark:text-yellow-400",
+    label: (v) => `LS(${v})`,
+  },
+  {
+    key: "auroraVeil",
+    Icon: Snowflake,
+    color: "text-cyan-500 dark:text-cyan-400",
+    label: (v) => `AV(${v})`,
+  },
+  {
+    key: "tailwind",
+    Icon: Wind,
+    color: "text-teal-500 dark:text-teal-400",
+    label: (v) => `TW(${v})`,
+  },
+]
+
 export function SideConditionIndicators({
   conditions,
   side,
   className,
 }: SideConditionIndicatorsProps) {
-  const indicators: { icon: React.ReactNode; label: string; color: string }[] = []
-
-  if (conditions.stealthRock) {
-    indicators.push({
-      icon: <Flame className="h-3 w-3" />,
-      label: "SR",
-      color: "text-amber-600 dark:text-amber-400",
-    })
-  }
-  if (conditions.spikes > 0) {
-    indicators.push({
-      icon: <Bug className="h-3 w-3" />,
-      label: `Spk\u00d7${conditions.spikes}`,
-      color: "text-amber-600 dark:text-amber-400",
-    })
-  }
-  if (conditions.toxicSpikes > 0) {
-    indicators.push({
-      icon: <Bug className="h-3 w-3" />,
-      label: `TSpk\u00d7${conditions.toxicSpikes}`,
-      color: "text-purple-600 dark:text-purple-400",
-    })
-  }
-  if (conditions.stickyWeb) {
-    indicators.push({
-      icon: <Bug className="h-3 w-3" />,
-      label: "Web",
-      color: "text-amber-600 dark:text-amber-400",
-    })
-  }
-  if (conditions.reflect > 0) {
-    indicators.push({
-      icon: <Shield className="h-3 w-3" />,
-      label: `Ref(${conditions.reflect})`,
-      color: "text-blue-500 dark:text-blue-400",
-    })
-  }
-  if (conditions.lightScreen > 0) {
-    indicators.push({
-      icon: <Shield className="h-3 w-3" />,
-      label: `LS(${conditions.lightScreen})`,
-      color: "text-yellow-500 dark:text-yellow-400",
-    })
-  }
-  if (conditions.auroraVeil > 0) {
-    indicators.push({
-      icon: <Snowflake className="h-3 w-3" />,
-      label: `AV(${conditions.auroraVeil})`,
-      color: "text-cyan-500 dark:text-cyan-400",
-    })
-  }
-  if (conditions.tailwind > 0) {
-    indicators.push({
-      icon: <Wind className="h-3 w-3" />,
-      label: `TW(${conditions.tailwind})`,
-      color: "text-teal-500 dark:text-teal-400",
-    })
-  }
+  const indicators = CONDITION_DEFS.filter(({ key }) => conditions[key]).map(
+    ({ key, Icon, color, label }) => ({
+      icon: <Icon className="h-3 w-3" />,
+      label: label(conditions[key] as number),
+      color,
+    }),
+  )
 
   if (indicators.length === 0) return null
 

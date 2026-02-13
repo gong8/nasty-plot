@@ -14,13 +14,12 @@ function logTiming(label: string, startMs: number, extra?: string): void {
 let _client: Client | null = null
 let _resourceContext: string | null = null
 
-// Static resource URIs to load at connect time
 const RESOURCE_URIS = [
   "pokemon://type-chart",
   "pokemon://formats",
   "pokemon://natures",
   "pokemon://stat-formulas",
-]
+] as const
 
 async function getClient(): Promise<Client> {
   if (_client) return _client
@@ -63,9 +62,8 @@ export async function getMcpTools(): Promise<OpenAI.ChatCompletionTool[]> {
       },
     }))
   } catch (error) {
-    console.warn(
-      `${LOG_PREFIX} Failed to discover tools: ${error instanceof Error ? error.message : "Unknown error"}. Chat will work without tools.`,
-    )
+    const msg = error instanceof Error ? error.message : "Unknown error"
+    console.warn(`${LOG_PREFIX} Failed to discover tools: ${msg}. Chat will work without tools.`)
     return []
   }
 }
@@ -82,7 +80,6 @@ export async function executeMcpTool(name: string, args: Record<string, unknown>
     const client = await getClient()
     const result = await client.callTool({ name, arguments: args })
 
-    // MCP returns content as an array of { type, text } blocks
     const textParts = (result.content as { type: string; text?: string }[])
       .filter((c) => c.type === "text" && c.text)
       .map((c) => c.text!)
@@ -94,20 +91,16 @@ export async function executeMcpTool(name: string, args: Record<string, unknown>
 
   try {
     return await call()
-  } catch (error) {
-    console.warn(
-      `${LOG_PREFIX} Tool call "${name}" failed, retrying: ${error instanceof Error ? error.message : "Unknown error"}`,
-    )
+  } catch (firstError) {
+    const firstMsg = firstError instanceof Error ? firstError.message : "Unknown error"
+    console.warn(`${LOG_PREFIX} Tool call "${name}" failed, retrying: ${firstMsg}`)
     resetClient()
     try {
       return await call()
     } catch (retryError) {
-      console.error(
-        `${LOG_PREFIX} Tool call "${name}" failed after retry: ${retryError instanceof Error ? retryError.message : "Unknown error"}`,
-      )
-      return JSON.stringify({
-        error: `MCP tool "${name}" failed: ${retryError instanceof Error ? retryError.message : "Unknown error"}`,
-      })
+      const retryMsg = retryError instanceof Error ? retryError.message : "Unknown error"
+      console.error(`${LOG_PREFIX} Tool call "${name}" failed after retry: ${retryMsg}`)
+      return JSON.stringify({ error: `MCP tool "${name}" failed: ${retryMsg}` })
     }
   }
 }
@@ -139,9 +132,8 @@ export async function getMcpResourceContext(): Promise<string> {
           logTiming(`Resource: ${uri}`, tRes, `— ${text.length} chars`)
         }
       } catch (err) {
-        console.warn(
-          `${LOG_PREFIX} Resource ${uri} failed: ${err instanceof Error ? err.message : "Unknown"}`,
-        )
+        const msg = err instanceof Error ? err.message : "Unknown error"
+        console.warn(`${LOG_PREFIX} Resource ${uri} failed: ${msg}`)
       }
     }
 

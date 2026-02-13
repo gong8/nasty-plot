@@ -131,8 +131,7 @@ export function WeaknessHeatmap({ slots }: WeaknessHeatmapProps) {
                       if (types.length === 0) continue
                       const eff = getTypeEffectiveness(attackType, types)
                       if (eff > 1) weakCount++
-                      if (eff < 1 && eff > 0) resistCount++
-                      if (eff === 0) resistCount++
+                      else if (eff < 1) resistCount++
                     }
 
                     const net = resistCount - weakCount

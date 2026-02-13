@@ -22,6 +22,9 @@ interface RoleSelectorProps {
   disabledIds: Set<string>
 }
 
+const TYPE_AFFINITY_BONUS = 10
+const MAX_ROLE_CANDIDATES = 5
+
 const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   shield: Shield,
   swords: Swords,
@@ -53,12 +56,12 @@ function filterForRole(
 
   const scored = available.map((c) => {
     const types: PokemonType[] = c.types ?? []
-    const typeBonus = types.some((t) => preferred.includes(t)) ? 10 : 0
+    const typeBonus = types.some((t) => preferred.includes(t)) ? TYPE_AFFINITY_BONUS : 0
     return { ...c, score: typeBonus + c.usagePercent }
   })
 
   scored.sort((a, b) => b.score - a.score)
-  return scored.slice(0, 5)
+  return scored.slice(0, MAX_ROLE_CANDIDATES)
 }
 
 export function RoleSelector({

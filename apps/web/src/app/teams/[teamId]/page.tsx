@@ -3,18 +3,7 @@
 import { use, useCallback, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useQuery } from "@tanstack/react-query"
-import {
-  ArrowLeft,
-  Plus,
-  Swords,
-  BarChart3,
-  FlaskConical,
-  History,
-  Share2,
-  Archive,
-  Copy,
-  GitBranch,
-} from "lucide-react"
+import { ArrowLeft, Plus, Swords, BarChart3, FlaskConical, History } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -25,7 +14,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { useTeamBuilder } from "@/features/team-builder/hooks/use-team-builder"
 import {
   useUpdateTeam,
@@ -58,7 +47,6 @@ import type {
   MatchupMatrixEntry,
   MergeDecision,
 } from "@nasty-plot/core"
-import { cn } from "@nasty-plot/ui"
 
 export default function TeamEditorPage({ params }: { params: Promise<{ teamId: string }> }) {
   const { teamId } = use(params)
@@ -256,6 +244,11 @@ export default function TeamEditorPage({ params }: { params: Promise<{ teamId: s
 
   const nextPosition = team.slots.length + 1
   const analysis = analysisQuery.data?.data
+  const coverageScore = analysis
+    ? Math.round(
+        (Object.values(analysis.coverage?.offensive || {}).reduce((a, b) => a + b, 0) / 18) * 100,
+      )
+    : 0
 
   return (
     <div className="min-h-screen bg-background/50">
@@ -315,24 +308,12 @@ export default function TeamEditorPage({ params }: { params: Promise<{ teamId: s
                 <CardContent className="p-4 space-y-3">
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">Coverage Score</span>
-                    <span className="font-mono font-bold text-primary">
-                      {Math.round(
-                        (Object.values(analysis?.coverage?.offensive || {}).reduce(
-                          (a, b) => a + b,
-                          0,
-                        ) /
-                          18) *
-                          100,
-                      )}
-                      %
-                    </span>
+                    <span className="font-mono font-bold text-primary">{coverageScore}%</span>
                   </div>
                   <div className="h-1.5 w-full bg-secondary/20 rounded-full overflow-hidden">
                     <div
                       className="h-full bg-primary transition-all"
-                      style={{
-                        width: `${Math.round((Object.values(analysis?.coverage?.offensive || {}).reduce((a, b) => a + b, 0) / 18) * 100)}%`,
-                      }}
+                      style={{ width: `${coverageScore}%` }}
                     />
                   </div>
                 </CardContent>

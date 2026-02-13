@@ -2,6 +2,9 @@ import type { GameType } from "@nasty-plot/core"
 import type { AIPlayer, BattleState, BattleActionSet, BattleAction } from "../types"
 import { calculateBattleDamage, fallbackMove, pickHealthiestSwitch } from "./shared"
 
+/** Damage threshold below which GreedyAI considers switching instead of attacking. */
+const LOW_DAMAGE_THRESHOLD = 20
+
 /**
  * GreedyAI picks the move that deals the most damage to the opponent.
  * If all moves are resisted/weak, it may switch to a better matchup.
@@ -56,7 +59,7 @@ export class GreedyAI implements AIPlayer {
     }
 
     // If best damage is very low, consider switching
-    if (bestDamage < 20 && actions.switches.length > 0) {
+    if (bestDamage < LOW_DAMAGE_THRESHOLD && actions.switches.length > 0) {
       const switchAction = pickHealthiestSwitch(actions)
       if (switchAction.type === "switch") {
         return switchAction

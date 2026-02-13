@@ -1,13 +1,9 @@
 import { Dex } from "@pkmn/dex"
 import { Generations, type Generation } from "@pkmn/data"
-import { POKEMON_TYPES } from "@nasty-plot/core"
+import { POKEMON_TYPES, toId } from "@nasty-plot/core"
 import type { PokemonSpecies, PokemonType, MoveData, AbilityData, ItemData } from "@nasty-plot/core"
 
 const dex = Dex.forGen(9)
-
-function toID(str: string): string {
-  return str.toLowerCase().replace(/[^a-z0-9]+/g, "")
-}
 
 /** Nonstandard categories to exclude from all listings (CAP fakemons, LGPE exclusives, etc.) */
 const EXCLUDED_NONSTANDARD = new Set(["CAP", "LGPE", "Custom", "Future", "Unobtainable"])
@@ -37,7 +33,7 @@ function toSpecies(species: ReturnType<typeof dex.species.get>): PokemonSpecies 
 
 export function getSpecies(id: string): PokemonSpecies | null {
   const species = dex.species.get(id)
-  if (!species || !species.exists) return null
+  if (!species?.exists) return null
   return toSpecies(species)
 }
 
@@ -91,7 +87,7 @@ function toMove(move: ReturnType<typeof dex.moves.get>): MoveData {
 
 export function getMove(id: string): MoveData | null {
   const move = dex.moves.get(id)
-  if (!move || !move.exists) return null
+  if (!move?.exists) return null
   return toMove(move)
 }
 
@@ -107,7 +103,7 @@ export function getAllMoves(): MoveData[] {
 
 export function getAbility(id: string): AbilityData | null {
   const ability = dex.abilities.get(id)
-  if (!ability || !ability.exists) return null
+  if (!ability?.exists) return null
   return {
     id: ability.id,
     name: ability.name,
@@ -115,15 +111,19 @@ export function getAbility(id: string): AbilityData | null {
   }
 }
 
-export function getItem(id: string): ItemData | null {
-  const item = dex.items.get(id)
-  if (!item || !item.exists) return null
+function toItemData(item: ReturnType<typeof dex.items.get>): ItemData {
   return {
     id: item.id,
     name: item.name,
     description: item.shortDesc || item.desc,
     isNonstandard: item.isNonstandard ?? null,
   }
+}
+
+export function getItem(id: string): ItemData | null {
+  const item = dex.items.get(id)
+  if (!item || !item.exists) return null
+  return toItemData(item)
 }
 
 export async function getLearnset(speciesId: string): Promise<string[]> {
@@ -138,12 +138,12 @@ export async function getLearnset(speciesId: string): Promise<string[]> {
 
   if (species.changesFrom) {
     const parent = Array.isArray(species.changesFrom) ? species.changesFrom[0] : species.changesFrom
-    const parentData = await dex.learnsets.get(toID(parent))
+    const parentData = await dex.learnsets.get(toId(parent))
     if (parentData?.learnset) return Object.keys(parentData.learnset)
   }
 
   if (species.baseSpecies && species.baseSpecies !== species.name) {
-    const baseData = await dex.learnsets.get(toID(species.baseSpecies))
+    const baseData = await dex.learnsets.get(toId(species.baseSpecies))
     if (baseData?.learnset) return Object.keys(baseData.learnset)
   }
 
@@ -159,12 +159,7 @@ export function getAllItems(): ItemData[] {
   const all: ItemData[] = []
   for (const item of dex.items.all()) {
     if (item.exists && !EXCLUDED_NONSTANDARD.has(item.isNonstandard as string)) {
-      all.push({
-        id: item.id,
-        name: item.name,
-        description: item.shortDesc || item.desc,
-        isNonstandard: item.isNonstandard ?? null,
-      })
+      all.push(toItemData(item))
     }
   }
   return all
@@ -185,24 +180,19 @@ export function isMegaStone(itemId: string): boolean {
 /** Get all valid Mega Stones for a given Pokemon */
 export function getMegaStonesFor(pokemonId: string): ItemData[] {
   const species = dex.species.get(pokemonId)
-  if (!species || !species.exists) return []
+  if (!species?.exists) return []
   const baseName = species.baseSpecies || species.name
-  const result: ItemData[] = []
+  const results: ItemData[] = []
   for (const item of dex.items.all()) {
     if (
       item.megaStone &&
       baseName in item.megaStone &&
       !EXCLUDED_NONSTANDARD.has(item.isNonstandard as string)
     ) {
-      result.push({
-        id: item.id,
-        name: item.name,
-        description: item.shortDesc || item.desc,
-        isNonstandard: item.isNonstandard ?? null,
-      })
+      results.push(toItemData(item))
     }
   }
-  return result
+  return results
 }
 
 /** Get the Mega form a Pokemon transforms into when holding a specific Mega Stone */
@@ -210,12 +200,12 @@ export function getMegaForm(pokemonId: string, itemId: string): PokemonSpecies |
   const item = dex.items.get(itemId)
   if (!item.exists || !item.megaStone) return null
   const species = dex.species.get(pokemonId)
-  if (!species || !species.exists) return null
+  if (!species?.exists) return null
   const baseName = species.baseSpecies || species.name
   const megaFormName = item.megaStone[baseName]
   if (!megaFormName) return null
   const megaSpecies = dex.species.get(megaFormName)
-  if (!megaSpecies || !megaSpecies.exists) return null
+  if (!megaSpecies?.exists) return null
   return toSpecies(megaSpecies)
 }
 

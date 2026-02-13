@@ -1,4 +1,9 @@
-import type { TeamData, UsageStatsEntry, PokemonSpecies } from "@nasty-plot/core"
+import type { TeamData, UsageStatsEntry, PokemonSpecies, StatsTable } from "@nasty-plot/core"
+
+function formatBaseStats(stats: StatsTable): string {
+  const bst = Object.values(stats).reduce((a, b) => a + b, 0)
+  return `${stats.hp}/${stats.atk}/${stats.def}/${stats.spa}/${stats.spd}/${stats.spe} (BST: ${bst})`
+}
 
 export function buildTeamContext(teamData: TeamData): string {
   const lines: string[] = [
@@ -9,7 +14,7 @@ export function buildTeamContext(teamData: TeamData): string {
   ]
 
   for (const slot of teamData.slots) {
-    const species = slot.species
+    const { species } = slot
     const typesStr = species?.types.join("/") ?? "Unknown"
     const movesStr = slot.moves.filter(Boolean).join(", ") || "None"
     const evEntries = Object.entries(slot.evs)
@@ -26,15 +31,11 @@ export function buildTeamContext(teamData: TeamData): string {
     lines.push(`- EVs: ${evEntries || "None"}`)
     lines.push(`- Moves: ${movesStr}`)
     if (species?.baseStats) {
-      const bst = Object.values(species.baseStats).reduce((a, b) => a + b, 0)
-      lines.push(
-        `- Base Stats: ${species.baseStats.hp}/${species.baseStats.atk}/${species.baseStats.def}/${species.baseStats.spa}/${species.baseStats.spd}/${species.baseStats.spe} (BST: ${bst})`,
-      )
+      lines.push(`- Base Stats: ${formatBaseStats(species.baseStats)}`)
     }
     lines.push("")
   }
 
-  // Type coverage summary
   if (teamData.slots.length > 0) {
     const allTypes = teamData.slots.filter((s) => s.species).flatMap((s) => s.species!.types)
     const uniqueTypes = [...new Set(allTypes)]
@@ -62,7 +63,6 @@ export function buildMetaContext(formatId: string, topPokemon: UsageStatsEntry[]
 }
 
 export function buildPokemonContext(pokemonId: string, species: PokemonSpecies): string {
-  const bst = Object.values(species.baseStats).reduce((a, b) => a + b, 0)
   const abilities = Object.entries(species.abilities)
     .map(([slot, name]) => (slot === "H" ? `${name} (Hidden)` : name))
     .join(", ")
@@ -70,7 +70,7 @@ export function buildPokemonContext(pokemonId: string, species: PokemonSpecies):
   return [
     `## Currently Viewing: ${species.name}`,
     `- Types: ${species.types.join("/")}`,
-    `- Base Stats: ${species.baseStats.hp}/${species.baseStats.atk}/${species.baseStats.def}/${species.baseStats.spa}/${species.baseStats.spd}/${species.baseStats.spe} (BST: ${bst})`,
+    `- Base Stats: ${formatBaseStats(species.baseStats)}`,
     `- Abilities: ${abilities}`,
     species.tier ? `- Tier: ${species.tier}` : "",
     "",
@@ -114,9 +114,9 @@ export function buildPageContextPrompt(context: PageContextData): string {
     }
     if (gb.slotSummaries.length > 0) {
       lines.push(`\nCurrent team:`)
-      gb.slotSummaries.forEach((s, i) => {
-        lines.push(`${i + 1}. ${s}`)
-      })
+      for (const [i, summary] of gb.slotSummaries.entries()) {
+        lines.push(`${i + 1}. ${summary}`)
+      }
     }
     lines.push(
       `\nThe user is building a team step-by-step in the guided builder. Help them with their current decision.`,
@@ -125,8 +125,6 @@ export function buildPageContextPrompt(context: PageContextData): string {
 
   return "\n" + lines.join("\n") + "\n"
 }
-
-// --- Context Mode Prompts ---
 
 const CONTEXT_MODE_PROMPTS: Record<string, string> = {
   "guided-builder": `You are acting as a **team building advisor** in the guided team builder. The user is constructing a team step-by-step. You have full access to all tools including team CRUD operations.
@@ -177,31 +175,11 @@ export function buildContextModePrompt(contextMode: string, contextData?: string
       const data = JSON.parse(contextData)
 
       if (contextMode === "guided-builder" || contextMode === "team-editor") {
-        if (data.teamName) lines.push(`\nTeam: "${data.teamName}"`)
-        if (data.formatId) lines.push(`Format: ${data.formatId}`)
-        if (data.paste) lines.push(`\nTeam Paste:\n\`\`\`\n${data.paste}\n\`\`\``)
-        if (data.slotsFilled !== undefined) lines.push(`Slots filled: ${data.slotsFilled}/6`)
-        if (data.slots && Array.isArray(data.slots) && data.slots.length > 0) {
-          lines.push(`\nCurrent team:`)
-          data.slots.forEach((s: string, i: number) => {
-            lines.push(`${i + 1}. ${s}`)
-          })
-        }
-      }
-
-      if (contextMode === "battle-live") {
-        if (data.formatId) lines.push(`\nFormat: ${data.formatId}`)
-        if (data.team1Name) lines.push(`Player: ${data.team1Name}`)
-        if (data.team2Name) lines.push(`Opponent: ${data.team2Name}`)
-        if (data.aiDifficulty) lines.push(`AI Difficulty: ${data.aiDifficulty}`)
-      }
-
-      if (contextMode === "battle-replay") {
-        if (data.formatId) lines.push(`\nFormat: ${data.formatId}`)
-        if (data.team1Name) lines.push(`${data.team1Name} vs ${data.team2Name}`)
-        if (data.turnCount) lines.push(`${data.turnCount} turns`)
-        if (data.winnerId)
-          lines.push(`Winner: ${data.winnerId === "team1" ? data.team1Name : data.team2Name}`)
+        appendTeamEditorContext(lines, data)
+      } else if (contextMode === "battle-live") {
+        appendBattleLiveContext(lines, data)
+      } else if (contextMode === "battle-replay") {
+        appendBattleReplayContext(lines, data)
       }
     } catch {
       // Invalid JSON is fine — skip context data
@@ -209,6 +187,34 @@ export function buildContextModePrompt(contextMode: string, contextData?: string
   }
 
   return "\n" + lines.join("\n") + "\n"
+}
+
+function appendTeamEditorContext(lines: string[], data: Record<string, unknown>): void {
+  if (data.teamName) lines.push(`\nTeam: "${data.teamName}"`)
+  if (data.formatId) lines.push(`Format: ${data.formatId}`)
+  if (data.paste) lines.push(`\nTeam Paste:\n\`\`\`\n${data.paste}\n\`\`\``)
+  if (data.slotsFilled !== undefined) lines.push(`Slots filled: ${data.slotsFilled}/6`)
+  if (Array.isArray(data.slots) && data.slots.length > 0) {
+    lines.push(`\nCurrent team:`)
+    for (const [i, slot] of data.slots.entries()) {
+      lines.push(`${i + 1}. ${slot}`)
+    }
+  }
+}
+
+function appendBattleLiveContext(lines: string[], data: Record<string, unknown>): void {
+  if (data.formatId) lines.push(`\nFormat: ${data.formatId}`)
+  if (data.team1Name) lines.push(`Player: ${data.team1Name}`)
+  if (data.team2Name) lines.push(`Opponent: ${data.team2Name}`)
+  if (data.aiDifficulty) lines.push(`AI Difficulty: ${data.aiDifficulty}`)
+}
+
+function appendBattleReplayContext(lines: string[], data: Record<string, unknown>): void {
+  if (data.formatId) lines.push(`\nFormat: ${data.formatId}`)
+  if (data.team1Name) lines.push(`${data.team1Name} vs ${data.team2Name}`)
+  if (data.turnCount) lines.push(`${data.turnCount} turns`)
+  if (data.winnerId)
+    lines.push(`Winner: ${data.winnerId === "team1" ? data.team1Name : data.team2Name}`)
 }
 
 export function buildPlanModePrompt(): string {

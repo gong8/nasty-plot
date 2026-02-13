@@ -11,10 +11,16 @@ interface HealthBarProps {
   animate?: boolean
 }
 
-function getHealthColor(percent: number): string {
+export function getHealthColor(percent: number): string {
   if (percent > 50) return "bg-green-500"
   if (percent > 20) return "bg-yellow-500"
   return "bg-red-500"
+}
+
+export function getHealthColorHex(percent: number): string {
+  if (percent > 50) return "#22c55e"
+  if (percent > 20) return "#eab308"
+  return "#ef4444"
 }
 
 export function HealthBar({

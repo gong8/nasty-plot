@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
+import { apiErrorResponse } from "../../../../../lib/api-error"
 import { prisma } from "@nasty-plot/db"
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ battleId: string }> }) {
@@ -35,6 +36,6 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ batt
     })
   } catch (err) {
     console.error("[PUT /api/battles/commentary]", err)
-    return NextResponse.json({ error: "Failed to save commentary" }, { status: 500 })
+    return apiErrorResponse(err, { fallback: "Failed to save commentary" })
   }
 }

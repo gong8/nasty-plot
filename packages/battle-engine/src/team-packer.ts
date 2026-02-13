@@ -1,4 +1,4 @@
-import { getRawSpecies } from "@nasty-plot/pokemon-data"
+import { resolveSpeciesName } from "@nasty-plot/pokemon-data"
 import { DEFAULT_IVS, serializeShowdownPaste } from "@nasty-plot/core"
 import type { TeamSlotData, StatsTable } from "@nasty-plot/core"
 
@@ -25,13 +25,6 @@ export function teamToShowdownPaste(slots: TeamSlotData[]): string {
  * We use the Teams.pack utility from @pkmn/sim when possible, but also provide
  * a manual packer for cases where we need direct control.
  */
-
-function resolveSpeciesName(pokemonId: string): string {
-  const species = getRawSpecies(pokemonId)
-  if (species?.exists) return species.name
-  // Fallback: split camelCase
-  return pokemonId.replace(/([a-z])([A-Z])/g, "$1 $2").replace(/^./, (s) => s.toUpperCase())
-}
 
 function formatEvs(evs: StatsTable): string {
   // Packed format: hp,atk,def,spa,spd,spe (all 6, comma separated)

@@ -22,6 +22,8 @@ interface BattleFieldProps {
   className?: string
 }
 
+const SPEED_OPTIONS = [1, 2, 4] as const
+
 const STATUS_BADGE: Record<string, { label: string; color: string }> = {
   brn: { label: "BRN", color: "bg-red-500" },
   par: { label: "PAR", color: "bg-yellow-500" },
@@ -99,12 +101,9 @@ function ActivePokemonSlot({
 
   return (
     <div className="absolute flex flex-col items-center" style={pos as React.CSSProperties}>
-      {/* Info plate above/below sprite depending on side */}
       {!isPlayer && <PokemonInfoPlate pokemon={pokemon} isPlayer={false} />}
 
-      {/* Sprite + platform container */}
       <div className="relative">
-        {/* Platform beneath sprite */}
         <BattlePlatform
           variant={isPlayer ? "player" : "opponent"}
           className={cn("left-1/2 -translate-x-1/2 z-0", isPlayer ? "bottom-4" : "-bottom-1")}
@@ -145,7 +144,6 @@ export function BattleField({
         className,
       )}
     >
-      {/* Weather/terrain overlay */}
       <WeatherOverlay field={state.field} />
 
       {/* Opponent pokeball indicators (right side, vertical — reversed for perspective) */}
@@ -158,56 +156,40 @@ export function BattleField({
         <PokeballIndicator team={state.sides.p1.team} vertical />
       </div>
 
-      {/* Opponent side conditions (top-left area, near their side) */}
       <SideConditionIndicators
         conditions={state.sides.p2.sideConditions}
         side="opponent"
         className="absolute top-3 left-3 z-20"
       />
 
-      {/* Player side conditions (bottom-right area, near their side) */}
       <SideConditionIndicators
         conditions={state.sides.p1.sideConditions}
         side="player"
         className="absolute bottom-3 right-3 z-20"
       />
 
-      {/* Opponent active Pokemon */}
-      {state.sides.p2.active.map((pokemon, i) => {
-        if (!pokemon) return null
-        const slotKey = `p2-${i}`
-        return (
-          <ActivePokemonSlot
-            key={slotKey}
-            pokemon={pokemon}
-            isPlayer={false}
-            slotIndex={i}
-            isDoubles={isDoubles}
-            animationClass={animationStates?.[slotKey]}
-          />
-        )
-      })}
+      {/* Active Pokemon for both sides */}
+      {(["p2", "p1"] as const).map((side) =>
+        state.sides[side].active.map((pokemon, i) => {
+          if (!pokemon) return null
+          const slotKey = `${side}-${i}`
+          return (
+            <ActivePokemonSlot
+              key={slotKey}
+              pokemon={pokemon}
+              isPlayer={side === "p1"}
+              slotIndex={i}
+              isDoubles={isDoubles}
+              animationClass={animationStates?.[slotKey]}
+            />
+          )
+        }),
+      )}
 
-      {/* Player active Pokemon */}
-      {state.sides.p1.active.map((pokemon, i) => {
-        if (!pokemon) return null
-        const slotKey = `p1-${i}`
-        return (
-          <ActivePokemonSlot
-            key={slotKey}
-            pokemon={pokemon}
-            isPlayer={true}
-            slotIndex={i}
-            isDoubles={isDoubles}
-            animationClass={animationStates?.[slotKey]}
-          />
-        )
-      })}
-
-      {/* Speed controls — faint overlay, bottom-right above text box */}
+      {/* Speed controls */}
       {onSpeedChange && (
         <div className="absolute bottom-[48px] right-2 z-20 flex items-center gap-px opacity-40 hover:opacity-90 transition-opacity">
-          {[1, 2, 4].map((s) => (
+          {SPEED_OPTIONS.map((s) => (
             <button
               key={s}
               onClick={() => onSpeedChange(s)}
@@ -224,10 +206,8 @@ export function BattleField({
         </div>
       )}
 
-      {/* Pokemon-style text box */}
       <BattleTextBox message={textMessage} speed={textSpeed} />
 
-      {/* Damage numbers */}
       {damageNumbers?.map((dn, i) => (
         <DamageNumber
           key={`${dn.side}-${dn.slot}-${i}`}

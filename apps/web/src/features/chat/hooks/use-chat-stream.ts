@@ -5,6 +5,7 @@ import { usePageContext } from "@/features/chat/context/page-context-provider"
 import { useChatSidebar } from "@/features/chat/context/chat-provider"
 import { useQueryClient } from "@tanstack/react-query"
 import type { ChatMessageMetadata, AutoAnalyzeDepth } from "@nasty-plot/core"
+import { fetchApiData } from "@/lib/api-client"
 
 export interface UIChatMessage {
   id: string
@@ -36,6 +37,183 @@ export interface ChatStreamOptions {
   onActionNotify?: (notification: ActionNotification) => void
 }
 
+const SSE_DATA_PREFIX = "data: "
+
+type MessagesSetter = React.Dispatch<React.SetStateAction<UIChatMessage[]>>
+type ToolCallsSetter = React.Dispatch<React.SetStateAction<Map<string, ToolCallState>>>
+
+interface SSEHandlers {
+  setMessages: MessagesSetter
+  setToolCalls: ToolCallsSetter
+  setPlanSteps: React.Dispatch<React.SetStateAction<PlanStep[]>>
+  setActionNotifications: React.Dispatch<React.SetStateAction<ActionNotification[]>>
+  queryClient: ReturnType<typeof useQueryClient>
+  optionsRef: React.RefObject<ChatStreamOptions | undefined>
+}
+
+function appendToLastAssistant(
+  setMessages: MessagesSetter,
+  updater: (last: UIChatMessage) => Partial<UIChatMessage>,
+) {
+  setMessages((prev) => {
+    const last = prev[prev.length - 1]
+    if (!last || last.role !== "assistant") return prev
+    const updated = [...prev]
+    updated[updated.length - 1] = { ...last, ...updater(last) }
+    return updated
+  })
+}
+
+function updateToolCallStatus(
+  setToolCalls: ToolCallsSetter,
+  name: string,
+  update: Partial<ToolCallState>,
+) {
+  setToolCalls((prev) => {
+    const existing = prev.get(name)
+    if (!existing) return prev
+    const next = new Map(prev)
+    next.set(name, { ...existing, ...update })
+    return next
+  })
+}
+
+function handleSSEEvent(parsed: Record<string, unknown>, handlers: SSEHandlers) {
+  const {
+    setMessages,
+    setToolCalls,
+    setPlanSteps,
+    setActionNotifications,
+    queryClient,
+    optionsRef,
+  } = handlers
+
+  switch (parsed.type) {
+    case "content":
+      appendToLastAssistant(setMessages, (last) => ({
+        content: last.content + (parsed.content as string),
+      }))
+      break
+
+    case "tool_start":
+      setToolCalls((prev) => {
+        const next = new Map(prev)
+        next.set(parsed.name as string, {
+          name: parsed.name as string,
+          label: parsed.label as string,
+          input: parsed.input as Record<string, unknown>,
+          status: "executing",
+        })
+        return next
+      })
+      break
+
+    case "tool_end":
+      updateToolCallStatus(setToolCalls, parsed.name as string, { status: "complete" })
+      break
+
+    case "tool_error":
+      updateToolCallStatus(setToolCalls, parsed.name as string, {
+        status: "error",
+        error: parsed.error as string,
+      })
+      break
+
+    case "action_notify": {
+      const notification: ActionNotification = {
+        name: parsed.name as string,
+        label: parsed.label as string,
+        input: parsed.input as Record<string, unknown>,
+      }
+      setActionNotifications((prev) => [...prev, notification])
+      queryClient.invalidateQueries({ queryKey: ["team"] })
+      optionsRef.current?.onActionNotify?.(notification)
+      break
+    }
+
+    case "plan_start":
+      setPlanSteps(
+        (parsed.steps as { text: string }[]).map((s) => ({
+          text: s.text,
+          status: "pending" as const,
+        })),
+      )
+      break
+
+    case "plan_step_update":
+      setPlanSteps((prev) => {
+        const idx = parsed.stepIndex as number
+        if (idx < 0 || idx >= prev.length) return prev
+        const updated = [...prev]
+        updated[idx] = { ...updated[idx], status: parsed.status as PlanStep["status"] }
+        return updated
+      })
+      break
+
+    case "session_meta":
+      if (parsed.title) {
+        queryClient.invalidateQueries({ queryKey: ["chat-sessions"] })
+      }
+      break
+
+    case "error":
+      appendToLastAssistant(setMessages, () => ({
+        content: `Error: ${parsed.error}`,
+      }))
+      break
+
+    default:
+      // Legacy format support
+      if (!parsed.type && parsed.content) {
+        appendToLastAssistant(setMessages, (last) => ({
+          content: last.content + (parsed.content as string),
+        }))
+      }
+      if (!parsed.type && parsed.toolCall) {
+        const tc = parsed.toolCall as { name: string; status: string }
+        if (tc.status === "executing") {
+          setToolCalls((prev) => {
+            const next = new Map(prev)
+            next.set(tc.name, {
+              name: tc.name,
+              label: `Running ${tc.name}...`,
+              input: {},
+              status: "executing",
+            })
+            return next
+          })
+        } else {
+          updateToolCallStatus(setToolCalls, tc.name, { status: "complete" })
+        }
+      }
+      break
+  }
+}
+
+async function readSSEStream(body: ReadableStream<Uint8Array>, handlers: SSEHandlers) {
+  const reader = body.getReader()
+  const decoder = new TextDecoder()
+  let buffer = ""
+
+  while (true) {
+    const { done, value } = await reader.read()
+    if (done) break
+
+    buffer += decoder.decode(value, { stream: true })
+    const lines = buffer.split("\n")
+    buffer = lines.pop() ?? ""
+
+    for (const line of lines) {
+      if (!line.startsWith(SSE_DATA_PREFIX)) continue
+      try {
+        handleSSEEvent(JSON.parse(line.slice(SSE_DATA_PREFIX.length)), handlers)
+      } catch {
+        // Skip non-JSON
+      }
+    }
+  }
+}
+
 export function useChatStream(sessionId?: string, options?: ChatStreamOptions) {
   const [messages, setMessages] = useState<UIChatMessage[]>([])
   const [isStreaming, setIsStreaming] = useState(false)
@@ -57,32 +235,76 @@ export function useChatStream(sessionId?: string, options?: ChatStreamOptions) {
     optionsRef.current = options
   }, [options])
 
+  const sseHandlers: SSEHandlers = {
+    setMessages,
+    setToolCalls,
+    setPlanSteps,
+    setActionNotifications,
+    queryClient,
+    optionsRef,
+  }
+
+  function captureNewSessionId(res: Response) {
+    const newSessionId = res.headers.get("X-Session-Id")
+    if (newSessionId && !currentSessionId) {
+      setCurrentSessionId(newSessionId)
+      currentSessionIdRef.current = newSessionId
+      deferredSessionIdRef.current = newSessionId
+      if (pendingContext) clearPendingContext()
+    }
+  }
+
+  function finalizeStream() {
+    setIsStreaming(false)
+    abortRef.current = null
+    if (deferredSessionIdRef.current) {
+      switchSession(deferredSessionIdRef.current)
+      deferredSessionIdRef.current = null
+    }
+    queryClient.invalidateQueries({ queryKey: ["chat-sessions"] })
+  }
+
+  function buildContextPayload() {
+    const isNewSession = !currentSessionId
+    return isNewSession && pendingContext
+      ? { contextMode: pendingContext.contextMode, contextData: pendingContext.contextData }
+      : {}
+  }
+
+  function buildBaseRequestBody(message: string) {
+    return {
+      sessionId: currentSessionId,
+      message,
+      teamId: pageContext.teamId,
+      formatId: pageContext.formatId,
+      context: {
+        pageType: pageContext.pageType,
+        contextSummary: pageContext.contextSummary,
+        teamId: pageContext.teamId,
+        pokemonId: pageContext.pokemonId,
+        formatId: pageContext.formatId,
+      },
+      ...buildContextPayload(),
+    }
+  }
+
   // Load existing session messages
   const loadSession = useCallback(async (id: string) => {
     try {
-      const res = await fetch(`/api/chat/sessions/${id}`)
-      if (!res.ok) return
-      const data = await res.json()
-      if (data.data?.messages) {
+      const session = await fetchApiData<{
+        messages?: { id?: number; role: string; content: string; metadata?: ChatMessageMetadata }[]
+      }>(`/api/chat/sessions/${id}`)
+      if (session?.messages) {
+        const isVisibleMessage = (m: { role: string; metadata?: ChatMessageMetadata }) =>
+          m.role !== "system" && !(m.role === "user" && m.metadata?.autoGenerated)
+
         setMessages(
-          data.data.messages
-            .filter((m: { role: string; metadata?: ChatMessageMetadata }) => {
-              if (m.role === "system") return false
-              // Hide auto-generated user messages (the prompts sent by useAutoAnalyze)
-              if (m.role === "user" && m.metadata?.autoGenerated) return false
-              return true
-            })
-            .map(
-              (
-                m: { id?: number; role: string; content: string; metadata?: ChatMessageMetadata },
-                i: number,
-              ) => ({
-                id: m.id?.toString() ?? `loaded-${i}`,
-                role: m.role as "user" | "assistant",
-                content: m.content,
-                metadata: m.metadata,
-              }),
-            ),
+          session.messages.filter(isVisibleMessage).map((m, i) => ({
+            id: m.id?.toString() ?? `loaded-${i}`,
+            role: m.role as "user" | "assistant",
+            content: m.content,
+            metadata: m.metadata,
+          })),
         )
       }
     } catch {
@@ -100,281 +322,49 @@ export function useChatStream(sessionId?: string, options?: ChatStreamOptions) {
       if (!trimmed || isStreaming) return
 
       if (!regenerate) {
-        const userMsg: UIChatMessage = {
-          id: `user-${Date.now()}`,
-          role: "user",
-          content: trimmed,
-        }
-        setMessages((prev) => [...prev, userMsg])
+        setMessages((prev) => [
+          ...prev,
+          { id: `user-${Date.now()}`, role: "user" as const, content: trimmed },
+        ])
       }
 
       setIsStreaming(true)
       setToolCalls(new Map())
       setActionNotifications([])
       setPlanSteps([])
-
-      const assistantMsg: UIChatMessage = {
-        id: `assistant-${Date.now()}`,
-        role: "assistant",
-        content: "",
-      }
-      setMessages((prev) => [...prev, assistantMsg])
+      setMessages((prev) => [
+        ...prev,
+        { id: `assistant-${Date.now()}`, role: "assistant" as const, content: "" },
+      ])
 
       const controller = new AbortController()
       abortRef.current = controller
 
       try {
-        // Include context mode for new sessions with pending context
-        const isNewSession = !currentSessionId
-        const contextPayload =
-          isNewSession && pendingContext
-            ? {
-                contextMode: pendingContext.contextMode,
-                contextData: pendingContext.contextData,
-              }
-            : {}
-
+        const base = buildBaseRequestBody(trimmed)
+        const context = extraContext?.guidedBuilder
+          ? { ...base.context, guidedBuilder: extraContext.guidedBuilder }
+          : base.context
         const res = await fetch("/api/chat", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            sessionId: currentSessionId,
-            message: trimmed,
-            teamId: pageContext.teamId,
-            formatId: pageContext.formatId,
-            context: {
-              pageType: pageContext.pageType,
-              contextSummary: pageContext.contextSummary,
-              teamId: pageContext.teamId,
-              pokemonId: pageContext.pokemonId,
-              formatId: pageContext.formatId,
-              ...(extraContext?.guidedBuilder ? { guidedBuilder: extraContext.guidedBuilder } : {}),
-            },
-            ...contextPayload,
-            regenerate,
-          }),
+          body: JSON.stringify({ ...base, context, regenerate }),
           signal: controller.signal,
         })
 
-        // Capture session ID from response — defer switchSession until after
-        // streaming completes to prevent ChatPanel's session-change effect from
-        // resetting messages mid-stream
-        const newSessionId = res.headers.get("X-Session-Id")
-        if (newSessionId && !currentSessionId) {
-          setCurrentSessionId(newSessionId)
-          currentSessionIdRef.current = newSessionId
-          deferredSessionIdRef.current = newSessionId
-          // Clear pending context after session is created
-          if (pendingContext) clearPendingContext()
-        }
-
-        if (!res.ok || !res.body) {
-          throw new Error("Failed to get response")
-        }
-
-        const reader = res.body.getReader()
-        const decoder = new TextDecoder()
-        let buffer = ""
-
-        while (true) {
-          const { done, value } = await reader.read()
-          if (done) break
-
-          buffer += decoder.decode(value, { stream: true })
-          const lines = buffer.split("\n")
-          buffer = lines.pop() ?? ""
-
-          for (const line of lines) {
-            if (!line.startsWith("data: ")) continue
-            const data = line.slice(6)
-
-            try {
-              const parsed = JSON.parse(data)
-
-              // New typed SSE event protocol
-              if (parsed.type === "content") {
-                setMessages((prev) => {
-                  const updated = [...prev]
-                  const last = updated[updated.length - 1]
-                  if (last && last.role === "assistant") {
-                    updated[updated.length - 1] = {
-                      ...last,
-                      content: last.content + parsed.content,
-                    }
-                  }
-                  return updated
-                })
-              }
-
-              if (parsed.type === "tool_start") {
-                setToolCalls((prev) => {
-                  const next = new Map(prev)
-                  next.set(parsed.name, {
-                    name: parsed.name,
-                    label: parsed.label,
-                    input: parsed.input,
-                    status: "executing",
-                  })
-                  return next
-                })
-              }
-
-              if (parsed.type === "tool_end") {
-                setToolCalls((prev) => {
-                  const next = new Map(prev)
-                  const existing = next.get(parsed.name)
-                  if (existing) {
-                    next.set(parsed.name, { ...existing, status: "complete" })
-                  }
-                  return next
-                })
-              }
-
-              if (parsed.type === "tool_error") {
-                setToolCalls((prev) => {
-                  const next = new Map(prev)
-                  const existing = next.get(parsed.name)
-                  if (existing) {
-                    next.set(parsed.name, {
-                      ...existing,
-                      status: "error",
-                      error: parsed.error,
-                    })
-                  }
-                  return next
-                })
-              }
-
-              if (parsed.type === "action_notify") {
-                const notification = {
-                  name: parsed.name,
-                  label: parsed.label,
-                  input: parsed.input,
-                }
-                setActionNotifications((prev) => [...prev, notification])
-                // Invalidate team data queries after write actions
-                queryClient.invalidateQueries({ queryKey: ["team"] })
-                // Notify external listeners (e.g. guided builder)
-                optionsRef.current?.onActionNotify?.(notification)
-              }
-
-              if (parsed.type === "plan_start") {
-                setPlanSteps(
-                  (parsed.steps as { text: string }[]).map((s) => ({
-                    text: s.text,
-                    status: "pending" as const,
-                  })),
-                )
-              }
-
-              if (parsed.type === "plan_step_update") {
-                setPlanSteps((prev) => {
-                  const updated = [...prev]
-                  const idx = parsed.stepIndex as number
-                  if (idx >= 0 && idx < updated.length) {
-                    updated[idx] = {
-                      ...updated[idx],
-                      status: parsed.status as PlanStep["status"],
-                    }
-                  }
-                  return updated
-                })
-              }
-
-              if (parsed.type === "session_meta") {
-                // Update session title in real-time and refresh sessions list
-                if (parsed.title) {
-                  queryClient.invalidateQueries({ queryKey: ["chat-sessions"] })
-                }
-              }
-
-              if (parsed.type === "error") {
-                setMessages((prev) => {
-                  const updated = [...prev]
-                  const last = updated[updated.length - 1]
-                  if (last && last.role === "assistant") {
-                    updated[updated.length - 1] = {
-                      ...last,
-                      content: `Error: ${parsed.error}`,
-                    }
-                  }
-                  return updated
-                })
-              }
-
-              // Legacy format support
-              if (!parsed.type && parsed.content) {
-                setMessages((prev) => {
-                  const updated = [...prev]
-                  const last = updated[updated.length - 1]
-                  if (last && last.role === "assistant") {
-                    updated[updated.length - 1] = {
-                      ...last,
-                      content: last.content + parsed.content,
-                    }
-                  }
-                  return updated
-                })
-              }
-
-              if (!parsed.type && parsed.toolCall) {
-                const tc = parsed.toolCall as { name: string; status: string }
-                if (tc.status === "executing") {
-                  setToolCalls((prev) => {
-                    const next = new Map(prev)
-                    next.set(tc.name, {
-                      name: tc.name,
-                      label: `Running ${tc.name}...`,
-                      input: {},
-                      status: "executing",
-                    })
-                    return next
-                  })
-                } else {
-                  setToolCalls((prev) => {
-                    const next = new Map(prev)
-                    const existing = next.get(tc.name)
-                    if (existing) {
-                      next.set(tc.name, { ...existing, status: "complete" })
-                    }
-                    return next
-                  })
-                }
-              }
-            } catch {
-              // Skip non-JSON
-            }
-          }
-        }
+        captureNewSessionId(res)
+        if (!res.ok || !res.body) throw new Error("Failed to get response")
+        await readSSEStream(res.body, sseHandlers)
       } catch (error) {
-        if ((error as Error).name === "AbortError") {
-          // User stopped generation — keep partial content
-          return
-        }
-        setMessages((prev) => {
-          const updated = [...prev]
-          const last = updated[updated.length - 1]
-          if (last && last.role === "assistant" && !last.content) {
-            updated[updated.length - 1] = {
-              ...last,
-              content: "Sorry, I encountered an error. Please try again.",
-            }
-          }
-          return updated
-        })
+        if ((error as Error).name === "AbortError") return
+        appendToLastAssistant(setMessages, (last) => ({
+          content: last.content || "Sorry, I encountered an error. Please try again.",
+        }))
       } finally {
-        setIsStreaming(false)
-        abortRef.current = null
-        // Now that streaming is done, notify the provider of the new session ID
-        // so the sidebar session list highlights the correct session
-        if (deferredSessionIdRef.current) {
-          switchSession(deferredSessionIdRef.current)
-          deferredSessionIdRef.current = null
-        }
-        // Refresh sessions list
-        queryClient.invalidateQueries({ queryKey: ["chat-sessions"] })
+        finalizeStream()
       }
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [
       isStreaming,
       currentSessionId,
@@ -386,185 +376,55 @@ export function useChatStream(sessionId?: string, options?: ChatStreamOptions) {
     ],
   )
 
-  /**
-   * Send an auto-analyze message. Does NOT add a visible user message.
-   * Creates an assistant message with autoGenerated metadata.
-   */
   const sendAutoAnalyze = useCallback(
     async (prompt: string, turn: number, depth: AutoAnalyzeDepth) => {
       if (isStreaming) return
 
       setIsStreaming(true)
       setToolCalls(new Map())
-
-      const assistantMsg: UIChatMessage = {
-        id: `auto-${turn}-${Date.now()}`,
-        role: "assistant",
-        content: "",
-        metadata: { autoGenerated: true, turn, depth },
-      }
-      setMessages((prev) => [...prev, assistantMsg])
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `auto-${turn}-${Date.now()}`,
+          role: "assistant" as const,
+          content: "",
+          metadata: { autoGenerated: true, turn, depth },
+        },
+      ])
 
       const controller = new AbortController()
       abortRef.current = controller
 
       try {
-        const isNewSession = !currentSessionId
-        const contextPayload =
-          isNewSession && pendingContext
-            ? {
-                contextMode: pendingContext.contextMode,
-                contextData: pendingContext.contextData,
-              }
-            : {}
-
         const res = await fetch("/api/chat", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            sessionId: currentSessionId,
-            message: prompt,
-            teamId: pageContext.teamId,
-            formatId: pageContext.formatId,
-            context: {
-              pageType: pageContext.pageType,
-              contextSummary: pageContext.contextSummary,
-              teamId: pageContext.teamId,
-              pokemonId: pageContext.pokemonId,
-              formatId: pageContext.formatId,
-            },
-            ...contextPayload,
+            ...buildBaseRequestBody(prompt),
             autoAnalyzeDepth: depth,
             metadata: { autoGenerated: true, turn, depth },
           }),
           signal: controller.signal,
         })
 
-        const newSessionId = res.headers.get("X-Session-Id")
-        if (newSessionId && !currentSessionId) {
-          setCurrentSessionId(newSessionId)
-          currentSessionIdRef.current = newSessionId
-          deferredSessionIdRef.current = newSessionId
-          if (pendingContext) clearPendingContext()
-        }
-
-        if (!res.ok || !res.body) {
-          throw new Error("Failed to get response")
-        }
-
-        const reader = res.body.getReader()
-        const decoder = new TextDecoder()
-        let buffer = ""
-
-        while (true) {
-          const { done, value } = await reader.read()
-          if (done) break
-
-          buffer += decoder.decode(value, { stream: true })
-          const lines = buffer.split("\n")
-          buffer = lines.pop() ?? ""
-
-          for (const line of lines) {
-            if (!line.startsWith("data: ")) continue
-            const data = line.slice(6)
-
-            try {
-              const parsed = JSON.parse(data)
-
-              if (parsed.type === "content") {
-                setMessages((prev) => {
-                  const updated = [...prev]
-                  const last = updated[updated.length - 1]
-                  if (last && last.role === "assistant") {
-                    updated[updated.length - 1] = {
-                      ...last,
-                      content: last.content + parsed.content,
-                    }
-                  }
-                  return updated
-                })
-              }
-
-              if (parsed.type === "tool_start") {
-                setToolCalls((prev) => {
-                  const next = new Map(prev)
-                  next.set(parsed.name, {
-                    name: parsed.name,
-                    label: parsed.label,
-                    input: parsed.input,
-                    status: "executing",
-                  })
-                  return next
-                })
-              }
-
-              if (parsed.type === "tool_end") {
-                setToolCalls((prev) => {
-                  const next = new Map(prev)
-                  const existing = next.get(parsed.name)
-                  if (existing) {
-                    next.set(parsed.name, { ...existing, status: "complete" })
-                  }
-                  return next
-                })
-              }
-
-              // Legacy format
-              if (!parsed.type && parsed.content) {
-                setMessages((prev) => {
-                  const updated = [...prev]
-                  const last = updated[updated.length - 1]
-                  if (last && last.role === "assistant") {
-                    updated[updated.length - 1] = {
-                      ...last,
-                      content: last.content + parsed.content,
-                    }
-                  }
-                  return updated
-                })
-              }
-            } catch {
-              // Skip non-JSON
-            }
-          }
-        }
+        captureNewSessionId(res)
+        if (!res.ok || !res.body) throw new Error("Failed to get response")
+        await readSSEStream(res.body, sseHandlers)
       } catch (error) {
         if ((error as Error).name === "AbortError") {
-          // User made a move — set a dismissive message
-          setMessages((prev) => {
-            const updated = [...prev]
-            const last = updated[updated.length - 1]
-            if (last && last.role === "assistant" && last.metadata?.autoGenerated) {
-              updated[updated.length - 1] = {
-                ...last,
-                content: last.content || "You chose your move -- moving on!",
-              }
-            }
-            return updated
-          })
+          appendToLastAssistant(setMessages, (last) => ({
+            content: last.content || "You chose your move -- moving on!",
+          }))
           return
         }
-        setMessages((prev) => {
-          const updated = [...prev]
-          const last = updated[updated.length - 1]
-          if (last && last.role === "assistant" && !last.content) {
-            updated[updated.length - 1] = {
-              ...last,
-              content: "Analysis failed. Will retry next turn.",
-            }
-          }
-          return updated
-        })
+        appendToLastAssistant(setMessages, (last) => ({
+          content: last.content || "Analysis failed. Will retry next turn.",
+        }))
       } finally {
-        setIsStreaming(false)
-        abortRef.current = null
-        if (deferredSessionIdRef.current) {
-          switchSession(deferredSessionIdRef.current)
-          deferredSessionIdRef.current = null
-        }
-        queryClient.invalidateQueries({ queryKey: ["chat-sessions"] })
+        finalizeStream()
       }
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [
       isStreaming,
       currentSessionId,
@@ -590,10 +450,8 @@ export function useChatStream(sessionId?: string, options?: ChatStreamOptions) {
   }, [])
 
   const retryLast = useCallback(() => {
-    // Find the last user message and regenerate
     const lastUser = [...messages].reverse().find((m) => m.role === "user")
     if (!lastUser) return
-    // Remove the last assistant message from UI
     setMessages((prev) => {
       const idx = prev.findLastIndex((m) => m.role === "assistant")
       if (idx >= 0) {

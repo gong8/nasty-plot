@@ -2,14 +2,11 @@
 
 import { useQuery } from "@tanstack/react-query"
 import type { FormatDefinition } from "@nasty-plot/core"
+import { fetchJson } from "@/lib/api-client"
 
 async function fetchFormats(): Promise<FormatDefinition[]> {
-  const res = await fetch("/api/formats")
-  if (!res.ok) {
-    throw new Error(`Failed to fetch formats: ${res.status} ${res.statusText}`)
-  }
-  const json = await res.json()
-  const formats = json.data ?? json
+  const json = await fetchJson<{ data?: FormatDefinition[] } | FormatDefinition[]>("/api/formats")
+  const formats = Array.isArray(json) ? json : (json.data ?? [])
   if (!Array.isArray(formats)) {
     throw new Error(`Invalid formats response: expected array, got ${typeof formats}`)
   }

@@ -25,6 +25,56 @@ interface CommentaryPanelProps {
   onAutoModeChange?: (enabled: boolean) => void
 }
 
+const AUTO_COMMENTARY_DELAY_MS = 500
+const SSE_DATA_PREFIX = "data: "
+
+async function streamCommentary(
+  payload: {
+    state: BattleState
+    recentEntries: BattleLogEntry[]
+    team1Name: string
+    team2Name: string
+  },
+  signal: AbortSignal,
+  onChunk: (accumulated: string) => void,
+): Promise<string> {
+  const res = await fetch("/api/battles/commentary", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ mode: "turn", ...payload }),
+    signal,
+  })
+
+  if (!res.ok || !res.body) throw new Error("Failed to fetch commentary")
+
+  const reader = res.body.getReader()
+  const decoder = new TextDecoder()
+  let text = ""
+
+  while (true) {
+    const { done, value } = await reader.read()
+    if (done) break
+
+    const chunk = decoder.decode(value, { stream: true })
+    for (const line of chunk.split("\n")) {
+      if (!line.startsWith(SSE_DATA_PREFIX)) continue
+      const payload = line.slice(SSE_DATA_PREFIX.length)
+      if (payload === "[DONE]") break
+      try {
+        const parsed = JSON.parse(payload)
+        if (parsed.content) {
+          text += parsed.content
+          onChunk(text)
+        }
+      } catch {
+        // Skip invalid JSON chunks
+      }
+    }
+  }
+
+  return text
+}
+
 export function CommentaryPanel({
   state,
   recentEntries,
@@ -64,7 +114,6 @@ export function CommentaryPanel({
       if (isLoading) return
 
       const turn = turnNumber ?? state.turn
-      // Skip if we already have commentary for this turn
       if (comments[turn]) return
 
       setIsLoading(true)
@@ -76,48 +125,11 @@ export function CommentaryPanel({
       abortRef.current = controller
 
       try {
-        const res = await fetch("/api/battles/commentary", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            mode: "turn",
-            state,
-            recentEntries,
-            team1Name,
-            team2Name,
-          }),
-          signal: controller.signal,
-        })
-
-        if (!res.ok || !res.body) throw new Error("Failed to fetch commentary")
-
-        const reader = res.body.getReader()
-        const decoder = new TextDecoder()
-        let text = ""
-
-        while (true) {
-          const { done, value } = await reader.read()
-          if (done) break
-
-          const chunk = decoder.decode(value, { stream: true })
-          const lines = chunk.split("\n")
-
-          for (const line of lines) {
-            if (line.startsWith("data: ")) {
-              const data = line.slice(6)
-              if (data === "[DONE]") break
-              try {
-                const parsed = JSON.parse(data)
-                if (parsed.content) {
-                  text += parsed.content
-                  setCurrentText(text)
-                }
-              } catch {
-                // Skip invalid JSON
-              }
-            }
-          }
-        }
+        const text = await streamCommentary(
+          { state, recentEntries, team1Name, team2Name },
+          controller.signal,
+          setCurrentText,
+        )
 
         if (text) {
           setComments((prev) => ({ ...prev, [turn]: text }))
@@ -147,19 +159,14 @@ export function CommentaryPanel({
     }
 
     lastAutoTurnRef.current = state.turn
-    // Small delay so the log entries are fully populated
     const timer = setTimeout(() => {
       fetchCommentary(state.turn)
-    }, 500)
+    }, AUTO_COMMENTARY_DELAY_MS)
 
     return () => clearTimeout(timer)
   }, [autoMode, state.turn, recentEntries.length, comments, fetchCommentary])
 
-  useEffect(() => {
-    return () => {
-      abortRef.current?.abort()
-    }
-  }, [])
+  useEffect(() => () => abortRef.current?.abort(), [])
 
   const hasCurrent = comments[state.turn] != null
 

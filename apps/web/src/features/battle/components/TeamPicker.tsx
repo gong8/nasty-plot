@@ -6,6 +6,8 @@ import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { Loader2, ChevronDown, ChevronUp, CheckCircle2, AlertCircle } from "lucide-react"
+import { LoadingSpinner } from "@/components/loading-spinner"
+import { EmptyState } from "@/components/empty-state"
 import { useTeams } from "@/features/teams/hooks/use-teams"
 import { useSampleTeams } from "../hooks/use-sample-teams"
 import { TeamPickerCard } from "./TeamPickerCard"
@@ -100,9 +102,7 @@ export function TeamPicker({
 
         <TabsContent value="saved" className="mt-3">
           {teamsLoading ? (
-            <div className="flex items-center justify-center py-8">
-              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-            </div>
+            <LoadingSpinner size="sm" />
           ) : compatibleTeams.length === 0 ? (
             <div className="text-center py-6 text-sm text-muted-foreground">
               <p>No saved teams yet</p>
@@ -140,13 +140,9 @@ export function TeamPicker({
 
         <TabsContent value="sample" className="mt-3">
           {samplesLoading ? (
-            <div className="flex items-center justify-center py-8">
-              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-            </div>
+            <LoadingSpinner size="sm" />
           ) : sampleTeams.length === 0 ? (
-            <div className="text-center py-6 text-sm text-muted-foreground">
-              No sample teams for this format
-            </div>
+            <EmptyState className="py-6 text-sm">No sample teams for this format</EmptyState>
           ) : (
             <div className="grid grid-cols-1 gap-2 max-h-[300px] overflow-y-auto pr-1">
               {sampleTeams.map((st) => (

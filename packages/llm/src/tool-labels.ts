@@ -61,7 +61,7 @@ const WRITE_TOOL_NAMES = new Set([
  * Accepts both raw names and MCP-prefixed names.
  */
 export function getToolLabel(name: string): string {
-  const stripped = name.startsWith(MCP_PREFIX) ? name.slice(MCP_PREFIX.length) : name
+  const stripped = stripPrefix(name)
   return TOOL_LABEL_MAP[stripped] ?? `Running ${stripped}`
 }
 
@@ -69,6 +69,9 @@ export function getToolLabel(name: string): string {
  * Check if a tool is a write/mutating tool that should trigger action notifications.
  */
 export function isWriteTool(name: string): boolean {
-  const stripped = name.startsWith(MCP_PREFIX) ? name.slice(MCP_PREFIX.length) : name
-  return WRITE_TOOL_NAMES.has(stripped)
+  return WRITE_TOOL_NAMES.has(stripPrefix(name))
+}
+
+function stripPrefix(name: string): string {
+  return name.startsWith(MCP_PREFIX) ? name.slice(MCP_PREFIX.length) : name
 }

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
+import { getErrorMessage } from "../../../../lib/api-error"
 import { prisma } from "@nasty-plot/db"
 import { fetchUsageStats, fetchSmogonSets } from "@nasty-plot/smogon-data"
 import { isStale } from "@nasty-plot/data-pipeline"
@@ -73,7 +74,7 @@ export async function POST(request: NextRequest) {
       }
     } catch (err) {
       statsOk = false
-      errors.push(`stats: ${err instanceof Error ? err.message : String(err)}`)
+      errors.push(`stats: ${getErrorMessage(err)}`)
     }
 
     // Smogon sets (independent of stats)
@@ -84,7 +85,7 @@ export async function POST(request: NextRequest) {
       }
     } catch (err) {
       setsOk = false
-      errors.push(`sets: ${err instanceof Error ? err.message : String(err)}`)
+      errors.push(`sets: ${getErrorMessage(err)}`)
     }
 
     results.push({ format: format.id, statsOk, setsOk, errors })

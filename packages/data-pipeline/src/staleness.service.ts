@@ -1,5 +1,7 @@
 import { prisma } from "@nasty-plot/db"
 
+const MS_PER_DAY = 1000 * 60 * 60 * 24
+
 const DEFAULT_THRESHOLDS: Record<string, number> = {
   "smogon-stats": 30,
   "smogon-sets": 7,
@@ -23,8 +25,7 @@ export async function isStale(
   if (!log) return true
   if (log.status === "error") return true
 
-  const ageMs = Date.now() - log.lastSynced.getTime()
-  const ageDays = ageMs / (1000 * 60 * 60 * 24)
+  const ageDays = (Date.now() - log.lastSynced.getTime()) / MS_PER_DAY
 
   return ageDays > threshold
 }

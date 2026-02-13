@@ -87,28 +87,59 @@ async function buildContextParts(teamId?: string, formatId?: string): Promise<st
   return parts
 }
 
-export async function streamChat(options: StreamChatOptions): Promise<ReadableStream<Uint8Array>> {
-  const { messages, signal, context, contextMode, contextData, disableAllTools } = options
-  let { teamId, formatId } = options
+/** Parse teamId/formatId from contextData JSON, merging with request-level IDs.
+ *  When contextMode is set (context-locked session), frozen contextData takes priority.
+ *  Otherwise, request-level IDs take priority over contextData fallbacks. */
+function extractContextIds(
+  contextData: string | undefined,
+  contextMode: string | undefined,
+  requestTeamId: string | undefined,
+  requestFormatId: string | undefined,
+): { teamId: string | undefined; formatId: string | undefined } {
+  if (!contextData) return { teamId: requestTeamId, formatId: requestFormatId }
 
-  // Extract teamId/formatId — frozen context wins for context-locked sessions
-  if (contextMode && contextData) {
-    try {
-      const ctxData = JSON.parse(contextData)
-      teamId = ctxData.teamId || teamId
-      formatId = ctxData.formatId || formatId
-    } catch {
-      // Invalid JSON is fine
-    }
-  } else if (contextData && (!teamId || !formatId)) {
-    try {
-      const ctxData = JSON.parse(contextData)
-      if (!teamId && ctxData.teamId) teamId = ctxData.teamId
-      if (!formatId && ctxData.formatId) formatId = ctxData.formatId
-    } catch {
-      // Invalid JSON is fine — contextData is optional
+  let parsed: { teamId?: string; formatId?: string }
+  try {
+    parsed = JSON.parse(contextData)
+  } catch {
+    return { teamId: requestTeamId, formatId: requestFormatId }
+  }
+
+  // Context-locked sessions: frozen contextData wins over request-level IDs
+  if (contextMode) {
+    return {
+      teamId: parsed.teamId || requestTeamId,
+      formatId: parsed.formatId || requestFormatId,
     }
   }
+
+  // Normal sessions: request-level IDs win, contextData is fallback
+  return {
+    teamId: requestTeamId || parsed.teamId,
+    formatId: requestFormatId || parsed.formatId,
+  }
+}
+
+function resolveDisallowedTools(
+  disableAll?: boolean,
+  contextMode?: string,
+  pageType?: PageType,
+): string[] {
+  if (disableAll) return getAllMcpToolNames()
+  if (contextMode) return getDisallowedMcpToolsForContextMode(contextMode)
+  if (pageType) return getDisallowedMcpTools(pageType)
+  return []
+}
+
+export async function streamChat(options: StreamChatOptions): Promise<ReadableStream<Uint8Array>> {
+  const { messages, signal, context, contextMode, contextData, disableAllTools } = options
+
+  const { teamId, formatId } = extractContextIds(
+    contextData,
+    contextMode,
+    options.teamId,
+    options.formatId,
+  )
 
   const tStreamChat = performance.now()
   console.log(
@@ -128,19 +159,13 @@ export async function streamChat(options: StreamChatOptions): Promise<ReadableSt
     }
   }
 
-  // Add page context — always include live context for guided-builder and battle modes
+  // Add page context: full page context when not locked, or for guided-builder;
+  // otherwise just include the summary
   if (context) {
-    if (!contextMode) {
+    const isGuidedBuilder = contextMode === "guided-builder" && context.guidedBuilder
+    if (!contextMode || isGuidedBuilder) {
       const pageCtxStr = buildPageContextPrompt(context)
-      if (pageCtxStr) {
-        contextParts.push(pageCtxStr)
-      }
-    } else if (contextMode === "guided-builder" && context.guidedBuilder) {
-      // Guided builder: use live context so LLM sees current wizard state
-      const pageCtxStr = buildPageContextPrompt(context)
-      if (pageCtxStr) {
-        contextParts.push(pageCtxStr)
-      }
+      if (pageCtxStr) contextParts.push(pageCtxStr)
     } else if (context.contextSummary) {
       contextParts.push(`\n## Live State\n${context.contextSummary}\n`)
     }
@@ -152,15 +177,11 @@ export async function streamChat(options: StreamChatOptions): Promise<ReadableSt
   const systemPrompt = [SYSTEM_PROMPT, ...contextParts].join("\n")
   console.log(`${LOG_PREFIX} CLI mode: system prompt ${systemPrompt.length} chars`)
 
-  // Calculate disallowed MCP tools: disableAllTools blocks everything,
-  // context mode overrides page-based filtering
-  const disallowedMcpTools = disableAllTools
-    ? getAllMcpToolNames()
-    : contextMode
-      ? getDisallowedMcpToolsForContextMode(contextMode)
-      : context?.pageType
-        ? getDisallowedMcpTools(context.pageType as PageType)
-        : []
+  const disallowedMcpTools = resolveDisallowedTools(
+    disableAllTools,
+    contextMode,
+    context?.pageType as PageType | undefined,
+  )
 
   const stream = streamCliChat({
     messages: messages.map((m) => ({

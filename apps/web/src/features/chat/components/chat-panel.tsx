@@ -19,6 +19,8 @@ import type { ChatStreamOptions } from "@/features/chat/hooks/use-chat-stream"
 import { cn } from "@nasty-plot/ui"
 import { PECHARUNT_SPRITE_URL } from "@/lib/constants"
 
+const SCROLL_BOTTOM_THRESHOLD = 60
+
 interface ChatPanelProps {
   teamId?: string
   formatId?: string
@@ -107,8 +109,7 @@ export function ChatPanel({ sessionId }: ChatPanelProps) {
     if (!el) return
 
     const handleScroll = () => {
-      const threshold = 60
-      const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < threshold
+      const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < SCROLL_BOTTOM_THRESHOLD
       setIsAtBottom(atBottom)
     }
 

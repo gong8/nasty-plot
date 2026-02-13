@@ -10,25 +10,14 @@ import {
 } from "@/components/ui/dialog"
 import { useChatSidebar } from "@/features/chat/context/chat-provider"
 import { usePageContext } from "@/features/chat/context/page-context-provider"
-import { useBattleStateContext } from "@/features/battle/context/battle-state-context"
+import {
+  useBuildContextData,
+  CONTEXT_MODE_LABELS,
+} from "@/features/chat/hooks/use-build-context-data"
 import { ContextModeBadge } from "./context-mode-badge"
 import { MessageCircle, Lock, Globe, Loader2 } from "lucide-react"
-import type { ChatContextMode, ChatSessionData } from "@nasty-plot/core"
+import type { ChatSessionData } from "@nasty-plot/core"
 import { PECHARUNT_SPRITE_URL } from "@/lib/constants"
-
-const PAGE_TO_CONTEXT_MODE: Record<string, ChatContextMode> = {
-  "guided-builder": "guided-builder",
-  "team-editor": "team-editor",
-  "battle-live": "battle-live",
-  "battle-replay": "battle-replay",
-}
-
-const CONTEXT_MODE_LABELS: Record<ChatContextMode, string> = {
-  "guided-builder": "Team Building Advisor",
-  "team-editor": "Team Optimization Expert",
-  "battle-live": "Battle Coach",
-  "battle-replay": "Replay Analyst",
-}
 
 export function NewChatModal() {
   const {
@@ -42,12 +31,9 @@ export function NewChatModal() {
     clearPendingQuestion,
   } = useChatSidebar()
   const pageContext = usePageContext()
-  const { battleState } = useBattleStateContext()
+  const { contextMode, hasContext: hasContextOption, buildContextData } = useBuildContextData()
   const [existingSessions, setExistingSessions] = useState<ChatSessionData[]>([])
   const [loading, setLoading] = useState(false)
-
-  const contextMode = PAGE_TO_CONTEXT_MODE[pageContext.pageType]
-  const hasContextOption = !!contextMode
 
   // Fetch existing sessions for this context when modal opens
 
@@ -90,8 +76,7 @@ export function NewChatModal() {
     }
   }, [showNewChatModal, contextMode, pageContext.teamId, pageContext.battleId])
 
-  function handleResume(sessionId: string) {
-    switchSession(sessionId)
+  function openAndClose() {
     if (pendingQuestion) {
       openSidebar(pendingQuestion)
       clearPendingQuestion()
@@ -99,70 +84,25 @@ export function NewChatModal() {
       openSidebar()
     }
     closeNewChatModal()
+  }
+
+  function handleResume(sessionId: string) {
+    switchSession(sessionId)
+    openAndClose()
   }
 
   function handleNewContextChat() {
     if (!contextMode) return
-
-    const contextData = buildContextData()
     openContextChat({
       contextMode,
-      contextData: JSON.stringify(contextData),
+      contextData: JSON.stringify(buildContextData()),
     })
-    if (pendingQuestion) {
-      openSidebar(pendingQuestion)
-      clearPendingQuestion()
-    }
-    closeNewChatModal()
+    openAndClose()
   }
 
   function handleNewGeneralChat() {
     newSession()
-    if (pendingQuestion) {
-      openSidebar(pendingQuestion)
-      clearPendingQuestion()
-    } else {
-      openSidebar()
-    }
-    closeNewChatModal()
-  }
-
-  function buildContextData(): Record<string, unknown> {
-    const data: Record<string, unknown> = {}
-
-    if (contextMode === "guided-builder" || contextMode === "team-editor") {
-      if (pageContext.teamId) data.teamId = pageContext.teamId
-      if (pageContext.teamData) {
-        data.teamName = pageContext.teamData.name
-        data.formatId = pageContext.teamData.formatId
-
-        // Include team composition so the LLM has slot info even if server fetch fails
-        const slots = pageContext.teamData.slots
-        data.slotsFilled = slots.length
-        data.slots = slots.map((slot) => {
-          const name = slot.species?.name ?? slot.pokemonId
-          const types = slot.species?.types.join("/") ?? "Unknown"
-          const moves = slot.moves.filter(Boolean).join(", ") || "None"
-          return `${name} (${types}) - ${moves}`
-        })
-      }
-      if (pageContext.formatId) data.formatId = pageContext.formatId
-    }
-
-    if (contextMode === "battle-live") {
-      if (pageContext.formatId) data.formatId = pageContext.formatId
-      if (battleState) {
-        data.gameType = battleState.format
-        data.team1Name = battleState.sides.p1.name
-        data.team2Name = battleState.sides.p2.name
-      }
-    }
-
-    if (contextMode === "battle-replay") {
-      if (pageContext.battleId) data.battleId = pageContext.battleId
-    }
-
-    return data
+    openAndClose()
   }
 
   return (

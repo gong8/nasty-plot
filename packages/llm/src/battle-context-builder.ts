@@ -1,9 +1,11 @@
-import type {
-  BattleState,
-  BattlePokemon,
-  BattleLogEntry,
-  FieldState,
-  SideConditions,
+import {
+  calcHpPercent,
+  formatSideConditions,
+  type BattleState,
+  type BattlePokemon,
+  type BattleLogEntry,
+  type FieldState,
+  type SideConditions,
 } from "@nasty-plot/battle-engine"
 import type { AutoAnalyzeDepth } from "@nasty-plot/core"
 
@@ -14,28 +16,38 @@ export interface BattleCommentaryContext {
 
 function describePokemon(pokemon: BattlePokemon | null): string {
   if (!pokemon) return "empty slot"
-  const parts = [pokemon.name]
-  // Types
-  parts.push(pokemon.types.join("/"))
-  if (pokemon.hpPercent < 100) parts.push(`${pokemon.hpPercent}% HP`)
-  if (pokemon.status) parts.push(pokemon.status)
-  if (pokemon.ability) parts.push(`Ability: ${pokemon.ability}`)
-  if (pokemon.item) parts.push(`Item: ${pokemon.item}`)
-  if (pokemon.isTerastallized && pokemon.teraType) {
-    parts.push(`Tera ${pokemon.teraType} (active)`)
-  } else if (pokemon.teraType) {
-    parts.push(`Tera type: ${pokemon.teraType}`)
+  const {
+    name,
+    types,
+    hpPercent,
+    status,
+    ability,
+    item,
+    isTerastallized,
+    teraType,
+    moves,
+    boosts,
+    volatiles,
+  } = pokemon
+  const parts = [name, types.join("/")]
+  if (hpPercent < 100) parts.push(`${hpPercent}% HP`)
+  if (status) parts.push(status)
+  if (ability) parts.push(`Ability: ${ability}`)
+  if (item) parts.push(`Item: ${item}`)
+  if (isTerastallized && teraType) {
+    parts.push(`Tera ${teraType} (active)`)
+  } else if (teraType) {
+    parts.push(`Tera type: ${teraType}`)
   }
-  // Known moves
-  const knownMoves = pokemon.moves.filter((m) => m.name)
+  const knownMoves = moves.filter((m) => m.name)
   if (knownMoves.length) {
     parts.push(`Moves: ${knownMoves.map((m) => `${m.name} (${m.type})`).join(", ")}`)
   }
-  const boosts = Object.entries(pokemon.boosts)
-    .filter(([_, v]) => v !== 0)
+  const activeBoosts = Object.entries(boosts)
+    .filter(([, v]) => v !== 0)
     .map(([k, v]) => `${v > 0 ? "+" : ""}${v} ${k}`)
-  if (boosts.length) parts.push(boosts.join(", "))
-  if (pokemon.volatiles.length) parts.push(`Volatiles: ${pokemon.volatiles.join(", ")}`)
+  if (activeBoosts.length) parts.push(activeBoosts.join(", "))
+  if (volatiles.length) parts.push(`Volatiles: ${volatiles.join(", ")}`)
   return parts.join(" | ")
 }
 
@@ -48,16 +60,7 @@ function describeField(field: FieldState): string {
 }
 
 function describeSideConditions(sc: SideConditions): string {
-  const parts: string[] = []
-  if (sc.stealthRock) parts.push("Stealth Rock")
-  if (sc.spikes > 0) parts.push(`Spikes x${sc.spikes}`)
-  if (sc.toxicSpikes > 0) parts.push(`Toxic Spikes x${sc.toxicSpikes}`)
-  if (sc.stickyWeb) parts.push("Sticky Web")
-  if (sc.reflect > 0) parts.push(`Reflect (${sc.reflect}t)`)
-  if (sc.lightScreen > 0) parts.push(`Light Screen (${sc.lightScreen}t)`)
-  if (sc.auroraVeil > 0) parts.push(`Aurora Veil (${sc.auroraVeil}t)`)
-  if (sc.tailwind > 0) parts.push(`Tailwind (${sc.tailwind}t)`)
-  return parts.length ? parts.join(", ") : "none"
+  return formatSideConditions(sc) || "none"
 }
 
 function describeSide(side: {
@@ -86,32 +89,39 @@ function describeSide(side: {
   Side: ${conditions}`
 }
 
+const RELEVANT_LOG_TYPES = new Set([
+  "move",
+  "damage",
+  "heal",
+  "status",
+  "faint",
+  "switch",
+  "boost",
+  "unboost",
+  "weather",
+  "terrain",
+  "hazard",
+  "tera",
+  "crit",
+  "supereffective",
+  "resisted",
+  "immune",
+  "item",
+  "ability",
+])
+
 function describeLogEntries(entries: BattleLogEntry[]): string {
   return entries
-    .filter((e) =>
-      [
-        "move",
-        "damage",
-        "heal",
-        "status",
-        "faint",
-        "switch",
-        "boost",
-        "unboost",
-        "weather",
-        "terrain",
-        "hazard",
-        "tera",
-        "crit",
-        "supereffective",
-        "resisted",
-        "immune",
-        "item",
-        "ability",
-      ].includes(e.type),
-    )
+    .filter((e) => RELEVANT_LOG_TYPES.has(e.type))
     .map((e) => e.message)
     .join("\n")
+}
+
+function describeBattleState(state: BattleState): string {
+  return `## Battle State (Turn ${state.turn})
+${describeSide(state.sides.p1)}
+${describeSide(state.sides.p2)}
+Field: ${describeField(state.field)}`
 }
 
 export function buildTurnCommentaryContext(
@@ -122,10 +132,7 @@ export function buildTurnCommentaryContext(
 ): BattleCommentaryContext {
   const systemPrompt = `You are an expert Pokemon competitive battle commentator. You provide insightful, concise commentary about competitive Pokemon battles. You understand type matchups, common strategies, hazards, weather, terrain, and competitive metagame dynamics. Keep commentary to 2-3 sentences. Be engaging and educational, explaining WHY moves are good or bad choices.`
 
-  const turnContext = `## Battle State (Turn ${state.turn})
-${describeSide(state.sides.p1)}
-${describeSide(state.sides.p2)}
-Field: ${describeField(state.field)}
+  const turnContext = `${describeBattleState(state)}
 
 ## This Turn's Events:
 ${describeLogEntries(recentEntries) || "No events yet"}
@@ -134,6 +141,8 @@ Provide brief, insightful commentary on this turn of the battle between ${team1N
 
   return { systemPrompt, turnContext }
 }
+
+const KEY_MOMENT_TYPES = new Set(["faint", "supereffective", "crit", "tera"])
 
 export function buildPostBattleContext(
   allEntries: BattleLogEntry[],
@@ -144,10 +153,7 @@ export function buildPostBattleContext(
 ): string {
   const winnerName = winner === "p1" ? team1Name : winner === "p2" ? team2Name : "tie"
   const faints = allEntries.filter((e) => e.type === "faint")
-  const keyMoments = allEntries.filter(
-    (e) =>
-      e.type === "faint" || e.type === "supereffective" || e.type === "crit" || e.type === "tera",
-  )
+  const keyMoments = allEntries.filter((e) => KEY_MOMENT_TYPES.has(e.type))
 
   return `Provide a brief post-battle summary of a ${totalTurns}-turn battle between ${team1Name} and ${team2Name}. Winner: ${winnerName}.
 
@@ -166,10 +172,7 @@ export function buildTurnAnalysisContext(
 ): string {
   return `Analyze this specific turn in depth:
 
-## Battle State:
-${describeSide(state.sides.p1)}
-${describeSide(state.sides.p2)}
-Field: ${describeField(state.field)}
+${describeBattleState(state)}
 
 ## Events This Turn:
 ${describeLogEntries(turnEntries)}
@@ -189,13 +192,34 @@ export function buildAutoAnalyzePrompt(
   depth: AutoAnalyzeDepth,
   turnEntries: BattleLogEntry[],
 ): string {
-  const battleState = `## Battle State (Turn ${state.turn})
-${describeSide(state.sides.p1)}
-${describeSide(state.sides.p2)}
-Field: ${describeField(state.field)}`
-
+  const battleState = describeBattleState(state)
   const recentEvents = describeLogEntries(turnEntries)
+  const { actionsSection, isForceSwitch } = formatAvailableActions(state)
+  const intro =
+    depth === "quick"
+      ? "You are coaching the player in a live battle. Give CONCISE advice for this turn."
+      : "You are coaching the player in a live battle. Provide IN-DEPTH strategic analysis for this turn."
+  const formatInstructions =
+    depth === "quick"
+      ? buildQuickAnalyzeFormat(isForceSwitch)
+      : buildDeepAnalyzeFormat(isForceSwitch)
 
+  return `${intro}
+
+${battleState}
+
+## Recent Events:
+${recentEvents || "Battle just started"}
+
+${actionsSection}
+
+${formatInstructions}`
+}
+
+function formatAvailableActions(state: BattleState): {
+  actionsSection: string
+  isForceSwitch: boolean
+} {
   const isForceSwitch = state.availableActions?.forceSwitch ?? false
   const canTera = state.availableActions?.canTera ?? false
 
@@ -208,7 +232,7 @@ Field: ${describeField(state.field)}`
 
   const switchOptions = state.availableActions?.switches
     ?.map((s) => {
-      const hp = s.maxHp > 0 ? Math.round((s.hp / s.maxHp) * 100) : 0
+      const hp = calcHpPercent(s.hp, s.maxHp)
       return `${s.name} (${hp}% HP${s.status ? `, ${s.status}` : ""})`
     })
     .join(", ")
@@ -221,31 +245,23 @@ ${availableMoves ? `Moves:\n${availableMoves}` : "No moves available"}
 ${canTera ? "Tera: Available this turn" : ""}
 ${switchOptions ? `Switch options: ${switchOptions}` : ""}`
 
-  if (depth === "quick") {
-    const format = isForceSwitch
-      ? `Format your response EXACTLY like this:
+  return { actionsSection, isForceSwitch }
+}
+
+function buildQuickAnalyzeFormat(isForceSwitch: boolean): string {
+  return isForceSwitch
+    ? `Format your response EXACTLY like this:
 **Recommended: [Pokemon Name]** -- [one-line reasoning for this switch-in]
 
 Then add 1-2 sentences on what to watch out for with the switch-in. Do NOT use any tools. Be direct and actionable.`
-      : `Format your response EXACTLY like this:
+    : `Format your response EXACTLY like this:
 **Recommended: [Move Name]** -- [one-line reasoning]
 
 Then add 1-2 sentences of brief strategic context. Do NOT use any tools. Be direct and actionable.`
+}
 
-    return `You are coaching the player in a live battle. Give CONCISE advice for this turn.
-
-${battleState}
-
-## Recent Events:
-${recentEvents || "Battle just started"}
-
-${actionsSection}
-
-${format}`
-  }
-
-  // Deep mode
-  const deepStructure = isForceSwitch
+function buildDeepAnalyzeFormat(isForceSwitch: boolean): string {
+  return isForceSwitch
     ? `Use your tools to:
 1. Check type matchups for each switch-in against the opponent's active Pokemon
 2. Look up the opponent's likely coverage moves
@@ -280,15 +296,4 @@ What to plan for the next 2-3 turns.
 
 ### Alternatives
 Other viable options and when you'd pick them instead.`
-
-  return `You are coaching the player in a live battle. Provide IN-DEPTH strategic analysis for this turn.
-
-${battleState}
-
-## Recent Events:
-${recentEvents || "Battle just started"}
-
-${actionsSection}
-
-${deepStructure}`
 }

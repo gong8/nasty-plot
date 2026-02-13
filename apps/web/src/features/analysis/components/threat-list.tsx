@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Skeleton } from "@/components/ui/skeleton"
+import { SkeletonList } from "@/components/skeleton-list"
 import { AlertTriangle, Shield, Info } from "lucide-react"
 import { cn, PokemonSprite, TypeBadge } from "@nasty-plot/ui"
 import type { ThreatEntry, TeamSlotData } from "@nasty-plot/core"
@@ -27,13 +27,7 @@ function getThreatBadge(level: ThreatEntry["threatLevel"]) {
 
 export function ThreatList({ threats, isLoading, slots, compact }: ThreatListProps) {
   if (isLoading) {
-    const skeleton = (
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        {[1, 2, 3, 4].map((i) => (
-          <Skeleton key={i} className="h-24 w-full" />
-        ))}
-      </div>
-    )
+    const skeleton = <SkeletonList count={4} height="h-24" layout="grid-2" />
     if (compact) return skeleton
     return (
       <Card>

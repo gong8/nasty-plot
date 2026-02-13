@@ -27,27 +27,16 @@ export function loadCheckpoint(): BattleCheckpoint | null {
 
     const parsed = JSON.parse(raw)
 
-    // Version check
-    if (parsed.version !== 1) {
-      clearCheckpoint()
-      return null
-    }
+    const isValid =
+      parsed.version === 1 &&
+      typeof parsed.savedAt === "number" &&
+      parsed.serializedBattle &&
+      parsed.battleState &&
+      parsed.config?.playerTeam &&
+      parsed.config?.opponentTeam &&
+      Date.now() - parsed.savedAt <= MAX_AGE_MS
 
-    // Structural validation
-    if (
-      typeof parsed.savedAt !== "number" ||
-      !parsed.serializedBattle ||
-      !parsed.battleState ||
-      !parsed.config ||
-      !parsed.config.playerTeam ||
-      !parsed.config.opponentTeam
-    ) {
-      clearCheckpoint()
-      return null
-    }
-
-    // Expiry check
-    if (Date.now() - parsed.savedAt > MAX_AGE_MS) {
+    if (!isValid) {
       clearCheckpoint()
       return null
     }
@@ -74,17 +63,5 @@ export function clearCheckpoint(): void {
  * Check if a valid (non-expired) checkpoint exists without fully parsing it.
  */
 export function hasCheckpoint(): boolean {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (!raw) return false
-
-    const parsed = JSON.parse(raw)
-    if (parsed.version !== 1) return false
-    if (typeof parsed.savedAt !== "number") return false
-    if (Date.now() - parsed.savedAt > MAX_AGE_MS) return false
-
-    return true
-  } catch {
-    return false
-  }
+  return loadCheckpoint() !== null
 }

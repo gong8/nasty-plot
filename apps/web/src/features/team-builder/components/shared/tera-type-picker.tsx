@@ -1,6 +1,7 @@
 "use client"
 
 import { POKEMON_TYPES, TYPE_COLORS, isLightTypeColor, type PokemonType } from "@nasty-plot/core"
+import { cn } from "@nasty-plot/ui"
 
 interface TeraTypePickerProps {
   value?: PokemonType
@@ -14,13 +15,13 @@ export function TeraTypePicker({ value, onChange }: TeraTypePickerProps) {
         <button
           key={t}
           onClick={() => onChange(t)}
-          className={`rounded px-1 py-0.5 text-[10px] font-medium transition-all ${
-            isLightTypeColor(TYPE_COLORS[t]) ? "text-gray-900" : "text-white"
-          } ${
+          className={cn(
+            "rounded px-1 py-0.5 text-[10px] font-medium transition-all",
+            isLightTypeColor(TYPE_COLORS[t]) ? "text-gray-900" : "text-white",
             value === t
               ? "ring-2 ring-offset-1 ring-primary scale-105"
-              : "opacity-70 hover:opacity-100"
-          }`}
+              : "opacity-70 hover:opacity-100",
+          )}
           style={{ backgroundColor: TYPE_COLORS[t] }}
         >
           {t}

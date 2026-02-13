@@ -35,7 +35,6 @@ function getEntityName(contextMode: ChatContextMode, ctxData: Record<string, unk
     case "guided-builder":
       return (ctxData.teamName as string) || "Team"
     case "battle-live":
-      return `${ctxData.team1Name || "Team 1"} vs ${ctxData.team2Name || "Team 2"}`
     case "battle-replay":
       return `${ctxData.team1Name || "Team 1"} vs ${ctxData.team2Name || "Team 2"}`
   }

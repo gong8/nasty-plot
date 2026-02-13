@@ -38,13 +38,14 @@ import {
   type TeamSlotData,
   type TeamSlotInput,
 } from "@nasty-plot/core"
-import { PokemonSprite, TypeBadge } from "@nasty-plot/ui"
+import { cn, PokemonSprite, TypeBadge } from "@nasty-plot/ui"
 import { PokemonSearchPanel } from "./pokemon-search-panel"
 import { ItemCombobox } from "./item-combobox"
 import { MoveInput } from "./shared/move-input"
 import { NatureSelector } from "./shared/nature-selector"
 import { TeraTypePicker } from "./shared/tera-type-picker"
 import { usePopularityData } from "../hooks/use-popularity-data"
+import { fetchApiData } from "@/lib/api-client"
 
 interface SlotEditorProps {
   slot: TeamSlotData | null
@@ -98,12 +99,13 @@ export function SlotEditor({
   const { data: megaForm } = useQuery<PokemonSpecies | null>({
     queryKey: ["mega-form", pokemonId, item],
     queryFn: async () => {
-      const res = await fetch(
-        `/api/pokemon/${pokemonId}/mega-form?item=${encodeURIComponent(item)}`,
-      )
-      if (!res.ok) return null
-      const json = await res.json()
-      return json.data ?? null
+      try {
+        return await fetchApiData<PokemonSpecies>(
+          `/api/pokemon/${pokemonId}/mega-form?item=${encodeURIComponent(item)}`,
+        )
+      } catch {
+        return null
+      }
     },
     enabled: !!pokemonId && !!item,
   })
@@ -379,9 +381,10 @@ export function SlotEditor({
               <div className="flex items-center justify-between">
                 <Label>EVs</Label>
                 <span
-                  className={`text-xs ${
-                    evRemaining < 0 ? "text-destructive font-medium" : "text-muted-foreground"
-                  }`}
+                  className={cn(
+                    "text-xs",
+                    evRemaining < 0 ? "text-destructive font-medium" : "text-muted-foreground",
+                  )}
                 >
                   {evTotal} / {MAX_TOTAL_EVS} ({evRemaining} remaining)
                 </span>

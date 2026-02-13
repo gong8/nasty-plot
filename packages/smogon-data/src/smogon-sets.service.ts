@@ -33,6 +33,20 @@ function firstRecord(
   return Array.isArray(val) ? val[0] : val
 }
 
+async function upsertSyncLog(formatId: string, message: string): Promise<void> {
+  await prisma.dataSyncLog.upsert({
+    where: { source_formatId: { source: "smogon-sets", formatId } },
+    update: { lastSynced: new Date(), status: "success", message },
+    create: {
+      source: "smogon-sets",
+      formatId,
+      lastSynced: new Date(),
+      status: "success",
+      message,
+    },
+  })
+}
+
 /**
  * Fetch Smogon recommended sets from data.pkmn.cc and persist to DB.
  * @param formatId - The app's format ID (used for DB storage)
@@ -74,69 +88,34 @@ export async function fetchSmogonSets(
         continue
       }
 
-      const ability = firstOf(setData.ability ?? "")
-      const item = firstOf(setData.item ?? "")
-      const nature = firstOf(setData.nature ?? "Serious")
-      const teraType = setData.teraType ? firstOf(setData.teraType) : null
-
-      const movesJson = JSON.stringify(setData.moves ?? [])
-      const evsJson = JSON.stringify(firstRecord(setData.evs ?? {}))
       const normalizedIvs = setData.ivs ? firstRecord(setData.ivs) : null
-      const ivsJson =
-        normalizedIvs && Object.keys(normalizedIvs).length > 0
-          ? JSON.stringify(normalizedIvs)
-          : null
+      const fields = {
+        ability: firstOf(setData.ability ?? ""),
+        item: firstOf(setData.item ?? ""),
+        nature: firstOf(setData.nature ?? "Serious"),
+        teraType: setData.teraType ? firstOf(setData.teraType) : null,
+        moves: JSON.stringify(setData.moves ?? []),
+        evs: JSON.stringify(firstRecord(setData.evs ?? {})),
+        ivs:
+          normalizedIvs && Object.keys(normalizedIvs).length > 0
+            ? JSON.stringify(normalizedIvs)
+            : null,
+      }
 
       await prisma.smogonSet.upsert({
         where: {
           formatId_pokemonId_setName: { formatId, pokemonId, setName },
         },
-        update: {
-          ability,
-          item,
-          nature,
-          teraType,
-          moves: movesJson,
-          evs: evsJson,
-          ivs: ivsJson,
-        },
-        create: {
-          formatId,
-          pokemonId,
-          setName,
-          ability,
-          item,
-          nature,
-          teraType,
-          moves: movesJson,
-          evs: evsJson,
-          ivs: ivsJson,
-        },
+        update: fields,
+        create: { formatId, pokemonId, setName, ...fields },
       })
 
       totalSets++
     }
   }
 
-  // Update sync log
-  await prisma.dataSyncLog.upsert({
-    where: {
-      source_formatId: { source: "smogon-sets", formatId },
-    },
-    update: {
-      lastSynced: new Date(),
-      status: "success",
-      message: `Fetched ${totalSets} sets${skipped > 0 ? ` (${skipped} entries skipped)` : ""}`,
-    },
-    create: {
-      source: "smogon-sets",
-      formatId,
-      lastSynced: new Date(),
-      status: "success",
-      message: `Fetched ${totalSets} sets${skipped > 0 ? ` (${skipped} entries skipped)` : ""}`,
-    },
-  })
-
+  const syncMessage = `Fetched ${totalSets} sets${skipped > 0 ? ` (${skipped} entries skipped)` : ""}`
+  await upsertSyncLog(formatId, syncMessage)
   console.log(
     `[smogon-sets] Done: ${totalSets} sets saved for ${formatId}${skipped > 0 ? ` (${skipped} skipped)` : ""}`,
   )
@@ -146,7 +125,6 @@ export async function fetchSmogonSets(
  * Fallback: Generate sets from Smogon Chaos usage stats when pkmn.cc has no pre-compiled sets.
  */
 async function fetchAndSaveChaosSets(formatId: string, smogonStatsId: string): Promise<void> {
-  // Use the stats ID (e.g. gen9vgc2026regf) to find the chaos JSON
   const { url } = await resolveYearMonth(smogonStatsId)
   console.log(`[smogon-sets] Fetching chaos stats from ${url}`)
 
@@ -161,54 +139,35 @@ async function fetchAndSaveChaosSets(formatId: string, smogonStatsId: string): P
   console.log(`[smogon-sets] Generated ${sets.length} sets from usage stats. Saving to DB...`)
 
   for (const set of sets) {
+    const fields = {
+      ability: set.ability,
+      item: set.item,
+      nature: set.nature,
+      teraType: set.teraType ?? null,
+      moves: JSON.stringify(set.moves),
+      evs: JSON.stringify(set.evs),
+      ivs: null as string | null,
+    }
     await prisma.smogonSet.upsert({
       where: {
         formatId_pokemonId_setName: { formatId, pokemonId: set.pokemonId, setName: set.setName },
       },
-      update: {
-        ability: set.ability,
-        item: set.item,
-        nature: set.nature,
-        teraType: set.teraType ?? null,
-        moves: JSON.stringify(set.moves),
-        evs: JSON.stringify(set.evs),
-        ivs: null, // Chaos sets don't infer IVs
-      },
-      create: {
-        formatId,
-        pokemonId: set.pokemonId,
-        setName: set.setName,
-        ability: set.ability,
-        item: set.item,
-        nature: set.nature,
-        teraType: set.teraType ?? null,
-        moves: JSON.stringify(set.moves),
-        evs: JSON.stringify(set.evs),
-        ivs: null,
-      },
+      update: fields,
+      create: { formatId, pokemonId: set.pokemonId, setName: set.setName, ...fields },
     })
   }
 
-  // Update sync log
-  await prisma.dataSyncLog.upsert({
-    where: {
-      source_formatId: { source: "smogon-sets", formatId },
-    },
-    update: {
-      lastSynced: new Date(),
-      status: "success",
-      message: `Generated ${sets.length} sets from usage stats (fallback)`,
-    },
-    create: {
-      source: "smogon-sets",
-      formatId,
-      lastSynced: new Date(),
-      status: "success",
-      message: `Generated ${sets.length} sets from usage stats (fallback)`,
-    },
-  })
-
+  await upsertSyncLog(formatId, `Generated ${sets.length} sets from usage stats (fallback)`)
   console.log(`[smogon-sets] Done: ${sets.length} sets generated for ${formatId}`)
+}
+
+function safeJsonParse<T>(json: string | null, fallback: T): T {
+  if (!json) return fallback
+  try {
+    return JSON.parse(json)
+  } catch {
+    return fallback
+  }
 }
 
 /**
@@ -226,26 +185,6 @@ function rowToSetData(row: {
   evs: string
   ivs: string | null
 }): SmogonSetData {
-  let moves: (string | string[])[]
-  let evs: Record<string, number>
-  let ivs: Record<string, number> | undefined
-
-  try {
-    moves = JSON.parse(row.moves)
-  } catch {
-    moves = []
-  }
-  try {
-    evs = JSON.parse(row.evs)
-  } catch {
-    evs = {}
-  }
-  try {
-    ivs = row.ivs ? JSON.parse(row.ivs) : undefined
-  } catch {
-    ivs = undefined
-  }
-
   return {
     pokemonId: row.pokemonId,
     setName: row.setName,
@@ -253,9 +192,9 @@ function rowToSetData(row: {
     item: row.item,
     nature: row.nature as NatureName,
     teraType: (row.teraType as PokemonType) ?? undefined,
-    moves,
-    evs,
-    ivs,
+    moves: safeJsonParse<(string | string[])[]>(row.moves, []),
+    evs: safeJsonParse<Record<string, number>>(row.evs, {}),
+    ivs: safeJsonParse<Record<string, number> | undefined>(row.ivs, undefined),
   }
 }
 
@@ -309,10 +248,7 @@ export async function getAllSetsForFormat(
   const grouped: Record<string, SmogonSetData[]> = {}
   for (const row of rows) {
     const data = rowToSetData(row)
-    if (!grouped[data.pokemonId]) {
-      grouped[data.pokemonId] = []
-    }
-    grouped[data.pokemonId].push(data)
+    ;(grouped[data.pokemonId] ??= []).push(data)
   }
 
   return grouped

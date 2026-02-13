@@ -81,35 +81,24 @@ export function PageContextProvider({ children }: { children: ReactNode }) {
   const { battleState } = useBattleStateContext()
 
   const contextSummary = useMemo(() => {
-    const parts: string[] = []
-    if (pageType === "guided-builder" && teamData) {
-      parts.push(
-        `User is in the guided team builder for "${teamData.name}" (${teamData.formatId}, ${teamData.slots.length}/6 slots)`,
-      )
-    } else if (pageType === "team-editor" && teamData) {
-      parts.push(
-        `User is on the team editor for "${teamData.name}" (${teamData.formatId}, ${teamData.slots.length}/6 slots)`,
-      )
-    } else if (pageType === "pokemon-detail" && pokemonData) {
-      parts.push(`User is viewing ${pokemonData.name} (${pokemonData.types.join("/")})`)
-    } else if (pageType === "pokemon-browser") {
-      parts.push("User is browsing the Pokemon list")
-    } else if (pageType === "damage-calc") {
-      parts.push("User is using the damage calculator")
-    } else if (pageType === "battle-live" && battleState) {
-      parts.push(serializeBattleState(battleState))
-    } else if (pageType === "battle-live") {
-      parts.push("User is in a live battle simulation")
-    } else if (pageType === "battle-replay" && battleState) {
-      parts.push(serializeBattleState(battleState))
-    } else if (pageType === "battle-replay") {
-      parts.push("User is reviewing a battle replay")
-    } else if (pageType === "chat") {
-      parts.push("User is on the dedicated chat page")
-    } else if (pageType === "home") {
-      parts.push("User is on the home page")
+    if (pageType === "guided-builder" && teamData)
+      return `User is in the guided team builder for "${teamData.name}" (${teamData.formatId}, ${teamData.slots.length}/6 slots)`
+    if (pageType === "team-editor" && teamData)
+      return `User is on the team editor for "${teamData.name}" (${teamData.formatId}, ${teamData.slots.length}/6 slots)`
+    if (pageType === "pokemon-detail" && pokemonData)
+      return `User is viewing ${pokemonData.name} (${pokemonData.types.join("/")})`
+    if ((pageType === "battle-live" || pageType === "battle-replay") && battleState)
+      return serializeBattleState(battleState)
+
+    const STATIC_SUMMARIES: Partial<Record<PageType, string>> = {
+      "pokemon-browser": "User is browsing the Pokemon list",
+      "damage-calc": "User is using the damage calculator",
+      "battle-live": "User is in a live battle simulation",
+      "battle-replay": "User is reviewing a battle replay",
+      chat: "User is on the dedicated chat page",
+      home: "User is on the home page",
     }
-    return parts.join(". ")
+    return STATIC_SUMMARIES[pageType] ?? ""
   }, [pageType, teamData, pokemonData, battleState])
 
   const value = useMemo<PageContext>(

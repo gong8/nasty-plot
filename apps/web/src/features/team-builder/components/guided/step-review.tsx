@@ -22,6 +22,7 @@ import type {
   PokemonSpecies,
   UsageStatsEntry,
 } from "@nasty-plot/core"
+import { fetchApiData } from "@/lib/api-client"
 import { SimplifiedAnalysis } from "./simplified-analysis"
 
 interface StepReviewProps {
@@ -57,12 +58,7 @@ export function StepReview({
   const speciesQueries = useQueries({
     queries: filledSlots.map((slot) => ({
       queryKey: ["pokemon", slot.pokemonId!],
-      queryFn: async () => {
-        const res = await fetch(`/api/pokemon/${slot.pokemonId}`)
-        if (!res.ok) throw new Error("Not found")
-        const json = await res.json()
-        return json.data as PokemonSpecies
-      },
+      queryFn: () => fetchApiData<PokemonSpecies>(`/api/pokemon/${slot.pokemonId}`),
       enabled: !!slot.pokemonId,
       staleTime: Infinity,
     })),
@@ -78,10 +74,11 @@ export function StepReview({
   }
 
   function getTypes(pokemonId: string): PokemonType[] {
-    const species = speciesMap.get(pokemonId)
-    if (species) return species.types
-    const usage = usageData.find((u) => u.pokemonId === pokemonId)
-    return usage?.types ?? []
+    return (
+      speciesMap.get(pokemonId)?.types ??
+      usageData.find((u) => u.pokemonId === pokemonId)?.types ??
+      []
+    )
   }
 
   return (

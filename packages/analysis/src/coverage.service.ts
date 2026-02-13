@@ -15,9 +15,9 @@ export function analyzeTypeCoverage(slots: TeamSlotData[]): TypeCoverage {
   const offensive = {} as Record<PokemonType, number>
   const defensive = {} as Record<PokemonType, number>
 
-  for (const t of POKEMON_TYPES) {
-    offensive[t] = 0
-    defensive[t] = 0
+  for (const type of POKEMON_TYPES) {
+    offensive[type] = 0
+    defensive[type] = 0
   }
 
   // Offensive: count how many team members can hit each type super-effectively
@@ -42,28 +42,28 @@ export function analyzeTypeCoverage(slots: TeamSlotData[]): TypeCoverage {
     if (types.length === 0) continue
 
     for (const atkType of POKEMON_TYPES) {
-      const eff = getTypeEffectiveness(atkType, types)
-      if (eff < 1) {
+      const effectiveness = getTypeEffectiveness(atkType, types)
+      if (effectiveness < 1) {
         defensive[atkType]++
       }
     }
   }
 
   // Uncovered types: no team member can hit super-effectively
-  const uncoveredTypes = POKEMON_TYPES.filter((t) => offensive[t] === 0) as PokemonType[]
+  const uncoveredTypes = POKEMON_TYPES.filter((type) => offensive[type] === 0) as PokemonType[]
 
   // Shared weaknesses: types that 2+ team members are weak to
   const weaknessCount: Partial<Record<PokemonType, number>> = {}
   for (const slot of slots) {
     const types = slot.species?.types ?? []
     if (types.length === 0) continue
-    for (const w of getWeaknesses(types)) {
-      weaknessCount[w] = (weaknessCount[w] ?? 0) + 1
+    for (const weakness of getWeaknesses(types)) {
+      weaknessCount[weakness] = (weaknessCount[weakness] ?? 0) + 1
     }
   }
 
   const sharedWeaknesses = POKEMON_TYPES.filter(
-    (t) => (weaknessCount[t] ?? 0) >= 2,
+    (type) => (weaknessCount[type] ?? 0) >= 2,
   ) as PokemonType[]
 
   return {

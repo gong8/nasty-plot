@@ -11,15 +11,7 @@ import type {
   MergeOptions,
   LineageNode,
 } from "@nasty-plot/core"
-
-async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(url, init)
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({ error: res.statusText }))
-    throw new Error(body.error || res.statusText)
-  }
-  return res.json()
-}
+import { fetchJson, postJson } from "@/lib/api-client"
 
 // --- Queries ---
 
@@ -47,12 +39,7 @@ export function useTeam(teamId: string | null) {
 export function useCreateTeam() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (input: TeamCreateInput) =>
-      fetchJson<TeamData>("/api/teams", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(input),
-      }),
+    mutationFn: (input: TeamCreateInput) => postJson<TeamData>("/api/teams", input),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["teams"] })
     },
@@ -68,9 +55,9 @@ export function useUpdateTeam() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       }),
-    onSuccess: (data) => {
+    onSuccess: (result) => {
       qc.invalidateQueries({ queryKey: ["teams"] })
-      qc.setQueryData(["team", data.id], data)
+      qc.setQueryData(["team", result.id], result)
     },
   })
 }
@@ -89,11 +76,7 @@ export function useAddSlot() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: ({ teamId, slot }: { teamId: string; slot: TeamSlotInput }) =>
-      fetchJson(`/api/teams/${teamId}/slots`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(slot),
-      }),
+      postJson(`/api/teams/${teamId}/slots`, slot),
     onSuccess: (_, vars) => {
       qc.invalidateQueries({ queryKey: ["team", vars.teamId] })
       qc.invalidateQueries({ queryKey: ["team-compare"] })
@@ -145,11 +128,7 @@ export function useForkTeam() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: ({ teamId, options }: { teamId: string; options?: ForkOptions }) =>
-      fetchJson<TeamData>(`/api/teams/${teamId}/fork`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(options ?? {}),
-      }),
+      postJson<TeamData>(`/api/teams/${teamId}/fork`, options ?? {}),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["teams"] })
     },
@@ -175,15 +154,11 @@ export function useMergeTeams() {
       decisions: MergeDecision[]
       options?: MergeOptions
     }) =>
-      fetchJson<TeamData>("/api/teams/merge", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          teamAId: input.teamAId,
-          teamBId: input.teamBId,
-          decisions: input.decisions,
-          ...input.options,
-        }),
+      postJson<TeamData>("/api/teams/merge", {
+        teamAId: input.teamAId,
+        teamBId: input.teamBId,
+        decisions: input.decisions,
+        ...input.options,
       }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["teams"] })

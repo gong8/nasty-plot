@@ -47,8 +47,7 @@ export function SampleTeamCard({
         </div>
 
         <div className="flex items-center justify-between">
-          {source && <span className="text-xs text-muted-foreground">{source}</span>}
-          {!source && <span />}
+          <span className="text-xs text-muted-foreground">{source ?? ""}</span>
           <Button size="sm" className="gap-1.5" onClick={() => onUse(paste)}>
             <Swords className="h-3.5 w-3.5" />
             Use in Battle

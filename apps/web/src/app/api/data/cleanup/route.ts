@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { cleanupEmptyTeams } from "@nasty-plot/teams"
+import { apiErrorResponse } from "../../../../lib/api-error"
 
 export async function POST() {
   try {
@@ -8,7 +9,6 @@ export async function POST() {
       data: { deletedTeams: deletedCount },
     })
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Unknown error"
-    return NextResponse.json({ error: message }, { status: 500 })
+    return apiErrorResponse(err)
   }
 }

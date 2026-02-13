@@ -8,7 +8,7 @@ import { loadCheckpoint } from "@/features/battle/lib/checkpoint-store"
 import { useChatSidebar } from "@/features/chat/context/chat-provider"
 import type { AIDifficulty } from "@nasty-plot/battle-engine"
 import { DEFAULT_FORMAT_ID, type GameType } from "@nasty-plot/core"
-import { Loader2 } from "lucide-react"
+import { LoadingSpinner } from "@/components/loading-spinner"
 
 function BattleLiveContent() {
   const searchParams = useSearchParams()
@@ -108,12 +108,11 @@ function BattleLiveContent() {
 
   if (state.phase === "setup" || (isLoading && state.turn === 0)) {
     return (
-      <div className="flex items-center justify-center py-24">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-        <span className="ml-3 text-muted-foreground">
-          {isLoading ? "Resuming battle..." : "Starting battle..."}
-        </span>
-      </div>
+      <LoadingSpinner
+        size="lg"
+        className="py-24"
+        label={isLoading ? "Resuming battle..." : "Starting battle..."}
+      />
     )
   }
 
@@ -133,13 +132,7 @@ export default function BattleLivePage() {
   return (
     <>
       <main className="container mx-auto px-2 py-2 max-w-7xl">
-        <Suspense
-          fallback={
-            <div className="flex items-center justify-center py-24">
-              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-            </div>
-          }
-        >
+        <Suspense fallback={<LoadingSpinner size="lg" className="py-24" />}>
           <BattleLiveContent />
         </Suspense>
       </main>

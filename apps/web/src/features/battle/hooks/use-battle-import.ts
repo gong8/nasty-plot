@@ -1,6 +1,7 @@
 "use client"
 
 import { useMutation } from "@tanstack/react-query"
+import { postJson } from "@/lib/api-client"
 
 interface ImportInput {
   replayUrl?: string
@@ -39,18 +40,7 @@ interface ImportResult {
 
 export function useBattleImport() {
   return useMutation<ImportResult, Error, ImportInput>({
-    mutationFn: async (input) => {
-      const res = await fetch("/api/battles/import", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(input),
-      })
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}))
-        throw new Error(body.error || "Import failed")
-      }
-      return res.json()
-    },
+    mutationFn: (input) => postJson<ImportResult>("/api/battles/import", input),
   })
 }
 

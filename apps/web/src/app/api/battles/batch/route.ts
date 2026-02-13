@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
+import { apiErrorResponse } from "../../../../lib/api-error"
 import { prisma } from "@nasty-plot/db"
 import { runBatchSimulation } from "@nasty-plot/battle-engine"
 import type { AIDifficulty } from "@nasty-plot/battle-engine"
@@ -47,18 +48,23 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: pasteErrors.join("; ") }, { status: 400 })
     }
 
-    const games = Math.min(totalGames, 500) // Cap at 500
+    const MAX_BATCH_GAMES = 500
+    const games = Math.min(totalGames, MAX_BATCH_GAMES)
+    const resolvedGameType = gameType || "singles"
+    const resolvedDifficulty = aiDifficulty || "heuristic"
+    const resolvedTeam1Name = team1Name || "Team 1"
+    const resolvedTeam2Name = team2Name || "Team 2"
 
     // Create the batch record
     const batch = await prisma.batchSimulation.create({
       data: {
         formatId,
-        gameType: gameType || "singles",
-        aiDifficulty: aiDifficulty || "heuristic",
+        gameType: resolvedGameType,
+        aiDifficulty: resolvedDifficulty,
         team1Paste,
-        team1Name: team1Name || "Team 1",
+        team1Name: resolvedTeam1Name,
         team2Paste,
-        team2Name: team2Name || "Team 2",
+        team2Name: resolvedTeam2Name,
         totalGames: games,
         status: "running",
       },
@@ -69,12 +75,12 @@ export async function POST(req: NextRequest) {
       {
         formatId,
         simFormatId: simFormatId || undefined,
-        gameType: (gameType || "singles") as GameType,
-        aiDifficulty: (aiDifficulty || "heuristic") as AIDifficulty,
+        gameType: resolvedGameType as GameType,
+        aiDifficulty: resolvedDifficulty as AIDifficulty,
         team1Paste,
         team2Paste,
-        team1Name: team1Name || "Team 1",
-        team2Name: team2Name || "Team 2",
+        team1Name: resolvedTeam1Name,
+        team2Name: resolvedTeam2Name,
         totalGames: games,
       },
       async (progress) => {
@@ -117,6 +123,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ id: batch.id, status: "running" }, { status: 201 })
   } catch (err) {
     console.error("[POST /api/battles/batch]", err)
-    return NextResponse.json({ error: "Failed to start batch simulation" }, { status: 500 })
+    return apiErrorResponse(err, { fallback: "Failed to start batch simulation" })
   }
 }

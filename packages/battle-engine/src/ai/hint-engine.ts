@@ -30,6 +30,68 @@ export interface HintResult {
   bestAction: BattleAction
 }
 
+const GUARANTEED_KO_BONUS = 80
+const PARTIAL_KO_BASE = 40
+const PARTIAL_KO_SCALING = 40
+const PRIORITY_BONUS = 20
+const LOW_HP_THRESHOLD = 30
+const STAB_BONUS = 5
+
+const SWITCH_SCORES = {
+  RESIST_BONUS: 15,
+  IMMUNITY_BONUS: 25,
+  SE_COVERAGE_BONUS: 10,
+  STEALTH_ROCK_PENALTY: 10,
+  SPIKES_PENALTY_PER_LAYER: 5,
+  STICKY_WEB_PENALTY: 5,
+} as const
+
+const STATUS_MOVE_IDS = new Set([
+  "toxic",
+  "willowisp",
+  "thunderwave",
+  "spore",
+  "sleeppowder",
+  "yawn",
+])
+
+const SETUP_MOVE_IDS = new Set([
+  "swordsdance",
+  "nastyplot",
+  "calmmind",
+  "dragondance",
+  "irondefense",
+  "amnesia",
+  "shellsmash",
+])
+
+const RECOVERY_MOVE_IDS = new Set([
+  "recover",
+  "roost",
+  "softboiled",
+  "moonlight",
+  "synthesis",
+  "shoreup",
+  "slackoff",
+])
+
+const HAZARD_REMOVAL_IDS = new Set(["defog", "rapidspin"])
+
+/** Layered hazards: move ID -> side condition key and max layers */
+const LAYERED_HAZARDS: Record<
+  string,
+  { key: "spikes" | "toxicSpikes"; max: number; label: string }
+> = {
+  spikes: { key: "spikes", max: 3, label: "Spikes" },
+  toxicspikes: { key: "toxicSpikes", max: 2, label: "Toxic Spikes" },
+}
+
+/** Single-layer hazards: move ID -> side condition key */
+const SINGLE_HAZARDS: Record<string, { key: "stealthRock" | "stickyWeb"; label: string }> = {
+  stealthrock: { key: "stealthRock", label: "Stealth Rock" },
+  stickyweb: { key: "stickyWeb", label: "Sticky Web" },
+}
+
 function classifyGap(gap: number): MoveClassification {
   if (gap <= 0) return "best"
   if (gap <= 5) return "good"
@@ -70,25 +132,25 @@ function estimateMoveScore(
     if (maxDmg >= oppActive.hp) {
       const minDmg = Math.min(...damage)
       if (minDmg >= oppActive.hp) {
-        score += 80
+        score += GUARANTEED_KO_BONUS
         explanation = "Guaranteed KO!"
       } else {
         const koChance = damage.filter((d) => d >= oppActive.hp).length / damage.length
-        score += 40 + koChance * 40
+        score += PARTIAL_KO_BASE + koChance * PARTIAL_KO_SCALING
         explanation = `${Math.round(koChance * 100)}% chance to KO`
       }
     }
 
     // Priority bonus when opponent is low
-    if (moveData.priority > 0 && oppActive.hpPercent < 30) {
-      score += 20
+    if (moveData.priority > 0 && oppActive.hpPercent < LOW_HP_THRESHOLD) {
+      score += PRIORITY_BONUS
       explanation += " (priority)"
     }
 
     // STAB bonus
     const myTypes = getSpeciesTypes(myActive.name)
     if (myTypes.includes(moveData.type as never)) {
-      score += 5
+      score += STAB_BONUS
     }
 
     return { score, explanation }
@@ -101,6 +163,15 @@ function estimateMoveScore(
   }
 }
 
+function countHazards(sc: {
+  stealthRock: boolean
+  spikes: number
+  toxicSpikes: number
+  stickyWeb: boolean
+}): number {
+  return (sc.stealthRock ? 1 : 0) + sc.spikes + sc.toxicSpikes + (sc.stickyWeb ? 1 : 0)
+}
+
 function estimateStatusMoveScore(
   moveData: DexMove,
   myActive: BattlePokemon,
@@ -108,40 +179,35 @@ function estimateStatusMoveScore(
   state: BattleState,
 ): { score: number; explanation: string } {
   const id = moveData.id
+  const oppSC = state.sides.p2.sideConditions
 
-  // Hazards
-  if (id === "stealthrock") {
-    const opp = state.sides.p2.sideConditions
-    if (!opp.stealthRock)
-      return { score: HAZARD_SCORES.stealthrock, explanation: "Sets Stealth Rock" }
-    return { score: 0, explanation: "Stealth Rock already up" }
-  }
-  if (id === "spikes") {
-    const opp = state.sides.p2.sideConditions
-    if (opp.spikes < 3)
-      return { score: HAZARD_SCORES.spikes, explanation: `Sets Spikes layer ${opp.spikes + 1}` }
-    return { score: 0, explanation: "Max Spikes layers" }
-  }
-  if (id === "toxicspikes") {
-    const opp = state.sides.p2.sideConditions
-    if (opp.toxicSpikes < 2)
+  // Single-layer hazards (Stealth Rock, Sticky Web)
+  const singleHazard = SINGLE_HAZARDS[id]
+  if (singleHazard) {
+    if (!oppSC[singleHazard.key])
       return {
-        score: HAZARD_SCORES.toxicspikes,
-        explanation: `Sets Toxic Spikes layer ${opp.toxicSpikes + 1}`,
+        score: HAZARD_SCORES[id as keyof typeof HAZARD_SCORES],
+        explanation: `Sets ${singleHazard.label}`,
       }
-    return { score: 0, explanation: "Max Toxic Spikes layers" }
+    return { score: 0, explanation: `${singleHazard.label} already up` }
   }
-  if (id === "stickyweb") {
-    const opp = state.sides.p2.sideConditions
-    if (!opp.stickyWeb) return { score: HAZARD_SCORES.stickyweb, explanation: "Sets Sticky Web" }
-    return { score: 0, explanation: "Sticky Web already up" }
+
+  // Layered hazards (Spikes, Toxic Spikes)
+  const layeredHazard = LAYERED_HAZARDS[id]
+  if (layeredHazard) {
+    const currentLayers = oppSC[layeredHazard.key]
+    if (currentLayers < layeredHazard.max)
+      return {
+        score: HAZARD_SCORES[id as keyof typeof HAZARD_SCORES],
+        explanation: `Sets ${layeredHazard.label} layer ${currentLayers + 1}`,
+      }
+    return { score: 0, explanation: `Max ${layeredHazard.label} layers` }
   }
 
   // Hazard removal
-  if (id === "defog" || id === "rapidspin") {
-    const my = state.sides.p1.sideConditions
-    const hazardCount =
-      (my.stealthRock ? 1 : 0) + my.spikes + my.toxicSpikes + (my.stickyWeb ? 1 : 0)
+  if (HAZARD_REMOVAL_IDS.has(id)) {
+    const mySC = state.sides.p1.sideConditions
+    const hazardCount = countHazards(mySC)
     if (hazardCount > 0)
       return {
         score: HAZARD_REMOVAL_BASE + hazardCount * HAZARD_REMOVAL_PER_HAZARD,
@@ -150,34 +216,22 @@ function estimateStatusMoveScore(
     return { score: 2, explanation: "No hazards to remove" }
   }
 
-  // Status moves
-  if (["toxic", "willowisp", "thunderwave", "spore", "sleeppowder", "yawn"].includes(id)) {
+  // Status infliction
+  if (STATUS_MOVE_IDS.has(id)) {
     if (oppActive.status) return { score: 0, explanation: "Opponent already statused" }
     const score = STATUS_INFLICTION_SCORES[id as keyof typeof STATUS_INFLICTION_SCORES] || 20
     return { score, explanation: `Inflicts status on opponent` }
   }
 
   // Setup moves
-  if (
-    [
-      "swordsdance",
-      "nastyplot",
-      "calmmind",
-      "dragondance",
-      "irondefense",
-      "amnesia",
-      "shellsmash",
-    ].includes(id)
-  ) {
+  if (SETUP_MOVE_IDS.has(id)) {
     if (myActive.hpPercent > 60)
       return { score: SETUP_MOVE_SCORE, explanation: "Boosts stats (good HP)" }
     return { score: 10, explanation: "Boosts stats (low HP risk)" }
   }
 
   // Recovery
-  if (
-    ["recover", "roost", "softboiled", "moonlight", "synthesis", "shoreup", "slackoff"].includes(id)
-  ) {
+  if (RECOVERY_MOVE_IDS.has(id)) {
     if (myActive.hpPercent < 50)
       return { score: RECOVERY_SCORES.low, explanation: "Recover HP (low)" }
     if (myActive.hpPercent < 75)
@@ -189,14 +243,14 @@ function estimateStatusMoveScore(
 }
 
 function estimateSwitchScore(
-  switchInfo: BattleActionSet["switches"][0],
+  switchOption: BattleActionSet["switches"][0],
   state: BattleState,
 ): { score: number; explanation: string } {
   const oppActive = state.sides.p2.active[0]
   if (!oppActive) return { score: 10, explanation: "Switch out" }
 
   const switchPokemon = state.sides.p1.team.find(
-    (p) => p.name === switchInfo.name || p.speciesId === switchInfo.speciesId,
+    (p) => p.name === switchOption.name || p.speciesId === switchOption.speciesId,
   )
   if (!switchPokemon) return { score: 5, explanation: "Switch to unknown" }
 
@@ -207,14 +261,14 @@ function estimateSwitchScore(
   // Defensive: does the switch-in resist opponent's STAB?
   for (const t of oppTypes) {
     const eff = getTypeEffectiveness(t, swTypes as string[])
-    if (eff < 1) score += 15
-    if (eff === 0) score += 25
+    if (eff < 1) score += SWITCH_SCORES.RESIST_BONUS
+    if (eff === 0) score += SWITCH_SCORES.IMMUNITY_BONUS
   }
 
   // Offensive: does switch-in have SE coverage?
   for (const t of swTypes) {
     if (getTypeEffectiveness(t, oppTypes as string[]) > 1) {
-      score += 10
+      score += SWITCH_SCORES.SE_COVERAGE_BONUS
       break
     }
   }
@@ -224,9 +278,9 @@ function estimateSwitchScore(
 
   // Hazard penalty
   const mySC = state.sides.p1.sideConditions
-  if (mySC.stealthRock) score -= 10
-  if (mySC.spikes > 0) score -= 5 * mySC.spikes
-  if (mySC.stickyWeb) score -= 5
+  if (mySC.stealthRock) score -= SWITCH_SCORES.STEALTH_ROCK_PENALTY
+  if (mySC.spikes > 0) score -= SWITCH_SCORES.SPIKES_PENALTY_PER_LAYER * mySC.spikes
+  if (mySC.stickyWeb) score -= SWITCH_SCORES.STICKY_WEB_PENALTY
 
   const explanation =
     score > 20 ? "Good defensive switch" : score > 0 ? "Reasonable switch" : "Risky switch"
@@ -253,11 +307,10 @@ export function generateHints(
   const oppSide = perspective === "p1" ? "p2" : "p1"
   const isDoubles = state.format === "doubles"
 
-  // Get opponent actives
-  const oppActives = isDoubles
-    ? state.sides[oppSide].active.filter((p): p is NonNullable<typeof p> => p != null && !p.fainted)
-    : [state.sides[oppSide].active[0]].filter((p): p is NonNullable<typeof p> => p != null)
-
+  // Get opponent actives (alive only)
+  const oppActives = state.sides[oppSide].active.filter(
+    (p): p is BattlePokemon => p != null && !p.fainted,
+  )
   const oppActive = oppActives[0] ?? null
 
   // Score moves
@@ -270,19 +323,20 @@ export function generateHints(
         // Evaluate against each target, pick best
         let bestScore = -Infinity
         let bestExpl = ""
-        let bestTarget = 1
+        let bestTargetSlot = 1
 
-        for (let t = 0; t < oppActives.length; t++) {
-          const { score, explanation } = estimateMoveScore(move, myActive, oppActives[t], state)
+        for (let targetIdx = 0; targetIdx < oppActives.length; targetIdx++) {
+          const target = oppActives[targetIdx]
+          const { score, explanation } = estimateMoveScore(move, myActive, target, state)
           if (score > bestScore) {
             bestScore = score
-            bestExpl = `${explanation} (→ ${oppActives[t].name})`
-            bestTarget = t + 1 // Foe slots are positive: 1 = p2a, 2 = p2b
+            bestExpl = `${explanation} (→ ${target.name})`
+            bestTargetSlot = targetIdx + 1 // Foe slots are positive: 1 = p2a, 2 = p2b
           }
         }
 
         scored.push({
-          action: { type: "move", moveIndex: i + 1, targetSlot: bestTarget },
+          action: { type: "move", moveIndex: i + 1, targetSlot: bestTargetSlot },
           name: move.name,
           score: bestScore,
           explanation: bestExpl,

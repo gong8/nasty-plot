@@ -5,7 +5,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { BattleStatsCards } from "./BattleStatsCards"
 import { BattleHistoryList } from "./BattleHistoryList"
 import { BattleExportDialog } from "./BattleExportDialog"
+import { cn } from "@nasty-plot/ui"
+import { EmptyState } from "@/components/empty-state"
 import { useTeamBattles, useTeamBattleStats } from "../hooks/use-team-battles"
+
+const TREND_COLORS: Record<string, string> = {
+  win: "bg-green-500",
+  loss: "bg-red-500",
+}
 
 interface BattleHistoryViewProps {
   teamId: string
@@ -23,15 +30,12 @@ export function BattleHistoryView({ teamId }: BattleHistoryViewProps) {
   const individualBattles = allBattles.filter((b) => !b.batchId)
   const batchBattles = allBattles.filter((b) => b.batchId)
 
-  // Recent trend visualization
   const trend = statsQuery.data?.recentTrend || []
 
   return (
     <div className="space-y-6">
-      {/* Stats Cards */}
       <BattleStatsCards stats={statsQuery.data} isLoading={statsQuery.isLoading} />
 
-      {/* Recent Trend */}
       {trend.length > 0 && (
         <div className="space-y-2">
           <p className="text-sm font-medium">Recent Results</p>
@@ -39,13 +43,7 @@ export function BattleHistoryView({ teamId }: BattleHistoryViewProps) {
             {trend.map((t) => (
               <div
                 key={t.battleId}
-                className={`w-5 h-5 rounded-sm ${
-                  t.result === "win"
-                    ? "bg-green-500"
-                    : t.result === "loss"
-                      ? "bg-red-500"
-                      : "bg-gray-400"
-                }`}
+                className={cn("w-5 h-5 rounded-sm", TREND_COLORS[t.result] ?? "bg-gray-400")}
                 title={`${t.result} vs ${t.opponentName} (${t.turnCount} turns)`}
               />
             ))}
@@ -76,9 +74,7 @@ export function BattleHistoryView({ teamId }: BattleHistoryViewProps) {
 
         <TabsContent value="batch" className="pt-4">
           {batchBattles.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
-              No batch simulations found for this team.
-            </div>
+            <EmptyState>No batch simulations found for this team.</EmptyState>
           ) : (
             <BattleHistoryList
               battles={batchBattles}

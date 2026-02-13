@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
+import { apiErrorResponse } from "../../../../../lib/api-error"
 import { getUsageStats, getUsageStatsCount } from "@nasty-plot/smogon-data"
 import { getSpecies } from "@nasty-plot/pokemon-data"
 import type { PaginatedResponse, UsageStatsEntry } from "@nasty-plot/core"
@@ -35,7 +36,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
     return NextResponse.json(response)
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Unknown error"
-    return NextResponse.json({ error: message, code: "USAGE_STATS_ERROR" }, { status: 500 })
+    return apiErrorResponse(err, { code: "USAGE_STATS_ERROR" })
   }
 }

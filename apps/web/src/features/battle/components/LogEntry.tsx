@@ -68,37 +68,27 @@ const TYPE_COLORS: Record<string, string> = {
   cant: "text-muted-foreground",
 }
 
-/**
- * Format a log message with rich text:
- * - Move names (after "used") in italic
- * - Damage percentages (XX%) in monospace
- */
+const USED_PREFIX_LENGTH = "used ".length
+
 export function formatLogMessage(message: string): React.ReactNode {
-  const parts: React.ReactNode[] = []
-  let key = 0
+  const moveMatch = message.match(/used (.+?)!/)
 
-  // Pattern: text after "used " until "!"
-  const moveRegex = /used (.+?)!/
-  const moveMatch = message.match(moveRegex)
-
-  if (moveMatch) {
-    const moveIdx = message.indexOf(`used ${moveMatch[1]}!`)
-    const before = message.slice(0, moveIdx + 5) // "...used "
-    const moveName = moveMatch[1]
-    const after = message.slice(moveIdx + 5 + moveName.length)
-
-    parts.push(<span key={key++}>{formatWithPercentages(before)}</span>)
-    parts.push(
-      <em key={key++} className="font-medium">
-        {moveName}
-      </em>,
-    )
-    parts.push(<span key={key++}>{formatWithPercentages(after)}</span>)
-  } else {
-    parts.push(<span key={key++}>{formatWithPercentages(message)}</span>)
+  if (!moveMatch) {
+    return <span>{formatWithPercentages(message)}</span>
   }
 
-  return <>{parts}</>
+  const matchStart = message.indexOf(`used ${moveMatch[1]}!`)
+  const moveName = moveMatch[1]
+  const before = message.slice(0, matchStart + USED_PREFIX_LENGTH)
+  const after = message.slice(matchStart + USED_PREFIX_LENGTH + moveName.length)
+
+  return (
+    <>
+      <span>{formatWithPercentages(before)}</span>
+      <em className="font-medium">{moveName}</em>
+      <span>{formatWithPercentages(after)}</span>
+    </>
+  )
 }
 
 function formatWithPercentages(text: string): React.ReactNode {

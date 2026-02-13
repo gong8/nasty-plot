@@ -30,6 +30,45 @@ export function parseShowdownPaste(paste: string): Partial<TeamSlotData>[] {
     .filter(Boolean) as Partial<TeamSlotData>[]
 }
 
+function parseFirstLine(firstLine: string): {
+  pokemonId: string
+  nickname?: string
+  item: string
+} {
+  const atSplit = firstLine.split(" @ ")
+  const item = atSplit.length === 2 ? atSplit[1].trim() : ""
+  const namePart = atSplit[0].trim()
+
+  // Check for "(Pokemon)" pattern, optionally followed by "(M)" or "(F)"
+  const parenMatch = namePart.match(/\(([^)]+)\)\s*(\([MF]\))?$/)
+  if (parenMatch && !/^[MF]$/.test(parenMatch[1].trim())) {
+    const nicknameRaw = namePart.slice(0, namePart.indexOf("(")).trim()
+    return {
+      pokemonId: toId(parenMatch[1]),
+      nickname: nicknameRaw || undefined,
+      item,
+    }
+  }
+
+  return {
+    pokemonId: toId(namePart.replace(/\s*\([MF]\)\s*$/, "")),
+    item,
+  }
+}
+
+function deduplicateMoves(moves: string[]): [string, string?, string?, string?] {
+  const seen = new Set<string>()
+  const unique: string[] = []
+  for (const move of moves) {
+    const lower = move.toLowerCase()
+    if (!seen.has(lower)) {
+      seen.add(lower)
+      unique.push(move)
+    }
+  }
+  return [unique[0] || "", unique[1] || undefined, unique[2] || undefined, unique[3] || undefined]
+}
+
 function parseOneSlot(block: string, position: number): Partial<TeamSlotData> | null {
   const lines = block
     .split("\n")
@@ -37,28 +76,7 @@ function parseOneSlot(block: string, position: number): Partial<TeamSlotData> | 
     .filter(Boolean)
   if (lines.length === 0) return null
 
-  // First line: "Nickname (Pokemon) (F) @ Item" or "Pokemon @ Item"
-  const firstLine = lines[0]
-  let pokemonId: string
-  let item = ""
-
-  const atSplit = firstLine.split(" @ ")
-  if (atSplit.length === 2) item = atSplit[1].trim()
-
-  const namePart = atSplit[0].trim()
-  let nickname: string | undefined
-  // Check for "(Pokemon)" pattern, optionally followed by "(M)" or "(F)"
-  const parenMatch = namePart.match(/\(([^)]+)\)\s*(\([MF]\))?$/)
-  if (parenMatch && !/^[MF]$/.test(parenMatch[1].trim())) {
-    // Parenthesized content is a species name (not just a gender marker)
-    pokemonId = toId(parenMatch[1])
-    // Everything before the first "(" is the nickname
-    const nicknameRaw = namePart.slice(0, namePart.indexOf("(")).trim()
-    if (nicknameRaw) nickname = nicknameRaw
-  } else {
-    // No species in parens — strip any trailing gender marker
-    pokemonId = toId(namePart.replace(/\s*\([MF]\)\s*$/, ""))
-  }
+  const { pokemonId, nickname, item } = parseFirstLine(lines[0])
 
   const slot: Partial<TeamSlotData> = {
     position,
@@ -79,15 +97,15 @@ function parseOneSlot(block: string, position: number): Partial<TeamSlotData> | 
     const line = lines[i]
 
     if (line.startsWith("Ability: ")) {
-      slot.ability = line.slice(9).trim()
+      slot.ability = line.slice("Ability: ".length).trim()
     } else if (line.startsWith("Level: ")) {
-      slot.level = parseInt(line.slice(7), 10)
+      slot.level = parseInt(line.slice("Level: ".length), 10)
     } else if (line.startsWith("Tera Type: ")) {
-      slot.teraType = line.slice(11).trim() as PokemonType
+      slot.teraType = line.slice("Tera Type: ".length).trim() as PokemonType
     } else if (line.startsWith("EVs: ")) {
-      slot.evs = parseStatSpread(line.slice(5), DEFAULT_EVS)
+      slot.evs = parseStatSpread(line.slice("EVs: ".length), DEFAULT_EVS)
     } else if (line.startsWith("IVs: ")) {
-      slot.ivs = parseStatSpread(line.slice(5), DEFAULT_IVS)
+      slot.ivs = parseStatSpread(line.slice("IVs: ".length), DEFAULT_IVS)
     } else if (line.endsWith(" Nature")) {
       slot.nature = line.replace(" Nature", "").trim() as NatureName
     } else if (line.startsWith("- ")) {
@@ -95,23 +113,7 @@ function parseOneSlot(block: string, position: number): Partial<TeamSlotData> | 
     }
   }
 
-  // Deduplicate moves (case-insensitive)
-  const seen = new Set<string>()
-  const uniqueMoves: string[] = []
-  for (const move of moves) {
-    const lower = move.toLowerCase()
-    if (!seen.has(lower)) {
-      seen.add(lower)
-      uniqueMoves.push(move)
-    }
-  }
-
-  slot.moves = [
-    uniqueMoves[0] || "",
-    uniqueMoves[1] || undefined,
-    uniqueMoves[2] || undefined,
-    uniqueMoves[3] || undefined,
-  ]
+  slot.moves = deduplicateMoves(moves)
 
   return slot
 }

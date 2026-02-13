@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server"
+import { apiErrorResponse } from "../../../lib/api-error"
 import {
   streamChat,
   createSession,
@@ -49,15 +50,7 @@ export async function POST(req: NextRequest) {
       }
     } else {
       // Extract teamId from contextData as fallback for session-team linking
-      let createTeamId = teamId
-      if (!createTeamId && contextData) {
-        try {
-          const ctxData = JSON.parse(contextData)
-          if (ctxData.teamId) createTeamId = ctxData.teamId
-        } catch {
-          // Invalid JSON is fine
-        }
-      }
+      const createTeamId = teamId || tryParseJson(contextData)?.teamId
       const session = await createSession({
         teamId: createTeamId,
         contextMode: contextMode ?? undefined,
@@ -85,34 +78,15 @@ export async function POST(req: NextRequest) {
     const sessionContextMode = session?.contextMode ?? contextMode
     const sessionContextData = session?.contextData ?? contextData
 
-    // Extract teamId/formatId — frozen context wins for context-locked sessions
-    let effectiveTeamId: string | undefined
-    let effectiveFormatId: string | undefined
-
-    if (sessionContextMode && sessionContextData) {
-      // Context-locked session: frozen context takes priority over live
-      try {
-        const ctxData = JSON.parse(sessionContextData)
-        effectiveTeamId = ctxData.teamId || teamId || context?.teamId
-        effectiveFormatId = ctxData.formatId || formatId || context?.formatId
-      } catch {
-        effectiveTeamId = teamId || context?.teamId
-        effectiveFormatId = formatId || context?.formatId
-      }
-    } else {
-      // General session: live context takes priority
-      effectiveTeamId = teamId || context?.teamId
-      effectiveFormatId = formatId || context?.formatId
-      if (sessionContextData && (!effectiveTeamId || !effectiveFormatId)) {
-        try {
-          const ctxData = JSON.parse(sessionContextData)
-          if (!effectiveTeamId && ctxData.teamId) effectiveTeamId = ctxData.teamId
-          if (!effectiveFormatId && ctxData.formatId) effectiveFormatId = ctxData.formatId
-        } catch {
-          // Invalid JSON is fine
-        }
-      }
-    }
+    // Extract teamId/formatId from context hierarchy
+    const { effectiveTeamId, effectiveFormatId } = resolveContextIds({
+      sessionContextMode,
+      sessionContextData,
+      teamId,
+      formatId,
+      pageTeamId: context?.teamId,
+      pageFormatId: context?.formatId,
+    })
 
     // Stream response
     const stream = await streamChat({
@@ -148,13 +122,7 @@ export async function POST(req: NextRequest) {
     })
   } catch (error) {
     console.error("Chat API error:", error)
-    return Response.json(
-      {
-        error: "Internal server error",
-        code: "INTERNAL_ERROR",
-      },
-      { status: 500 },
-    )
+    return apiErrorResponse(error, { fallback: "Internal server error", code: "INTERNAL_ERROR" })
   }
 }
 
@@ -181,11 +149,8 @@ async function collectAndSave(
 
         try {
           const parsed = JSON.parse(data)
-          if (parsed.type === "content" && parsed.content) {
-            fullContent += parsed.content
-          }
-          // Legacy format fallback
-          if (!parsed.type && parsed.content) {
+          const isContentEvent = parsed.type === "content" || !parsed.type
+          if (isContentEvent && parsed.content) {
             fullContent += parsed.content
           }
         } catch {
@@ -203,6 +168,44 @@ async function collectAndSave(
     }
   } catch (error) {
     console.error("Error saving assistant message:", error)
+  }
+}
+
+function tryParseJson(json: string | undefined): Record<string, string> | null {
+  if (!json) return null
+  try {
+    return JSON.parse(json)
+  } catch {
+    return null
+  }
+}
+
+function resolveContextIds(params: {
+  sessionContextMode: string | undefined
+  sessionContextData: string | undefined
+  teamId: string | undefined
+  formatId: string | undefined
+  pageTeamId: string | undefined
+  pageFormatId: string | undefined
+}): { effectiveTeamId: string | undefined; effectiveFormatId: string | undefined } {
+  const { sessionContextMode, sessionContextData, teamId, formatId, pageTeamId, pageFormatId } =
+    params
+  const liveTeamId = teamId || pageTeamId
+  const liveFormatId = formatId || pageFormatId
+  const stored = tryParseJson(sessionContextData)
+
+  if (sessionContextMode && sessionContextData) {
+    // Context-locked session: frozen context takes priority over live
+    return {
+      effectiveTeamId: stored?.teamId || liveTeamId,
+      effectiveFormatId: stored?.formatId || liveFormatId,
+    }
+  }
+
+  // General session: live context takes priority, fall back to stored
+  return {
+    effectiveTeamId: liveTeamId || stored?.teamId,
+    effectiveFormatId: liveFormatId || stored?.formatId,
   }
 }
 

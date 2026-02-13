@@ -4,6 +4,9 @@ import { useRef, useEffect, useCallback } from "react"
 import type { TeamSlotData } from "@nasty-plot/core"
 import type { GuidedStep } from "./use-guided-builder"
 
+const REACTION_COOLDOWN_MS = 10_000
+const REACTION_DEBOUNCE_MS = 1500
+
 interface UseProactiveReactionsOptions {
   slots: Partial<TeamSlotData>[]
   step: GuidedStep
@@ -32,9 +35,8 @@ export function useProactiveReactions({
       if (isStreaming) return
       if (newPokemonIds.length === 0) return
 
-      // Rate limit: max 1 proactive reaction per 10 seconds
       const now = Date.now()
-      if (now - lastReactionTimeRef.current < 10_000) return
+      if (now - lastReactionTimeRef.current < REACTION_COOLDOWN_MS) return
       lastReactionTimeRef.current = now
 
       // Build event message
@@ -68,11 +70,10 @@ export function useProactiveReactions({
 
     if (newIds.length === 0) return
 
-    // Debounce 1.5s — batch rapid picks (e.g., sample team import)
     clearTimeout(debounceTimerRef.current)
     debounceTimerRef.current = setTimeout(() => {
       triggerReaction(newIds)
-    }, 1500)
+    }, REACTION_DEBOUNCE_MS)
 
     return () => clearTimeout(debounceTimerRef.current)
   }, [slots, step, triggerReaction])

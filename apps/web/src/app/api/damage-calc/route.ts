@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { calculateDamage } from "@nasty-plot/damage-calc"
 import type { DamageCalcInput, ApiResponse, DamageCalcResult, ApiError } from "@nasty-plot/core"
+import { apiErrorResponse } from "../../../lib/api-error"
 
 export async function POST(request: NextRequest) {
   try {
@@ -20,9 +21,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ data: result } satisfies ApiResponse<DamageCalcResult>)
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Calculation failed"
-    return NextResponse.json({ error: message, code: "CALC_ERROR" } satisfies ApiError, {
-      status: 500,
-    })
+    return apiErrorResponse(error, { fallback: "Calculation failed", code: "CALC_ERROR" })
   }
 }

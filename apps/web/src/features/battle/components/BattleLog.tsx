@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button"
 import { cn } from "@nasty-plot/ui"
 import { LogEntry } from "./LogEntry"
 
+const SCROLL_BOTTOM_THRESHOLD = 40
+
 interface BattleLogProps {
   entries: BattleLogEntry[]
   className?: string
@@ -25,9 +27,8 @@ export function BattleLog({ entries, className }: BattleLogProps) {
   }, [entries.length, isAtBottom])
 
   const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
-    const target = e.currentTarget
-    const atBottom = target.scrollHeight - target.scrollTop - target.clientHeight < 40
-    setIsAtBottom(atBottom)
+    const { scrollHeight, scrollTop, clientHeight } = e.currentTarget
+    setIsAtBottom(scrollHeight - scrollTop - clientHeight < SCROLL_BOTTOM_THRESHOLD)
   }, [])
 
   const scrollToBottom = useCallback(() => {
@@ -35,16 +36,13 @@ export function BattleLog({ entries, className }: BattleLogProps) {
     setIsAtBottom(true)
   }, [])
 
-  // Pre-compute which entries should show a turn separator
   const turnSeparators = useMemo(() => {
     const set = new Set<number>()
     let prevTurn = -1
     for (let i = 0; i < entries.length; i++) {
       const entry = entries[i]
-      if (entry.type === "turn" && entry.turn !== prevTurn) {
-        set.add(i)
-        prevTurn = entry.turn
-      } else if (entry.type === "turn") {
+      if (entry.type === "turn") {
+        if (entry.turn !== prevTurn) set.add(i)
         prevTurn = entry.turn
       }
     }

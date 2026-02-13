@@ -72,18 +72,20 @@ function toPercent(value: number, total: number): number {
   return Math.round((value / total) * 1000) / 10
 }
 
+const MAX_HKO_CALC = 4
+
 function deriveKoChance(damageArr: number[], defenderHp: number): string {
   if (defenderHp <= 0) return "N/A"
   const minDmg = Math.min(...damageArr)
   const maxDmg = Math.max(...damageArr)
 
-  for (const n of [1, 2, 3, 4]) {
-    const label = n === 1 ? "OHKO" : `${n}HKO`
-    if (minDmg * n >= defenderHp) return `guaranteed ${label}`
-    if (maxDmg * n >= defenderHp) return `possible ${label}`
+  for (let hits = 1; hits <= MAX_HKO_CALC; hits++) {
+    const label = hits === 1 ? "OHKO" : `${hits}HKO`
+    if (minDmg * hits >= defenderHp) return `guaranteed ${label}`
+    if (maxDmg * hits >= defenderHp) return `possible ${label}`
   }
 
-  return "5+ hits to KO"
+  return `${MAX_HKO_CALC + 1}+ hits to KO`
 }
 
 // ---------------------------------------------------------------------------

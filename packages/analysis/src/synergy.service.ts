@@ -10,6 +10,15 @@ import {
   type TeamSlotData,
 } from "@nasty-plot/core"
 
+const MAX_DEFENSIVE_POINTS = 35
+const MAX_OFFENSIVE_POINTS = 25
+const MAX_SPEED_POINTS = 20
+const MAX_BALANCE_POINTS = 20
+const GOOD_SPEED_RANGE = 100
+const MEANINGFUL_SPEED_GAP = 15
+const MIXED_ATTACKER_THRESHOLD = 10
+const MIN_ATTACK_STAT = 80
+
 /**
  * Calculate a synergy score (0-100) for the team based on:
  * - Type coverage complementarity
@@ -54,8 +63,8 @@ function calculateDefensiveComplementarity(slots: TeamSlotData[]): number {
     }
   }
 
-  if (totalWeaknesses === 0) return 35
-  return Math.round((coveredWeaknesses / totalWeaknesses) * 35)
+  if (totalWeaknesses === 0) return MAX_DEFENSIVE_POINTS
+  return Math.round((coveredWeaknesses / totalWeaknesses) * MAX_DEFENSIVE_POINTS)
 }
 
 /** Max 25 points. How many types can the team hit super-effectively? */
@@ -65,13 +74,13 @@ function calculateOffensiveBreadth(slots: TeamSlotData[]): number {
   for (const slot of slots) {
     const types = slot.species?.types ?? []
     for (const pkType of types) {
-      for (const t of getOffensiveCoverage(pkType)) {
-        coveredTypes.add(t)
+      for (const covered of getOffensiveCoverage(pkType)) {
+        coveredTypes.add(covered)
       }
     }
   }
 
-  return Math.round((coveredTypes.size / POKEMON_TYPES.length) * 25)
+  return Math.round((coveredTypes.size / POKEMON_TYPES.length) * MAX_OFFENSIVE_POINTS)
 }
 
 /** Max 20 points. Mix of fast and slow Pokemon. */
@@ -90,20 +99,19 @@ function calculateSpeedDiversity(slots: TeamSlotData[]): number {
     speeds.push(stats.spe)
   }
 
-  if (speeds.length < 2) return 10
+  const halfSpeedPoints = MAX_SPEED_POINTS / 2
+  if (speeds.length < 2) return halfSpeedPoints
 
   speeds.sort((a, b) => a - b)
   const range = speeds[speeds.length - 1] - speeds[0]
 
-  // Good range = 100+ spread
-  const rangePts = Math.min(range / 100, 1) * 10
+  const rangePts = Math.min(range / GOOD_SPEED_RANGE, 1) * halfSpeedPoints
 
-  // Check that speeds are spread out (not all clumped)
   let spreadCount = 0
   for (let i = 1; i < speeds.length; i++) {
-    if (speeds[i] - speeds[i - 1] > 15) spreadCount++
+    if (speeds[i] - speeds[i - 1] > MEANINGFUL_SPEED_GAP) spreadCount++
   }
-  const spreadPts = Math.min(spreadCount / (speeds.length - 1), 1) * 10
+  const spreadPts = Math.min(spreadCount / (speeds.length - 1), 1) * halfSpeedPoints
 
   return Math.round(rangePts + spreadPts)
 }
@@ -117,18 +125,19 @@ function calculateAttackBalance(slots: TeamSlotData[]): number {
     if (!slot.species) continue
     const { atk, spa } = slot.species.baseStats
 
-    if (atk > spa && atk >= 80) physicalAttackers++
-    if (spa > atk && spa >= 80) specialAttackers++
-    if (Math.abs(atk - spa) <= 10 && atk >= 80) {
+    if (atk > spa && atk >= MIN_ATTACK_STAT) physicalAttackers++
+    if (spa > atk && spa >= MIN_ATTACK_STAT) specialAttackers++
+    if (Math.abs(atk - spa) <= MIXED_ATTACKER_THRESHOLD && atk >= MIN_ATTACK_STAT) {
       physicalAttackers += 0.5
       specialAttackers += 0.5
     }
   }
 
   const total = physicalAttackers + specialAttackers
-  if (total === 0) return 10
+  const halfBalancePoints = MAX_BALANCE_POINTS / 2
+  if (total === 0) return halfBalancePoints
 
   const ratio =
     Math.min(physicalAttackers, specialAttackers) / Math.max(physicalAttackers, specialAttackers)
-  return Math.round(ratio * 20)
+  return Math.round(ratio * MAX_BALANCE_POINTS)
 }

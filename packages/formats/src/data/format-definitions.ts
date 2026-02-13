@@ -9,6 +9,18 @@ const STANDARD_SINGLES_RULES = [
   "Baton Pass Clause",
 ]
 
+const STANDARD_DOUBLES_RULES = [
+  "Species Clause",
+  "OHKO Clause",
+  "Moody Clause",
+  "Gravity Sleep Clause",
+  "Evasion Abilities Clause",
+  "Evasion Moves Clause",
+  "Endless Battle Clause",
+  "HP Percentage Mod",
+  "Cancel Mod",
+]
+
 export const FORMAT_DEFINITIONS: FormatDefinition[] = [
   // --- Smogon Singles ---
   {
@@ -236,17 +248,7 @@ export const FORMAT_DEFINITIONS: FormatDefinition[] = [
     teamSize: 6,
     maxLevel: 100,
     defaultLevel: 100,
-    rules: [
-      "Species Clause",
-      "OHKO Clause",
-      "Moody Clause",
-      "Gravity Sleep Clause",
-      "Evasion Abilities Clause",
-      "Evasion Moves Clause",
-      "Endless Battle Clause",
-      "HP Percentage Mod",
-      "Cancel Mod",
-    ],
+    rules: STANDARD_DOUBLES_RULES,
     bans: ["DUber", "Shadow Tag"],
     isActive: true,
   },
@@ -259,17 +261,7 @@ export const FORMAT_DEFINITIONS: FormatDefinition[] = [
     teamSize: 6,
     maxLevel: 100,
     defaultLevel: 100,
-    rules: [
-      "Species Clause",
-      "OHKO Clause",
-      "Moody Clause",
-      "Gravity Sleep Clause",
-      "Evasion Abilities Clause",
-      "Evasion Moves Clause",
-      "Endless Battle Clause",
-      "HP Percentage Mod",
-      "Cancel Mod",
-    ],
+    rules: STANDARD_DOUBLES_RULES,
     bans: [],
     isActive: true,
   },
@@ -282,17 +274,7 @@ export const FORMAT_DEFINITIONS: FormatDefinition[] = [
     teamSize: 6,
     maxLevel: 100,
     defaultLevel: 100,
-    rules: [
-      "Species Clause",
-      "OHKO Clause",
-      "Moody Clause",
-      "Gravity Sleep Clause",
-      "Evasion Abilities Clause",
-      "Evasion Moves Clause",
-      "Endless Battle Clause",
-      "HP Percentage Mod",
-      "Cancel Mod",
-    ],
+    rules: STANDARD_DOUBLES_RULES,
     bans: ["DUber", "DOU", "DBL"],
     isActive: true,
   },
@@ -339,7 +321,7 @@ export const FORMAT_DEFINITIONS: FormatDefinition[] = [
       "Meltan",
       "Melmetal",
       "Zarude",
-      "Eternatus", // Eternatus is allowed in Reg G? usage stats exist. Smogon page says restricted. Wait, Eternatus is restricted.
+      "Eternatus",
     ],
     restricted: [
       "Koraidon",
@@ -542,7 +524,7 @@ export const FORMAT_DEFINITIONS: FormatDefinition[] = [
       "Miraidon",
       "Terapagos",
     ],
-    smogonStatsId: "gen9vgc2026regi", // Using Reg I stats if available
+    smogonStatsId: "gen9vgc2026regi",
     simFormatId: "gen9vgc2026regi",
     isActive: true,
   },

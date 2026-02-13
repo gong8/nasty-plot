@@ -1,6 +1,14 @@
 import { Battle } from "@pkmn/sim"
 import { DEFAULT_FORMAT_ID, type GameType } from "@nasty-plot/core"
-import type { AIPlayer, BattleState, BattleActionSet, BattleAction, PredictedSet } from "../types"
+import {
+  calcHpPercent,
+  type AIPlayer,
+  type BattleState,
+  type BattleActionSet,
+  type BattleAction,
+  type BattlePokemon,
+  type PredictedSet,
+} from "../types"
 import { evaluatePosition } from "./evaluator"
 import {
   cloneBattle,
@@ -10,6 +18,7 @@ import {
   getBattleWinner,
 } from "./battle-cloner"
 import { HeuristicAI } from "./heuristic-ai"
+import { fallbackMove } from "./shared"
 import {
   type MCTSConfig,
   type DUCTNode,
@@ -17,6 +26,89 @@ import {
   type MCTSResult,
   DEFAULT_MCTS_CONFIG,
 } from "./mcts-types"
+
+const WIN = 1
+const LOSS = -1
+const DRAW = 0
+
+/** Weight multiplier for predicted moves during rollouts. */
+const PREDICTED_MOVE_WEIGHT = 3
+
+const ZERO_BOOSTS = {
+  atk: 0,
+  def: 0,
+  spa: 0,
+  spd: 0,
+  spe: 0,
+  accuracy: 0,
+  evasion: 0,
+} as never
+
+function randomPick<T>(items: T[]): T {
+  return items[Math.floor(Math.random() * items.length)]
+}
+
+function weightedRandomPick<T>(items: T[], weights: number[]): T {
+  const totalWeight = weights.reduce((a, b) => a + b, 0)
+  let r = Math.random() * totalWeight
+  for (let i = 0; i < items.length; i++) {
+    r -= weights[i]
+    if (r <= 0) return items[i]
+  }
+  return items[items.length - 1]
+}
+
+function outcomeValue(winner: string | null, perspective: "p1" | "p2"): number {
+  if (winner === perspective) return WIN
+  if (winner === null) return DRAW
+  return LOSS
+}
+
+/** Map a @pkmn/sim Pokemon to a minimal BattlePokemon for the evaluator. */
+function mapSimPokemon(
+  p: NonNullable<(typeof Battle.prototype.p1.active)[0]>,
+  isActive: boolean,
+): BattlePokemon {
+  return {
+    speciesId: p.species.id,
+    name: p.species.name,
+    nickname: p.name || p.species.name,
+    level: p.level,
+    types: p.types.slice() as never[],
+    hp: p.hp,
+    maxHp: p.maxhp,
+    hpPercent: calcHpPercent(p.hp, p.maxhp),
+    status: (p.status || "") as never,
+    fainted: p.fainted,
+    item: p.item || "",
+    ability: p.ability || "",
+    isTerastallized: false,
+    moves: [],
+    stats: {
+      hp: p.maxhp,
+      atk: p.storedStats?.atk || 0,
+      def: p.storedStats?.def || 0,
+      spa: p.storedStats?.spa || 0,
+      spd: p.storedStats?.spd || 0,
+      spe: p.storedStats?.spe || 0,
+    },
+    boosts: isActive ? ({ ...p.boosts, accuracy: 0, evasion: 0 } as never) : ZERO_BOOSTS,
+    volatiles: isActive ? Object.keys(p.volatiles) : [],
+  } as BattlePokemon
+}
+
+function extractSideConditions(sc: Record<string, { layers?: number; duration?: number }>) {
+  return {
+    stealthRock: !!sc["stealthrock"],
+    spikes: sc["spikes"]?.layers || 0,
+    toxicSpikes: sc["toxicspikes"]?.layers || 0,
+    stickyWeb: !!sc["stickyweb"],
+    reflect: sc["reflect"]?.duration || 0,
+    lightScreen: sc["lightscreen"]?.duration || 0,
+    auroraVeil: sc["auroraveil"]?.duration || 0,
+    tailwind: sc["tailwind"]?.duration || 0,
+  }
+}
 
 /**
  * MCTS AI using Decoupled UCT (DUCT) for simultaneous-move games.
@@ -98,49 +190,33 @@ export class MCTSAI implements AIPlayer {
 
     // Select best action by visit count (most robust)
     const myStats = perspective === "p1" ? root.p1Stats : root.p2Stats
-    let bestAction = "default"
-    let bestVisits = -1
+    const actionScores: MCTSResult["actionScores"] = Array.from(myStats, ([action, stats]) => ({
+      action,
+      visits: stats.visits,
+      avgValue: stats.avgValue,
+    })).sort((a, b) => b.visits - a.visits)
 
-    const actionScores: MCTSResult["actionScores"] = []
+    const bestAction = actionScores[0]?.action ?? "default"
 
-    for (const [action, stats] of myStats) {
-      actionScores.push({
-        action,
-        visits: stats.visits,
-        avgValue: stats.avgValue,
-      })
-      if (stats.visits > bestVisits) {
-        bestVisits = stats.visits
-        bestAction = action
-      }
-    }
-
-    actionScores.sort((a, b) => b.visits - a.visits)
-
-    // Estimate win probability from the best action's average value
-    const bestStats = myStats.get(bestAction)
-    const winProb = bestStats
-      ? ((bestStats.avgValue + 1) / 2) * 100 // Map [-1,1] to [0,100]
-      : 50
+    // Estimate win probability from the best action's average value: map [-1,1] to [0,100]
+    const bestAvgValue = myStats.get(bestAction)?.avgValue ?? 0
+    const winProbability = Math.round(((bestAvgValue + 1) / 2) * 1000) / 10
 
     return {
       bestAction,
       actionScores,
-      winProbability: Math.round(winProb * 10) / 10,
+      winProbability,
       iterations,
       timeMs: Date.now() - startTime,
     }
   }
 
   /**
-   * One MCTS iteration: select → expand → simulate → backpropagate
+   * One MCTS iteration: select, expand, simulate, backpropagate.
    */
   private iterate(battle: Battle, node: DUCTNode, perspective: "p1" | "p2"): number {
     if (isBattleOver(battle)) {
-      const winner = getBattleWinner(battle)
-      if (winner === perspective) return 1
-      if (winner === null) return 0
-      return -1
+      return outcomeValue(getBattleWinner(battle), perspective)
     }
 
     node.visits++
@@ -150,7 +226,7 @@ export class MCTSAI implements AIPlayer {
     const p2Choices = getLegalChoices(battle, "p2")
 
     if (p1Choices.length === 0 || p2Choices.length === 0) {
-      return 0
+      return DRAW
     }
 
     // Initialize stats for unseen actions
@@ -173,22 +249,15 @@ export class MCTSAI implements AIPlayer {
     try {
       applyChoices(battle, p1Choice, p2Choice)
     } catch {
-      return 0
+      return DRAW
     }
 
     // Rollout from this position
     const value = this.rollout(battle, perspective, this.config.rolloutDepth)
 
     // Backpropagate
-    const p1Stat = node.p1Stats.get(p1Choice)!
-    p1Stat.visits++
-    p1Stat.totalValue += perspective === "p1" ? value : -value
-    p1Stat.avgValue = p1Stat.totalValue / p1Stat.visits
-
-    const p2Stat = node.p2Stats.get(p2Choice)!
-    p2Stat.visits++
-    p2Stat.totalValue += perspective === "p2" ? value : -value
-    p2Stat.avgValue = p2Stat.totalValue / p2Stat.visits
+    this.backpropagateStats(node.p1Stats, p1Choice, value, perspective === "p1")
+    this.backpropagateStats(node.p2Stats, p2Choice, value, perspective === "p2")
 
     // Joint stats
     const jointKey = `${p1Choice}|${p2Choice}`
@@ -198,6 +267,18 @@ export class MCTSAI implements AIPlayer {
     node.jointStats.set(jointKey, joint)
 
     return value
+  }
+
+  private backpropagateStats(
+    stats: Map<string, ActionStats>,
+    choice: string,
+    value: number,
+    isOurPerspective: boolean,
+  ): void {
+    const stat = stats.get(choice)!
+    stat.visits++
+    stat.totalValue += isOurPerspective ? value : -value
+    stat.avgValue = stat.totalValue / stat.visits
   }
 
   /**
@@ -217,13 +298,13 @@ export class MCTSAI implements AIPlayer {
 
     let bestScore = -Infinity
     let bestAction = choices[0]
-    const C = this.config.explorationConstant
+    const explorationConstant = this.config.explorationConstant
     const logParent = Math.log(parentVisits + 1)
 
     for (const c of choices) {
       const s = stats.get(c)!
       const exploit = maximize ? s.avgValue : -s.avgValue
-      const explore = C * Math.sqrt(logParent / (s.visits + 1))
+      const explore = explorationConstant * Math.sqrt(logParent / (s.visits + 1))
       const ucb = exploit + explore
 
       if (ucb > bestScore) {
@@ -241,10 +322,7 @@ export class MCTSAI implements AIPlayer {
   private rollout(battle: Battle, perspective: "p1" | "p2", depth: number): number {
     for (let d = 0; d < depth; d++) {
       if (isBattleOver(battle)) {
-        const winner = getBattleWinner(battle)
-        if (winner === perspective) return 1
-        if (winner === null) return 0
-        return -1
+        return outcomeValue(getBattleWinner(battle), perspective)
       }
 
       const p1Choices = getLegalChoices(battle, "p1")
@@ -252,7 +330,7 @@ export class MCTSAI implements AIPlayer {
 
       if (p1Choices.length === 0 || p2Choices.length === 0) break
 
-      const p1 = p1Choices[Math.floor(Math.random() * p1Choices.length)]
+      const p1 = randomPick(p1Choices)
       const p2 = this.weightedRolloutChoice(p2Choices, battle)
 
       try {
@@ -264,26 +342,22 @@ export class MCTSAI implements AIPlayer {
 
     // Evaluate leaf position
     if (isBattleOver(battle)) {
-      const winner = getBattleWinner(battle)
-      if (winner === perspective) return 1
-      if (winner === null) return 0
-      return -1
+      return outcomeValue(getBattleWinner(battle), perspective)
     }
 
     // Use static evaluation
-    const state = this.battleToState(battle, perspective)
+    const state = this.battleToState(battle)
     if (state) {
-      const eval_ = evaluatePosition(state, perspective)
-      return eval_.score
+      return evaluatePosition(state, perspective).score
     }
 
-    return 0
+    return DRAW
   }
 
   /**
    * Convert a @pkmn/sim Battle to a minimal BattleState for the evaluator.
    */
-  private battleToState(battle: Battle, _perspective: "p1" | "p2"): BattleState | null {
+  private battleToState(battle: Battle): BattleState | null {
     try {
       const gameType = battle.gameType === "doubles" ? "doubles" : "singles"
       const makeSide = (side: typeof battle.p1) => {
@@ -291,72 +365,10 @@ export class MCTSAI implements AIPlayer {
           (p) => !!(p as unknown as { terastallized: string }).terastallized,
         )
         return {
-          active: side.active.map((p) => {
-            if (!p) return null
-            return {
-              speciesId: p.species.id,
-              name: p.species.name,
-              nickname: p.name || p.species.name,
-              level: p.level,
-              types: p.types.slice() as never[],
-              hp: p.hp,
-              maxHp: p.maxhp,
-              hpPercent: p.maxhp > 0 ? Math.round((p.hp / p.maxhp) * 100) : 0,
-              status: (p.status || "") as never,
-              fainted: p.fainted,
-              item: p.item || "",
-              ability: p.ability || "",
-              isTerastallized: false,
-              moves: [],
-              stats: {
-                hp: p.maxhp,
-                atk: p.storedStats?.atk || 0,
-                def: p.storedStats?.def || 0,
-                spa: p.storedStats?.spa || 0,
-                spd: p.storedStats?.spd || 0,
-                spe: p.storedStats?.spe || 0,
-              },
-              boosts: { ...p.boosts, accuracy: 0, evasion: 0 } as never,
-              volatiles: Object.keys(p.volatiles),
-            }
-          }),
-          team: side.pokemon.map((p) => ({
-            speciesId: p.species.id,
-            name: p.species.name,
-            nickname: p.name || p.species.name,
-            level: p.level,
-            types: p.types.slice() as never[],
-            hp: p.hp,
-            maxHp: p.maxhp,
-            hpPercent: p.maxhp > 0 ? Math.round((p.hp / p.maxhp) * 100) : 0,
-            status: (p.status || "") as never,
-            fainted: p.fainted,
-            item: p.item || "",
-            ability: p.ability || "",
-            isTerastallized: false,
-            moves: [],
-            stats: {
-              hp: p.maxhp,
-              atk: p.storedStats?.atk || 0,
-              def: p.storedStats?.def || 0,
-              spa: p.storedStats?.spa || 0,
-              spd: p.storedStats?.spd || 0,
-              spe: p.storedStats?.spe || 0,
-            },
-            boosts: { atk: 0, def: 0, spa: 0, spd: 0, spe: 0, accuracy: 0, evasion: 0 } as never,
-            volatiles: [],
-          })),
+          active: side.active.map((p) => (p ? mapSimPokemon(p, true) : null)),
+          team: side.pokemon.map((p) => mapSimPokemon(p, false)),
           name: side.name,
-          sideConditions: {
-            stealthRock: !!side.sideConditions["stealthrock"],
-            spikes: side.sideConditions["spikes"]?.layers || 0,
-            toxicSpikes: side.sideConditions["toxicspikes"]?.layers || 0,
-            stickyWeb: !!side.sideConditions["stickyweb"],
-            reflect: side.sideConditions["reflect"]?.duration || 0,
-            lightScreen: side.sideConditions["lightscreen"]?.duration || 0,
-            auroraVeil: side.sideConditions["auroraveil"]?.duration || 0,
-            tailwind: side.sideConditions["tailwind"]?.duration || 0,
-          },
+          sideConditions: extractSideConditions(side.sideConditions),
           canTera: !hasTerastallized,
           hasTerastallized,
         }
@@ -395,63 +407,47 @@ export class MCTSAI implements AIPlayer {
    */
   private convertChoiceToAction(choice: string, actions: BattleActionSet): BattleAction {
     if (choice.startsWith("move ")) {
-      const parts = choice.split(" ")
-      const idx = parseInt(parts[1], 10)
-      // Parse optional target slot (e.g., "move 1 -1")
-      const targetSlot = parts.length > 2 ? parseInt(parts[2], 10) : undefined
+      const [, moveIndexStr, targetSlotStr] = choice.split(" ")
+      const moveIndex = parseInt(moveIndexStr, 10)
+      const targetSlot = targetSlotStr != null ? parseInt(targetSlotStr, 10) : undefined
       return {
         type: "move",
-        moveIndex: idx,
+        moveIndex,
         targetSlot: targetSlot != null && !isNaN(targetSlot) ? targetSlot : undefined,
       }
     }
     if (choice.startsWith("switch ")) {
-      const idx = parseInt(choice.split(" ")[1], 10)
-      return { type: "switch", pokemonIndex: idx }
+      const pokemonIndex = parseInt(choice.split(" ")[1], 10)
+      return { type: "switch", pokemonIndex }
     }
-    // Default: first available move
-    const firstEnabled = actions.moves.findIndex((m) => !m.disabled)
-    return { type: "move", moveIndex: (firstEnabled >= 0 ? firstEnabled : 0) + 1 }
+    return fallbackMove(actions)
   }
 
   /**
-   * Pick a rollout choice for p2, weighting predicted moves 3x higher.
+   * Pick a rollout choice for p2, weighting predicted moves higher.
    */
   private weightedRolloutChoice(choices: string[], battle: Battle): string {
     if (choices.length <= 1) return choices[0]
 
-    // Get the active p2 Pokemon's species ID from the battle
     const active = battle.p2?.active?.[0]
-    if (!active) return choices[Math.floor(Math.random() * choices.length)]
-
-    const speciesId = active.species?.id
+    const speciesId = active?.species?.id
     const prediction = speciesId ? this.predictions[speciesId] : undefined
-    if (!prediction || prediction.predictedMoves.length === 0) {
-      return choices[Math.floor(Math.random() * choices.length)]
+
+    if (!active || !prediction || prediction.predictedMoves.length === 0) {
+      return randomPick(choices)
     }
 
-    // Build weights: 3x for moves matching predicted moves, 1x otherwise
-    const predictedSet = new Set(
+    const predictedMoveIds = new Set(
       prediction.predictedMoves.map((m) => m.toLowerCase().replace(/\s/g, "")),
     )
-    const weights: number[] = choices.map((choice) => {
+    const weights = choices.map((choice) => {
       if (!choice.startsWith("move ")) return 1
-      // Try to resolve the move index to a move name from the sim
       const moveIdx = parseInt(choice.split(" ")[1], 10) - 1
       const moveSlot = active.moves?.[moveIdx]
-      if (moveSlot && predictedSet.has(moveSlot)) {
-        return 3
-      }
-      return 1
+      return moveSlot && predictedMoveIds.has(moveSlot) ? PREDICTED_MOVE_WEIGHT : 1
     })
 
-    const totalWeight = weights.reduce((a, b) => a + b, 0)
-    let r = Math.random() * totalWeight
-    for (let i = 0; i < choices.length; i++) {
-      r -= weights[i]
-      if (r <= 0) return choices[i]
-    }
-    return choices[choices.length - 1]
+    return weightedRandomPick(choices, weights)
   }
 
   private createNode(): DUCTNode {

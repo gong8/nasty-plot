@@ -37,12 +37,10 @@ export default async function PokemonDetailPage({ params }: Props) {
   }
 
   const moveIds = await getLearnset(id)
-  const moves: MoveData[] = []
-  for (const moveId of moveIds) {
-    const move = getMove(moveId)
-    if (move) moves.push(move)
-  }
-  moves.sort((a, b) => a.name.localeCompare(b.name))
+  const moves = moveIds
+    .map(getMove)
+    .filter((m): m is MoveData => m != null)
+    .sort((a, b) => a.name.localeCompare(b.name))
 
   const bst = STATS.reduce((sum, stat) => sum + species.baseStats[stat], 0)
   const spriteUrl = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${species.num}.png`

@@ -53,8 +53,8 @@ import {
   type PokemonSpecies,
   type MoveData,
   type ItemData,
-  type ApiResponse,
 } from "@nasty-plot/core"
+import { fetchJson, fetchApiData } from "@/lib/api-client"
 
 interface PokemonConfig {
   pokemonId: string
@@ -79,9 +79,22 @@ const DEFAULT_CONFIG: PokemonConfig = {
   nature: "Hardy",
   evs: { ...DEFAULT_EVS },
   ivs: { ...DEFAULT_IVS },
-  boosts: { ...DEFAULT_EVS },
+  boosts: { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 },
   teraType: "",
   status: "",
+}
+
+const MOVE_CATEGORY_COLORS: Record<string, string> = {
+  Physical: "text-red-500",
+  Special: "text-blue-500",
+}
+
+function getKoColor(koChance: string): string {
+  if (koChance.includes("OHKO")) return "text-red-600 dark:text-red-400"
+  if (koChance.includes("2HKO")) return "text-orange-600 dark:text-orange-400"
+  if (koChance.includes("3HKO")) return "text-yellow-600 dark:text-yellow-400"
+  if (koChance.includes("4HKO")) return "text-green-600 dark:text-green-400"
+  return "text-muted-foreground"
 }
 
 // --- Combobox sub-components ---
@@ -102,10 +115,14 @@ function PokemonCombobox({
     queryKey: ["pokemon-search-calc", search],
     queryFn: async () => {
       if (!search || search.length < 2) return []
-      const res = await fetch(`/api/pokemon?search=${encodeURIComponent(search)}&pageSize=15`)
-      if (!res.ok) return []
-      const json: PaginatedResponse<PokemonSpecies> = await res.json()
-      return json.data
+      try {
+        const json = await fetchJson<PaginatedResponse<PokemonSpecies>>(
+          `/api/pokemon?search=${encodeURIComponent(search)}&pageSize=15`,
+        )
+        return json.data
+      } catch {
+        return []
+      }
     },
     enabled: search.length >= 2,
   })
@@ -184,10 +201,13 @@ function MoveCombobox({
   const { data: moves = [], isLoading } = useQuery({
     queryKey: ["pokemon-learnset-calc", pokemonId],
     queryFn: async () => {
-      const res = await fetch(`/api/pokemon/${encodeURIComponent(pokemonId)}/learnset`)
-      if (!res.ok) return []
-      const json: ApiResponse<MoveData[]> = await res.json()
-      return json.data
+      try {
+        return await fetchApiData<MoveData[]>(
+          `/api/pokemon/${encodeURIComponent(pokemonId)}/learnset`,
+        )
+      } catch {
+        return []
+      }
     },
     enabled: !!pokemonId,
     staleTime: 5 * 60 * 1000,
@@ -196,12 +216,6 @@ function MoveCombobox({
   const filtered = search
     ? moves.filter((m) => m.name.toLowerCase().includes(search.toLowerCase()))
     : moves
-
-  const categoryColor = (cat: string) => {
-    if (cat === "Physical") return "text-red-500"
-    if (cat === "Special") return "text-blue-500"
-    return "text-muted-foreground"
-  }
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -246,7 +260,12 @@ function MoveCombobox({
                   className="text-xs"
                 >
                   <span className="flex-1">{move.name}</span>
-                  <span className={cn("text-[10px] w-7 text-right", categoryColor(move.category))}>
+                  <span
+                    className={cn(
+                      "text-[10px] w-7 text-right",
+                      MOVE_CATEGORY_COLORS[move.category] ?? "text-muted-foreground",
+                    )}
+                  >
                     {move.category === "Physical"
                       ? "Phys"
                       : move.category === "Special"
@@ -285,10 +304,14 @@ function ItemCombobox({
     queryKey: ["items-search-calc", search],
     queryFn: async () => {
       if (!search || search.length < 2) return []
-      const res = await fetch(`/api/items?search=${encodeURIComponent(search)}&pageSize=20`)
-      if (!res.ok) return []
-      const json: PaginatedResponse<ItemData> = await res.json()
-      return json.data
+      try {
+        const json = await fetchJson<PaginatedResponse<ItemData>>(
+          `/api/items?search=${encodeURIComponent(search)}&pageSize=20`,
+        )
+        return json.data
+      } catch {
+        return []
+      }
     },
     enabled: search.length >= 2,
   })
@@ -671,14 +694,6 @@ export function DamageCalculator() {
     isDoubles,
     calculate,
   ])
-
-  const getKoColor = (koChance: string) => {
-    if (koChance.includes("OHKO")) return "text-red-600 dark:text-red-400"
-    if (koChance.includes("2HKO")) return "text-orange-600 dark:text-orange-400"
-    if (koChance.includes("3HKO")) return "text-yellow-600 dark:text-yellow-400"
-    if (koChance.includes("4HKO")) return "text-green-600 dark:text-green-400"
-    return "text-muted-foreground"
-  }
 
   return (
     <div className="space-y-4">

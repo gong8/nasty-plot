@@ -44,12 +44,7 @@ export class ReplayEngine {
     let lastTurnNumber = 0
 
     // Create initial frame (turn 0)
-    this.frames.push({
-      turnNumber: 0,
-      state: deepCloneState(state),
-      entries: [],
-      winProbTeam1: 50,
-    })
+    this.frames.push(createFrame(state, 0, [], 50))
 
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i]
@@ -62,41 +57,18 @@ export class ReplayEngine {
       // line after is spectator view (percentage). Keep owner, skip spectator.
       if (line.startsWith("|split|")) {
         if (i + 1 < lines.length) {
-          const ownerLine = lines[i + 1]
-          const ownerEntry = processLine(state, ownerLine)
+          const ownerEntry = processLine(state, lines[i + 1])
           if (ownerEntry) {
-            state.log.push(ownerEntry)
-            state.fullLog.push(ownerEntry)
-            currentTurnEntries.push(ownerEntry)
+            appendEntry(state, currentTurnEntries, ownerEntry)
             if (ownerEntry.type === "turn") {
               if (lastTurnNumber > 0 || currentTurnEntries.length > 1) {
-                const cloned = deepCloneState(state)
-                let winProb: number | null = null
-                try {
-                  const wp = estimateWinProbability(cloned)
-                  winProb = wp.p1
-                } catch {
-                  /* eval may fail */
-                }
-                this.frames.push({
-                  turnNumber: state.turn,
-                  state: cloned,
-                  entries: [...currentTurnEntries],
-                  winProbTeam1: winProb,
-                })
+                this.frames.push(createFrame(state, state.turn, currentTurnEntries))
               }
               currentTurnEntries = [ownerEntry]
               lastTurnNumber = state.turn
             }
             if (ownerEntry.type === "win") {
-              const cloned = deepCloneState(state)
-              const wp = estimateWinProbability(cloned)
-              this.frames.push({
-                turnNumber: state.turn,
-                state: cloned,
-                entries: [...currentTurnEntries],
-                winProbTeam1: wp.p1,
-              })
+              this.frames.push(createFrame(state, state.turn, currentTurnEntries))
               currentTurnEntries = []
             }
           }
@@ -106,72 +78,29 @@ export class ReplayEngine {
       }
 
       const entry = processLine(state, line)
+      if (!entry) continue
 
-      if (entry) {
-        // Add to state log tracking
-        state.log.push(entry)
-        state.fullLog.push(entry)
-        currentTurnEntries.push(entry)
+      appendEntry(state, currentTurnEntries, entry)
 
-        // Detect turn boundary
-        if (entry.type === "turn") {
-          // Save frame for the previous turn
-          if (lastTurnNumber > 0 || currentTurnEntries.length > 1) {
-            const cloned = deepCloneState(state)
-            let winProb: number | null = null
-            try {
-              const wp = estimateWinProbability(cloned)
-              winProb = wp.p1
-            } catch {
-              // eval may fail on incomplete state
-            }
-
-            this.frames.push({
-              turnNumber: state.turn,
-              state: cloned,
-              entries: [...currentTurnEntries],
-              winProbTeam1: winProb,
-            })
-          }
-
-          currentTurnEntries = [entry]
-          lastTurnNumber = state.turn
+      if (entry.type === "turn") {
+        if (lastTurnNumber > 0 || currentTurnEntries.length > 1) {
+          this.frames.push(createFrame(state, state.turn, currentTurnEntries))
         }
+        currentTurnEntries = [entry]
+        lastTurnNumber = state.turn
+      }
 
-        // Detect game end
-        if (entry.type === "win") {
-          const cloned = deepCloneState(state)
-          const wp = estimateWinProbability(cloned)
-          this.frames.push({
-            turnNumber: state.turn,
-            state: cloned,
-            entries: [...currentTurnEntries],
-            winProbTeam1: wp.p1,
-          })
-          currentTurnEntries = []
-        }
+      if (entry.type === "win") {
+        this.frames.push(createFrame(state, state.turn, currentTurnEntries))
+        currentTurnEntries = []
       }
     }
 
-    // If there are remaining entries after last turn
     if (
       currentTurnEntries.length > 0 &&
       this.frames[this.frames.length - 1]?.turnNumber !== state.turn
     ) {
-      const cloned = deepCloneState(state)
-      let winProb: number | null = null
-      try {
-        const wp = estimateWinProbability(cloned)
-        winProb = wp.p1
-      } catch {
-        // pass
-      }
-      this.frames.push({
-        turnNumber: state.turn,
-        state: cloned,
-        entries: currentTurnEntries,
-        winProbTeam1: winProb,
-      })
+      this.frames.push(createFrame(state, state.turn, currentTurnEntries))
     }
 
     this.currentIndex = 0
@@ -230,7 +159,31 @@ export class ReplayEngine {
   }
 }
 
-/** Deep clone a BattleState by serialization. */
-function deepCloneState(state: BattleState): BattleState {
-  return JSON.parse(JSON.stringify(state))
+function appendEntry(state: BattleState, turnEntries: BattleLogEntry[], entry: BattleLogEntry) {
+  state.log.push(entry)
+  state.fullLog.push(entry)
+  turnEntries.push(entry)
+}
+
+function createFrame(
+  state: BattleState,
+  turnNumber: number,
+  entries: BattleLogEntry[],
+  defaultWinProb?: number,
+): ReplayFrame {
+  const cloned: BattleState = JSON.parse(JSON.stringify(state))
+  let winProbTeam1: number | null = defaultWinProb ?? null
+  if (defaultWinProb === undefined) {
+    try {
+      winProbTeam1 = estimateWinProbability(cloned).p1
+    } catch {
+      // eval may fail on incomplete state
+    }
+  }
+  return {
+    turnNumber,
+    state: cloned,
+    entries: [...entries],
+    winProbTeam1,
+  }
 }

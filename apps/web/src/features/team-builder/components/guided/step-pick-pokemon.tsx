@@ -1,10 +1,10 @@
 "use client"
 
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { Sparkles, Search, ChevronDown, ChevronUp } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
-import { Skeleton } from "@/components/ui/skeleton"
+import { SkeletonList } from "@/components/skeleton-list"
 import { cn } from "@nasty-plot/ui"
 import type {
   Recommendation,
@@ -90,8 +90,14 @@ export function StepPickPokemon({
     })
   }
 
+  const usageByPokemonId = useMemo(() => {
+    const map = new Map<string, UsageStatsEntry>()
+    for (const entry of usageData) map.set(entry.pokemonId, entry)
+    return map
+  }, [usageData])
+
   const handleRecPick = (rec: Recommendation) => {
-    const usage = usageData.find((u) => u.pokemonId === rec.pokemonId)
+    const usage = usageByPokemonId.get(rec.pokemonId)
     onPick({
       pokemonId: rec.pokemonId,
       pokemonName: rec.pokemonName,
@@ -129,11 +135,7 @@ export function StepPickPokemon({
             </p>
 
             {isLoading ? (
-              <div className="space-y-3">
-                {Array.from({ length: 3 }).map((_, i) => (
-                  <Skeleton key={i} className="h-24 w-full" />
-                ))}
-              </div>
+              <SkeletonList count={3} height="h-24" className="space-y-3" />
             ) : displayRecs.length > 0 ? (
               <div className="space-y-3">
                 {displayRecs.map((rec) => (
@@ -141,7 +143,7 @@ export function StepPickPokemon({
                     key={rec.pokemonId}
                     pokemonId={rec.pokemonId}
                     pokemonName={rec.pokemonName}
-                    types={usageData.find((u) => u.pokemonId === rec.pokemonId)?.types ?? []}
+                    types={usageByPokemonId.get(rec.pokemonId)?.types ?? []}
                     score={rec.score}
                     reasons={rec.reasons}
                     onPick={() => handleRecPick(rec)}

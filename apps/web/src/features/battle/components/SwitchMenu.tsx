@@ -34,13 +34,15 @@ const STATUS_COLORS: Record<string, string> = {
   tox: "text-purple-600 dark:text-purple-400 bg-purple-600/10 dark:bg-purple-400/15",
 }
 
+const NON_ALPHANUMERIC = /[^a-z0-9]/g
+
+function toSpeciesKey(name: string): string {
+  return name.toLowerCase().replace(NON_ALPHANUMERIC, "")
+}
+
 export function SwitchMenu({ actions, onSwitch, onBack, team, className }: SwitchMenuProps) {
-  /** Find team data for a switch option by species */
-  function getTeamPokemon(speciesId: string): BattlePokemon | undefined {
-    return team?.find(
-      (p) =>
-        p.speciesId === speciesId || p.name.toLowerCase().replace(/[^a-z0-9]/g, "") === speciesId,
-    )
+  function findTeamPokemon(speciesId: string): BattlePokemon | undefined {
+    return team?.find((p) => p.speciesId === speciesId || toSpeciesKey(p.name) === speciesId)
   }
 
   return (
@@ -59,7 +61,7 @@ export function SwitchMenu({ actions, onSwitch, onBack, team, className }: Switc
 
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
         {actions.switches.map((sw) => {
-          const pokemon = getTeamPokemon(sw.speciesId)
+          const pokemon = findTeamPokemon(sw.speciesId)
           return (
             <button
               key={sw.index}

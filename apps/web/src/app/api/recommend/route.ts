@@ -1,13 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getRecommendations } from "@nasty-plot/recommendations"
 import type { ApiResponse, Recommendation, ApiError } from "@nasty-plot/core"
-
-class NotFoundError extends Error {
-  constructor(message: string) {
-    super(message)
-    this.name = "NotFoundError"
-  }
-}
+import { apiErrorResponse } from "../../../lib/api-error"
 
 export async function POST(request: NextRequest) {
   try {
@@ -31,16 +25,10 @@ export async function POST(request: NextRequest) {
       data: recommendations,
     } satisfies ApiResponse<Recommendation[]>)
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Recommendations failed"
-
-    if (error instanceof NotFoundError || message.toLowerCase().includes("not found")) {
-      return NextResponse.json({ error: message, code: "NOT_FOUND" } satisfies ApiError, {
-        status: 404,
-      })
-    }
-
-    return NextResponse.json({ error: message, code: "RECOMMEND_ERROR" } satisfies ApiError, {
-      status: 500,
+    return apiErrorResponse(error, {
+      fallback: "Recommendations failed",
+      code: "RECOMMEND_ERROR",
+      inferNotFound: true,
     })
   }
 }

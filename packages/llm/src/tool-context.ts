@@ -1,3 +1,5 @@
+import type { PageType } from "@nasty-plot/core"
+
 const MCP_PREFIX = "mcp__nasty-plot__"
 
 /** Tool categories mapped to their MCP tool names (without prefix) */
@@ -46,8 +48,6 @@ export function getAllMcpToolNames(): string[] {
   return [...ALL_MCP_TOOLS]
 }
 
-import type { PageType } from "@nasty-plot/core"
-
 export type { PageType } from "@nasty-plot/core"
 
 /** Map page types to which tool categories are ALLOWED */
@@ -77,14 +77,7 @@ const CONTEXT_MODE_TOOL_MAP: Record<string, string[]> = {
  * Returns full MCP-prefixed tool names.
  */
 export function getDisallowedMcpTools(pageType: PageType): string[] {
-  const allowedCategories = TOOL_CONTEXT_MAP[pageType]
-  const allowedTools = new Set(
-    allowedCategories.flatMap(
-      (cat) => TOOL_CATEGORIES[cat]?.map((name) => `${MCP_PREFIX}${name}`) ?? [],
-    ),
-  )
-
-  return ALL_MCP_TOOLS.filter((tool) => !allowedTools.has(tool))
+  return getDisallowedForCategories(TOOL_CONTEXT_MAP[pageType])
 }
 
 /**
@@ -93,14 +86,16 @@ export function getDisallowedMcpTools(pageType: PageType): string[] {
  */
 export function getDisallowedMcpToolsForContextMode(contextMode: string): string[] {
   const allowedCategories = CONTEXT_MODE_TOOL_MAP[contextMode]
-  if (!allowedCategories) return [] // unknown mode = allow all
+  if (!allowedCategories) return []
+  return getDisallowedForCategories(allowedCategories)
+}
 
+function getDisallowedForCategories(allowedCategories: string[]): string[] {
   const allowedTools = new Set(
     allowedCategories.flatMap(
       (cat) => TOOL_CATEGORIES[cat]?.map((name) => `${MCP_PREFIX}${name}`) ?? [],
     ),
   )
-
   return ALL_MCP_TOOLS.filter((tool) => !allowedTools.has(tool))
 }
 

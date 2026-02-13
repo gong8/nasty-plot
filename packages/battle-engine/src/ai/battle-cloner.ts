@@ -29,6 +29,18 @@ export function applyChoices(battle: Battle, p1Choice: string, p2Choice: string)
   return battle
 }
 
+/** Get switch choices for all non-fainted, non-active Pokemon on a side. */
+function getSwitchChoices(sideTyped: typeof Battle.prototype.p1): string[] {
+  const choices: string[] = []
+  const { pokemon, active } = sideTyped
+  for (let i = 0; i < pokemon.length; i++) {
+    if (!pokemon[i].fainted && pokemon[i] !== active[0]) {
+      choices.push(`switch ${i + 1}`)
+    }
+  }
+  return choices
+}
+
 /**
  * Get legal choices for a side from a Battle instance.
  *
@@ -51,20 +63,15 @@ export function getLegalChoices(battle: Battle, side: "p1" | "p2"): string[] {
     (request.forceSwitch && request.forceSwitch.length > 1)
 
   if (isDoubles) {
-    return getDoublesLegalChoices(battle, side, sideTyped, request)
+    return getDoublesLegalChoices(battle, sideTyped, request)
   }
 
   const choices: string[] = []
 
+  const switchChoices = getSwitchChoices(sideTyped)
+
   if (request.forceSwitch) {
-    // Must switch
-    const pokemon = sideTyped.pokemon
-    for (let i = 0; i < pokemon.length; i++) {
-      if (!pokemon[i].fainted && pokemon[i] !== sideTyped.active[0]) {
-        choices.push(`switch ${i + 1}`)
-      }
-    }
-    return choices.length > 0 ? choices : ["default"]
+    return switchChoices.length > 0 ? switchChoices : ["default"]
   }
 
   // Normal turn: moves + switches
@@ -77,13 +84,7 @@ export function getLegalChoices(battle: Battle, side: "p1" | "p2"): string[] {
     }
   }
 
-  // Switches
-  const pokemon = sideTyped.pokemon
-  for (let i = 0; i < pokemon.length; i++) {
-    if (!pokemon[i].fainted && pokemon[i] !== sideTyped.active[0]) {
-      choices.push(`switch ${i + 1}`)
-    }
-  }
+  choices.push(...switchChoices)
 
   return choices.length > 0 ? choices : ["default"]
 }
@@ -94,7 +95,6 @@ export function getLegalChoices(battle: Battle, side: "p1" | "p2"): string[] {
  */
 function getDoublesLegalChoices(
   battle: Battle,
-  _side: "p1" | "p2",
   sideTyped: typeof battle.p1,
   request: {
     wait?: boolean

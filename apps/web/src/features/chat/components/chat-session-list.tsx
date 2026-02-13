@@ -7,11 +7,13 @@ import { usePageContext } from "@/features/chat/context/page-context-provider"
 import { useChatSessions, useDeleteChatSession } from "@/features/chat/hooks/use-chat-sessions"
 import { ContextModeBadge } from "./context-mode-badge"
 import { cn } from "@nasty-plot/ui"
+import { EmptyState } from "@/components/empty-state"
 import type { ChatSessionData, PageType } from "@nasty-plot/core"
 
+const MS_PER_MINUTE = 60_000
+
 function relativeTime(dateStr: string): string {
-  const diff = Date.now() - new Date(dateStr).getTime()
-  const mins = Math.floor(diff / 60000)
+  const mins = Math.floor((Date.now() - new Date(dateStr).getTime()) / MS_PER_MINUTE)
   if (mins < 1) return "now"
   if (mins < 60) return `${mins}m`
   const hours = Math.floor(mins / 60)
@@ -132,11 +134,10 @@ export function ChatSessionList({ mode, onSelect }: ChatSessionListProps) {
           {filteredSessions?.map((session) => {
             const isActive = session.id === activeSessionId
             const firstMsg = session.messages[0]
-            const preview =
-              session.title ||
-              firstMsg?.content.slice(0, 50) +
-                (firstMsg && firstMsg.content.length > 50 ? "..." : "") ||
-              "New Chat"
+            const truncatedContent = firstMsg
+              ? firstMsg.content.slice(0, 50) + (firstMsg.content.length > 50 ? "..." : "")
+              : undefined
+            const preview = session.title || truncatedContent || "New Chat"
 
             return (
               <div
@@ -180,9 +181,9 @@ export function ChatSessionList({ mode, onSelect }: ChatSessionListProps) {
             )
           })}
           {filteredSessions && filteredSessions.length === 0 && !isLoading && (
-            <div className="px-3 py-4 text-sm text-muted-foreground text-center">
+            <EmptyState className="px-3 py-4 text-sm">
               {isOnContextualPage && !showAll ? "No chats for this page" : "No chat history yet"}
-            </div>
+            </EmptyState>
           )}
         </div>
       </div>

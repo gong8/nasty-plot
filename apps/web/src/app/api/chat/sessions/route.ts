@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server"
 import { createSession, listSessions } from "@nasty-plot/llm"
+import { apiErrorResponse } from "../../../../lib/api-error"
 
 export async function GET(req: NextRequest) {
   try {
@@ -9,10 +10,7 @@ export async function GET(req: NextRequest) {
     return Response.json({ data: sessions })
   } catch (error) {
     console.error("List sessions error:", error)
-    return Response.json(
-      { error: "Internal server error", code: "INTERNAL_ERROR" },
-      { status: 500 },
-    )
+    return apiErrorResponse(error, { fallback: "Internal server error", code: "INTERNAL_ERROR" })
   }
 }
 
@@ -28,9 +26,6 @@ export async function POST(req: NextRequest) {
     return Response.json({ data: session }, { status: 201 })
   } catch (error) {
     console.error("Create session error:", error)
-    return Response.json(
-      { error: "Internal server error", code: "INTERNAL_ERROR" },
-      { status: 500 },
-    )
+    return apiErrorResponse(error, { fallback: "Internal server error", code: "INTERNAL_ERROR" })
   }
 }

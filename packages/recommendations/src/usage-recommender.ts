@@ -2,6 +2,16 @@ import type { Recommendation, RecommendationReason } from "@nasty-plot/core"
 import { prisma } from "@nasty-plot/db"
 import { getSpecies } from "@nasty-plot/pokemon-data"
 
+const CORRELATION_SCALE_FACTOR = 2
+const MAX_SCORE = 100
+const MAX_REASONS_PER_RECOMMENDATION = 3
+
+interface CorrelationAggregate {
+  total: number
+  count: number
+  reasons: RecommendationReason[]
+}
+
 /**
  * Get recommendations based on teammate usage correlations from competitive data.
  */
@@ -12,7 +22,6 @@ export async function getUsageBasedRecommendations(
 ): Promise<Recommendation[]> {
   if (teamPokemonIds.length === 0) return []
 
-  // Query teammate correlations for all team members
   const correlations = await prisma.teammateCorr.findMany({
     where: {
       formatId,
@@ -24,45 +33,42 @@ export async function getUsageBasedRecommendations(
 
   if (correlations.length === 0) return []
 
-  // Aggregate correlations per recommended Pokemon
-  const scoreMap = new Map<
-    string,
-    { total: number; count: number; reasons: RecommendationReason[] }
-  >()
+  const aggregateByPokemon = new Map<string, CorrelationAggregate>()
 
   for (const corr of correlations) {
-    const existing = scoreMap.get(corr.pokemonBId) ?? { total: 0, count: 0, reasons: [] }
-    existing.total += corr.correlationPercent
-    existing.count++
+    const aggregate = aggregateByPokemon.get(corr.pokemonBId) ?? {
+      total: 0,
+      count: 0,
+      reasons: [],
+    }
+    aggregate.total += corr.correlationPercent
+    aggregate.count++
 
-    const partnerSpecies = getSpecies(corr.pokemonAId)
-    const partnerName = partnerSpecies ? partnerSpecies.name : corr.pokemonAId
+    const partnerName = getSpecies(corr.pokemonAId)?.name ?? corr.pokemonAId
 
-    existing.reasons.push({
+    aggregate.reasons.push({
       type: "usage",
       description: `Used alongside ${partnerName} ${corr.correlationPercent.toFixed(1)}% of the time`,
       weight: corr.correlationPercent,
     })
 
-    scoreMap.set(corr.pokemonBId, existing)
+    aggregateByPokemon.set(corr.pokemonBId, aggregate)
   }
 
-  // Convert to recommendations
   const recommendations: Recommendation[] = []
 
-  for (const [pokemonId, data] of scoreMap) {
+  for (const [pokemonId, aggregate] of aggregateByPokemon) {
     const species = getSpecies(pokemonId)
     if (!species) continue
 
-    const avgCorrelation = data.total / data.count
-    // Scale score: avg correlation normalized to 0-100
-    const score = Math.min(100, Math.round(avgCorrelation * 2))
+    const avgCorrelation = aggregate.total / aggregate.count
+    const score = Math.min(MAX_SCORE, Math.round(avgCorrelation * CORRELATION_SCALE_FACTOR))
 
     recommendations.push({
       pokemonId,
       pokemonName: species.name,
       score,
-      reasons: data.reasons.slice(0, 3), // Top 3 reasons
+      reasons: aggregate.reasons.slice(0, MAX_REASONS_PER_RECOMMENDATION),
     })
   }
 

@@ -4,7 +4,7 @@ import { Sparkles, ArrowRight, Users } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Skeleton } from "@/components/ui/skeleton"
+import { SkeletonList } from "@/components/skeleton-list"
 import { cn } from "@nasty-plot/ui"
 import type { SampleTeamEntry } from "../../hooks/use-guided-builder"
 
@@ -59,11 +59,7 @@ export function StepStart({
 
           <div className="space-y-2">
             {isLoading ? (
-              <>
-                <Skeleton className="h-14 w-full rounded-lg" />
-                <Skeleton className="h-14 w-full rounded-lg" />
-                <Skeleton className="h-14 w-full rounded-lg" />
-              </>
+              <SkeletonList count={3} height="h-14" />
             ) : sampleTeams.length > 0 ? (
               sampleTeams.map((team) => (
                 <button

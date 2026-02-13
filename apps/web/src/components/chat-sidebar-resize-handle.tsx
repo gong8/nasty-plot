@@ -20,10 +20,10 @@ export function ChatSidebarResizeHandle() {
         if (!dragging.current) return
         // Dragging left increases width (sidebar is on right)
         const delta = startX.current - ev.clientX
-        const maxVw = typeof window !== "undefined" ? window.innerWidth * 0.5 : MAX_WIDTH
+        const halfViewport = window.innerWidth * 0.5
         const newWidth = Math.max(
           MIN_WIDTH,
-          Math.min(Math.min(MAX_WIDTH, maxVw), startWidth.current + delta),
+          Math.min(MAX_WIDTH, halfViewport, startWidth.current + delta),
         )
         requestAnimationFrame(() => setWidth(newWidth))
       }

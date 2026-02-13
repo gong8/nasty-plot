@@ -1,8 +1,25 @@
 import { NextRequest, NextResponse } from "next/server"
+import { apiErrorResponse } from "../../../../lib/api-error"
 import { prisma } from "@nasty-plot/db"
 import { importFromReplayUrl, importFromRawLog } from "@nasty-plot/battle-engine"
 import { findMatchingTeams, createTeamFromExtractedData } from "@nasty-plot/teams"
 import { enrichExtractedTeam } from "@nasty-plot/smogon-data"
+
+const MATCH_CONFIDENCE_THRESHOLD = 60
+
+type TeamMatchResult = {
+  action: string
+  teamId: string | null
+  teamName: string | null
+  confidence: number | null
+}
+
+const SKIPPED_MATCH: TeamMatchResult = {
+  action: "skipped",
+  teamId: null,
+  teamName: null,
+  confidence: null,
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -32,73 +49,54 @@ export async function POST(req: NextRequest) {
       parsed.team2 = enriched2 as typeof parsed.team2
     }
 
-    // Team matching
-    const teamMatching: {
-      team1: {
-        action: string
-        teamId: string | null
-        teamName: string | null
-        confidence: number | null
+    // Match or create teams from extracted battle data
+    async function matchOrCreateTeam(
+      teamData: typeof parsed.team1,
+      formatId: string,
+    ): Promise<{ id: string | null; result: TeamMatchResult }> {
+      if (!autoMatchTeams || teamData.pokemon.length === 0) {
+        return { id: null, result: SKIPPED_MATCH }
       }
-      team2: {
-        action: string
-        teamId: string | null
-        teamName: string | null
-        confidence: number | null
+
+      const matches = await findMatchingTeams(teamData.pokemon, formatId)
+      const bestMatch = matches[0]
+
+      if (bestMatch && bestMatch.confidence >= MATCH_CONFIDENCE_THRESHOLD) {
+        return {
+          id: bestMatch.teamId,
+          result: {
+            action: "matched",
+            teamId: bestMatch.teamId,
+            teamName: bestMatch.teamName,
+            confidence: bestMatch.confidence,
+          },
+        }
       }
-    } = {
-      team1: { action: "skipped", teamId: null, teamName: null, confidence: null },
-      team2: { action: "skipped", teamId: null, teamName: null, confidence: null },
+
+      if (autoCreateTeams) {
+        const created = await createTeamFromExtractedData(teamData, formatId)
+        return {
+          id: created.id,
+          result: {
+            action: "created",
+            teamId: created.id,
+            teamName: created.name,
+            confidence: null,
+          },
+        }
+      }
+
+      return { id: null, result: SKIPPED_MATCH }
     }
 
-    let team1Id: string | null = null
-    let team2Id: string | null = null
+    const [team1Match, team2Match] = await Promise.all([
+      matchOrCreateTeam(parsed.team1, parsed.formatId),
+      matchOrCreateTeam(parsed.team2, parsed.formatId),
+    ])
 
-    // Match/create team 1
-    if (autoMatchTeams && parsed.team1.pokemon.length > 0) {
-      const matches = await findMatchingTeams(parsed.team1.pokemon, parsed.formatId)
-      if (matches.length > 0 && matches[0].confidence >= 60) {
-        team1Id = matches[0].teamId
-        teamMatching.team1 = {
-          action: "matched",
-          teamId: matches[0].teamId,
-          teamName: matches[0].teamName,
-          confidence: matches[0].confidence,
-        }
-      } else if (autoCreateTeams) {
-        const created = await createTeamFromExtractedData(parsed.team1, parsed.formatId)
-        team1Id = created.id
-        teamMatching.team1 = {
-          action: "created",
-          teamId: created.id,
-          teamName: created.name,
-          confidence: null,
-        }
-      }
-    }
-
-    // Match/create team 2
-    if (autoMatchTeams && parsed.team2.pokemon.length > 0) {
-      const matches = await findMatchingTeams(parsed.team2.pokemon, parsed.formatId)
-      if (matches.length > 0 && matches[0].confidence >= 60) {
-        team2Id = matches[0].teamId
-        teamMatching.team2 = {
-          action: "matched",
-          teamId: matches[0].teamId,
-          teamName: matches[0].teamName,
-          confidence: matches[0].confidence,
-        }
-      } else if (autoCreateTeams) {
-        const created = await createTeamFromExtractedData(parsed.team2, parsed.formatId)
-        team2Id = created.id
-        teamMatching.team2 = {
-          action: "created",
-          teamId: created.id,
-          teamName: created.name,
-          confidence: null,
-        }
-      }
-    }
+    const team1Id = team1Match.id
+    const team2Id = team2Match.id
+    const teamMatching = { team1: team1Match.result, team2: team2Match.result }
 
     // Ensure Format record exists
     await prisma.format.upsert({
@@ -150,7 +148,6 @@ export async function POST(req: NextRequest) {
     )
   } catch (err) {
     console.error("[POST /api/battles/import]", err)
-    const message = err instanceof Error ? err.message : "Failed to import battle"
-    return NextResponse.json({ error: message }, { status: 500 })
+    return apiErrorResponse(err, { fallback: "Failed to import battle" })
   }
 }

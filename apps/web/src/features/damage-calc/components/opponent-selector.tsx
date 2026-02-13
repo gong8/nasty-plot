@@ -15,7 +15,8 @@ import {
   CommandList,
 } from "@/components/ui/command"
 import { PokemonSprite } from "@nasty-plot/ui"
-import type { PaginatedResponse, PokemonSpecies, ApiResponse } from "@nasty-plot/core"
+import type { PaginatedResponse, PokemonSpecies } from "@nasty-plot/core"
+import { fetchJson, fetchApiData } from "@/lib/api-client"
 
 const MAX_OPPONENTS = 15
 
@@ -39,12 +40,14 @@ export function OpponentSelector({
     queryFn: async () => {
       if (!search || search.length < 2) return []
       const formatParam = formatId ? `&format=${encodeURIComponent(formatId)}` : ""
-      const res = await fetch(
-        `/api/pokemon?search=${encodeURIComponent(search)}&pageSize=20${formatParam}`,
-      )
-      if (!res.ok) return []
-      const json: PaginatedResponse<PokemonSpecies> = await res.json()
-      return json.data
+      try {
+        const json = await fetchJson<PaginatedResponse<PokemonSpecies>>(
+          `/api/pokemon?search=${encodeURIComponent(search)}&pageSize=20${formatParam}`,
+        )
+        return json.data
+      } catch {
+        return []
+      }
     },
     enabled: search.length >= 2,
   })
@@ -55,10 +58,11 @@ export function OpponentSelector({
     queryFn: async () => {
       const results = await Promise.all(
         selectedIds.map(async (id) => {
-          const res = await fetch(`/api/pokemon/${id}`)
-          if (!res.ok) return null
-          const json: ApiResponse<PokemonSpecies> = await res.json()
-          return json.data
+          try {
+            return await fetchApiData<PokemonSpecies>(`/api/pokemon/${id}`)
+          } catch {
+            return null
+          }
         }),
       )
       return results.filter((r): r is PokemonSpecies => r !== null)

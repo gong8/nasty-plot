@@ -3,7 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
-import { Skeleton } from "@/components/ui/skeleton"
+import { SkeletonList } from "@/components/skeleton-list"
 import { cn } from "@nasty-plot/ui"
 import type { MatchupMatrixEntry } from "@nasty-plot/core"
 
@@ -29,11 +29,7 @@ export function MatchupMatrix({ matrix, isLoading }: MatchupMatrixProps) {
           <CardTitle className="text-sm font-medium">Matchup Matrix</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-2">
-            {[1, 2, 3].map((i) => (
-              <Skeleton key={i} className="h-12 w-full" />
-            ))}
-          </div>
+          <SkeletonList count={3} height="h-12" />
         </CardContent>
       </Card>
     )

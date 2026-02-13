@@ -22,6 +22,55 @@ import {
   HAZARD_REMOVAL_PER_HAZARD,
 } from "./shared"
 
+/** Matchup score below which HeuristicAI considers switching out. */
+const UNFAVORABLE_MATCHUP_THRESHOLD = -0.3
+
+const HAZARD_MOVES = new Set(["stealthrock", "spikes", "toxicspikes", "stickyweb"])
+const STATUS_MOVES = new Set(["willowisp", "thunderwave", "toxic", "spore", "sleeppowder", "yawn"])
+const SETUP_MOVES = new Set([
+  "swordsdance",
+  "nastyplot",
+  "calmmind",
+  "dragondance",
+  "irondefense",
+  "amnesia",
+])
+const RECOVERY_MOVES = new Set([
+  "recover",
+  "roost",
+  "softboiled",
+  "moonlight",
+  "synthesis",
+  "shoreup",
+  "slackoff",
+])
+const HAZARD_REMOVAL_MOVES = new Set(["defog", "rapidspin"])
+
+/** Early-game bonus for hazard-setting moves. */
+const HAZARD_EARLY_BONUS = 5
+
+/** Maximum layers for each hazard type, and the turn threshold for early-game bonus. */
+const HAZARD_LIMITS: Record<
+  string,
+  { maxLayers: number; earlyTurnCutoff: number; latePenalty: number }
+> = {
+  stealthrock: { maxLayers: 1, earlyTurnCutoff: 3, latePenalty: 15 },
+  spikes: { maxLayers: 3, earlyTurnCutoff: 5, latePenalty: 15 },
+  toxicspikes: { maxLayers: 2, earlyTurnCutoff: 4, latePenalty: 13 },
+  stickyweb: { maxLayers: 1, earlyTurnCutoff: 2, latePenalty: 15 },
+}
+
+/** Sum offensive type advantage for attackerTypes vs defenderTypes. Returns -1 to 1 range. */
+function typeOffenseScore(attackerTypes: PokemonType[], defenderTypes: PokemonType[]): number {
+  let score = 0
+  for (const t of attackerTypes) {
+    const eff = getTypeEffectiveness(t, defenderTypes)
+    if (eff > 1) score += 0.3
+    if (eff < 1) score -= 0.15
+  }
+  return score
+}
+
 /**
  * HeuristicAI uses type matchup awareness, switching logic, and situational
  * status move usage. Significantly smarter than GreedyAI.
@@ -88,7 +137,7 @@ export class HeuristicAI implements AIPlayer {
     // Score switches only if we have a bad matchup
     const matchupScore = this.evaluateMatchup(myActive, oppActive)
     const oppPrediction = state.opponentPredictions?.[oppActive.speciesId]
-    if (matchupScore < -0.3) {
+    if (matchupScore < UNFAVORABLE_MATCHUP_THRESHOLD) {
       for (const sw of actions.switches) {
         if (sw.fainted) continue
         const swPokemon = state.sides.p2.team.find(
@@ -178,7 +227,7 @@ export class HeuristicAI implements AIPlayer {
     } catch {
       // Calc failed, fall back to type effectiveness estimate
       const oppTypes = getSpeciesTypes(oppPokemon.name)
-      const eff = getTypeEffectiveness(moveData.type, oppTypes as string[])
+      const eff = getTypeEffectiveness(moveData.type, oppTypes)
       score += eff * 20
     }
 
@@ -193,22 +242,15 @@ export class HeuristicAI implements AIPlayer {
   ): number {
     const moveName = moveData.id
 
-    // Hazard moves: high value early game
-    if (["stealthrock", "spikes", "toxicspikes", "stickyweb"].includes(moveName)) {
+    if (HAZARD_MOVES.has(moveName)) {
       return this.scoreHazardMove(moveName, state)
     }
 
-    // Status inflicting moves
-    if (["willowisp", "thunderwave", "toxic", "spore", "sleeppowder", "yawn"].includes(moveName)) {
+    if (STATUS_MOVES.has(moveName)) {
       return this.scoreStatusInfliction(moveName, oppPokemon)
     }
 
-    // Setup moves
-    if (
-      ["swordsdance", "nastyplot", "calmmind", "dragondance", "irondefense", "amnesia"].includes(
-        moveName,
-      )
-    ) {
+    if (SETUP_MOVES.has(moveName)) {
       const matchup = this.evaluateMatchup(myPokemon, oppPokemon)
       if (matchup > 0.2 && myPokemon.hpPercent > 70) {
         return SETUP_MOVE_SCORE
@@ -216,19 +258,13 @@ export class HeuristicAI implements AIPlayer {
       return 0
     }
 
-    // Recovery moves
-    if (
-      ["recover", "roost", "softboiled", "moonlight", "synthesis", "shoreup", "slackoff"].includes(
-        moveName,
-      )
-    ) {
+    if (RECOVERY_MOVES.has(moveName)) {
       if (myPokemon.hpPercent < 50) return RECOVERY_SCORES.low
       if (myPokemon.hpPercent < 75) return RECOVERY_SCORES.moderate
       return 0
     }
 
-    // Hazard removal
-    if (moveName === "defog" || moveName === "rapidspin") {
+    if (HAZARD_REMOVAL_MOVES.has(moveName)) {
       const mySide = state.sides.p2.sideConditions
       const hazardCount =
         (mySide.stealthRock ? 1 : 0) +
@@ -250,17 +286,30 @@ export class HeuristicAI implements AIPlayer {
   private scoreHazardMove(moveName: string, state: BattleState): number {
     const oppSide = state.sides.p1.sideConditions
     const base = HAZARD_SCORES[moveName as keyof typeof HAZARD_SCORES] ?? 0
-    const earlyBonus = 5 // extra score for setting hazards early
+    const limits = HAZARD_LIMITS[moveName]
+    if (!limits) return 0
 
+    const currentLayers = this.getHazardLayers(moveName, oppSide)
+    if (currentLayers >= limits.maxLayers) return 0
+
+    return state.turn <= limits.earlyTurnCutoff
+      ? base + HAZARD_EARLY_BONUS
+      : base - limits.latePenalty
+  }
+
+  private getHazardLayers(
+    moveName: string,
+    side: BattleState["sides"]["p1"]["sideConditions"],
+  ): number {
     switch (moveName) {
       case "stealthrock":
-        return !oppSide.stealthRock ? (state.turn <= 3 ? base + earlyBonus : base - 15) : 0
+        return side.stealthRock ? 1 : 0
       case "spikes":
-        return oppSide.spikes < 3 ? (state.turn <= 5 ? base + earlyBonus : base - 15) : 0
+        return side.spikes
       case "toxicspikes":
-        return oppSide.toxicSpikes < 2 ? (state.turn <= 4 ? base + earlyBonus : base - 13) : 0
+        return side.toxicSpikes
       case "stickyweb":
-        return !oppSide.stickyWeb ? (state.turn <= 2 ? base + earlyBonus : base - 15) : 0
+        return side.stickyWeb ? 1 : 0
       default:
         return 0
     }
@@ -272,26 +321,9 @@ export class HeuristicAI implements AIPlayer {
   }
 
   private evaluateMatchup(myPokemon: BattlePokemon, oppPokemon: BattlePokemon): number {
-    // Returns -1 to 1, where positive means favorable for myPokemon
     const myTypes = getSpeciesTypes(myPokemon.name)
     const oppTypes = getSpeciesTypes(oppPokemon.name)
-
-    let myOffense = 0
-    let oppOffense = 0
-
-    for (const t of myTypes) {
-      const eff = getTypeEffectiveness(t, oppTypes as string[])
-      if (eff > 1) myOffense += 0.3
-      if (eff < 1) myOffense -= 0.15
-    }
-
-    for (const t of oppTypes) {
-      const eff = getTypeEffectiveness(t, myTypes as string[])
-      if (eff > 1) oppOffense += 0.3
-      if (eff < 1) oppOffense -= 0.15
-    }
-
-    return myOffense - oppOffense
+    return typeOffenseScore(myTypes, oppTypes) - typeOffenseScore(oppTypes, myTypes)
   }
 
   private scoreSwitchTarget(
@@ -310,7 +342,7 @@ export class HeuristicAI implements AIPlayer {
     score += (switchTarget.hpPercent / 100) * 10
 
     // Penalty for switching into a bad matchup
-    if (matchup < -0.3) {
+    if (matchup < UNFAVORABLE_MATCHUP_THRESHOLD) {
       score -= 30
     }
 
@@ -318,7 +350,7 @@ export class HeuristicAI implements AIPlayer {
     const oppTypes = getSpeciesTypes(opponent.name)
     const switchTypes = getSpeciesTypes(switchTarget.name)
     for (const t of oppTypes) {
-      const eff = getTypeEffectiveness(t, switchTypes as string[])
+      const eff = getTypeEffectiveness(t, switchTypes)
       if (eff < 1) score += 10
       if (eff === 0) score += 20
     }
@@ -328,7 +360,7 @@ export class HeuristicAI implements AIPlayer {
       for (const moveName of prediction.predictedMoves) {
         const moveData = getRawMove(moveName)
         if (!moveData?.exists || moveData.category === "Status") continue
-        const eff = getTypeEffectiveness(moveData.type, switchTypes as string[])
+        const eff = getTypeEffectiveness(moveData.type, switchTypes)
         if (eff > 1) {
           score -= 15 * prediction.confidence
         }

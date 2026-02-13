@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Skeleton } from "@/components/ui/skeleton"
+import { SkeletonList } from "@/components/skeleton-list"
 import { Plus, Sparkles } from "lucide-react"
 import { useAddSlot } from "@/features/teams/hooks/use-teams"
 import { DEFAULT_LEVEL, DEFAULT_EVS, DEFAULT_IVS, type Recommendation } from "@nasty-plot/core"
@@ -91,10 +91,8 @@ export function RecommendationPanel({
             Recommendations
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-2">
-          {[1, 2, 3].map((i) => (
-            <Skeleton key={i} className="h-16 w-full" />
-          ))}
+        <CardContent>
+          <SkeletonList count={3} height="h-16" />
         </CardContent>
       </Card>
     )
@@ -128,7 +126,7 @@ export function RecommendationPanel({
       </CardHeader>
       <CardContent>
         <div className="space-y-2">
-          {recommendations.slice(0, 6).map((rec) => (
+          {recommendations.map((rec) => (
             <div
               key={rec.pokemonId}
               className="flex items-start gap-3 p-2.5 rounded-lg border hover:bg-muted/50 transition-colors"

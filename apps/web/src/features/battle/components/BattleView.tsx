@@ -57,17 +57,13 @@ export function BattleView({
   const { contextMode, buildContextData } = useBuildContextData()
 
   const handleToggleAutoAnalyze = useCallback(() => {
-    if (autoAnalyze.enabled) {
-      setAutoAnalyzeEnabled(false)
-    } else {
-      setAutoAnalyzeEnabled(true)
-      // Open the chat sidebar with battle-live context
-      if (contextMode) {
-        openContextChat({
-          contextMode,
-          contextData: JSON.stringify(buildContextData()),
-        })
-      }
+    const enabling = !autoAnalyze.enabled
+    setAutoAnalyzeEnabled(enabling)
+    if (enabling && contextMode) {
+      openContextChat({
+        contextMode,
+        contextData: JSON.stringify(buildContextData()),
+      })
     }
   }, [autoAnalyze.enabled, setAutoAnalyzeEnabled, openContextChat, contextMode, buildContextData])
 
@@ -102,9 +98,8 @@ export function BattleView({
   const handleSave = async () => {
     if (!onSave || isSaving) return
     setIsSaving(true)
-    const commentary =
-      Object.keys(commentaryRef.current).length > 0 ? commentaryRef.current : undefined
-    const id = await onSave(commentary)
+    const hasCommentary = Object.keys(commentaryRef.current).length > 0
+    const id = await onSave(hasCommentary ? commentaryRef.current : undefined)
     setSavedId(id)
     setIsSaving(false)
   }

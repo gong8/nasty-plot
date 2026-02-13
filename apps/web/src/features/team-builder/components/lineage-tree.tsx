@@ -4,6 +4,7 @@ import { useState } from "react"
 import Link from "next/link"
 import { ChevronDown, ChevronRight } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
+import { cn } from "@nasty-plot/ui"
 import type { LineageNode } from "@nasty-plot/core"
 
 interface LineageTreeProps {
@@ -19,6 +20,10 @@ export function LineageTree({ tree, currentTeamId }: LineageTreeProps) {
   )
 }
 
+const DEFAULT_EXPAND_DEPTH = 4
+const INDENT_PX_PER_LEVEL = 20
+const BASE_PADDING_PX = 8
+
 function TreeNode({
   node,
   currentTeamId,
@@ -28,17 +33,19 @@ function TreeNode({
   currentTeamId: string
   depth: number
 }) {
-  const [expanded, setExpanded] = useState(depth <= 4)
+  const [expanded, setExpanded] = useState(depth <= DEFAULT_EXPAND_DEPTH)
   const isCurrent = node.teamId === currentTeamId
   const hasChildren = node.children.length > 0
 
   return (
     <div>
       <div
-        className={`flex items-center gap-2 py-1.5 px-2 rounded-md text-sm ${
-          isCurrent ? "bg-primary/10 border border-primary/30" : "hover:bg-muted/50"
-        } ${node.isArchived ? "opacity-50" : ""}`}
-        style={{ paddingLeft: `${depth * 20 + 8}px` }}
+        className={cn(
+          "flex items-center gap-2 py-1.5 px-2 rounded-md text-sm",
+          isCurrent ? "bg-primary/10 border border-primary/30" : "hover:bg-muted/50",
+          node.isArchived && "opacity-50",
+        )}
+        style={{ paddingLeft: `${depth * INDENT_PX_PER_LEVEL + BASE_PADDING_PX}px` }}
       >
         {/* Expand/Collapse */}
         {hasChildren ? (
@@ -62,9 +69,10 @@ function TreeNode({
         {/* Team name */}
         <Link
           href={`/teams/${node.teamId}`}
-          className={`font-medium hover:underline ${
-            node.isArchived ? "line-through text-muted-foreground" : ""
-          }`}
+          className={cn(
+            "font-medium hover:underline",
+            node.isArchived && "line-through text-muted-foreground",
+          )}
         >
           {node.name}
         </Link>

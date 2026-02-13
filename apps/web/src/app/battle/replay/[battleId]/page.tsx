@@ -10,7 +10,8 @@ import { WinProbabilityGraph } from "@/features/battle/components/WinProbability
 import { EvalBar } from "@/features/battle/components/EvalBar"
 import { CommentaryPanel } from "@/features/battle/components/CommentaryPanel"
 import { ChatPanel } from "@/features/chat/components/chat-panel"
-import { Loader2, MessageCircle } from "lucide-react"
+import { MessageCircle } from "lucide-react"
+import { LoadingSpinner } from "@/components/loading-spinner"
 import { Button } from "@/components/ui/button"
 import { useChatSidebar } from "@/features/chat/context/chat-provider"
 import { useBattleStatePublisher } from "@/features/battle/context/battle-state-context"
@@ -57,8 +58,8 @@ export default function ReplayPage({ params }: { params: Promise<{ battleId: str
   if (!battleData) {
     return (
       <>
-        <main className="container mx-auto p-4 flex items-center justify-center py-24">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        <main className="container mx-auto p-4">
+          <LoadingSpinner size="lg" className="py-24" />
         </main>
       </>
     )
@@ -170,12 +171,7 @@ function ReplayViewerContent({ battleData }: { battleData: BattleData }) {
   }, [replay.currentFrame, allFrames, battleData, commentary, handleCommentaryGenerated])
 
   if (!replay.isReady || !replay.currentFrame) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-        <span className="ml-2 text-muted-foreground">Loading replay...</span>
-      </div>
-    )
+    return <LoadingSpinner label="Loading replay..." className="py-12" />
   }
 
   const winProb = replay.currentFrame.winProbTeam1

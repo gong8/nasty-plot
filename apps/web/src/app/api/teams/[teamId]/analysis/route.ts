@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { analyzeTeam } from "@nasty-plot/analysis"
-import type { ApiResponse, TeamAnalysis, ApiError } from "@nasty-plot/core"
+import type { ApiResponse, TeamAnalysis } from "@nasty-plot/core"
+import { apiErrorResponse } from "../../../../../lib/api-error"
 
 export async function GET(_request: Request, { params }: { params: Promise<{ teamId: string }> }) {
   try {
@@ -10,11 +11,10 @@ export async function GET(_request: Request, { params }: { params: Promise<{ tea
 
     return NextResponse.json({ data: analysis } satisfies ApiResponse<TeamAnalysis>)
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Analysis failed"
-    const status = message.includes("not found") ? 404 : 500
-    return NextResponse.json(
-      { error: message, code: status === 404 ? "NOT_FOUND" : "ANALYSIS_ERROR" } satisfies ApiError,
-      { status },
-    )
+    return apiErrorResponse(error, {
+      fallback: "Analysis failed",
+      code: "ANALYSIS_ERROR",
+      inferNotFound: true,
+    })
   }
 }

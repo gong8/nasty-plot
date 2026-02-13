@@ -29,12 +29,11 @@ async function clean() {
     "Team",
   ]
 
-  for (let i = 0; i < labels.length; i++) {
-    const count = results[i].count
-    if (count > 0) {
-      console.log(`  Deleted ${count} ${labels[i]} rows`)
+  labels.forEach((label, i) => {
+    if (results[i].count > 0) {
+      console.log(`  Deleted ${results[i].count} ${label} rows`)
     }
-  }
+  })
 
   console.log("\nDone. Seeded data (formats, usage stats, sets, etc.) is untouched.")
 }

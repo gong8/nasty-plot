@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { getSampleTeam, deleteSampleTeam } from "@nasty-plot/teams"
+import { apiErrorResponse } from "../../../../lib/api-error"
 
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -10,8 +11,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
     }
     return NextResponse.json(team)
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown error"
-    return NextResponse.json({ error: message }, { status: 500 })
+    return apiErrorResponse(error)
   }
 }
 
@@ -21,7 +21,6 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
     await deleteSampleTeam(id)
     return NextResponse.json({ success: true })
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown error"
-    return NextResponse.json({ error: message }, { status: 500 })
+    return apiErrorResponse(error)
   }
 }

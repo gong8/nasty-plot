@@ -28,51 +28,33 @@ export interface TeamMatchResult {
 /** Build a fingerprint from a Showdown paste string */
 export function fingerprintFromPaste(paste: string): TeamFingerprint {
   const parsed = parseShowdownPaste(paste)
-  const speciesIds: string[] = []
-  const movesBySpecies: Record<string, string[]> = {}
-
-  for (const slot of parsed) {
-    if (!slot.pokemonId) continue
-    speciesIds.push(slot.pokemonId)
-    const moves: string[] = []
-    if (slot.moves) {
-      for (const m of slot.moves) {
-        if (m) moves.push(m.toLowerCase())
-      }
-    }
-    movesBySpecies[slot.pokemonId] = moves.sort()
-  }
-
-  return {
-    speciesIds: speciesIds.sort(),
-    movesBySpecies,
-  }
+  const slots = parsed
+    .filter((slot) => slot.pokemonId)
+    .map((slot) => ({
+      speciesId: slot.pokemonId!,
+      moves: (slot.moves ?? []).filter(Boolean) as string[],
+    }))
+  return buildFingerprint(slots)
 }
 
 /** Build a fingerprint from TeamSlotData[] */
 export function fingerprintFromSlots(slots: TeamSlotData[]): TeamFingerprint {
-  const speciesIds: string[] = []
-  const movesBySpecies: Record<string, string[]> = {}
-
-  for (const slot of slots) {
-    speciesIds.push(slot.pokemonId)
-    const moves: string[] = []
-    for (const m of slot.moves) {
-      if (m) moves.push(m.toLowerCase())
-    }
-    movesBySpecies[slot.pokemonId] = moves.sort()
-  }
-
-  return {
-    speciesIds: speciesIds.sort(),
-    movesBySpecies,
-  }
+  return buildFingerprint(
+    slots.map((slot) => ({
+      speciesId: slot.pokemonId,
+      moves: slot.moves.filter(Boolean) as string[],
+    })),
+  )
 }
 
 /** Build a fingerprint from extracted Pokemon data (replays) */
 export function fingerprintFromExtracted(
   pokemon: { speciesId: string; moves: string[] }[],
 ): TeamFingerprint {
+  return buildFingerprint(pokemon)
+}
+
+function buildFingerprint(pokemon: { speciesId: string; moves: string[] }[]): TeamFingerprint {
   const speciesIds: string[] = []
   const movesBySpecies: Record<string, string[]> = {}
 
@@ -138,6 +120,26 @@ function moveSubsetScore(
   return totalMatched / totalRevealed
 }
 
+function fingerprintFromDbSlots(
+  slots: {
+    pokemonId: string
+    move1: string
+    move2: string | null
+    move3: string | null
+    move4: string | null
+  }[],
+): TeamFingerprint {
+  return buildFingerprint(
+    slots.map((slot) => ({
+      speciesId: slot.pokemonId,
+      moves: [slot.move1, slot.move2, slot.move3, slot.move4].filter(Boolean) as string[],
+    })),
+  )
+}
+
+const SPECIES_MATCH_BASE_CONFIDENCE = 60
+const MOVE_MATCH_MAX_BONUS = 40
+
 /**
  * Find teams matching the extracted team data.
  * Returns matches sorted by confidence.
@@ -155,42 +157,19 @@ export async function findMatchingTeams(
   })
 
   const extractedFp = fingerprintFromExtracted(extracted)
+  const extractedSpecies = new Set(extractedFp.speciesIds)
   const results: TeamMatchResult[] = []
 
   for (const team of teams) {
     if (team.slots.length === 0) continue
 
-    // Build fingerprint from team slots
-    const speciesIds = team.slots.map((s) => s.pokemonId).sort()
-    const movesBySpecies: Record<string, string[]> = {}
-    for (const slot of team.slots) {
-      const moves: string[] = []
-      if (slot.move1) moves.push(slot.move1.toLowerCase())
-      if (slot.move2) moves.push(slot.move2.toLowerCase())
-      if (slot.move3) moves.push(slot.move3.toLowerCase())
-      if (slot.move4) moves.push(slot.move4.toLowerCase())
-      movesBySpecies[slot.pokemonId] = moves.sort()
-    }
+    const teamFp = fingerprintFromDbSlots(team.slots)
 
-    const teamFp: TeamFingerprint = { speciesIds, movesBySpecies }
-
-    // Check species match first
-    const extractedSet = new Set(extractedFp.speciesIds)
-    const teamSet = new Set(teamFp.speciesIds)
     if (extractedFp.speciesIds.length !== teamFp.speciesIds.length) continue
+    if (!teamFp.speciesIds.every((id) => extractedSpecies.has(id))) continue
 
-    let speciesMatch = true
-    for (const id of extractedSet) {
-      if (!teamSet.has(id)) {
-        speciesMatch = false
-        break
-      }
-    }
-    if (!speciesMatch) continue
-
-    // Species match! Calculate move confidence
     const moveScore = moveSubsetScore(extractedFp.movesBySpecies, teamFp.movesBySpecies)
-    const confidence = 60 + moveScore * 40 // 60% base for species match + up to 40% for moves
+    const confidence = SPECIES_MATCH_BASE_CONFIDENCE + moveScore * MOVE_MATCH_MAX_BONUS
 
     results.push({
       teamId: team.id,

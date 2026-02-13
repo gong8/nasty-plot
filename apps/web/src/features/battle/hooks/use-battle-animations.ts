@@ -43,238 +43,61 @@ function textDuration(message: string, minDuration: number, speed: number): numb
   return Math.max(minDuration, typingTime + HOLD_TIME) / speed
 }
 
+/** Per-type animation config: [minDuration, cssClass, useSlotKey] */
+const ANIMATION_CONFIG: Record<string, [number, string, boolean]> = {
+  move: [600, "", false],
+  damage: [500, "animate-battle-shake", true],
+  heal: [400, "", true],
+  faint: [800, "animate-battle-faint", true],
+  switch: [500, "animate-battle-switch-in", true],
+  tera: [600, "animate-battle-tera", true],
+  status: [500, "animate-battle-status", true],
+  boost: [500, "animate-battle-boost", true],
+  unboost: [500, "animate-battle-unboost", true],
+  crit: [600, "", false],
+  supereffective: [600, "", false],
+  resisted: [500, "", false],
+  immune: [500, "", false],
+  weather: [600, "", false],
+  terrain: [600, "", false],
+  hazard: [500, "", false],
+  item: [500, "", false],
+  ability: [500, "", false],
+  start: [500, "", false],
+  end: [500, "", false],
+  cant: [500, "", false],
+  info: [500, "", false],
+  win: [2000, "", false],
+}
+
 /** Map a log entry to an animation event (or null if no animation). */
 export function logEntryToAnimation(
   entry: BattleLogEntry,
   speed: number = 1,
 ): AnimationEvent | null {
-  const side = entry.side
-  const slotKey = side ? `${side}-0` : undefined // Default to slot 0 for singles
-  const msg = entry.message
+  const config = ANIMATION_CONFIG[entry.type]
+  if (!config) return null
 
-  switch (entry.type) {
-    case "move":
-      return {
-        type: "move",
-        side,
-        cssClass: "",
-        duration: textDuration(msg, 600, speed),
-        textMessage: msg,
-      }
+  const [minDuration, cssClass, useSlotKey] = config
+  const { side, message: msg } = entry
+  const slotKey = useSlotKey && side ? `${side}-0` : undefined
 
-    case "damage":
-      return {
-        type: "damage",
-        slotKey,
-        side,
-        cssClass: "animate-battle-shake",
-        duration: textDuration(msg, 500, speed),
-        textMessage: msg,
-        damageNumber: side
-          ? {
-              value: extractDamagePercent(msg, false),
-              side,
-              slot: 0,
-            }
-          : undefined,
-      }
-
-    case "heal":
-      return {
-        type: "heal",
-        slotKey,
-        side,
-        cssClass: "",
-        duration: textDuration(msg, 400, speed),
-        textMessage: msg,
-        damageNumber: side
-          ? {
-              value: extractDamagePercent(msg, true),
-              side,
-              slot: 0,
-            }
-          : undefined,
-      }
-
-    case "faint":
-      return {
-        type: "faint",
-        slotKey,
-        side,
-        cssClass: "animate-battle-faint",
-        duration: textDuration(msg, 800, speed),
-        textMessage: msg,
-      }
-
-    case "switch":
-      return {
-        type: "switch",
-        slotKey,
-        side,
-        cssClass: "animate-battle-switch-in",
-        duration: textDuration(msg, 500, speed),
-        textMessage: msg,
-      }
-
-    case "tera":
-      return {
-        type: "tera",
-        slotKey,
-        side,
-        cssClass: "animate-battle-tera",
-        duration: textDuration(msg, 600, speed),
-        textMessage: msg,
-      }
-
-    case "status":
-      return {
-        type: "status",
-        slotKey,
-        side,
-        cssClass: "animate-battle-status",
-        duration: textDuration(msg, 500, speed),
-        textMessage: msg,
-      }
-
-    case "boost":
-      return {
-        type: "boost",
-        slotKey,
-        side,
-        cssClass: "animate-battle-boost",
-        duration: textDuration(msg, 500, speed),
-        textMessage: msg,
-      }
-
-    case "unboost":
-      return {
-        type: "unboost",
-        slotKey,
-        side,
-        cssClass: "animate-battle-unboost",
-        duration: textDuration(msg, 500, speed),
-        textMessage: msg,
-      }
-
-    case "crit":
-      return {
-        type: "crit",
-        cssClass: "",
-        duration: textDuration(msg, 600, speed),
-        textMessage: msg,
-      }
-
-    case "supereffective":
-      return {
-        type: "supereffective",
-        cssClass: "",
-        duration: textDuration(msg, 600, speed),
-        textMessage: msg,
-      }
-
-    case "resisted":
-      return {
-        type: "resisted",
-        cssClass: "",
-        duration: textDuration(msg, 500, speed),
-        textMessage: msg,
-      }
-
-    case "immune":
-      return {
-        type: "immune",
-        cssClass: "",
-        duration: textDuration(msg, 500, speed),
-        textMessage: msg,
-      }
-
-    case "weather":
-      return {
-        type: "weather",
-        cssClass: "",
-        duration: textDuration(msg, 600, speed),
-        textMessage: msg,
-      }
-
-    case "terrain":
-      return {
-        type: "terrain",
-        cssClass: "",
-        duration: textDuration(msg, 600, speed),
-        textMessage: msg,
-      }
-
-    case "hazard":
-      return {
-        type: "hazard",
-        cssClass: "",
-        duration: textDuration(msg, 500, speed),
-        textMessage: msg,
-      }
-
-    case "item":
-      return {
-        type: "item",
-        cssClass: "",
-        duration: textDuration(msg, 500, speed),
-        textMessage: msg,
-      }
-
-    case "ability":
-      return {
-        type: "ability",
-        cssClass: "",
-        duration: textDuration(msg, 500, speed),
-        textMessage: msg,
-      }
-
-    case "start":
-      return {
-        type: "start",
-        cssClass: "",
-        duration: textDuration(msg, 500, speed),
-        textMessage: msg,
-      }
-
-    case "end":
-      return {
-        type: "end",
-        cssClass: "",
-        duration: textDuration(msg, 500, speed),
-        textMessage: msg,
-      }
-
-    case "cant":
-      return {
-        type: "cant",
-        cssClass: "",
-        duration: textDuration(msg, 500, speed),
-        textMessage: msg,
-      }
-
-    case "info":
-      return {
-        type: "info",
-        cssClass: "",
-        duration: textDuration(msg, 500, speed),
-        textMessage: msg,
-      }
-
-    case "win":
-      return {
-        type: "win",
-        cssClass: "",
-        duration: textDuration(msg, 2000, speed),
-        textMessage: msg,
-      }
-
-    case "turn":
-      // Turn separators — skip (no animation or text)
-      return null
-
-    default:
-      return null
+  const event: AnimationEvent = {
+    type: entry.type,
+    side,
+    slotKey,
+    cssClass,
+    duration: textDuration(msg, minDuration, speed),
+    textMessage: msg,
   }
+
+  if (entry.type === "damage" && side) {
+    event.damageNumber = { value: extractDamagePercent(msg, false), side, slot: 0 }
+  } else if (entry.type === "heal" && side) {
+    event.damageNumber = { value: extractDamagePercent(msg, true), side, slot: 0 }
+  }
+
+  return event
 }
 
 /** Extract damage/heal percentage from log message. */

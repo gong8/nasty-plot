@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
+import { apiErrorResponse } from "../../../../../lib/api-error"
 import { getTopCores } from "@nasty-plot/smogon-data"
 import { getSpecies } from "@nasty-plot/pokemon-data"
 
@@ -25,7 +26,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
     return NextResponse.json({ data: enriched })
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Unknown error"
-    return NextResponse.json({ error: message, code: "CORES_ERROR" }, { status: 500 })
+    return apiErrorResponse(err, { code: "CORES_ERROR" })
   }
 }

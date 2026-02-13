@@ -28,19 +28,20 @@ function getSessionTransport(
   res: express.Response,
 ): StreamableHTTPServerTransport | null {
   const sessionId = req.headers["mcp-session-id"] as string | undefined
-  if (!sessionId || !transports.has(sessionId)) {
+  const session = sessionId ? transports.get(sessionId) : undefined
+  if (!session) {
     res.status(400).json({ error: "Invalid or missing session ID" })
     return null
   }
-  return transports.get(sessionId)!.transport
+  return session.transport
 }
 
 app.post("/mcp", async (req, res) => {
   const sessionId = req.headers["mcp-session-id"] as string | undefined
 
-  if (sessionId && transports.has(sessionId)) {
-    const { transport } = transports.get(sessionId)!
-    await transport.handleRequest(req, res, req.body)
+  const existingSession = sessionId ? transports.get(sessionId) : undefined
+  if (existingSession) {
+    await existingSession.transport.handleRequest(req, res, req.body)
     return
   }
 

@@ -9,7 +9,6 @@ import {
   type UsageStatsEntry,
   type PaginatedResponse,
   type SmogonSetData,
-  type ApiResponse,
   type TeamSlotData,
   type NatureName,
   type PokemonType,
@@ -18,6 +17,7 @@ import {
   type Recommendation,
   parseShowdownPaste,
 } from "@nasty-plot/core"
+import { fetchJson, fetchApiData, postApiData } from "@/lib/api-client"
 
 // --- Types ---
 
@@ -45,6 +45,7 @@ export interface SampleTeamEntry {
 const STEP_ORDER: GuidedStep[] = ["start", "lead", "build", "sets", "review"]
 
 const DRAFT_STORAGE_KEY = "nasty-plot-guided-draft"
+const DRAFT_SAVE_DELAY_MS = 500
 
 interface DraftState {
   teamId: string
@@ -57,45 +58,49 @@ interface DraftState {
 // --- Fetchers ---
 
 async function fetchUsage(formatId: string, limit: number): Promise<UsageStatsEntry[]> {
-  const res = await fetch(`/api/formats/${formatId}/usage?limit=${limit}`)
-  if (!res.ok) throw new Error("Failed to fetch usage stats")
-  const json: PaginatedResponse<UsageStatsEntry> = await res.json()
+  const json = await fetchJson<PaginatedResponse<UsageStatsEntry>>(
+    `/api/formats/${formatId}/usage?limit=${limit}`,
+  )
   return json.data
 }
 
 async function fetchSets(pokemonId: string, format: string): Promise<SmogonSetData[]> {
-  const res = await fetch(`/api/pokemon/${pokemonId}/sets?format=${format}`)
-  if (!res.ok) return []
-  const json: ApiResponse<SmogonSetData[]> = await res.json()
-  return json.data
+  try {
+    return await fetchApiData<SmogonSetData[]>(`/api/pokemon/${pokemonId}/sets?format=${format}`)
+  } catch {
+    return []
+  }
 }
 
 async function fetchRecommendations(teamId: string, limit: number = 5): Promise<Recommendation[]> {
-  const res = await fetch("/api/recommend", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ teamId, limit }),
-  })
-  if (!res.ok) return []
-  const json: ApiResponse<Recommendation[]> = await res.json()
-  return json.data
+  try {
+    return await postApiData<Recommendation[]>("/api/recommend", { teamId, limit })
+  } catch {
+    return []
+  }
 }
 
 async function fetchAnalysis(teamId: string): Promise<TeamAnalysis | null> {
-  const res = await fetch(`/api/teams/${teamId}/analysis`)
-  if (!res.ok) return null
-  const json: ApiResponse<TeamAnalysis> = await res.json()
-  return json.data
+  try {
+    return await fetchApiData<TeamAnalysis>(`/api/teams/${teamId}/analysis`)
+  } catch {
+    return null
+  }
 }
 
 async function fetchSampleTeams(formatId: string): Promise<SampleTeamEntry[]> {
-  const res = await fetch(`/api/sample-teams?formatId=${encodeURIComponent(formatId)}`)
-  if (!res.ok) return []
-  const teams = await res.json()
-  return teams.map((t: Record<string, unknown>) => ({
-    ...t,
-    pokemonIds: typeof t.pokemonIds === "string" ? t.pokemonIds.split(",") : t.pokemonIds,
-  }))
+  try {
+    const teams = await fetchJson<Record<string, unknown>[]>(
+      `/api/sample-teams?formatId=${encodeURIComponent(formatId)}`,
+    )
+    return teams.map((t) => ({
+      ...t,
+      pokemonIds:
+        typeof t.pokemonIds === "string" ? (t.pokemonIds as string).split(",") : t.pokemonIds,
+    })) as SampleTeamEntry[]
+  } catch {
+    return []
+  }
 }
 
 // --- Hook ---
@@ -147,7 +152,7 @@ export function useGuidedBuilder(teamId: string, formatId: string) {
       } catch {
         // localStorage full or unavailable
       }
-    }, 500)
+    }, DRAFT_SAVE_DELAY_MS)
     return () => clearTimeout(saveDraftRef.current)
   }, [teamId, step, slots, currentBuildSlot, startedFromSample, isRestoringDraft])
 
@@ -340,27 +345,20 @@ export function useGuidedBuilder(teamId: string, formatId: string) {
       return { errors, warnings, isValid: false }
     }
 
-    // Check duplicates
     const ids = filledSlots.map((s) => s.pokemonId)
-    const duplicates = ids.filter((id, i) => ids.indexOf(id) !== i)
+    const duplicates = [...new Set(ids.filter((id, i) => ids.indexOf(id) !== i))]
     if (duplicates.length > 0) {
-      errors.push(`Duplicate species: ${[...new Set(duplicates)].join(", ")}`)
+      errors.push(`Duplicate species: ${duplicates.join(", ")}`)
     }
 
-    // Check for empty moves
-    filledSlots.forEach((slot) => {
-      const hasMove = slot.moves?.some((m) => m && m.trim())
-      if (!hasMove) {
+    for (const slot of filledSlots) {
+      if (!slot.moves?.some((m) => m?.trim())) {
         warnings.push(`No moves set for ${slot.pokemonId}`)
       }
-    })
-
-    // Check for missing abilities
-    filledSlots.forEach((slot) => {
       if (!slot.ability) {
         warnings.push(`No ability set for ${slot.pokemonId}`)
       }
-    })
+    }
 
     if (filledSlots.length < 6) {
       warnings.push(`Team has only ${filledSlots.length}/6 Pokemon`)

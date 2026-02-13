@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Download, ChevronLeft, ChevronRight } from "lucide-react"
+import { EmptyState } from "@/components/empty-state"
 import type { BattleSummary } from "../hooks/use-team-battles"
 
 interface BattleHistoryListProps {
@@ -16,25 +17,32 @@ interface BattleHistoryListProps {
   onExport?: (battleId: string) => void
 }
 
+const MS_PER_MINUTE = 60_000
+const MINUTES_PER_HOUR = 60
+const HOURS_PER_DAY = 24
+const PAGE_SIZE = 20
+
 function timeAgo(dateStr: string): string {
-  const diff = Date.now() - new Date(dateStr).getTime()
-  const mins = Math.floor(diff / 60000)
-  if (mins < 1) return "just now"
-  if (mins < 60) return `${mins}m ago`
-  const hours = Math.floor(mins / 60)
-  if (hours < 24) return `${hours}h ago`
-  const days = Math.floor(hours / 24)
+  const elapsedMs = Date.now() - new Date(dateStr).getTime()
+  const minutes = Math.floor(elapsedMs / MS_PER_MINUTE)
+  if (minutes < 1) return "just now"
+  if (minutes < MINUTES_PER_HOUR) return `${minutes}m ago`
+  const hours = Math.floor(minutes / MINUTES_PER_HOUR)
+  if (hours < HOURS_PER_DAY) return `${hours}h ago`
+  const days = Math.floor(hours / HOURS_PER_DAY)
   return `${days}d ago`
 }
 
-function resultBadge(winnerId: string | null, teamId: string, battle: BattleSummary) {
-  const isTeam1 = battle.team1Id === teamId
-  const teamSide = isTeam1 ? "team1" : "team2"
-
+function ResultBadge({ winnerId, isTeam1 }: { winnerId: string | null; isTeam1: boolean }) {
   if (!winnerId) return <Badge variant="secondary">No Result</Badge>
   if (winnerId === "draw") return <Badge variant="secondary">Draw</Badge>
-  if (winnerId === teamSide) return <Badge className="bg-green-600">Win</Badge>
-  return <Badge variant="destructive">Loss</Badge>
+
+  const isWin = winnerId === (isTeam1 ? "team1" : "team2")
+  return isWin ? (
+    <Badge className="bg-green-600">Win</Badge>
+  ) : (
+    <Badge variant="destructive">Loss</Badge>
+  )
 }
 
 export function BattleHistoryList({
@@ -45,12 +53,10 @@ export function BattleHistoryList({
   onPageChange,
   onExport,
 }: BattleHistoryListProps) {
-  const totalPages = Math.ceil(total / 20)
+  const totalPages = Math.ceil(total / PAGE_SIZE)
 
   if (battles.length === 0) {
-    return (
-      <div className="text-center py-12 text-muted-foreground">No battles found for this team.</div>
-    )
+    return <EmptyState>No battles found for this team.</EmptyState>
   }
 
   return (
@@ -68,7 +74,7 @@ export function BattleHistoryList({
               >
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
-                    {resultBadge(battle.winnerId, teamId, battle)}
+                    <ResultBadge winnerId={battle.winnerId} isTeam1={isTeam1} />
                     <span className="text-sm font-medium truncate">vs {opponentName}</span>
                   </div>
                   <div className="text-xs text-muted-foreground mt-0.5">

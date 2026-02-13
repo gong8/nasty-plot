@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { importIntoTeam } from "@nasty-plot/teams"
+import { apiErrorResponse } from "../../../../../lib/api-error"
 
 export async function POST(request: Request, { params }: { params: Promise<{ teamId: string }> }) {
   try {
@@ -11,7 +12,6 @@ export async function POST(request: Request, { params }: { params: Promise<{ tea
     const team = await importIntoTeam(teamId, body.paste)
     return NextResponse.json(team)
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown error"
-    return NextResponse.json({ error: message }, { status: 500 })
+    return apiErrorResponse(error)
   }
 }

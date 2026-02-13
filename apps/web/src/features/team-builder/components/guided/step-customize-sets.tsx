@@ -5,7 +5,9 @@ import { useQueries } from "@tanstack/react-query"
 import { Sparkles, ChevronDown, ChevronUp, Loader2 } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { cn } from "@nasty-plot/ui"
+import { EmptyState } from "@/components/empty-state"
 import type { TeamSlotData, PokemonSpecies } from "@nasty-plot/core"
+import { fetchApiData } from "@/lib/api-client"
 import { SimplifiedSetEditor } from "./simplified-set-editor"
 
 interface StepCustomizeSetsProps {
@@ -47,12 +49,7 @@ export function StepCustomizeSets({
   const speciesQueries = useQueries({
     queries: filledSlots.map((slot) => ({
       queryKey: ["pokemon", slot.pokemonId!],
-      queryFn: async () => {
-        const res = await fetch(`/api/pokemon/${slot.pokemonId}`)
-        if (!res.ok) throw new Error("Not found")
-        const json = await res.json()
-        return json.data as PokemonSpecies
-      },
+      queryFn: () => fetchApiData<PokemonSpecies>(`/api/pokemon/${slot.pokemonId}`),
       enabled: !!slot.pokemonId,
       staleTime: Infinity,
     })),
@@ -119,14 +116,11 @@ export function StepCustomizeSets({
                     </span>
                     <div>
                       <span className="text-sm font-medium">{name}</span>
-                      {hasSet && (
-                        <span className="text-xs text-muted-foreground ml-2">
-                          {slot.ability} / {slot.item || "No item"} / {slot.nature}
-                        </span>
-                      )}
-                      {!hasSet && (
-                        <span className="text-xs text-muted-foreground ml-2">No set applied</span>
-                      )}
+                      <span className="text-xs text-muted-foreground ml-2">
+                        {hasSet
+                          ? `${slot.ability} / ${slot.item || "No item"} / ${slot.nature}`
+                          : "No set applied"}
+                      </span>
                     </div>
                   </div>
                   {isExpanded ? (
@@ -156,9 +150,7 @@ export function StepCustomizeSets({
       )}
 
       {filledSlots.length === 0 && !isApplying && (
-        <div className="text-center py-8 text-muted-foreground">
-          No Pokemon selected. Go back to pick your team.
-        </div>
+        <EmptyState className="py-8">No Pokemon selected. Go back to pick your team.</EmptyState>
       )}
     </div>
   )
