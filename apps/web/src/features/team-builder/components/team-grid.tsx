@@ -2,7 +2,7 @@
 
 import { Plus } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
-import { type PokemonType, type TeamData } from "@nasty-plot/core"
+import { TEAM_SIZE, type PokemonType, type TeamData } from "@nasty-plot/core"
 import { cn, PokemonSprite, TypeBadge } from "@nasty-plot/ui"
 
 interface TeamGridProps {
@@ -21,7 +21,7 @@ export function TeamGrid({
   layout = "grid",
 }: TeamGridProps) {
   const filledSlots = team.slots
-  const emptyCount = 6 - filledSlots.length
+  const emptyCount = TEAM_SIZE - filledSlots.length
 
   const isVertical = layout === "vertical"
 

@@ -34,29 +34,27 @@ const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   eraser: Eraser,
 }
 
-// Role-specific filtering: pick candidates that match the role
+const ROLE_TYPE_AFFINITY: Record<string, PokemonType[]> = {
+  "physical-wall": ["Steel", "Ground", "Rock"],
+  "special-wall": ["Fairy", "Water", "Psychic"],
+  "physical-attacker": ["Fighting", "Ground", "Dragon"],
+  "special-attacker": ["Fire", "Electric", "Psychic"],
+  "speed-control": ["Electric", "Flying", "Dragon"],
+  "hazard-setter": ["Ground", "Rock", "Steel"],
+  "hazard-removal": ["Flying", "Normal", "Water"],
+}
+
 function filterForRole(
   candidates: UsageStatsEntry[],
   roleId: string,
   disabledIds: Set<string>,
 ): UsageStatsEntry[] {
   const available = candidates.filter((c) => !disabledIds.has(c.pokemonId))
-
-  const roleTypeAffinity: Record<string, PokemonType[]> = {
-    "physical-wall": ["Steel", "Ground", "Rock"],
-    "special-wall": ["Fairy", "Water", "Psychic"],
-    "physical-attacker": ["Fighting", "Ground", "Dragon"],
-    "special-attacker": ["Fire", "Electric", "Psychic"],
-    "speed-control": ["Electric", "Flying", "Dragon"],
-    "hazard-setter": ["Ground", "Rock", "Steel"],
-    "hazard-removal": ["Flying", "Normal", "Water"],
-  }
-
-  const preferred = roleTypeAffinity[roleId] ?? []
+  const preferredTypes = ROLE_TYPE_AFFINITY[roleId] ?? []
 
   const scored = available.map((c) => {
     const types: PokemonType[] = c.types ?? []
-    const typeBonus = types.some((t) => preferred.includes(t)) ? TYPE_AFFINITY_BONUS : 0
+    const typeBonus = types.some((t) => preferredTypes.includes(t)) ? TYPE_AFFINITY_BONUS : 0
     return { ...c, score: typeBonus + c.usagePercent }
   })
 

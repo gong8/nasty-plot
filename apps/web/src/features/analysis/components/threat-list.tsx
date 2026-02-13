@@ -1,8 +1,8 @@
 "use client"
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { SkeletonList } from "@/components/skeleton-list"
+import { AnalysisCard } from "@/components/analysis-card"
 import { AlertTriangle, Shield, Info } from "lucide-react"
 import { cn, PokemonSprite, TypeBadge } from "@nasty-plot/ui"
 import type { ThreatEntry, TeamSlotData } from "@nasty-plot/core"
@@ -25,42 +25,10 @@ function getThreatBadge(level: ThreatEntry["threatLevel"]) {
   }
 }
 
-export function ThreatList({ threats, isLoading, slots, compact }: ThreatListProps) {
-  if (isLoading) {
-    const skeleton = <SkeletonList count={4} height="h-24" layout="grid-2" />
-    if (compact) return skeleton
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm font-medium">Threats</CardTitle>
-        </CardHeader>
-        <CardContent>{skeleton}</CardContent>
-      </Card>
-    )
-  }
-
-  if (!threats || threats.length === 0) {
-    const empty = (
-      <p className="text-sm text-muted-foreground">
-        No significant threats identified. This could mean usage data is not available for this
-        format.
-      </p>
-    )
-    if (compact) return empty
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm font-medium">Threats</CardTitle>
-        </CardHeader>
-        <CardContent>{empty}</CardContent>
-      </Card>
-    )
-  }
-
-  // Build a lookup for team slot sprites
+function ThreatGrid({ threats, slots }: { threats: ThreatEntry[]; slots?: TeamSlotData[] }) {
   const slotIds = new Set((slots ?? []).map((s) => s.pokemonId))
 
-  const grid = (
+  return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
       {threats.map((threat) => {
         const badge = getThreatBadge(threat.threatLevel)
@@ -78,12 +46,9 @@ export function ThreatList({ threats, isLoading, slots, compact }: ThreatListPro
               threat.threatLevel === "low" && "border-border",
             )}
           >
-            {/* Pokemon Sprite */}
             <PokemonSprite pokemonId={threat.pokemonId} size={40} className="shrink-0" />
 
-            {/* Info */}
             <div className="flex-1 min-w-0 space-y-1.5">
-              {/* Name + Badge + Usage */}
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-sm font-medium truncate">{threat.pokemonName}</span>
                 <Badge variant={badge.variant} className="text-[10px] h-5 px-1.5 shrink-0">
@@ -95,7 +60,6 @@ export function ThreatList({ threats, isLoading, slots, compact }: ThreatListPro
                 </span>
               </div>
 
-              {/* Type Badges */}
               {threat.types && threat.types.length > 0 && (
                 <div className="flex gap-1">
                   {threat.types.map((t) => (
@@ -104,10 +68,8 @@ export function ThreatList({ threats, isLoading, slots, compact }: ThreatListPro
                 </div>
               )}
 
-              {/* Reason */}
               <p className="text-[11px] text-muted-foreground line-clamp-2">{threat.reason}</p>
 
-              {/* Threatened team members */}
               {threat.threatenedSlots && threat.threatenedSlots.length > 0 && (
                 <div className="flex items-center gap-1.5 pt-0.5">
                   <span className="text-[10px] text-muted-foreground shrink-0">Threatens:</span>
@@ -125,15 +87,33 @@ export function ThreatList({ threats, isLoading, slots, compact }: ThreatListPro
       })}
     </div>
   )
+}
 
-  if (compact) return grid
+const EMPTY_MSG =
+  "No significant threats identified. This could mean usage data is not available for this format."
+
+export function ThreatList({ threats, isLoading, slots, compact }: ThreatListProps) {
+  if (compact) {
+    if (isLoading) return <SkeletonList count={4} height="h-24" layout="grid-2" />
+    if (!threats || threats.length === 0) {
+      return <p className="text-sm text-muted-foreground">{EMPTY_MSG}</p>
+    }
+    return <ThreatGrid threats={threats} slots={slots} />
+  }
+
+  const title = threats && threats.length > 0 ? `Threats (${threats.length})` : "Threats"
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-sm font-medium">Threats ({threats.length})</CardTitle>
-      </CardHeader>
-      <CardContent>{grid}</CardContent>
-    </Card>
+    <AnalysisCard
+      title={title}
+      isLoading={isLoading}
+      isEmpty={!threats || threats.length === 0}
+      emptyMessage={EMPTY_MSG}
+      skeletonCount={4}
+      skeletonHeight="h-24"
+      skeletonLayout="grid-2"
+    >
+      <ThreatGrid threats={threats!} slots={slots} />
+    </AnalysisCard>
   )
 }

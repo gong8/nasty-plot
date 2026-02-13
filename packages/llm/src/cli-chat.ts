@@ -6,9 +6,8 @@ import { getToolLabel, isWriteTool } from "./tool-labels"
 import { StreamParser } from "./stream-parser"
 import type { SSEEvent } from "./sse-events"
 import type { PageContextData } from "./context-builder"
-import { MCP_URL } from "./config"
+import { MCP_URL, MODEL } from "./config"
 
-const CLI_MODEL = process.env.LLM_MODEL || "opus"
 const LOG_PREFIX = "[cli-chat]"
 const TEMP_DIR = join(tmpdir(), "nasty-plot-cli")
 
@@ -213,7 +212,7 @@ function errorMessage(error: unknown): string {
 export function streamCliChat(options: CliChatOptions): ReadableStream<Uint8Array> {
   const mcpConfigPath = writeMcpConfig()
   const systemPromptPath = writeSystemPrompt(options.systemPrompt)
-  const model = getCliModel(options.model || CLI_MODEL)
+  const model = getCliModel(options.model ?? MODEL)
   const prompt = buildPrompt(options.messages)
   const disallowedTools = [...BLOCKED_BUILTIN_TOOLS, ...(options.disallowedMcpTools ?? [])]
   const args = buildCliArgs(model, mcpConfigPath, systemPromptPath, disallowedTools, prompt)

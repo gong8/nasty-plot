@@ -33,7 +33,7 @@ import {
   type StatsTable,
   type TeamSlotData,
 } from "@nasty-plot/core"
-import { PokemonSprite, TypeBadge } from "@nasty-plot/ui"
+import { cn, PokemonSprite, TypeBadge } from "@nasty-plot/ui"
 import { ItemCombobox } from "../item-combobox"
 import { MoveInput } from "../shared/move-input"
 import { NatureSelector } from "../shared/nature-selector"
@@ -297,9 +297,10 @@ export function SimplifiedSetEditor({
             <div className="flex items-center justify-between">
               <Label className="text-xs">EVs</Label>
               <span
-                className={`text-[10px] ${
-                  evRemaining < 0 ? "text-destructive font-medium" : "text-muted-foreground"
-                }`}
+                className={cn(
+                  "text-[10px]",
+                  evRemaining < 0 ? "text-destructive font-medium" : "text-muted-foreground",
+                )}
               >
                 {evTotal} / {MAX_TOTAL_EVS} ({evRemaining} remaining)
               </span>

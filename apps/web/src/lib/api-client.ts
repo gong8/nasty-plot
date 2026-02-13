@@ -1,15 +1,16 @@
-import { createApiClient } from "@nasty-plot/core"
+import { createApiClient, checkedFetch } from "@nasty-plot/core"
 import type { ApiResponse } from "@nasty-plot/core"
 
 const client = createApiClient()
 
 export async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(url, init)
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({ error: res.statusText }))
-    throw new Error(body.error || res.statusText)
-  }
+  const res = await checkedFetch(url, init)
   return res.json()
+}
+
+export async function fetchText(url: string, init?: RequestInit): Promise<string> {
+  const res = await checkedFetch(url, init)
+  return res.text()
 }
 
 export async function fetchApiData<T>(url: string, init?: RequestInit): Promise<T> {

@@ -52,22 +52,22 @@ export async function resolveYearMonth(
   }
 
   const now = new Date()
-  const candidates: { y: number; m: number }[] = []
+  const candidates: { year: number; month: number }[] = []
 
   // Try previous months (Smogon stats lag by 1-2 months, sometimes more)
   for (let offset = 1; offset <= 6; offset++) {
-    const d = new Date(now.getFullYear(), now.getMonth() - offset, 1)
-    candidates.push({ y: d.getFullYear(), m: d.getMonth() + 1 })
+    const date = new Date(now.getFullYear(), now.getMonth() - offset, 1)
+    candidates.push({ year: date.getFullYear(), month: date.getMonth() + 1 })
   }
 
   // Try each month x rating combination
-  for (const { y, m } of candidates) {
+  for (const candidate of candidates) {
     for (const rating of RATING_THRESHOLDS) {
-      const url = buildStatsUrl(formatId, y, m, rating)
+      const url = buildStatsUrl(formatId, candidate.year, candidate.month, rating)
       try {
         const res = await fetch(url, { method: "HEAD" })
         if (res.ok) {
-          return { year: y, month: m, rating, url }
+          return { year: candidate.year, month: candidate.month, rating, url }
         }
       } catch {
         // network error, try next
@@ -167,10 +167,6 @@ async function saveAbilityUsage(
   }
 }
 
-function formatMonthStr(year: number, month: number): string {
-  return `${year}-${String(month).padStart(2, "0")}`
-}
-
 // ---------------------------------------------------------------------------
 
 /**
@@ -228,7 +224,8 @@ export async function syncUsageStats(
     await saveAbilityUsage(formatId, pokemonId, data.Abilities)
   }
 
-  const syncMessage = `Fetched ${entries.length} Pokemon for ${formatMonthStr(statYear, statMonth)}`
+  const monthStr = `${statYear}-${String(statMonth).padStart(2, "0")}`
+  const syncMessage = `Fetched ${entries.length} Pokemon for ${monthStr}`
   await prisma.dataSyncLog.upsert({
     where: { source_formatId: { source: "smogon-stats", formatId } },
     update: { lastSynced: new Date(), status: "success", message: syncMessage },

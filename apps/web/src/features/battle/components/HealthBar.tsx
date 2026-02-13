@@ -2,6 +2,7 @@
 
 import { useRef, useEffect, useState } from "react"
 import { cn } from "@nasty-plot/ui"
+import { calcHpPercent } from "@nasty-plot/battle-engine"
 
 interface HealthBarProps {
   hp: number
@@ -30,7 +31,7 @@ export function HealthBar({
   showText = true,
   animate = true,
 }: HealthBarProps) {
-  const percent = maxHp > 0 ? Math.round((hp / maxHp) * 100) : 0
+  const percent = calcHpPercent(hp, maxHp)
   const prevPercentRef = useRef(percent)
   const [glowClass, setGlowClass] = useState("")
 

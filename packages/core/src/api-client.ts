@@ -5,13 +5,23 @@ export interface ApiClient {
   del<T>(path: string): Promise<T>
 }
 
+/**
+ * Low-level fetch wrapper with standard error handling.
+ * Returns the raw Response after asserting `res.ok`.
+ * Used by both `createApiClient` and the web api-client helpers.
+ */
+export async function checkedFetch(url: string, init?: RequestInit): Promise<Response> {
+  const res = await fetch(url, init)
+  if (!res.ok) {
+    const errorBody = await res.json().catch(() => ({ error: res.statusText }))
+    const detail = errorBody.error || res.statusText
+    throw new Error(`API error ${res.status}: ${detail}`)
+  }
+  return res
+}
+
 export function createApiClient(baseUrl?: string): ApiClient {
-  async function request<T>(
-    method: string,
-    path: string,
-    body?: unknown,
-    params?: Record<string, string>,
-  ): Promise<T> {
+  function buildUrl(path: string, params?: Record<string, string>): string {
     let url: URL
     if (baseUrl) {
       const base = baseUrl.replace(/\/+$/, "")
@@ -29,19 +39,22 @@ export function createApiClient(baseUrl?: string): ApiClient {
         url.searchParams.set(key, value)
       }
     }
+    return url.toString()
+  }
 
+  async function request<T>(
+    method: string,
+    path: string,
+    body?: unknown,
+    params?: Record<string, string>,
+  ): Promise<T> {
     const init: RequestInit = { method }
     if (body !== undefined) {
       init.headers = { "Content-Type": "application/json" }
       init.body = JSON.stringify(body)
     }
 
-    const res = await fetch(url.toString(), init)
-    if (!res.ok) {
-      const errorBody = await res.json().catch(() => ({ error: res.statusText }))
-      const detail = errorBody.error || res.statusText
-      throw new Error(`API error ${res.status}: ${detail}`)
-    }
+    const res = await checkedFetch(buildUrl(path, params), init)
     return res.json()
   }
 

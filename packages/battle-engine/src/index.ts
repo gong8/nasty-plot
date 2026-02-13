@@ -2,6 +2,7 @@ export * from "./types"
 export * from "./battle-manager"
 export {
   serializeBattleState,
+  formatMoveStats,
   formatBoosts,
   formatFieldState,
   formatSideConditions,

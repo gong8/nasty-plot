@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { Badge } from "@/components/ui/badge"
+import { AnalysisCard } from "@/components/analysis-card"
 import { POKEMON_TYPES, type TypeCoverage } from "@nasty-plot/core"
 import { cn, TypeBadge } from "@nasty-plot/ui"
 
@@ -54,16 +55,11 @@ export function CoverageChart({ coverage, compact }: CoverageChartProps) {
       )
     }
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm font-medium">Type Coverage</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground">
-            Add Pokemon to your team to see type coverage analysis.
-          </p>
-        </CardContent>
-      </Card>
+      <AnalysisCard
+        title="Type Coverage"
+        isEmpty
+        emptyMessage="Add Pokemon to your team to see type coverage analysis."
+      />
     )
   }
 

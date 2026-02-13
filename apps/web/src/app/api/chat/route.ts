@@ -1,5 +1,10 @@
 import { NextRequest } from "next/server"
-import { apiErrorResponse, badRequestResponse, notFoundResponse } from "../../../lib/api-error"
+import {
+  loggedApiErrorResponse,
+  badRequestResponse,
+  notFoundResponse,
+  INTERNAL_ERROR_OPTIONS,
+} from "../../../lib/api-error"
 import {
   streamChat,
   createSession,
@@ -112,8 +117,7 @@ export async function POST(req: NextRequest) {
       },
     })
   } catch (error) {
-    console.error("Chat API error:", error)
-    return apiErrorResponse(error, { fallback: "Internal server error", code: "INTERNAL_ERROR" })
+    return loggedApiErrorResponse("Chat API error:", error, INTERNAL_ERROR_OPTIONS)
   }
 }
 

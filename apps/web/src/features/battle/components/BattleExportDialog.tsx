@@ -13,7 +13,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Copy, Download } from "lucide-react"
-import { fetchJson } from "@/lib/api-client"
+import { fetchJson, fetchText } from "@/lib/api-client"
 
 interface BattleExportDialogProps {
   battleId: string | null
@@ -34,7 +34,7 @@ export function BattleExportDialog({ battleId, open, onOpenChange }: BattleExpor
     const loadExports = async () => {
       try {
         const [showdownLog, jsonData] = await Promise.all([
-          fetch(`/api/battles/${battleId}/export?format=showdown`).then((r) => r.text()),
+          fetchText(`/api/battles/${battleId}/export?format=showdown`),
           fetchJson(`/api/battles/${battleId}/export?format=json`),
         ])
         if (cancelled) return

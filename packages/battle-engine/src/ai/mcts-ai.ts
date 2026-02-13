@@ -77,6 +77,7 @@ function mapSimPokemon(
   p: NonNullable<(typeof Battle.prototype.p1.active)[0]>,
   isActive: boolean,
 ): BattlePokemon {
+  const stored = p.storedStats
   return {
     speciesId: p.species.id,
     name: p.species.name,
@@ -94,27 +95,43 @@ function mapSimPokemon(
     moves: [],
     stats: {
       hp: p.maxhp,
-      atk: p.storedStats?.atk || 0,
-      def: p.storedStats?.def || 0,
-      spa: p.storedStats?.spa || 0,
-      spd: p.storedStats?.spd || 0,
-      spe: p.storedStats?.spe || 0,
+      atk: stored?.atk || 0,
+      def: stored?.def || 0,
+      spa: stored?.spa || 0,
+      spd: stored?.spd || 0,
+      spe: stored?.spe || 0,
     },
     boosts: isActive ? ({ ...p.boosts, accuracy: 0, evasion: 0 } as never) : ZERO_BOOSTS,
     volatiles: isActive ? Object.keys(p.volatiles) : [],
   } as BattlePokemon
 }
 
+function mapSimSide(side: typeof Battle.prototype.p1) {
+  const hasTerastallized = side.pokemon.some(
+    (p) => !!(p as unknown as { terastallized: string }).terastallized,
+  )
+  return {
+    active: side.active.map((p) => (p ? mapSimPokemon(p, true) : null)),
+    team: side.pokemon.map((p) => mapSimPokemon(p, false)),
+    name: side.name,
+    sideConditions: extractSideConditions(side.sideConditions),
+    canTera: !hasTerastallized,
+    hasTerastallized,
+  }
+}
+
 function extractSideConditions(sc: Record<string, { layers?: number; duration?: number }>) {
+  const layers = (key: string) => sc[key]?.layers ?? 0
+  const duration = (key: string) => sc[key]?.duration ?? 0
   return {
     stealthRock: !!sc["stealthrock"],
-    spikes: sc["spikes"]?.layers || 0,
-    toxicSpikes: sc["toxicspikes"]?.layers || 0,
+    spikes: layers("spikes"),
+    toxicSpikes: layers("toxicspikes"),
     stickyWeb: !!sc["stickyweb"],
-    reflect: sc["reflect"]?.duration || 0,
-    lightScreen: sc["lightscreen"]?.duration || 0,
-    auroraVeil: sc["auroraveil"]?.duration || 0,
-    tailwind: sc["tailwind"]?.duration || 0,
+    reflect: duration("reflect"),
+    lightScreen: duration("lightscreen"),
+    auroraVeil: duration("auroraveil"),
+    tailwind: duration("tailwind"),
   }
 }
 
@@ -361,28 +378,13 @@ export class MCTSAI implements AIPlayer {
    */
   private battleToState(battle: Battle): BattleState | null {
     try {
-      const gameType = battle.gameType === "doubles" ? "doubles" : "singles"
-      const makeSide = (side: typeof battle.p1) => {
-        const hasTerastallized = side.pokemon.some(
-          (p) => !!(p as unknown as { terastallized: string }).terastallized,
-        )
-        return {
-          active: side.active.map((p) => (p ? mapSimPokemon(p, true) : null)),
-          team: side.pokemon.map((p) => mapSimPokemon(p, false)),
-          name: side.name,
-          sideConditions: extractSideConditions(side.sideConditions),
-          canTera: !hasTerastallized,
-          hasTerastallized,
-        }
-      }
-
       return {
         phase: "battle",
-        format: gameType as "singles" | "doubles",
+        format: battle.gameType === "doubles" ? "doubles" : "singles",
         turn: battle.turn,
         sides: {
-          p1: makeSide(battle.p1),
-          p2: makeSide(battle.p2),
+          p1: mapSimSide(battle.p1),
+          p2: mapSimSide(battle.p2),
         },
         field: {
           weather: (battle.field.weather || "") as never,
@@ -408,20 +410,23 @@ export class MCTSAI implements AIPlayer {
    * Choice strings may contain target slots like "move 1 1" (foe) or "move 1 -2" (ally).
    */
   private convertChoiceToAction(choice: string, actions: BattleActionSet): BattleAction {
-    if (choice.startsWith("move ")) {
-      const [, moveIndexStr, targetSlotStr] = choice.split(" ")
-      const moveIndex = parseInt(moveIndexStr, 10)
-      const targetSlot = targetSlotStr != null ? parseInt(targetSlotStr, 10) : undefined
+    const parts = choice.split(" ")
+    const command = parts[0]
+    const index = parseInt(parts[1], 10)
+
+    if (command === "move" && !isNaN(index)) {
+      const targetSlot = parts[2] != null ? parseInt(parts[2], 10) : undefined
       return {
         type: "move",
-        moveIndex,
+        moveIndex: index,
         targetSlot: targetSlot != null && !isNaN(targetSlot) ? targetSlot : undefined,
       }
     }
-    if (choice.startsWith("switch ")) {
-      const pokemonIndex = parseInt(choice.split(" ")[1], 10)
-      return { type: "switch", pokemonIndex }
+
+    if (command === "switch" && !isNaN(index)) {
+      return { type: "switch", pokemonIndex: index }
     }
+
     return fallbackMove(actions)
   }
 

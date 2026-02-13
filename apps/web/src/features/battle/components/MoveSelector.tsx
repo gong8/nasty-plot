@@ -1,10 +1,9 @@
 "use client"
 
 import { useState, useCallback } from "react"
-import { cn, TypeBadge } from "@nasty-plot/ui"
-import { TYPE_COLORS, isLightTypeColor, type PokemonType } from "@nasty-plot/core"
-import type { BattleActionSet, BattlePokemon } from "@nasty-plot/battle-engine"
-import type { GameType } from "@nasty-plot/core"
+import { cn, TypeBadge, PokemonSprite } from "@nasty-plot/ui"
+import { TYPE_COLORS, isLightTypeColor, type PokemonType, type GameType } from "@nasty-plot/core"
+import { calcHpPercent, type BattleActionSet, type BattlePokemon } from "@nasty-plot/battle-engine"
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import {
@@ -15,7 +14,6 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog"
 import { ArrowLeftRight, Sparkles, Target, Swords, Wand2, Circle } from "lucide-react"
-import { PokemonSprite } from "@nasty-plot/ui"
 import { getHealthColor } from "./HealthBar"
 
 /** Move targets that require the player to pick a specific target slot in doubles */
@@ -420,7 +418,7 @@ function TargetCard({
     )
   }
 
-  const hpPercent = pokemon.maxHp > 0 ? (pokemon.hp / pokemon.maxHp) * 100 : 0
+  const hpPercent = calcHpPercent(pokemon.hp, pokemon.maxHp)
   const hpColor = getHealthColor(hpPercent)
 
   return (

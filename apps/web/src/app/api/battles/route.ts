@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { apiErrorResponse, badRequestResponse } from "../../../lib/api-error"
+import { loggedApiErrorResponse, badRequestResponse } from "../../../lib/api-error"
 import { listBattles, createBattle } from "@nasty-plot/battle-engine/db"
 
 export async function GET(req: NextRequest) {
@@ -60,7 +60,6 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(battle, { status: 201 })
   } catch (err) {
-    console.error("[POST /api/battles]", err)
-    return apiErrorResponse(err, { fallback: "Failed to save battle" })
+    return loggedApiErrorResponse("[POST /api/battles]", err, { fallback: "Failed to save battle" })
   }
 }

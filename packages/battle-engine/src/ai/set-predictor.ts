@@ -17,12 +17,7 @@ export class SetPredictor {
         const res = await fetch(`/api/pokemon/${pokemonId}/sets?formatId=${formatId}`)
         if (!res.ok) continue
         const sets: SmogonSetData[] = await res.json()
-        if (sets.length === 0) continue
-        const prob = 1 / sets.length
-        this.predictions.set(
-          pokemonId,
-          sets.map((set) => ({ set, probability: prob })),
-        )
+        this.initializeFromSets(pokemonId, sets)
       } catch {
         // Failed to fetch, skip
       }
@@ -49,17 +44,15 @@ export class SetPredictor {
     const preds = this.predictions.get(pokemonId)
     if (!preds) return
 
+    const { moveUsed, itemRevealed, abilityRevealed } = observation
     for (const pred of preds) {
-      if (observation.moveUsed && !setContainsMove(pred.set, observation.moveUsed)) {
+      if (moveUsed && !setContainsMove(pred.set, moveUsed)) {
         pred.probability *= MISMATCH_PROBABILITY_FACTOR
       }
-      if (observation.itemRevealed && !matchesIgnoreCase(pred.set.item, observation.itemRevealed)) {
+      if (itemRevealed && !matchesIgnoreCase(pred.set.item, itemRevealed)) {
         pred.probability *= MISMATCH_PROBABILITY_FACTOR
       }
-      if (
-        observation.abilityRevealed &&
-        !matchesIgnoreCase(pred.set.ability, observation.abilityRevealed)
-      ) {
+      if (abilityRevealed && !matchesIgnoreCase(pred.set.ability, abilityRevealed)) {
         pred.probability *= MISMATCH_PROBABILITY_FACTOR
       }
     }
@@ -80,11 +73,11 @@ export class SetPredictor {
   sampleSet(pokemonId: string): SmogonSetData | null {
     const preds = this.predictions.get(pokemonId)
     if (!preds || preds.length === 0) return null
-    const r = Math.random()
+    const roll = Math.random()
     let cumulative = 0
     for (const pred of preds) {
       cumulative += pred.probability
-      if (r <= cumulative) return pred.set
+      if (roll <= cumulative) return pred.set
     }
     return preds[preds.length - 1].set
   }

@@ -89,6 +89,7 @@ export async function syncSmogonSets(
       }
 
       const normalizedIvs = setData.ivs ? firstRecord(setData.ivs) : null
+      const hasCustomIvs = normalizedIvs && Object.keys(normalizedIvs).length > 0
       const fields = {
         ability: firstOf(setData.ability ?? ""),
         item: firstOf(setData.item ?? ""),
@@ -96,10 +97,7 @@ export async function syncSmogonSets(
         teraType: setData.teraType ? firstOf(setData.teraType) : null,
         moves: JSON.stringify(setData.moves ?? []),
         evs: JSON.stringify(firstRecord(setData.evs ?? {})),
-        ivs:
-          normalizedIvs && Object.keys(normalizedIvs).length > 0
-            ? JSON.stringify(normalizedIvs)
-            : null,
+        ivs: hasCustomIvs ? JSON.stringify(normalizedIvs) : null,
       }
 
       await prisma.smogonSet.upsert({
@@ -146,7 +144,7 @@ async function fetchAndSaveChaosSets(formatId: string, smogonStatsId: string): P
       teraType: set.teraType ?? null,
       moves: JSON.stringify(set.moves),
       evs: JSON.stringify(set.evs),
-      ivs: null as string | null,
+      ivs: null,
     }
     await prisma.smogonSet.upsert({
       where: {

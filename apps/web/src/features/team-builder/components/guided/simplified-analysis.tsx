@@ -27,15 +27,10 @@ function getTypeCoverageStatus(
   return "neutral"
 }
 
-function getThreatLevelColor(level: "high" | "medium" | "low"): string {
-  switch (level) {
-    case "high":
-      return "bg-red-500/15 text-red-400 border-red-500/30"
-    case "medium":
-      return "bg-yellow-500/15 text-yellow-400 border-yellow-500/30"
-    case "low":
-      return "bg-green-500/15 text-green-400 border-green-500/30"
-  }
+const THREAT_LEVEL_COLORS: Record<"high" | "medium" | "low", string> = {
+  high: "bg-red-500/15 text-red-400 border-red-500/30",
+  medium: "bg-yellow-500/15 text-yellow-400 border-yellow-500/30",
+  low: "bg-green-500/15 text-green-400 border-green-500/30",
 }
 
 function getSynergyTier(score: number): { color: string; barColor: string; label: string } {
@@ -166,7 +161,7 @@ export function SimplifiedAnalysis({
                     variant="outline"
                     className={cn(
                       "shrink-0 text-[10px] px-1.5 py-0 border",
-                      getThreatLevelColor(threat.threatLevel),
+                      THREAT_LEVEL_COLORS[threat.threatLevel],
                     )}
                   >
                     {threat.threatLevel}

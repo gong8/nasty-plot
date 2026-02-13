@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { Separator } from "@/components/ui/separator"
 import { cn } from "@nasty-plot/ui"
+import { TEAM_SIZE } from "@nasty-plot/core"
 import type { GuidedStep } from "../hooks/use-guided-builder"
 import { useGuidedBuilderContext } from "../context/guided-builder-provider"
 import { StepStart } from "./guided/step-start"
@@ -105,7 +106,7 @@ export function GuidedBuilder() {
   const handleNext = () => {
     if (ctx.step === "build") {
       // If we have enough Pokemon, advance to sets
-      if (ctx.currentBuildSlot >= 6 || ctx.filledSlots.length >= 6) {
+      if (ctx.currentBuildSlot >= TEAM_SIZE || ctx.filledSlots.length >= TEAM_SIZE) {
         ctx.goToStep("sets")
       } else {
         ctx.nextBuildSlot()
@@ -209,7 +210,7 @@ export function GuidedBuilder() {
         <div className="hidden sm:flex items-center gap-3">
           {ctx.filledSlots.length > 0 && (
             <span className="text-xs text-muted-foreground">
-              {ctx.filledSlots.length}/6 Pokemon
+              {ctx.filledSlots.length}/{TEAM_SIZE} Pokemon
             </span>
           )}
         </div>

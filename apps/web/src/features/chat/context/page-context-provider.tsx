@@ -30,17 +30,20 @@ export function usePageContext(): PageContext {
   return useContext(PageContextCtx)
 }
 
+const PAGE_TYPE_PATTERNS: [RegExp, PageType][] = [
+  [/^\/teams\/[^/]+\/guided$/, "guided-builder"],
+  [/^\/teams\/[^/]+$/, "team-editor"],
+  [/^\/pokemon\/[^/]+$/, "pokemon-detail"],
+  [/^\/pokemon$/, "pokemon-browser"],
+  [/^\/damage-calc$/, "damage-calc"],
+  [/^\/battle\/live$/, "battle-live"],
+  [/^\/battle\/replay\//, "battle-replay"],
+  [/^\/chat$/, "chat"],
+  [/^\/$/, "home"],
+]
+
 function getPageType(pathname: string): PageType {
-  if (pathname.match(/^\/teams\/[^/]+\/guided$/)) return "guided-builder"
-  if (pathname.match(/^\/teams\/[^/]+$/)) return "team-editor"
-  if (pathname.match(/^\/pokemon\/[^/]+$/)) return "pokemon-detail"
-  if (pathname === "/pokemon") return "pokemon-browser"
-  if (pathname === "/damage-calc") return "damage-calc"
-  if (pathname === "/battle/live") return "battle-live"
-  if (pathname.match(/^\/battle\/replay\//)) return "battle-replay"
-  if (pathname === "/chat") return "chat"
-  if (pathname === "/") return "home"
-  return "other"
+  return PAGE_TYPE_PATTERNS.find(([pattern]) => pattern.test(pathname))?.[1] ?? "other"
 }
 
 function extractIds(pathname: string): {

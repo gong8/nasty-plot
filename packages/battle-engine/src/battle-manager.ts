@@ -19,6 +19,11 @@ import type {
   PredictedSet,
 } from "./types"
 
+const START_TIMEOUT_MS = 10_000
+const UPDATE_TIMEOUT_MS = 15_000
+const RESUME_INIT_DELAY_MS = 50
+const PLAYER_ID_PATTERN = /^p[1-4]$/
+
 function defaultSideConditions(): SideConditions {
   return {
     stealthRock: false,
@@ -112,6 +117,12 @@ export class BattleManager {
   private pendingP1Slot1Action: BattleAction | null = null
   private suppressingOutput = false
 
+  private static readonly OBSERVATION_COMMANDS: Record<string, string> = {
+    move: "moveUsed",
+    "-item": "itemRevealed",
+    "-ability": "abilityRevealed",
+  }
+
   constructor(config: BattleManagerConfig) {
     this.config = config
     this.state = createInitialState(`battle-${Date.now()}`, config.gameType)
@@ -186,7 +197,7 @@ export class BattleManager {
             ),
           )
         }
-      }, 10_000)
+      }, START_TIMEOUT_MS)
     })
   }
 
@@ -373,7 +384,7 @@ export class BattleManager {
     )
 
     // Let the event loop process stream initialization
-    await new Promise((r) => setTimeout(r, 50))
+    await new Promise((r) => setTimeout(r, RESUME_INIT_DELAY_MS))
 
     // Capture the send callback from the throwaway battle
     const streamBattle = (manager.stream as unknown as { battle?: { send: unknown } }).battle
@@ -488,7 +499,7 @@ export class BattleManager {
 
       // Skip stream markers — these differ per player (sideupdate + p1/p2)
       // and break the deduplication check that prevents double-processing.
-      if (line === "update" || line === "sideupdate" || /^p[1-4]$/.test(line)) {
+      if (line === "update" || line === "sideupdate" || PLAYER_ID_PATTERN.test(line)) {
         continue
       }
 
@@ -533,26 +544,19 @@ export class BattleManager {
   /** Scan protocol lines for p2 observations and update SetPredictor. */
   private updateSetPredictorFromLines(chunk: string) {
     if (!this.setPredictor) return
-    const lines = chunk.split("\n")
-    for (const line of lines) {
+
+    for (const line of chunk.split("\n")) {
       const parts = line.split("|")
       if (parts.length < 3) continue
-      const cmd = parts[1]
-      const arg0 = parts[2] || ""
 
-      // Only track opponent (p2) observations
-      if (!arg0.startsWith("p2")) continue
+      const observationKey = BattleManager.OBSERVATION_COMMANDS[parts[1]]
+      if (!observationKey || !parts[3]) continue
 
-      const pokemonName = arg0.replace(/^p2[a-d]?:\s*/, "").trim()
-      const pokemonId = toId(pokemonName)
+      const ident = parts[2] || ""
+      if (!ident.startsWith("p2")) continue
 
-      if (cmd === "move" && parts[3]) {
-        this.setPredictor.updateFromObservation(pokemonId, { moveUsed: parts[3] })
-      } else if (cmd === "-item" && parts[3]) {
-        this.setPredictor.updateFromObservation(pokemonId, { itemRevealed: parts[3] })
-      } else if (cmd === "-ability" && parts[3]) {
-        this.setPredictor.updateFromObservation(pokemonId, { abilityRevealed: parts[3] })
-      }
+      const pokemonName = ident.replace(/^p2[a-d]?:\s*/, "").trim()
+      this.setPredictor.updateFromObservation(toId(pokemonName), { [observationKey]: parts[3] })
     }
   }
 
@@ -759,19 +763,12 @@ export class BattleManager {
 
   /** Pass serialized battle state to MCTS AI if it supports it. */
   private syncMCTSBattleState() {
-    if (
-      !this.ai ||
-      !("setBattleState" in this.ai) ||
-      typeof (this.ai as { setBattleState: unknown }).setBattleState !== "function"
-    ) {
-      return
-    }
+    const ai = this.ai as { setBattleState?: (json: unknown, fmt?: string) => void } | null
+    if (typeof ai?.setBattleState !== "function") return
+
     const serialized = this.getSerializedBattle()
     if (serialized) {
-      ;(this.ai as { setBattleState(json: unknown, fmt?: string): void }).setBattleState(
-        serialized,
-        this.config.formatId,
-      )
+      ai.setBattleState(serialized, this.config.formatId)
     }
   }
 
@@ -839,7 +836,7 @@ export class BattleManager {
           this.resolveReady = null
           resolve()
         }
-      }, 15_000)
+      }, UPDATE_TIMEOUT_MS)
     })
   }
 }

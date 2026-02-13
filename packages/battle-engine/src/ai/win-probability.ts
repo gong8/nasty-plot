@@ -10,6 +10,9 @@ export interface WinProbability {
   evaluation: EvalResult
 }
 
+const TERMINAL_RAW_SCORE = 10000
+const CRITICAL_SWING_THRESHOLD = 20
+
 /**
  * Map evaluator score [-1, +1] to win probability [0, 100].
  * Uses a slight S-curve: 50 + 50 * sign(s) * |s|^0.85
@@ -29,17 +32,16 @@ export function estimateWinProbability(state: BattleState): WinProbability {
       return {
         p1: 100,
         p2: 0,
-        evaluation: { score: 1, rawScore: 10000, features: [] },
+        evaluation: { score: 1, rawScore: TERMINAL_RAW_SCORE, features: [] },
       }
     }
     if (state.winner === "p2") {
       return {
         p1: 0,
         p2: 100,
-        evaluation: { score: -1, rawScore: -10000, features: [] },
+        evaluation: { score: -1, rawScore: -TERMINAL_RAW_SCORE, features: [] },
       }
     }
-    // Draw
     return {
       p1: 50,
       p2: 50,
@@ -70,6 +72,6 @@ export function winProbabilityDelta(
   const delta = probAfter.p1 - probBefore.p1
   return {
     delta,
-    isCritical: Math.abs(delta) >= 20,
+    isCritical: Math.abs(delta) >= CRITICAL_SWING_THRESHOLD,
   }
 }

@@ -3,6 +3,7 @@ import {
   DEFAULT_EVS,
   DEFAULT_LEVEL,
   STATUS_DISPLAY_MAP,
+  camelCaseToDisplayName,
   toId,
   type PokemonType,
 } from "@nasty-plot/core"
@@ -1014,9 +1015,7 @@ export function updateSideFromRequest(
         const moveData = getRawMove(m)
         return {
           id: m,
-          name:
-            moveData?.name ||
-            m.replace(/([a-z])([A-Z])/g, "$1 $2").replace(/^./, (s: string) => s.toUpperCase()),
+          name: moveData?.name || camelCaseToDisplayName(m),
           pp: 0,
           maxPp: 0,
           type: (moveData?.type || "Normal") as PokemonType,

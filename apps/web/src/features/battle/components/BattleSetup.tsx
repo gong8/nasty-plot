@@ -11,7 +11,7 @@ import { TeamPicker, type TeamSelection } from "./TeamPicker"
 import { useFormat } from "../hooks/use-formats"
 import { DEFAULT_FORMAT_ID, parseShowdownPaste, type GameType } from "@nasty-plot/core"
 import type { TeamValidation } from "../types"
-import { fetchJson } from "@/lib/api-client"
+import { fetchJson, fetchText } from "@/lib/api-client"
 
 interface BattleSetupProps {
   onStart: (config: {
@@ -117,11 +117,7 @@ export function BattleSetup({ onStart, initialTeamId, initialFormatId }: BattleS
   useEffect(() => {
     if (!initialTeamId) return
     let cancelled = false
-    fetch(`/api/teams/${initialTeamId}/export`)
-      .then((res) => {
-        if (!res.ok) throw new Error("Failed to load team")
-        return res.text()
-      })
+    fetchText(`/api/teams/${initialTeamId}/export`)
       .then((paste) => {
         if (!cancelled) {
           setPlayerSelection({ teamId: initialTeamId, paste, source: "saved" })
@@ -134,6 +130,7 @@ export function BattleSetup({ onStart, initialTeamId, initialFormatId }: BattleS
       cancelled = true
     }
   }, [initialTeamId])
+
   const prevGameTypeRef = useRef<GameType>("singles")
 
   const format = useFormat(formatId)

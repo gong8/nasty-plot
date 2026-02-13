@@ -370,12 +370,9 @@ export class HeuristicAI implements AIPlayer {
   }
 
   private chooseBestSwitch(state: BattleState, actions: BattleActionSet): BattleAction {
-    const activeSlot = actions.activeSlot ?? 0
-    // In doubles, pick the first non-fainted opponent active as reference
-    const oppActives = state.sides.p1.active.filter(
+    const oppActive = state.sides.p1.active.find(
       (p): p is NonNullable<typeof p> => p != null && !p.fainted,
     )
-    const oppActive = oppActives[0] ?? null
     const available = actions.switches.filter((s) => !s.fainted)
 
     if (available.length === 0) {
@@ -383,15 +380,15 @@ export class HeuristicAI implements AIPlayer {
     }
 
     if (!oppActive) {
-      // No info about opponent, pick healthiest
-      const best = available.reduce((a, b) => (a.hp / a.maxHp > b.hp / b.maxHp ? a : b))
-      return { type: "switch", pokemonIndex: best.index }
+      const healthiest = available.reduce((a, b) => (a.hp / a.maxHp > b.hp / b.maxHp ? a : b))
+      return { type: "switch", pokemonIndex: healthiest.index }
     }
 
-    // Score each switch target
+    const myActive = state.sides.p2.active[actions.activeSlot ?? 0]
+    const oppPrediction = state.opponentPredictions?.[oppActive.speciesId]
+
     let bestScore = -Infinity
     let bestIndex = available[0].index
-    const oppPrediction = state.opponentPredictions?.[oppActive.speciesId]
 
     for (const sw of available) {
       const pokemon = state.sides.p2.team.find(
@@ -399,9 +396,7 @@ export class HeuristicAI implements AIPlayer {
       )
       if (!pokemon) continue
 
-      const myActive = state.sides.p2.active[activeSlot]
       const score = this.scoreSwitchTarget(pokemon, oppActive, myActive || pokemon, oppPrediction)
-
       if (score > bestScore) {
         bestScore = score
         bestIndex = sw.index

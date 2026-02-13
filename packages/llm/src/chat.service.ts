@@ -105,18 +105,14 @@ function extractContextIds(
     return { teamId: requestTeamId, formatId: requestFormatId }
   }
 
-  // Context-locked sessions: frozen contextData wins over request-level IDs
-  if (contextMode) {
-    return {
-      teamId: parsed.teamId || requestTeamId,
-      formatId: parsed.formatId || requestFormatId,
-    }
-  }
+  // Context-locked: contextData wins; normal: request-level wins
+  const [primary, fallback] = contextMode
+    ? [parsed, { teamId: requestTeamId, formatId: requestFormatId }]
+    : [{ teamId: requestTeamId, formatId: requestFormatId }, parsed]
 
-  // Normal sessions: request-level IDs win, contextData is fallback
   return {
-    teamId: requestTeamId || parsed.teamId,
-    formatId: requestFormatId || parsed.formatId,
+    teamId: primary.teamId || fallback.teamId,
+    formatId: primary.formatId || fallback.formatId,
   }
 }
 

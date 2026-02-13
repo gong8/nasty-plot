@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Loader2, ChevronDown, ChevronUp, CheckCircle2, AlertCircle } from "lucide-react"
 import { LoadingSpinner } from "@/components/loading-spinner"
 import { EmptyState } from "@/components/empty-state"
+import { fetchText } from "@/lib/api-client"
 import { useTeams } from "@/features/teams/hooks/use-teams"
 import { useSampleTeams } from "../hooks/use-sample-teams"
 import { TeamPickerCard } from "./TeamPickerCard"
@@ -56,9 +57,7 @@ export function TeamPicker({
   const handleSelectSaved = async (teamId: string) => {
     setLoadingTeamId(teamId)
     try {
-      const res = await fetch(`/api/teams/${teamId}/export`)
-      if (!res.ok) throw new Error("Failed to load team")
-      const paste = await res.text()
+      const paste = await fetchText(`/api/teams/${teamId}/export`)
       onSelectionChange({ teamId, paste, source: "saved" })
     } catch {
       // Silently fail - user can paste manually

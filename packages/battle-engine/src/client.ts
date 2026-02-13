@@ -5,6 +5,7 @@ export { BattleManager, createInitialState } from "./battle-manager"
 export * from "./team-packer"
 export {
   serializeBattleState,
+  formatMoveStats,
   formatBoosts,
   formatFieldState,
   formatSideConditions,

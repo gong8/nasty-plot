@@ -11,6 +11,10 @@ function logTiming(label: string, startMs: number, extra?: string): void {
   console.log(`${LOG_PREFIX} ${label} (${elapsed}ms)${suffix}`)
 }
 
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : "Unknown error"
+}
+
 let _client: Client | null = null
 let _resourceContext: string | null = null
 
@@ -62,8 +66,9 @@ export async function getMcpTools(): Promise<OpenAI.ChatCompletionTool[]> {
       },
     }))
   } catch (error) {
-    const msg = error instanceof Error ? error.message : "Unknown error"
-    console.warn(`${LOG_PREFIX} Failed to discover tools: ${msg}. Chat will work without tools.`)
+    console.warn(
+      `${LOG_PREFIX} Failed to discover tools: ${errorMessage(error)}. Chat will work without tools.`,
+    )
     return []
   }
 }
@@ -92,15 +97,14 @@ export async function executeMcpTool(name: string, args: Record<string, unknown>
   try {
     return await call()
   } catch (firstError) {
-    const firstMsg = firstError instanceof Error ? firstError.message : "Unknown error"
-    console.warn(`${LOG_PREFIX} Tool call "${name}" failed, retrying: ${firstMsg}`)
+    console.warn(`${LOG_PREFIX} Tool call "${name}" failed, retrying: ${errorMessage(firstError)}`)
     resetClient()
     try {
       return await call()
     } catch (retryError) {
-      const retryMsg = retryError instanceof Error ? retryError.message : "Unknown error"
-      console.error(`${LOG_PREFIX} Tool call "${name}" failed after retry: ${retryMsg}`)
-      return JSON.stringify({ error: `MCP tool "${name}" failed: ${retryMsg}` })
+      const msg = errorMessage(retryError)
+      console.error(`${LOG_PREFIX} Tool call "${name}" failed after retry: ${msg}`)
+      return JSON.stringify({ error: `MCP tool "${name}" failed: ${msg}` })
     }
   }
 }
@@ -132,8 +136,7 @@ export async function getMcpResourceContext(): Promise<string> {
           logTiming(`Resource: ${uri}`, tRes, `— ${text.length} chars`)
         }
       } catch (err) {
-        const msg = err instanceof Error ? err.message : "Unknown error"
-        console.warn(`${LOG_PREFIX} Resource ${uri} failed: ${msg}`)
+        console.warn(`${LOG_PREFIX} Resource ${uri} failed: ${errorMessage(err)}`)
       }
     }
 

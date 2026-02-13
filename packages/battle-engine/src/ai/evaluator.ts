@@ -26,7 +26,7 @@ export interface EvalResult {
 }
 
 // Feature weights (research-based)
-const W = {
+const WEIGHT = {
   HP_REMAINING: 1024,
   POKEMON_ALIVE: 512,
   FAST_POKEMON_ALIVE: 512,
@@ -53,13 +53,15 @@ const W = {
 
 const NORMALIZATION_FACTOR = 1400
 
+const FAST_SPEED_THRESHOLD = 100
+
 const STATUS_WEIGHTS: Record<string, number> = {
-  brn: W.STATUS_BRN,
-  par: W.STATUS_PAR,
-  slp: W.STATUS_SLP,
-  tox: W.STATUS_TOX,
-  psn: W.STATUS_PSN,
-  frz: W.STATUS_FRZ,
+  brn: WEIGHT.STATUS_BRN,
+  par: WEIGHT.STATUS_PAR,
+  slp: WEIGHT.STATUS_SLP,
+  tox: WEIGHT.STATUS_TOX,
+  psn: WEIGHT.STATUS_PSN,
+  frz: WEIGHT.STATUS_FRZ,
 }
 
 function isAlive(p: BattlePokemon): boolean {
@@ -67,7 +69,7 @@ function isAlive(p: BattlePokemon): boolean {
 }
 
 function isFast(p: BattlePokemon): boolean {
-  return p.stats.spe >= 100
+  return p.stats.spe >= FAST_SPEED_THRESHOLD
 }
 
 function hpFraction(team: BattlePokemon[]): number {
@@ -90,19 +92,19 @@ function fastAliveCount(team: BattlePokemon[]): number {
 
 function evalHazards(sc: SideConditions): number {
   let score = 0
-  if (sc.stealthRock) score += W.HAZARDS_SR
-  score += sc.spikes * W.HAZARDS_SPIKES_PER
-  score += sc.toxicSpikes * W.HAZARDS_TSPIKES_PER
-  if (sc.stickyWeb) score += W.HAZARDS_WEB
+  if (sc.stealthRock) score += WEIGHT.HAZARDS_SR
+  score += sc.spikes * WEIGHT.HAZARDS_SPIKES_PER
+  score += sc.toxicSpikes * WEIGHT.HAZARDS_TSPIKES_PER
+  if (sc.stickyWeb) score += WEIGHT.HAZARDS_WEB
   return score
 }
 
 function evalScreens(sc: SideConditions): number {
   let score = 0
-  if (sc.reflect > 0) score += W.SCREEN_REFLECT
-  if (sc.lightScreen > 0) score += W.SCREEN_LIGHT
-  if (sc.auroraVeil > 0) score += W.SCREEN_VEIL
-  if (sc.tailwind > 0) score += W.TAILWIND
+  if (sc.reflect > 0) score += WEIGHT.SCREEN_REFLECT
+  if (sc.lightScreen > 0) score += WEIGHT.SCREEN_LIGHT
+  if (sc.auroraVeil > 0) score += WEIGHT.SCREEN_VEIL
+  if (sc.tailwind > 0) score += WEIGHT.TAILWIND
   return score
 }
 
@@ -131,7 +133,7 @@ function evalActiveMatchup(
   // Check if we have SE coverage
   for (const t of myTypes) {
     if (getTypeEffectiveness(t, oppTypes as string[]) > 1) {
-      score += W.SE_COVERAGE
+      score += WEIGHT.SE_COVERAGE
       break
     }
   }
@@ -141,30 +143,24 @@ function evalActiveMatchup(
   for (const t of myTypes) {
     if (getTypeEffectiveness(t, oppTypes as string[]) >= 1) stabCount++
   }
-  if (stabCount > 0) score += W.STAB_ADVANTAGE * (stabCount / myTypes.length)
+  if (stabCount > 0) score += WEIGHT.STAB_ADVANTAGE * (stabCount / myTypes.length)
 
-  // Speed advantage — account for boosts, paralysis, tailwind
+  // Speed advantage — account for boosts, paralysis, tailwind, Trick Room
   const mySpe = getEffectiveSpeed(myActive, mySideConditions)
   const oppSpe = getEffectiveSpeed(oppActive, oppSideConditions)
-
-  // Trick Room inverts speed advantage
-  const trickRoom = field.trickRoom > 0
-  if (trickRoom) {
-    if (mySpe < oppSpe) score += W.SPEED_ADVANTAGE
-    else if (oppSpe < mySpe) score -= W.SPEED_ADVANTAGE
-  } else {
-    if (mySpe > oppSpe) score += W.SPEED_ADVANTAGE
-    else if (oppSpe > mySpe) score -= W.SPEED_ADVANTAGE
-  }
+  const isFaster = field.trickRoom > 0 ? mySpe < oppSpe : mySpe > oppSpe
+  const isSlower = field.trickRoom > 0 ? mySpe > oppSpe : mySpe < oppSpe
+  if (isFaster) score += WEIGHT.SPEED_ADVANTAGE
+  else if (isSlower) score -= WEIGHT.SPEED_ADVANTAGE
 
   // Stat boosts
   const myBoostTotal = Object.values(myActive.boosts).reduce((sum, val) => sum + val, 0)
   const oppBoostTotal = Object.values(oppActive.boosts).reduce((sum, val) => sum + val, 0)
-  score += (myBoostTotal - oppBoostTotal) * W.BOOST_PER_STAGE
+  score += (myBoostTotal - oppBoostTotal) * WEIGHT.BOOST_PER_STAGE
 
   // Substitute
-  if (myActive.volatiles.includes("Substitute")) score += W.SUBSTITUTE
-  if (oppActive.volatiles.includes("Substitute")) score -= W.SUBSTITUTE
+  if (myActive.volatiles.includes("Substitute")) score += WEIGHT.SUBSTITUTE
+  if (oppActive.volatiles.includes("Substitute")) score -= WEIGHT.SUBSTITUTE
 
   return score
 }
@@ -184,11 +180,11 @@ export function evaluatePosition(state: BattleState, perspective: "p1" | "p2" = 
   // HP remaining differential
   const myHp = hpFraction(my.team)
   const oppHp = hpFraction(opp.team)
-  const hpDiff = (myHp - oppHp) * W.HP_REMAINING
+  const hpDiff = (myHp - oppHp) * WEIGHT.HP_REMAINING
   features.push({
     name: "HP remaining",
     rawValue: myHp - oppHp,
-    weight: W.HP_REMAINING,
+    weight: WEIGHT.HP_REMAINING,
     contribution: hpDiff,
   })
   rawScore += hpDiff
@@ -198,22 +194,22 @@ export function evaluatePosition(state: BattleState, perspective: "p1" | "p2" = 
   const oppAlive = aliveCount(opp.team)
   const myTotal = my.team.length || 1
   const oppTotal = opp.team.length || 1
-  const aliveDiff = (myAlive / myTotal - oppAlive / oppTotal) * W.POKEMON_ALIVE
+  const aliveDiff = (myAlive / myTotal - oppAlive / oppTotal) * WEIGHT.POKEMON_ALIVE
   features.push({
     name: "Pokemon alive",
     rawValue: myAlive - oppAlive,
-    weight: W.POKEMON_ALIVE,
+    weight: WEIGHT.POKEMON_ALIVE,
     contribution: aliveDiff,
   })
   rawScore += aliveDiff
 
   // Fast Pokemon alive
   const fastDiff = fastAliveCount(my.team) - fastAliveCount(opp.team)
-  const fastScore = (fastDiff / Math.max(myTotal, 1)) * W.FAST_POKEMON_ALIVE
+  const fastScore = (fastDiff / Math.max(myTotal, 1)) * WEIGHT.FAST_POKEMON_ALIVE
   features.push({
     name: "Fast mons alive",
     rawValue: fastDiff,
-    weight: W.FAST_POKEMON_ALIVE,
+    weight: WEIGHT.FAST_POKEMON_ALIVE,
     contribution: fastScore,
   })
   rawScore += fastScore

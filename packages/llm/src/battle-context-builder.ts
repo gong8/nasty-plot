@@ -1,5 +1,6 @@
 import {
   calcHpPercent,
+  formatMoveStats,
   formatBoosts,
   formatFieldState,
   formatSideConditions,
@@ -219,10 +220,7 @@ function formatAvailableActions(state: BattleState): {
   const canTera = state.availableActions?.canTera ?? false
 
   const availableMoves = state.availableActions?.moves
-    ?.map((m, i) => {
-      const acc = m.accuracy === true ? "—" : `${m.accuracy}%`
-      return `${i + 1}. ${m.name} (${m.type}, ${m.category}, ${m.basePower} BP, ${acc} acc, ${m.pp}/${m.maxPp} PP)${m.disabled ? " [DISABLED]" : ""}`
-    })
+    ?.map((m, i) => `${i + 1}. ${formatMoveStats(m)}`)
     .join("\n")
 
   const switchOptions = state.availableActions?.switches

@@ -32,20 +32,9 @@ export default function BattleImportPage() {
   const [inferSets, setInferSets] = useState(true)
   const [result, setResult] = useState<ImportResult | null>(null)
 
-  const handleImportUrl = async () => {
-    if (!replayUrl.trim() || !isValidReplayUrl(replayUrl)) return
+  const handleImport = async (payload: { replayUrl?: string; rawLog?: string }) => {
     try {
-      const data = await importMut.mutateAsync({ replayUrl: replayUrl.trim(), inferSets })
-      setResult(data)
-    } catch {
-      // Error handled by mutation state
-    }
-  }
-
-  const handleImportLog = async () => {
-    if (!rawLog.trim()) return
-    try {
-      const data = await importMut.mutateAsync({ rawLog: rawLog.trim(), inferSets })
+      const data = await importMut.mutateAsync({ ...payload, inferSets })
       setResult(data)
     } catch {
       // Error handled by mutation state
@@ -211,7 +200,7 @@ export default function BattleImportPage() {
             </Label>
           </div>
           <Button
-            onClick={handleImportUrl}
+            onClick={() => handleImport({ replayUrl: replayUrl.trim() })}
             disabled={!replayUrl.trim() || !isValidReplayUrl(replayUrl) || importMut.isPending}
             className="w-full"
           >
@@ -237,7 +226,7 @@ export default function BattleImportPage() {
             </Label>
           </div>
           <Button
-            onClick={handleImportLog}
+            onClick={() => handleImport({ rawLog: rawLog.trim() })}
             disabled={!rawLog.trim() || importMut.isPending}
             className="w-full"
           >

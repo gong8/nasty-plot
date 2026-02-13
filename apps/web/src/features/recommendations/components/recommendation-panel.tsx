@@ -1,10 +1,9 @@
 "use client"
 
 import { useQuery, useQueryClient } from "@tanstack/react-query"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { SkeletonList } from "@/components/skeleton-list"
+import { AnalysisCard } from "@/components/analysis-card"
 import { Plus, Sparkles } from "lucide-react"
 import { useAddSlot } from "@/features/teams/hooks/use-teams"
 import { DEFAULT_LEVEL, DEFAULT_EVS, DEFAULT_IVS, type Recommendation } from "@nasty-plot/core"
@@ -75,103 +74,73 @@ export function RecommendationPanel({
     return null
   }
 
-  if (isLoading) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm font-medium flex items-center gap-2">
-            <Sparkles className="h-4 w-4" />
-            Recommendations
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <SkeletonList count={3} height="h-16" />
-        </CardContent>
-      </Card>
-    )
-  }
-
-  if (!recommendations || recommendations.length === 0) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm font-medium flex items-center gap-2">
-            <Sparkles className="h-4 w-4" />
-            Recommendations
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground">
-            Add Pokemon to start receiving recommendations.
-          </p>
-        </CardContent>
-      </Card>
-    )
-  }
-
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-sm font-medium flex items-center gap-2">
-          <Sparkles className="h-4 w-4" />
-          Recommended Teammates
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-2">
-          {recommendations.map((rec) => (
-            <div
-              key={rec.pokemonId}
-              className="flex items-start gap-3 p-2.5 rounded-lg border hover:bg-muted/50 transition-colors"
-            >
-              {/* Avatar */}
-              <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center text-xs font-medium shrink-0">
-                {rec.pokemonName.slice(0, 2)}
-              </div>
-
-              {/* Info */}
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium truncate">{rec.pokemonName}</span>
-                  <span className="text-xs text-muted-foreground ml-auto shrink-0">
-                    {rec.score}/100
-                  </span>
-                </div>
-                {/* Score bar */}
-                <div className="h-1.5 w-full bg-muted rounded-full mt-1 overflow-hidden">
-                  <div
-                    className="h-full bg-primary/70 rounded-full transition-all"
-                    style={{ width: `${rec.score}%` }}
-                  />
-                </div>
-                {/* Reasons */}
-                <div className="flex flex-wrap gap-1 mt-1.5">
-                  {rec.reasons.map((reason, idx) => (
-                    <Badge
-                      key={idx}
-                      variant="secondary"
-                      className={`text-[10px] h-5 px-1.5 ${REASON_COLORS[reason.type] ?? ""}`}
-                    >
-                      {reason.description}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-
-              {/* Add button */}
-              <Button
-                size="icon"
-                variant="ghost"
-                className="h-8 w-8 shrink-0"
-                onClick={() => handleAdd(rec)}
-                disabled={addSlotMut.isPending}
-              >
-                <Plus className="h-4 w-4" />
-              </Button>
+    <AnalysisCard
+      title={
+        !recommendations || recommendations.length === 0
+          ? "Recommendations"
+          : "Recommended Teammates"
+      }
+      icon={<Sparkles className="h-4 w-4" />}
+      isLoading={isLoading}
+      isEmpty={!recommendations || recommendations.length === 0}
+      emptyMessage="Add Pokemon to start receiving recommendations."
+      skeletonCount={3}
+      skeletonHeight="h-16"
+    >
+      <div className="space-y-2">
+        {recommendations?.map((rec) => (
+          <div
+            key={rec.pokemonId}
+            className="flex items-start gap-3 p-2.5 rounded-lg border hover:bg-muted/50 transition-colors"
+          >
+            {/* Avatar */}
+            <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center text-xs font-medium shrink-0">
+              {rec.pokemonName.slice(0, 2)}
             </div>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
+
+            {/* Info */}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium truncate">{rec.pokemonName}</span>
+                <span className="text-xs text-muted-foreground ml-auto shrink-0">
+                  {rec.score}/100
+                </span>
+              </div>
+              {/* Score bar */}
+              <div className="h-1.5 w-full bg-muted rounded-full mt-1 overflow-hidden">
+                <div
+                  className="h-full bg-primary/70 rounded-full transition-all"
+                  style={{ width: `${rec.score}%` }}
+                />
+              </div>
+              {/* Reasons */}
+              <div className="flex flex-wrap gap-1 mt-1.5">
+                {rec.reasons.map((reason, idx) => (
+                  <Badge
+                    key={idx}
+                    variant="secondary"
+                    className={`text-[10px] h-5 px-1.5 ${REASON_COLORS[reason.type] ?? ""}`}
+                  >
+                    {reason.description}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+
+            {/* Add button */}
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-8 w-8 shrink-0"
+              onClick={() => handleAdd(rec)}
+              disabled={addSlotMut.isPending}
+            >
+              <Plus className="h-4 w-4" />
+            </Button>
+          </div>
+        ))}
+      </div>
+    </AnalysisCard>
   )
 }

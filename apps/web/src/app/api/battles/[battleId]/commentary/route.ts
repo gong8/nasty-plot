@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import {
-  apiErrorResponse,
+  loggedApiErrorResponse,
   badRequestResponse,
   notFoundResponse,
 } from "../../../../../lib/api-error"
@@ -22,17 +22,20 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ batt
       return notFoundResponse("Battle")
     }
 
-    const existing: Record<string, string> = battle.commentary ? JSON.parse(battle.commentary) : {}
+    const commentaryByTurn: Record<string, string> = battle.commentary
+      ? JSON.parse(battle.commentary)
+      : {}
 
-    existing[String(turn)] = text
+    commentaryByTurn[String(turn)] = text
 
-    const updated = await updateBattleCommentary(battleId, JSON.stringify(existing))
+    const updated = await updateBattleCommentary(battleId, JSON.stringify(commentaryByTurn))
 
     return NextResponse.json({
       commentary: JSON.parse(updated.commentary!),
     })
   } catch (err) {
-    console.error("[PUT /api/battles/commentary]", err)
-    return apiErrorResponse(err, { fallback: "Failed to save commentary" })
+    return loggedApiErrorResponse("[PUT /api/battles/commentary]", err, {
+      fallback: "Failed to save commentary",
+    })
   }
 }

@@ -129,16 +129,14 @@ function estimateMoveScore(
     let explanation = `~${Math.round(dmgPercent)}% damage`
 
     // KO bonuses
-    if (maxDmg >= oppActive.hp) {
-      const minDmg = Math.min(...damage)
-      if (minDmg >= oppActive.hp) {
-        score += GUARANTEED_KO_BONUS
-        explanation = "Guaranteed KO!"
-      } else {
-        const koChance = damage.filter((d) => d >= oppActive.hp).length / damage.length
-        score += PARTIAL_KO_BASE + koChance * PARTIAL_KO_SCALING
-        explanation = `${Math.round(koChance * 100)}% chance to KO`
-      }
+    const minDmg = Math.min(...damage)
+    if (minDmg >= oppActive.hp) {
+      score += GUARANTEED_KO_BONUS
+      explanation = "Guaranteed KO!"
+    } else if (maxDmg >= oppActive.hp) {
+      const koChance = damage.filter((d) => d >= oppActive.hp).length / damage.length
+      score += PARTIAL_KO_BASE + koChance * PARTIAL_KO_SCALING
+      explanation = `${Math.round(koChance * 100)}% chance to KO`
     }
 
     // Priority bonus when opponent is low
@@ -288,6 +286,35 @@ function estimateSwitchScore(
   return { score, explanation }
 }
 
+function scoreMoveAgainstBestTarget(
+  move: BattleActionSet["moves"][0],
+  moveIndex: number,
+  myActive: BattlePokemon,
+  oppActives: BattlePokemon[],
+  state: BattleState,
+): { action: BattleAction; name: string; score: number; explanation: string } {
+  let bestScore = -Infinity
+  let bestExplanation = ""
+  let bestTargetSlot = 1
+
+  for (let targetIdx = 0; targetIdx < oppActives.length; targetIdx++) {
+    const target = oppActives[targetIdx]
+    const { score, explanation } = estimateMoveScore(move, myActive, target, state)
+    if (score > bestScore) {
+      bestScore = score
+      bestExplanation = `${explanation} (-> ${target.name})`
+      bestTargetSlot = targetIdx + 1
+    }
+  }
+
+  return {
+    action: { type: "move", moveIndex, targetSlot: bestTargetSlot },
+    name: move.name,
+    score: bestScore,
+    explanation: bestExplanation,
+  }
+}
+
 /**
  * Generate hints for all legal actions at the current battle state.
  * Ranks moves by estimated value and classifies them relative to the best option.
@@ -319,36 +346,12 @@ export function generateHints(
       const move = actions.moves[i]
       if (move.disabled) continue
 
+      const moveIndex = i + 1
       if (isDoubles && oppActives.length > 1) {
-        // Evaluate against each target, pick best
-        let bestScore = -Infinity
-        let bestExpl = ""
-        let bestTargetSlot = 1
-
-        for (let targetIdx = 0; targetIdx < oppActives.length; targetIdx++) {
-          const target = oppActives[targetIdx]
-          const { score, explanation } = estimateMoveScore(move, myActive, target, state)
-          if (score > bestScore) {
-            bestScore = score
-            bestExpl = `${explanation} (→ ${target.name})`
-            bestTargetSlot = targetIdx + 1 // Foe slots are positive: 1 = p2a, 2 = p2b
-          }
-        }
-
-        scored.push({
-          action: { type: "move", moveIndex: i + 1, targetSlot: bestTargetSlot },
-          name: move.name,
-          score: bestScore,
-          explanation: bestExpl,
-        })
+        scored.push(scoreMoveAgainstBestTarget(move, moveIndex, myActive, oppActives, state))
       } else {
         const { score, explanation } = estimateMoveScore(move, myActive, oppActive, state)
-        scored.push({
-          action: { type: "move", moveIndex: i + 1 },
-          name: move.name,
-          score,
-          explanation,
-        })
+        scored.push({ action: { type: "move", moveIndex }, name: move.name, score, explanation })
       }
     }
   }
@@ -370,17 +373,11 @@ export function generateHints(
 
   const bestScore = scored.length > 0 ? scored[0].score : 0
 
-  const rankedMoves: MoveHint[] = scored.map((s, idx) => {
-    const gap = bestScore - s.score
-    return {
-      action: s.action,
-      name: s.name,
-      score: s.score,
-      rank: idx + 1,
-      classification: classifyGap(gap),
-      explanation: s.explanation,
-    }
-  })
+  const rankedMoves: MoveHint[] = scored.map((s, idx) => ({
+    ...s,
+    rank: idx + 1,
+    classification: classifyGap(bestScore - s.score),
+  }))
 
   return {
     rankedMoves,

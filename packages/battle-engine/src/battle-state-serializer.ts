@@ -39,11 +39,7 @@ export function serializeBattleState(state: BattleState): string {
     } else {
       lines.push("Moves:")
       for (const m of acts.moves) {
-        const acc = m.accuracy === true ? "—" : `${m.accuracy}%`
-        const dis = m.disabled ? " [DISABLED]" : ""
-        lines.push(
-          `  - ${m.name} (${m.type}, ${m.category}, ${m.basePower} BP, ${acc} acc, ${m.pp}/${m.maxPp} PP)${dis}`,
-        )
+        lines.push(`  - ${formatMoveStats(m)}`)
       }
     }
 
@@ -161,6 +157,25 @@ function serializePokemon(p: BattlePokemon, full: boolean): string {
   if (p.volatiles.length > 0) parts.push(`Conditions: ${p.volatiles.join(", ")}`)
 
   return parts.join(" | ")
+}
+
+/**
+ * Format a move's stats into a parenthesized string like
+ * "(Fire, Special, 120 BP, 100% acc, 8/8 PP) [DISABLED]".
+ */
+export function formatMoveStats(m: {
+  name: string
+  type: string
+  category: string
+  basePower: number
+  accuracy: number | true
+  pp: number
+  maxPp: number
+  disabled?: boolean
+}): string {
+  const acc = m.accuracy === true ? "\u2014" : `${m.accuracy}%`
+  const dis = m.disabled ? " [DISABLED]" : ""
+  return `${m.name} (${m.type}, ${m.category}, ${m.basePower} BP, ${acc} acc, ${m.pp}/${m.maxPp} PP)${dis}`
 }
 
 /**

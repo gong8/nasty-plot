@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server"
-import { apiErrorResponse, badRequestResponse } from "../../../../lib/api-error"
+import { loggedApiErrorResponse, badRequestResponse } from "../../../../lib/api-error"
 import {
   buildTurnCommentaryContext,
   buildPostBattleContext,
@@ -83,16 +83,23 @@ export async function POST(req: NextRequest) {
       },
     })
   } catch (err) {
-    console.error("[Commentary API]", err)
-    return apiErrorResponse(err, { fallback: "Commentary failed" })
+    return loggedApiErrorResponse("[Commentary API]", err, { fallback: "Commentary failed" })
   }
 }
 
-function buildPrompts(
-  mode: string,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  data: Record<string, any>,
-): { system: string; user: string } | null {
+type CommentaryData = {
+  state?: unknown
+  recentEntries?: unknown[]
+  allEntries?: unknown[]
+  turnEntries?: unknown[]
+  prevTurnEntries?: unknown[]
+  playerName: string
+  opponentName: string
+  winner?: string
+  totalTurns?: number
+}
+
+function buildPrompts(mode: string, data: CommentaryData): { system: string; user: string } | null {
   if (mode === "turn" && data.state && data.recentEntries) {
     const ctx = buildTurnCommentaryContext(
       data.state,

@@ -1,6 +1,10 @@
 import { NextRequest } from "next/server"
 import { getSession, updateSession, deleteSession } from "@nasty-plot/llm"
-import { apiErrorResponse, notFoundResponse } from "../../../../../lib/api-error"
+import {
+  loggedApiErrorResponse,
+  notFoundResponse,
+  INTERNAL_ERROR_OPTIONS,
+} from "../../../../../lib/api-error"
 
 export async function GET(
   _req: NextRequest,
@@ -16,8 +20,7 @@ export async function GET(
 
     return Response.json({ data: session })
   } catch (error) {
-    console.error("Get session error:", error)
-    return apiErrorResponse(error, { fallback: "Internal server error", code: "INTERNAL_ERROR" })
+    return loggedApiErrorResponse("Get session error:", error, INTERNAL_ERROR_OPTIONS)
   }
 }
 
@@ -37,8 +40,7 @@ export async function PUT(
 
     return Response.json({ data: session })
   } catch (error) {
-    console.error("Update session error:", error)
-    return apiErrorResponse(error, { fallback: "Internal server error", code: "INTERNAL_ERROR" })
+    return loggedApiErrorResponse("Update session error:", error, INTERNAL_ERROR_OPTIONS)
   }
 }
 
@@ -51,7 +53,6 @@ export async function DELETE(
     await deleteSession(sessionId)
     return Response.json({ success: true })
   } catch (error) {
-    console.error("Delete session error:", error)
-    return apiErrorResponse(error, { fallback: "Internal server error", code: "INTERNAL_ERROR" })
+    return loggedApiErrorResponse("Delete session error:", error, INTERNAL_ERROR_OPTIONS)
   }
 }

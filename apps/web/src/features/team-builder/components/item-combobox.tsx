@@ -26,34 +26,38 @@ interface ItemComboboxProps {
   pokemonId?: string
 }
 
+const ITEMS_PAGE_SIZE = 100
+
+async function fetchAllItems(formatId?: string): Promise<ItemData[]> {
+  const formatParam = formatId ? `&formatId=${encodeURIComponent(formatId)}` : ""
+  try {
+    const firstPage = await fetchJson<PaginatedResponse<ItemData>>(
+      `/api/items?pageSize=${ITEMS_PAGE_SIZE}&page=1${formatParam}`,
+    )
+    const allItems = [...firstPage.data]
+    const totalPages = Math.ceil(firstPage.total / firstPage.pageSize)
+    for (let page = 2; page <= totalPages; page++) {
+      try {
+        const nextPage = await fetchJson<PaginatedResponse<ItemData>>(
+          `/api/items?pageSize=${ITEMS_PAGE_SIZE}&page=${page}${formatParam}`,
+        )
+        allItems.push(...nextPage.data)
+      } catch {
+        // Skip failed pages
+      }
+    }
+    return allItems
+  } catch {
+    return []
+  }
+}
+
 export function ItemCombobox({ value, onChange, formatId, pokemonId }: ItemComboboxProps) {
   const [open, setOpen] = useState(false)
 
   const { data: items = [] } = useQuery<ItemData[]>({
     queryKey: ["all-items", formatId],
-    queryFn: async () => {
-      const formatParam = formatId ? `&formatId=${encodeURIComponent(formatId)}` : ""
-      try {
-        const json = await fetchJson<PaginatedResponse<ItemData>>(
-          `/api/items?pageSize=100&page=1${formatParam}`,
-        )
-        const allItems = [...json.data]
-        const totalPages = Math.ceil(json.total / json.pageSize)
-        for (let p = 2; p <= totalPages; p++) {
-          try {
-            const j = await fetchJson<PaginatedResponse<ItemData>>(
-              `/api/items?pageSize=100&page=${p}${formatParam}`,
-            )
-            allItems.push(...j.data)
-          } catch {
-            // Skip failed pages
-          }
-        }
-        return allItems
-      } catch {
-        return []
-      }
-    },
+    queryFn: () => fetchAllItems(formatId),
     staleTime: Infinity,
   })
 

@@ -59,3 +59,19 @@ export function apiErrorResponse(
 
   return NextResponse.json(body, { status })
 }
+
+type ApiErrorOptions = Parameters<typeof apiErrorResponse>[1]
+
+export const INTERNAL_ERROR_OPTIONS: ApiErrorOptions = {
+  fallback: "Internal server error",
+  code: "INTERNAL_ERROR",
+}
+
+export function loggedApiErrorResponse(
+  tag: string,
+  error: unknown,
+  options?: ApiErrorOptions,
+): NextResponse {
+  console.error(tag, error)
+  return apiErrorResponse(error, options)
+}

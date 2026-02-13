@@ -1,6 +1,6 @@
 import { Dex } from "@pkmn/dex"
 import { Generations, type Generation } from "@pkmn/data"
-import { POKEMON_TYPES, toId } from "@nasty-plot/core"
+import { POKEMON_TYPES, toId, camelCaseToDisplayName } from "@nasty-plot/core"
 import type { PokemonSpecies, PokemonType, MoveData, AbilityData, ItemData } from "@nasty-plot/core"
 
 const dex = Dex.forGen(9)
@@ -265,7 +265,7 @@ export function getType(name: string) {
 export function resolveSpeciesName(pokemonId: string): string {
   const species = dex.species.get(pokemonId)
   if (species?.exists) return species.name
-  return pokemonId.replace(/([a-z])([A-Z])/g, "$1 $2").replace(/^./, (s) => s.toUpperCase())
+  return camelCaseToDisplayName(pokemonId)
 }
 
 // @pkmn/dex damageTaken encoding -> standard multiplier (0 = neutral is omitted from output)
@@ -275,17 +275,18 @@ const DAMAGE_TAKEN_TO_MULTIPLIER: Record<number, number> = {
   3: 0, // immune
 }
 
+// chart[defType][atkType] = multiplier (e.g. chart["Fire"]["Water"] = 2)
 export function getTypeChart(): Record<PokemonType, Partial<Record<PokemonType, number>>> {
   const chart = {} as Record<PokemonType, Partial<Record<PokemonType, number>>>
 
-  for (const atkType of POKEMON_TYPES) {
-    const partial: Partial<Record<PokemonType, number>> = {}
-    for (const defType of POKEMON_TYPES) {
-      const damageTaken = dex.types.get(atkType).damageTaken[defType]
-      const multiplier = DAMAGE_TAKEN_TO_MULTIPLIER[damageTaken]
-      if (multiplier !== undefined) partial[defType] = multiplier
+  for (const defType of POKEMON_TYPES) {
+    const matchups: Partial<Record<PokemonType, number>> = {}
+    for (const atkType of POKEMON_TYPES) {
+      const encoded = dex.types.get(defType).damageTaken[atkType]
+      const multiplier = DAMAGE_TAKEN_TO_MULTIPLIER[encoded]
+      if (multiplier !== undefined) matchups[atkType] = multiplier
     }
-    chart[atkType] = partial
+    chart[defType] = matchups
   }
 
   return chart

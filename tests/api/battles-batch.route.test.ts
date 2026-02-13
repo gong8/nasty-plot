@@ -14,13 +14,16 @@ const {
 }))
 
 vi.mock("@nasty-plot/battle-engine", () => ({
+  runBatchSimulation: vi.fn().mockReturnValue(
+    new Promise(() => {}), // Never resolves — fire-and-forget
+  ),
+}))
+
+vi.mock("@nasty-plot/battle-engine/db", () => ({
   createBatchSimulation: mockCreateBatch,
   updateBatchProgress: mockUpdateBatchProgress,
   completeBatchSimulation: mockCompleteBatchSimulation,
   failBatchSimulation: mockFailBatchSimulation,
-  runBatchSimulation: vi.fn().mockReturnValue(
-    new Promise(() => {}), // Never resolves — fire-and-forget
-  ),
 }))
 
 vi.mock("@nasty-plot/core", () => ({

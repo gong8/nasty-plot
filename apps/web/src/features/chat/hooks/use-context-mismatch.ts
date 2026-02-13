@@ -56,43 +56,36 @@ export function useContextMismatch(): { mismatch: ContextMismatch | null; isLoad
       return null
     }
 
+    let isMatch: boolean
     switch (contextMode) {
       case "team-editor":
       case "guided-builder": {
         const frozenTeamId = typeof ctxData.teamId === "string" ? ctxData.teamId : undefined
-        if (!frozenTeamId) return null
-        // Match on teamId only — both team-editor and guided-builder share the same team
-        if (pageContext.teamId === frozenTeamId) return null
-        return {
-          type: "team",
-          contextMode,
-          expectedEntityName: getEntityName(contextMode, ctxData),
-          navigationUrl: buildNavigationUrl(contextMode, ctxData),
-        }
+        isMatch = !!frozenTeamId && pageContext.teamId === frozenTeamId
+        break
       }
-      case "battle-live": {
-        if (pageContext.pageType === "battle-live") return null
-        return {
-          type: "battle",
-          contextMode,
-          expectedEntityName: getEntityName(contextMode, ctxData),
-          navigationUrl: buildNavigationUrl(contextMode, ctxData),
-        }
-      }
+      case "battle-live":
+        isMatch = pageContext.pageType === "battle-live"
+        break
       case "battle-replay": {
         const frozenBattleId = typeof ctxData.battleId === "string" ? ctxData.battleId : undefined
-        if (!frozenBattleId) return null
-        if (pageContext.battleId === frozenBattleId && pageContext.pageType === "battle-replay")
-          return null
-        return {
-          type: "battle",
-          contextMode,
-          expectedEntityName: getEntityName(contextMode, ctxData),
-          navigationUrl: buildNavigationUrl(contextMode, ctxData),
-        }
+        isMatch =
+          !!frozenBattleId &&
+          pageContext.battleId === frozenBattleId &&
+          pageContext.pageType === "battle-replay"
+        break
       }
       default:
         return null
+    }
+
+    if (isMatch) return null
+
+    return {
+      type: contextMode.includes("battle") ? "battle" : "team",
+      contextMode,
+      expectedEntityName: getEntityName(contextMode, ctxData),
+      navigationUrl: buildNavigationUrl(contextMode, ctxData),
     }
   }, [session, pageContext])
 
