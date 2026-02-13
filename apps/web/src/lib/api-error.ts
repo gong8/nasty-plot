@@ -14,6 +14,7 @@ export function badRequestResponse(message: string, code = "BAD_REQUEST"): NextR
 
 /**
  * Build a standard error JSON response from a caught error.
+ * Always logs the error to the console before returning.
  *
  * Basic (always 500):
  *   return apiErrorResponse(error)
@@ -37,6 +38,8 @@ export function apiErrorResponse(
     status?: number
   } = {},
 ): NextResponse {
+  console.error(error)
+
   const { fallback, code, inferNotFound, clientErrorPatterns = [], status: forceStatus } = options
   const message = getErrorMessage(error, fallback)
 
@@ -58,20 +61,4 @@ export function apiErrorResponse(
   if (code) body.code = code
 
   return NextResponse.json(body, { status })
-}
-
-type ApiErrorOptions = Parameters<typeof apiErrorResponse>[1]
-
-export const INTERNAL_ERROR_OPTIONS: ApiErrorOptions = {
-  fallback: "Internal server error",
-  code: "INTERNAL_ERROR",
-}
-
-export function loggedApiErrorResponse(
-  tag: string,
-  error: unknown,
-  options?: ApiErrorOptions,
-): NextResponse {
-  console.error(tag, error)
-  return apiErrorResponse(error, options)
 }

@@ -25,14 +25,14 @@ export function analyzeTypeCoverage(slots: TeamSlotData[]): TypeCoverage {
     const coveredTypes = new Set<PokemonType>()
     const pokemonTypes = slot.species?.types ?? []
 
-    for (const pkType of pokemonTypes) {
-      for (const coveredType of getOffensiveCoverage(pkType)) {
+    for (const stabType of pokemonTypes) {
+      for (const coveredType of getOffensiveCoverage(stabType)) {
         coveredTypes.add(coveredType)
       }
     }
 
-    for (const covType of coveredTypes) {
-      offensive[covType]++
+    for (const coveredType of coveredTypes) {
+      offensive[coveredType]++
     }
   }
 

@@ -16,10 +16,6 @@ function serializeStats(stats: StatsTable): string {
   return STATS.map((s) => stats[s]).join(",")
 }
 
-function formatEvs(evs: StatsTable): string {
-  return serializeStats(evs)
-}
-
 function formatIvs(ivs: StatsTable): string {
   const allMax = Object.values(ivs).every((v) => v === PERFECT_IV)
   if (allMax) return ""
@@ -45,7 +41,7 @@ export function packOneSlot(slot: TeamSlotData): string {
     slot.ability || "", // 3: ability
     formatMoves(slot.moves), // 4: moves
     slot.nature || "Hardy", // 5: nature
-    formatEvs(slot.evs), // 6: evs
+    serializeStats(slot.evs), // 6: evs
     "", // 7: gender
     formatIvs(slot.ivs ?? DEFAULT_IVS), // 8: ivs
     "", // 9: shiny

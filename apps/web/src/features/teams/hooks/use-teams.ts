@@ -11,7 +11,7 @@ import type {
   MergeOptions,
   LineageNode,
 } from "@nasty-plot/core"
-import { fetchJson, postJson, putJson } from "@/lib/api-client"
+import { fetchJson, postJson, putJson, deleteJson } from "@/lib/api-client"
 
 // --- Queries ---
 
@@ -61,7 +61,7 @@ export function useUpdateTeam() {
 export function useDeleteTeam() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (teamId: string) => fetchJson(`/api/teams/${teamId}`, { method: "DELETE" }),
+    mutationFn: (teamId: string) => deleteJson(`/api/teams/${teamId}`),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["teams"] })
     },
@@ -103,9 +103,7 @@ export function useRemoveSlot() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: ({ teamId, position }: { teamId: string; position: number }) =>
-      fetchJson(`/api/teams/${teamId}/slots/${position}`, {
-        method: "DELETE",
-      }),
+      deleteJson(`/api/teams/${teamId}/slots/${position}`),
     onSuccess: (_, vars) => {
       qc.invalidateQueries({ queryKey: ["team", vars.teamId] })
       qc.invalidateQueries({ queryKey: ["team-compare"] })
@@ -168,7 +166,7 @@ export function useLineageTree(teamId?: string) {
 export function useArchiveTeam() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (teamId: string) => fetchJson(`/api/teams/${teamId}/archive`, { method: "POST" }),
+    mutationFn: (teamId: string) => postJson(`/api/teams/${teamId}/archive`, {}),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["teams"] })
     },
@@ -178,7 +176,7 @@ export function useArchiveTeam() {
 export function useRestoreTeam() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (teamId: string) => fetchJson(`/api/teams/${teamId}/restore`, { method: "POST" }),
+    mutationFn: (teamId: string) => postJson(`/api/teams/${teamId}/restore`, {}),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["teams"] })
     },

@@ -1,7 +1,19 @@
 import { getRawSpecies } from "@nasty-plot/pokemon-data"
 import type { PokemonType } from "@nasty-plot/core"
 import { calculateQuickDamage, flattenDamage } from "@nasty-plot/damage-calc"
-import type { BattleAction, BattleActionSet, BattlePokemon, SideConditions } from "../types"
+import type {
+  AIPlayer,
+  AIDifficulty,
+  BattleAction,
+  BattleActionSet,
+  BattlePokemon,
+  SideConditions,
+} from "../types"
+import type { MCTSConfig } from "./mcts-types"
+import { RandomAI } from "./random-ai"
+import { GreedyAI } from "./greedy-ai"
+import { HeuristicAI } from "./heuristic-ai"
+import { MCTSAI } from "./mcts-ai"
 
 export { flattenDamage }
 
@@ -113,4 +125,21 @@ export function getEffectiveSpeed(pokemon: BattlePokemon, sideConditions: SideCo
   }
 
   return Math.max(1, speed)
+}
+
+/**
+ * Create an AI player instance for the given difficulty.
+ * Accepts an optional MCTS config override for expert difficulty.
+ */
+export function createAI(difficulty: AIDifficulty, mctsConfig?: Partial<MCTSConfig>): AIPlayer {
+  switch (difficulty) {
+    case "random":
+      return new RandomAI()
+    case "greedy":
+      return new GreedyAI()
+    case "heuristic":
+      return new HeuristicAI()
+    case "expert":
+      return new MCTSAI(mctsConfig)
+  }
 }

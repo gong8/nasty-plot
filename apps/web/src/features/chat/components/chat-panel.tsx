@@ -144,7 +144,7 @@ export function ChatPanel({ sessionId }: ChatPanelProps) {
     setModeChosen(false)
   }
 
-  const lastMsg = messages[messages.length - 1]
+  const lastMessage = messages[messages.length - 1]
 
   // Show the context picker for brand-new chats (no session, no messages, no pending context)
   const showPicker = messages.length === 0 && !modeChosen && !effectiveSessionId && !pendingContext
@@ -224,7 +224,7 @@ export function ChatPanel({ sessionId }: ChatPanelProps) {
                   turn={msg.metadata.turn ?? 0}
                   content={msg.content}
                   depth={msg.metadata.depth ?? "quick"}
-                  isStreaming={isStreaming && msg === lastMsg}
+                  isStreaming={isStreaming && msg === lastMessage}
                 />
               )
             }
@@ -234,7 +234,7 @@ export function ChatPanel({ sessionId }: ChatPanelProps) {
                 key={msg.id}
                 role={msg.role}
                 content={msg.content}
-                isStreaming={isStreaming && msg === lastMsg}
+                isStreaming={isStreaming && msg === lastMessage}
               />
             )
           })}
@@ -291,7 +291,7 @@ export function ChatPanel({ sessionId }: ChatPanelProps) {
           onRetry={retryLast}
           isStreaming={isStreaming}
           hasMessages={messages.length > 0}
-          lastMessageIsAssistant={lastMsg?.role === "assistant"}
+          lastMessageIsAssistant={lastMessage?.role === "assistant"}
           pendingInput={pendingInput}
           onClearPendingInput={clearPendingInput}
           disabled={!!mismatch}

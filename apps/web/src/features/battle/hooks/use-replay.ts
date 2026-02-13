@@ -91,57 +91,40 @@ export function useReplay(config: UseReplayConfig) {
     wasPlayingRef.current = isPlaying
   }, [isPlaying, advance, clearPendingTimeout])
 
-  const goToFirst = useCallback(() => {
+  const applyFrame = useCallback((getFrame: (engine: ReplayEngine) => ReplayFrame | null) => {
     const engine = engineRef.current
     if (!engine) return
-    const frame = engine.setCurrentIndex(0)
+    const frame = getFrame(engine)
     if (frame) {
       setCurrentFrame(frame)
-      setCurrentIndex(0)
+      setCurrentIndex(engine.getCurrentIndex())
     }
-    setIsPlaying(false)
   }, [])
+
+  const goToFirst = useCallback(() => {
+    applyFrame((e) => e.setCurrentIndex(0))
+    setIsPlaying(false)
+  }, [applyFrame])
 
   const goToPrev = useCallback(() => {
-    const engine = engineRef.current
-    if (!engine) return
-    const frame = engine.prevFrame()
-    if (frame) {
-      setCurrentFrame(frame)
-      setCurrentIndex(engine.getCurrentIndex())
-    }
-  }, [])
+    applyFrame((e) => e.prevFrame())
+  }, [applyFrame])
 
   const goToNext = useCallback(() => {
-    const engine = engineRef.current
-    if (!engine) return
-    const frame = engine.nextFrame()
-    if (frame) {
-      setCurrentFrame(frame)
-      setCurrentIndex(engine.getCurrentIndex())
-    }
-  }, [])
+    applyFrame((e) => e.nextFrame())
+  }, [applyFrame])
 
   const goToLast = useCallback(() => {
-    const engine = engineRef.current
-    if (!engine) return
-    const frame = engine.setCurrentIndex(engine.totalFrames - 1)
-    if (frame) {
-      setCurrentFrame(frame)
-      setCurrentIndex(engine.getCurrentIndex())
-    }
+    applyFrame((e) => e.setCurrentIndex(e.totalFrames - 1))
     setIsPlaying(false)
-  }, [])
+  }, [applyFrame])
 
-  const seekTo = useCallback((index: number) => {
-    const engine = engineRef.current
-    if (!engine) return
-    const frame = engine.setCurrentIndex(index)
-    if (frame) {
-      setCurrentFrame(frame)
-      setCurrentIndex(index)
-    }
-  }, [])
+  const seekTo = useCallback(
+    (index: number) => {
+      applyFrame((e) => e.setCurrentIndex(index))
+    },
+    [applyFrame],
+  )
 
   const togglePlay = useCallback(() => {
     setIsPlaying((p) => !p)

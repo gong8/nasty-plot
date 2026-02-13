@@ -105,7 +105,6 @@ export function GuidedBuilder() {
 
   const handleNext = () => {
     if (ctx.step === "build") {
-      // If we have enough Pokemon, advance to sets
       if (ctx.currentBuildSlot >= TEAM_SIZE || ctx.filledSlots.length >= TEAM_SIZE) {
         ctx.goToStep("sets")
       } else {

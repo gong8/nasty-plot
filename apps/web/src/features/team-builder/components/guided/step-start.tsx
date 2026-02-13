@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { SkeletonList } from "@/components/skeleton-list"
+import { EmptyState } from "@/components/empty-state"
 import { cn } from "@nasty-plot/ui"
 import type { SampleTeamEntry } from "../../hooks/use-guided-builder"
 
@@ -86,9 +87,7 @@ export function StepStart({
                 </button>
               ))
             ) : (
-              <p className="py-4 text-center text-sm text-muted-foreground">
-                No sample teams available for this format
-              </p>
+              <EmptyState className="py-4">No sample teams available for this format</EmptyState>
             )}
           </div>
         </CardContent>

@@ -37,17 +37,17 @@ export function HealthBar({
 
   useEffect(() => {
     const prev = prevPercentRef.current
-    if (prev !== percent && animate) {
-      if (percent < prev) {
-        setGlowClass("animate-battle-damage-glow") // eslint-disable-line react-hooks/set-state-in-effect -- animation trigger on value change
-      } else if (percent > prev) {
-        setGlowClass("animate-battle-heal-glow")
-      }
-      const timeout = setTimeout(() => setGlowClass(""), 600)
-      prevPercentRef.current = percent
-      return () => clearTimeout(timeout)
-    }
     prevPercentRef.current = percent
+
+    if (prev === percent || !animate) return
+
+    if (percent < prev) {
+      setGlowClass("animate-battle-damage-glow") // eslint-disable-line react-hooks/set-state-in-effect -- animation trigger on value change
+    } else {
+      setGlowClass("animate-battle-heal-glow")
+    }
+    const timeout = setTimeout(() => setGlowClass(""), 600)
+    return () => clearTimeout(timeout)
   }, [percent, animate])
 
   return (

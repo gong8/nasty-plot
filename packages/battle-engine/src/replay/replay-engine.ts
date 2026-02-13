@@ -46,40 +46,7 @@ export class ReplayEngine {
     // Create initial frame (turn 0)
     this.frames.push(createFrame(state, 0, [], 50))
 
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i]
-
-      // Skip request lines, error lines, and stream markers for replay
-      if (line.startsWith("|request|") || line.startsWith("|error|")) continue
-      if (line === "update" || line === "sideupdate" || line === "p1" || line === "p2") continue
-
-      // Handle |split|<side>: next line is owner view (exact HP),
-      // line after is spectator view (percentage). Keep owner, skip spectator.
-      if (line.startsWith("|split|")) {
-        if (i + 1 < lines.length) {
-          const ownerEntry = processLine(state, lines[i + 1])
-          if (ownerEntry) {
-            appendEntry(state, currentTurnEntries, ownerEntry)
-            if (ownerEntry.type === "turn") {
-              if (lastTurnNumber > 0 || currentTurnEntries.length > 1) {
-                this.frames.push(createFrame(state, state.turn, currentTurnEntries))
-              }
-              currentTurnEntries = [ownerEntry]
-              lastTurnNumber = state.turn
-            }
-            if (ownerEntry.type === "win") {
-              this.frames.push(createFrame(state, state.turn, currentTurnEntries))
-              currentTurnEntries = []
-            }
-          }
-        }
-        i += 2 // skip past owner + spectator lines
-        continue
-      }
-
-      const entry = processLine(state, line)
-      if (!entry) continue
-
+    const handleEntry = (entry: BattleLogEntry) => {
       appendEntry(state, currentTurnEntries, entry)
 
       if (entry.type === "turn") {
@@ -94,6 +61,28 @@ export class ReplayEngine {
         this.frames.push(createFrame(state, state.turn, currentTurnEntries))
         currentTurnEntries = []
       }
+    }
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i]
+
+      // Skip request lines, error lines, and stream markers for replay
+      if (line.startsWith("|request|") || line.startsWith("|error|")) continue
+      if (line === "update" || line === "sideupdate" || line === "p1" || line === "p2") continue
+
+      // Handle |split|<side>: next line is owner view (exact HP),
+      // line after is spectator view (percentage). Keep owner, skip spectator.
+      if (line.startsWith("|split|")) {
+        if (i + 1 < lines.length) {
+          const ownerEntry = processLine(state, lines[i + 1])
+          if (ownerEntry) handleEntry(ownerEntry)
+        }
+        i += 2 // skip past owner + spectator lines
+        continue
+      }
+
+      const entry = processLine(state, line)
+      if (entry) handleEntry(entry)
     }
 
     if (

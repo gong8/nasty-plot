@@ -7,7 +7,7 @@ import {
 } from "../protocol-parser"
 import { createInitialState } from "../battle-manager.service"
 import { DEFAULT_FORMAT_ID, type GameType } from "@nasty-plot/core"
-import type { BattleState, BattleActionSet, AIPlayer } from "../types"
+import type { BattleState, BattleAction, BattleActionSet, AIPlayer } from "../types"
 
 export interface SingleBattleResult {
   winner: "p1" | "p2" | "draw"
@@ -174,16 +174,26 @@ export async function runAutomatedBattle(
       pendingP1Slot2Actions = null
       pendingP2Slot2Actions = null
       turns++
-    } else if ((pendingP1Actions as BattleActionSet | null)?.forceSwitch) {
-      stream.write(
-        `>p1 ${await resolvePlayerChoice(config.ai1, state, pendingP1Actions!, pendingP1Slot2Actions, isDoubles)}`,
+    } else if (pendingP1Actions?.forceSwitch) {
+      const choice = await resolvePlayerChoice(
+        config.ai1,
+        state,
+        pendingP1Actions,
+        pendingP1Slot2Actions,
+        isDoubles,
       )
+      stream.write(`>p1 ${choice}`)
       pendingP1Actions = null
       pendingP1Slot2Actions = null
-    } else if ((pendingP2Actions as BattleActionSet | null)?.forceSwitch) {
-      stream.write(
-        `>p2 ${await resolvePlayerChoice(config.ai2, state, pendingP2Actions!, pendingP2Slot2Actions, isDoubles)}`,
+    } else if (pendingP2Actions?.forceSwitch) {
+      const choice = await resolvePlayerChoice(
+        config.ai2,
+        state,
+        pendingP2Actions,
+        pendingP2Slot2Actions,
+        isDoubles,
       )
+      stream.write(`>p2 ${choice}`)
       pendingP2Actions = null
       pendingP2Slot2Actions = null
     }
@@ -236,14 +246,7 @@ async function resolvePlayerChoice(
   return `${choice1}, ${actionToChoice(action2)}`
 }
 
-function actionToChoice(action: {
-  type: string
-  moveIndex?: number
-  pokemonIndex?: number
-  tera?: boolean
-  targetSlot?: number
-  mega?: boolean
-}): string {
+function actionToChoice(action: BattleAction): string {
   if (action.type === "move") {
     let choice = `move ${action.moveIndex}`
     if (action.targetSlot != null) choice += ` ${action.targetSlot}`

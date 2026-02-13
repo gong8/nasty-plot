@@ -1,8 +1,8 @@
 import {
   POKEMON_TYPES,
-  DEFAULT_IVS,
-  DEFAULT_EVS,
+  PERFECT_IV,
   calculateAllStats,
+  fillStats,
   getTypeEffectiveness,
   getWeaknesses,
   getOffensiveCoverage,
@@ -53,9 +53,9 @@ function calculateDefensiveComplementarity(slots: TeamSlotData[]): number {
       totalWeaknesses++
       for (let j = 0; j < slots.length; j++) {
         if (i === j) continue
-        const mateTypes = slots[j].species?.types ?? []
-        if (mateTypes.length === 0) continue
-        if (getTypeEffectiveness(weakness, mateTypes) < 1) {
+        const teammateTypes = slots[j].species?.types ?? []
+        if (teammateTypes.length === 0) continue
+        if (getTypeEffectiveness(weakness, teammateTypes) < 1) {
           coveredWeaknesses++
           break
         }
@@ -91,8 +91,8 @@ function calculateSpeedDiversity(slots: TeamSlotData[]): number {
     if (!slot.species?.baseStats) continue
     const stats = calculateAllStats(
       slot.species.baseStats,
-      { ...DEFAULT_IVS, ...(slot.ivs ?? {}) },
-      { ...DEFAULT_EVS, ...(slot.evs ?? {}) },
+      fillStats(slot.ivs, PERFECT_IV),
+      fillStats(slot.evs, 0),
       slot.level,
       slot.nature,
     )

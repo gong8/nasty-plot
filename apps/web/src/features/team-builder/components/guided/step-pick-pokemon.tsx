@@ -5,6 +5,7 @@ import { Sparkles, Search, ChevronDown, ChevronUp } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { SkeletonList } from "@/components/skeleton-list"
+import { EmptyState } from "@/components/empty-state"
 import { cn } from "@nasty-plot/ui"
 import {
   formatUsagePercent,
@@ -153,9 +154,9 @@ export function StepPickPokemon({
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground py-4 text-center">
+              <EmptyState className="py-4">
                 No recommendations available. Use the search below to find a Pokemon.
-              </p>
+              </EmptyState>
             )}
           </div>
 

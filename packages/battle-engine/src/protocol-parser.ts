@@ -387,33 +387,28 @@ export function processLine(state: BattleState, line: string): BattleLogEntry | 
       return logEntry("status", `${ident.name} was cured!`, state.turn, ident.side)
     }
 
-    case "-boost": {
-      // |-boost|p1a: Garchomp|atk|2
-      const ident = parsePokemonIdent(args[0])
-      if (!ident) return null
-      const stat = args[1] as keyof BoostTable
-      const amount = parseInt(args[2], 10)
-      const pokemon = findPokemon(state, ident.side, ident.name)
-      if (pokemon && stat in pokemon.boosts) {
-        pokemon.boosts[stat] = Math.min(6, pokemon.boosts[stat] + amount)
-      }
-
-      const stages = amount === 1 ? "" : amount === 2 ? " sharply" : " drastically"
-      return logEntry("boost", `${ident.name}'s ${stat} rose${stages}!`, state.turn, ident.side)
-    }
-
+    case "-boost":
     case "-unboost": {
+      const isBoost = cmd === "-boost"
       const ident = parsePokemonIdent(args[0])
       if (!ident) return null
       const stat = args[1] as keyof BoostTable
       const amount = parseInt(args[2], 10)
       const pokemon = findPokemon(state, ident.side, ident.name)
       if (pokemon && stat in pokemon.boosts) {
-        pokemon.boosts[stat] = Math.max(-6, pokemon.boosts[stat] - amount)
+        pokemon.boosts[stat] = isBoost
+          ? Math.min(6, pokemon.boosts[stat] + amount)
+          : Math.max(-6, pokemon.boosts[stat] - amount)
       }
 
       const stages = amount === 1 ? "" : amount === 2 ? " sharply" : " drastically"
-      return logEntry("unboost", `${ident.name}'s ${stat} fell${stages}!`, state.turn, ident.side)
+      const verb = isBoost ? "rose" : "fell"
+      return logEntry(
+        isBoost ? "boost" : "unboost",
+        `${ident.name}'s ${stat} ${verb}${stages}!`,
+        state.turn,
+        ident.side,
+      )
     }
 
     case "-weather": {
@@ -458,45 +453,33 @@ export function processLine(state: BattleState, line: string): BattleLogEntry | 
       return logEntry("terrain", `${fieldName} ended!`, state.turn)
     }
 
-    case "-sidestart": {
-      // |-sidestart|p1: Player|move: Stealth Rock
-      const sideMatch = args[0]?.match(/^(p[12])/)
-      if (!sideMatch) return null
-      const side = sideMatch[1] as Side
-      const hazard = args[1]?.replace("move: ", "")
-      const handler = hazard ? SIDE_CONDITION_HANDLERS[hazard] : undefined
-      if (handler) handler.set(state.sides[side].sideConditions)
-
-      return logEntry("hazard", `${hazard} was set on ${side}'s side!`, state.turn, side)
-    }
-
+    case "-sidestart":
     case "-sideend": {
+      const isSideStart = cmd === "-sidestart"
       const sideMatch = args[0]?.match(/^(p[12])/)
       if (!sideMatch) return null
       const side = sideMatch[1] as Side
       const hazard = args[1]?.replace("move: ", "")
       const handler = hazard ? SIDE_CONDITION_HANDLERS[hazard] : undefined
-      if (handler) handler.clear(state.sides[side].sideConditions)
+      if (handler) {
+        if (isSideStart) handler.set(state.sides[side].sideConditions)
+        else handler.clear(state.sides[side].sideConditions)
+      }
 
-      return logEntry("hazard", `${hazard} ended on ${side}'s side!`, state.turn, side)
+      const verb = isSideStart ? "was set on" : "ended on"
+      return logEntry("hazard", `${hazard} ${verb} ${side}'s side!`, state.turn, side)
     }
 
-    case "-item": {
-      const ident = parsePokemonIdent(args[0])
-      if (!ident) return null
-      const itemName = args[1]
-      const pokemon = findPokemon(state, ident.side, ident.name)
-      if (pokemon) pokemon.item = itemName
-      return logEntry("item", `${ident.name}'s ${itemName} was revealed!`, state.turn, ident.side)
-    }
-
+    case "-item":
     case "-enditem": {
+      const isReveal = cmd === "-item"
       const ident = parsePokemonIdent(args[0])
       if (!ident) return null
       const itemName = args[1]
       const pokemon = findPokemon(state, ident.side, ident.name)
-      if (pokemon) pokemon.item = ""
-      return logEntry("item", `${ident.name}'s ${itemName} was consumed!`, state.turn, ident.side)
+      if (pokemon) pokemon.item = isReveal ? itemName : ""
+      const verb = isReveal ? "was revealed" : "was consumed"
+      return logEntry("item", `${ident.name}'s ${itemName} ${verb}!`, state.turn, ident.side)
     }
 
     case "-ability": {
@@ -586,24 +569,19 @@ export function processLine(state: BattleState, line: string): BattleLogEntry | 
       )
     }
 
-    case "-crit": {
-      const ident = parsePokemonIdent(args[0])
-      return logEntry("crit", `A critical hit!`, state.turn, ident?.side)
-    }
-
-    case "-supereffective": {
-      const ident = parsePokemonIdent(args[0])
-      return logEntry("supereffective", `It's super effective!`, state.turn, ident?.side)
-    }
-
-    case "-resisted": {
-      const ident = parsePokemonIdent(args[0])
-      return logEntry("resisted", `It's not very effective...`, state.turn, ident?.side)
-    }
-
+    case "-crit":
+    case "-supereffective":
+    case "-resisted":
     case "-immune": {
       const ident = parsePokemonIdent(args[0])
-      return logEntry("immune", `It had no effect!`, state.turn, ident?.side)
+      const effectMessages: Record<string, { type: BattleLogType; msg: string }> = {
+        "-crit": { type: "crit", msg: "A critical hit!" },
+        "-supereffective": { type: "supereffective", msg: "It's super effective!" },
+        "-resisted": { type: "resisted", msg: "It's not very effective..." },
+        "-immune": { type: "immune", msg: "It had no effect!" },
+      }
+      const { type, msg } = effectMessages[cmd]
+      return logEntry(type, msg, state.turn, ident?.side)
     }
 
     case "cant": {
@@ -662,20 +640,12 @@ export function processLine(state: BattleState, line: string): BattleLogEntry | 
     case "t:":
       return null
 
-    case "-fail": {
-      const ident = parsePokemonIdent(args[0] || "")
-      if (ident) {
-        return logEntry("info", `${ident.name}'s move failed!`, state.turn, ident.side)
-      }
-      return null
-    }
-
+    case "-fail":
     case "-miss": {
       const ident = parsePokemonIdent(args[0] || "")
-      if (ident) {
-        return logEntry("info", `${ident.name}'s attack missed!`, state.turn, ident.side)
-      }
-      return null
+      if (!ident) return null
+      const verb = cmd === "-fail" ? "move failed" : "attack missed"
+      return logEntry("info", `${ident.name}'s ${verb}!`, state.turn, ident.side)
     }
 
     case "-activate": {

@@ -25,36 +25,13 @@ export function AnalysisCard({
   skeletonLayout = "vertical",
   children,
 }: AnalysisCardProps) {
+  let body: ReactNode
   if (isLoading) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm font-medium flex items-center gap-2">
-            {icon}
-            {title}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <SkeletonList count={skeletonCount} height={skeletonHeight} layout={skeletonLayout} />
-        </CardContent>
-      </Card>
-    )
-  }
-
-  if (isEmpty) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm font-medium flex items-center gap-2">
-            {icon}
-            {title}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground">{emptyMessage}</p>
-        </CardContent>
-      </Card>
-    )
+    body = <SkeletonList count={skeletonCount} height={skeletonHeight} layout={skeletonLayout} />
+  } else if (isEmpty) {
+    body = <p className="text-sm text-muted-foreground">{emptyMessage}</p>
+  } else {
+    body = children
   }
 
   return (
@@ -65,7 +42,7 @@ export function AnalysisCard({
           {title}
         </CardTitle>
       </CardHeader>
-      <CardContent>{children}</CardContent>
+      <CardContent>{body}</CardContent>
     </Card>
   )
 }

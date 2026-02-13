@@ -20,8 +20,7 @@ export function TeamGrid({
   onAddSlot,
   layout = "grid",
 }: TeamGridProps) {
-  const filledSlots = team.slots
-  const emptyCount = TEAM_SIZE - filledSlots.length
+  const emptyCount = TEAM_SIZE - team.slots.length
 
   const isVertical = layout === "vertical"
 
@@ -31,7 +30,7 @@ export function TeamGrid({
         isVertical ? "space-y-3" : "grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6",
       )}
     >
-      {filledSlots.map((slot) => (
+      {team.slots.map((slot) => (
         <Card
           key={slot.position}
           className={cn(

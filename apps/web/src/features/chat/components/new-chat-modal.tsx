@@ -20,6 +20,21 @@ import type { ChatSessionData } from "@nasty-plot/core"
 import { PECHARUNT_SPRITE_URL } from "@/lib/constants"
 import { fetchJson } from "@/lib/api-client"
 
+function matchesCurrentEntity(
+  session: ChatSessionData,
+  pageCtx: { teamId?: string; battleId?: string },
+): boolean {
+  if (!session.contextData) return false
+  try {
+    const ctx = JSON.parse(session.contextData)
+    if (pageCtx.teamId && ctx.teamId) return ctx.teamId === pageCtx.teamId
+    if (pageCtx.battleId && ctx.battleId) return ctx.battleId === pageCtx.battleId
+    return true
+  } catch {
+    return false
+  }
+}
+
 export function NewChatModal() {
   const {
     showNewChatModal,
@@ -49,20 +64,8 @@ export function NewChatModal() {
     fetchJson<{ data: ChatSessionData[] }>(`/api/chat/sessions?${params}`)
       .then((data) => {
         if (cancelled) return
-        // Filter to sessions matching the current entity (team or battle)
         const sessions = data.data ?? []
-        const filtered = sessions.filter((s) => {
-          if (!s.contextData) return false
-          try {
-            const ctx = JSON.parse(s.contextData)
-            if (pageContext.teamId && ctx.teamId) return ctx.teamId === pageContext.teamId
-            if (pageContext.battleId && ctx.battleId) return ctx.battleId === pageContext.battleId
-            return true
-          } catch {
-            return false
-          }
-        })
-        setExistingSessions(filtered)
+        setExistingSessions(sessions.filter((s) => matchesCurrentEntity(s, pageContext)))
       })
       .catch(() => {
         if (!cancelled) setExistingSessions([])
@@ -74,7 +77,7 @@ export function NewChatModal() {
     return () => {
       cancelled = true
     }
-  }, [showNewChatModal, contextMode, pageContext.teamId, pageContext.battleId])
+  }, [showNewChatModal, contextMode, pageContext])
 
   function openSidebarAndDismiss() {
     if (pendingQuestion) {

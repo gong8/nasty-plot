@@ -268,7 +268,7 @@ export function useGuidedBuilder(teamId: string, formatId: string) {
         const sets = await fetchSets(pokemonId, formatId)
         if (sets.length === 0) return null
 
-        const set = sets[0] // Most popular set
+        const set = sets[0]
         const moves = set.moves.map((m) => (Array.isArray(m) ? m[0] : m))
 
         const updates: Partial<TeamSlotData> = {
@@ -291,16 +291,13 @@ export function useGuidedBuilder(teamId: string, formatId: string) {
   )
 
   const applyAllSets = useCallback(async () => {
-    const promises = slots
-      .filter((s) => s.pokemonId && !s.ability) // Only apply if no ability set yet
-      .map((s) => applySet(s.position!, s.pokemonId!))
-    await Promise.allSettled(promises)
+    const slotsNeedingSets = slots.filter((s) => s.pokemonId && !s.ability)
+    await Promise.allSettled(slotsNeedingSets.map((s) => applySet(s.position!, s.pokemonId!)))
   }, [slots, applySet])
 
   // --- Sample team import ---
 
-  const importSampleTeam = useCallback(async (sampleTeam: SampleTeamEntry) => {
-    // Parse the full paste to get complete sets (moves, EVs, abilities, etc.)
+  const importSampleTeam = useCallback((sampleTeam: SampleTeamEntry) => {
     const parsed = parseShowdownPaste(sampleTeam.paste)
     const newSlots: Partial<TeamSlotData>[] = parsed.slice(0, 6).map((slot, i) => ({
       ...slot,
@@ -308,7 +305,7 @@ export function useGuidedBuilder(teamId: string, formatId: string) {
     }))
     setSlots(newSlots)
     setStartedFromSample(true)
-    setStep("sets") // Jump directly to set customization
+    setStep("sets")
   }, [])
 
   // --- Start paths ---

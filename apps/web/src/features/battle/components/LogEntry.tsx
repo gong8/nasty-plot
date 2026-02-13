@@ -18,7 +18,7 @@ import {
 import type { BattleLogEntry } from "@nasty-plot/battle-engine"
 import { cn } from "@nasty-plot/ui"
 
-const TYPE_ICONS: Record<string, LucideIcon> = {
+const ENTRY_ICONS: Record<string, LucideIcon> = {
   move: Sword,
   damage: Flame,
   heal: Heart,
@@ -41,7 +41,7 @@ const TYPE_ICONS: Record<string, LucideIcon> = {
   win: Star,
 }
 
-const TYPE_COLORS: Record<string, string> = {
+const ENTRY_COLORS: Record<string, string> = {
   move: "text-foreground",
   damage: "text-red-500 dark:text-red-400",
   heal: "text-green-500 dark:text-green-400",
@@ -68,19 +68,19 @@ const TYPE_COLORS: Record<string, string> = {
   cant: "text-muted-foreground",
 }
 
-const USED_PREFIX_LENGTH = "used ".length
+const MOVE_USED_PATTERN = /used (.+?)!/
 
 export function formatLogMessage(message: string): React.ReactNode {
-  const moveMatch = message.match(/used (.+?)!/)
+  const match = message.match(MOVE_USED_PATTERN)
 
-  if (!moveMatch) {
+  if (!match || match.index == null) {
     return <span>{formatWithPercentages(message)}</span>
   }
 
-  const matchStart = message.indexOf(`used ${moveMatch[1]}!`)
-  const moveName = moveMatch[1]
-  const before = message.slice(0, matchStart + USED_PREFIX_LENGTH)
-  const after = message.slice(matchStart + USED_PREFIX_LENGTH + moveName.length)
+  const moveName = match[1]
+  const moveNameStart = match.index + "used ".length
+  const before = message.slice(0, moveNameStart)
+  const after = message.slice(moveNameStart + moveName.length)
 
   return (
     <>
@@ -111,8 +111,8 @@ interface LogEntryProps {
 }
 
 export function LogEntry({ entry, className }: LogEntryProps) {
-  const Icon = TYPE_ICONS[entry.type]
-  const colorClass = TYPE_COLORS[entry.type] || "text-muted-foreground"
+  const Icon = ENTRY_ICONS[entry.type]
+  const colorClass = ENTRY_COLORS[entry.type] || "text-muted-foreground"
 
   return (
     <div className={cn("flex items-start gap-2 py-0.5 px-2", colorClass, className)}>

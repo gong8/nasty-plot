@@ -132,17 +132,7 @@ export default function SimulatePage() {
       pollRef.current = setInterval(async () => {
         try {
           const statusData = await fetchJson<BatchState>(`/api/battles/batch/${data.id}`)
-
-          setBatchState({
-            id: data.id,
-            status: statusData.status,
-            completedGames: statusData.completedGames,
-            totalGames: statusData.totalGames,
-            team1Wins: statusData.team1Wins,
-            team2Wins: statusData.team2Wins,
-            draws: statusData.draws,
-            analytics: statusData.analytics,
-          })
+          setBatchState({ ...statusData, id: data.id })
 
           if (statusData.status === "completed" || statusData.status === "cancelled") {
             if (pollRef.current) clearInterval(pollRef.current)

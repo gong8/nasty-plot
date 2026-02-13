@@ -5,22 +5,17 @@ import { apiErrorResponse, badRequestResponse, notFoundResponse } from "../../..
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
-    const a = searchParams.get("a")
-    const b = searchParams.get("b")
+    const teamAId = searchParams.get("a")
+    const teamBId = searchParams.get("b")
 
-    if (!a || !b) {
+    if (!teamAId || !teamBId) {
       return badRequestResponse("Both 'a' and 'b' query params required")
     }
 
-    const teamA = await getTeam(a)
-    if (!teamA) {
-      return notFoundResponse(`Team '${a}'`)
-    }
+    const [teamA, teamB] = await Promise.all([getTeam(teamAId), getTeam(teamBId)])
 
-    const teamB = await getTeam(b)
-    if (!teamB) {
-      return notFoundResponse(`Team '${b}'`)
-    }
+    if (!teamA) return notFoundResponse(`Team '${teamAId}'`)
+    if (!teamB) return notFoundResponse(`Team '${teamBId}'`)
 
     const result = await compareTeams(teamA, teamB)
     return NextResponse.json(result)

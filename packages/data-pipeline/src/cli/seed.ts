@@ -1,5 +1,6 @@
 #!/usr/bin/env tsx
 
+import type { FormatDefinition } from "@nasty-plot/core"
 import { prisma } from "@nasty-plot/db"
 import { FORMAT_DEFINITIONS, getActiveFormats } from "@nasty-plot/formats"
 import { ensureFormatExists } from "@nasty-plot/formats/db"
@@ -7,14 +8,7 @@ import { syncUsageStats, syncSmogonSets } from "@nasty-plot/smogon-data"
 import { isStale } from "../staleness.service"
 import { seedSampleTeams } from "../seed-sample-teams"
 
-const FORMATS = getActiveFormats().map((f) => ({
-  id: f.id,
-  name: f.name,
-  generation: f.generation,
-  gameType: f.gameType,
-  smogonStatsId: f.smogonStatsId,
-  pkmnSetsId: f.pkmnSetsId,
-}))
+const ACTIVE_FORMATS = getActiveFormats()
 
 interface CliArgs {
   formatId?: string
@@ -71,14 +65,7 @@ async function logSyncError(source: string, formatId: string, message: string): 
 }
 
 async function seedFormat(
-  format: {
-    id: string
-    name: string
-    generation: number
-    gameType: string
-    smogonStatsId?: string
-    pkmnSetsId?: string
-  },
+  format: FormatDefinition,
   args: { force: boolean; statsOnly: boolean; setsOnly: boolean },
 ): Promise<SeedResult> {
   console.log(`\n--- Seeding ${format.name} (${format.id}) ---`)
@@ -154,26 +141,19 @@ async function main(): Promise<void> {
     return
   }
 
-  let formatsToSeed = args.formatId ? FORMATS.filter((f) => f.id === args.formatId) : FORMATS
+  let formatsToSeed = args.formatId
+    ? ACTIVE_FORMATS.filter((f) => f.id === args.formatId)
+    : ACTIVE_FORMATS
 
   if (formatsToSeed.length === 0 && args.formatId) {
     // Unknown format — look up from all definitions (including inactive)
     const definition = FORMAT_DEFINITIONS.find((f) => f.id === args.formatId)
     if (definition) {
-      formatsToSeed = [
-        {
-          id: definition.id,
-          name: definition.name,
-          generation: definition.generation,
-          gameType: definition.gameType,
-          smogonStatsId: definition.smogonStatsId,
-          pkmnSetsId: definition.pkmnSetsId,
-        },
-      ]
+      formatsToSeed = [definition]
       console.log(`[seed] Note: ${args.formatId} is inactive but seeding as requested`)
     } else {
       console.error(
-        `[seed] Unknown format: ${args.formatId}. Available: ${FORMATS.map((f) => f.id).join(", ")}`,
+        `[seed] Unknown format: ${args.formatId}. Available: ${ACTIVE_FORMATS.map((f) => f.id).join(", ")}`,
       )
       process.exit(1)
     }

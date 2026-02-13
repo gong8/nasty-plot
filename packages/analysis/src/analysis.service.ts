@@ -1,12 +1,11 @@
 import {
-  DEFAULT_IVS,
-  DEFAULT_EVS,
   DEFAULT_LEVEL,
   MAX_SINGLE_EV,
   PERFECT_IV,
   TEAM_SIZE,
   calculateAllStats,
   calculateStat,
+  fillStats,
   type TeamSlotData,
   type TeamAnalysis,
   type SpeedTierEntry,
@@ -51,66 +50,65 @@ async function calculateSpeedTiers(
   slots: TeamSlotData[],
   formatId: string,
 ): Promise<SpeedTierEntry[]> {
-  const entries: SpeedTierEntry[] = []
-
-  for (const slot of slots) {
-    if (!slot.species?.baseStats) continue
+  const teamEntries = slots.flatMap((slot) => {
+    if (!slot.species?.baseStats) return []
 
     const stats = calculateAllStats(
       slot.species.baseStats,
-      { ...DEFAULT_IVS, ...(slot.ivs ?? {}) },
-      { ...DEFAULT_EVS, ...(slot.evs ?? {}) },
+      fillStats(slot.ivs, PERFECT_IV),
+      fillStats(slot.evs, 0),
       slot.level,
       slot.nature,
     )
 
-    entries.push({
-      pokemonId: slot.pokemonId,
-      pokemonName: slot.species.name,
-      pokemonNum: slot.species.num,
-      speed: stats.spe,
-      nature: slot.nature,
-      evs: slot.evs.spe,
-    })
-  }
+    return [
+      {
+        pokemonId: slot.pokemonId,
+        pokemonName: slot.species.name,
+        pokemonNum: slot.species.num,
+        speed: stats.spe,
+        nature: slot.nature,
+        evs: slot.evs.spe,
+      },
+    ]
+  })
 
+  const benchmarkEntries = await buildSpeedBenchmarks(slots, formatId)
+  const entries = [...teamEntries, ...benchmarkEntries]
+
+  entries.sort((a, b) => b.speed - a.speed)
+  return entries
+}
+
+async function buildSpeedBenchmarks(
+  slots: TeamSlotData[],
+  formatId: string,
+): Promise<SpeedTierEntry[]> {
   const format = getFormat(formatId)
   const level = format?.defaultLevel ?? DEFAULT_LEVEL
   const teamPokemonIds = new Set(slots.map((s) => s.pokemonId))
-
   const usageEntries = await getUsageStats(formatId, { limit: TOP_USAGE_FOR_BENCHMARKS })
 
-  let benchmarkCount = 0
+  const benchmarks: SpeedTierEntry[] = []
   for (const entry of usageEntries) {
-    if (benchmarkCount >= MAX_BENCHMARKS) break
+    if (benchmarks.length >= MAX_BENCHMARKS) break
     if (teamPokemonIds.has(entry.pokemonId)) continue
 
     const species = getSpecies(entry.pokemonId)
     if (!species?.baseStats) continue
 
-    const maxSpeed = calculateStat(
-      "spe",
-      species.baseStats.spe,
-      PERFECT_IV,
-      MAX_SINGLE_EV,
-      level,
-      "Jolly",
-    )
-
-    entries.push({
+    benchmarks.push({
       pokemonId: entry.pokemonId,
       pokemonName: species.name,
       pokemonNum: species.num,
-      speed: maxSpeed,
+      speed: calculateStat("spe", species.baseStats.spe, PERFECT_IV, MAX_SINGLE_EV, level, "Jolly"),
       nature: "Jolly",
       evs: MAX_SINGLE_EV,
       isBenchmark: true,
     })
-    benchmarkCount++
   }
 
-  entries.sort((a, b) => b.speed - a.speed)
-  return entries
+  return benchmarks
 }
 
 function generateSuggestions(
@@ -140,9 +138,9 @@ function generateSuggestions(
       .slice(0, 2)
       .map((threat) => threat.pokemonName)
       .join(" and ")
-    const isMultiple = highThreats.length !== 1
+    const isPlural = highThreats.length !== 1
     suggestions.push(
-      `${threatNames} ${isMultiple ? "are" : "is a"} significant threat${isMultiple ? "s" : ""}. Consider adding a check or counter.`,
+      `${threatNames} ${isPlural ? "are" : "is a"} significant threat${isPlural ? "s" : ""}. Consider adding a check or counter.`,
     )
   }
 

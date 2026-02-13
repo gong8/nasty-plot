@@ -246,27 +246,25 @@ export function GuidedBuilderProvider({ teamId, formatId, children }: GuidedBuil
     [persistSlotToDb, guided],
   )
 
-  const handleBuildPick = useCallback(
-    async (pick: GuidedPokemonPick) => {
-      const position = guided.currentBuildSlot
-      await persistSlotToDb(position, pick.pokemonId).catch(() => {})
-      guided.addSlotPick(position, pick)
-      if (position >= 6) {
-        guided.goToStep("sets")
-      } else {
-        guided.nextBuildSlot()
-      }
-    },
-    [persistSlotToDb, guided],
-  )
-
-  const handleSkipSlot = useCallback(() => {
+  const advanceBuildOrFinish = useCallback(() => {
     if (guided.currentBuildSlot >= 6) {
       guided.goToStep("sets")
     } else {
       guided.nextBuildSlot()
     }
   }, [guided])
+
+  const handleBuildPick = useCallback(
+    async (pick: GuidedPokemonPick) => {
+      const position = guided.currentBuildSlot
+      await persistSlotToDb(position, pick.pokemonId).catch(() => {})
+      guided.addSlotPick(position, pick)
+      advanceBuildOrFinish()
+    },
+    [persistSlotToDb, guided, advanceBuildOrFinish],
+  )
+
+  const handleSkipSlot = advanceBuildOrFinish
 
   const handleSave = useCallback(async () => {
     setIsSaving(true)
@@ -549,6 +547,7 @@ export function GuidedBuilderProvider({ teamId, formatId, children }: GuidedBuil
       handleLeadPick,
       handleBuildPick,
       handleSkipSlot,
+      advanceBuildOrFinish,
       handleSave,
       handleTestTeam,
       handleImportSample,

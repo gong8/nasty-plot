@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import type { ChatSessionData } from "@nasty-plot/core"
-import { fetchJson, fetchApiData, postApiData } from "@/lib/api-client"
+import { fetchApiData, postApiData, deleteJson, putApiData } from "@/lib/api-client"
 
 const SESSIONS_KEY = ["chat-sessions"]
 
@@ -34,7 +34,7 @@ export function useDeleteChatSession() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (id: string) => fetchJson(`/api/chat/sessions/${id}`, { method: "DELETE" }),
+    mutationFn: (id: string) => deleteJson(`/api/chat/sessions/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: SESSIONS_KEY })
     },
@@ -46,11 +46,7 @@ export function useUpdateChatSessionTitle() {
 
   return useMutation({
     mutationFn: ({ id, title }: { id: string; title: string }) =>
-      fetchApiData<ChatSessionData>(`/api/chat/sessions/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title }),
-      }),
+      putApiData<ChatSessionData>(`/api/chat/sessions/${id}`, { title }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: SESSIONS_KEY })
     },

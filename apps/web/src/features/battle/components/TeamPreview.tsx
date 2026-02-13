@@ -32,8 +32,9 @@ export function TeamPreview({
 
   const handleSinglesSubmit = () => {
     if (selectedLead === null) return
-    const rest = playerTeam.map((_, i) => i + 1).filter((pos) => pos !== selectedLead + 1)
-    onSubmit([selectedLead + 1, ...rest])
+    const leadPosition = selectedLead + 1
+    const backPositions = playerTeam.map((_, i) => i + 1).filter((pos) => pos !== leadPosition)
+    onSubmit([leadPosition, ...backPositions])
   }
 
   const handleDoublesToggle = (index: number) => {

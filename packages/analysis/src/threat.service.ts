@@ -48,22 +48,22 @@ export async function identifyThreats(
     const stabTypes = species.types as PokemonType[]
     let threatScore = 0
     const reasons: string[] = []
-    const threatenedSlotIds = new Set<string>()
+    const threatenedPokemonIds = new Set<string>()
 
     for (const stabType of stabTypes) {
-      let weakSlotCount = 0
+      let weakMemberCount = 0
       for (const slot of slots) {
         const defenderTypes = slot.species?.types ?? []
         if (defenderTypes.length === 0) continue
         if (getTypeEffectiveness(stabType, defenderTypes) > 1) {
-          weakSlotCount++
-          threatenedSlotIds.add(slot.pokemonId)
+          weakMemberCount++
+          threatenedPokemonIds.add(slot.pokemonId)
         }
       }
-      if (weakSlotCount >= 2) {
-        threatScore += weakSlotCount * MULTI_WEAK_SCORE_PER_SLOT
-        reasons.push(`${stabType}-type STAB hits ${weakSlotCount} team members super-effectively`)
-      } else if (weakSlotCount === 1) {
+      if (weakMemberCount >= 2) {
+        threatScore += weakMemberCount * MULTI_WEAK_SCORE_PER_SLOT
+        reasons.push(`${stabType}-type STAB hits ${weakMemberCount} team members super-effectively`)
+      } else if (weakMemberCount === 1) {
         threatScore += SINGLE_WEAK_SCORE
       }
     }
@@ -92,7 +92,7 @@ export async function identifyThreats(
         reasons.length > 0
           ? reasons.join("; ")
           : `High usage (${entry.usagePercent.toFixed(1)}%) in the metagame`,
-      threatenedSlots: threatenedSlotIds.size > 0 ? [...threatenedSlotIds] : undefined,
+      threatenedSlots: threatenedPokemonIds.size > 0 ? [...threatenedPokemonIds] : undefined,
     })
   }
 

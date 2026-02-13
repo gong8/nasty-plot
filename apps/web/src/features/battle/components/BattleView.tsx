@@ -271,6 +271,43 @@ export function BattleView({
   const activePokemon = state.sides.p1.active[0]
   const controlsDisabled = animState.isAnimating
 
+  const controlPanel =
+    state.waitingForChoice && state.availableActions ? (
+      <Card className={cn("h-full", controlsDisabled && "opacity-60 pointer-events-none")}>
+        <CardContent className="pt-3 pb-3 h-full">
+          {showSwitch ? (
+            <SwitchMenu
+              actions={state.availableActions}
+              onSwitch={(idx) => {
+                handleSwitch(idx)
+                setShowSwitchMenu(false)
+              }}
+              onBack={isForceSwitch ? undefined : () => setShowSwitchMenu(false)}
+              team={state.sides.p1.team}
+            />
+          ) : (
+            <MoveSelector
+              actions={state.availableActions}
+              onMoveSelect={handleMove}
+              onSwitchClick={() => setShowSwitchMenu(true)}
+              canTera={state.availableActions.canTera && state.sides.p1.canTera}
+              teraType={activePokemon?.teraType}
+              format={state.format}
+              activeSlot={state.availableActions.activeSlot}
+              opponentActive={state.sides.p2.active}
+              playerActive={state.sides.p1.active}
+            />
+          )}
+        </CardContent>
+      </Card>
+    ) : (
+      <Card className="h-full">
+        <CardContent className="pt-3 pb-3 h-full flex items-center justify-center text-muted-foreground text-sm">
+          {state.phase === "battle" ? "Waiting for opponent..." : "\u00A0"}
+        </CardContent>
+      </Card>
+    )
+
   return (
     <div className={cn("flex flex-col h-[calc(100vh-80px)]", className)}>
       {/* Top bar: turn + names */}
@@ -302,43 +339,7 @@ export function BattleView({
           speed={textSpeed}
           onSpeedChange={setTextSpeed}
           sidebarTabs={sidebarTabs}
-          bottomContent={
-            state.waitingForChoice && state.availableActions ? (
-              <Card className={cn("h-full", controlsDisabled && "opacity-60 pointer-events-none")}>
-                <CardContent className="pt-3 pb-3 h-full">
-                  {showSwitch ? (
-                    <SwitchMenu
-                      actions={state.availableActions}
-                      onSwitch={(idx) => {
-                        handleSwitch(idx)
-                        setShowSwitchMenu(false)
-                      }}
-                      onBack={isForceSwitch ? undefined : () => setShowSwitchMenu(false)}
-                      team={state.sides.p1.team}
-                    />
-                  ) : (
-                    <MoveSelector
-                      actions={state.availableActions}
-                      onMoveSelect={handleMove}
-                      onSwitchClick={() => setShowSwitchMenu(true)}
-                      canTera={state.availableActions.canTera && state.sides.p1.canTera}
-                      teraType={activePokemon?.teraType}
-                      format={state.format}
-                      activeSlot={state.availableActions.activeSlot}
-                      opponentActive={state.sides.p2.active}
-                      playerActive={state.sides.p1.active}
-                    />
-                  )}
-                </CardContent>
-              </Card>
-            ) : (
-              <Card className="h-full">
-                <CardContent className="pt-3 pb-3 h-full flex items-center justify-center text-muted-foreground text-sm">
-                  {state.phase === "battle" ? "Waiting for opponent..." : "\u00A0"}
-                </CardContent>
-              </Card>
-            )
-          }
+          bottomContent={controlPanel}
           className="h-full"
         />
       </div>

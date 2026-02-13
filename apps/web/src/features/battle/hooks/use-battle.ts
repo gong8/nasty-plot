@@ -4,18 +4,17 @@ import { useState, useCallback, useRef, useEffect } from "react"
 import {
   BattleManager,
   createInitialState,
-  RandomAI,
-  GreedyAI,
-  HeuristicAI,
-  MCTSAI,
+  createAI,
   type BattleState,
   type AIDifficulty,
-  type AIPlayer,
   type BattleCheckpoint,
 } from "@nasty-plot/battle-engine/client"
 import type { GameType } from "@nasty-plot/core"
 import { saveCheckpoint, clearCheckpoint } from "@/features/battle/lib/checkpoint-store"
 import { postJson } from "@/lib/api-client"
+
+/** MCTS config tuned for interactive play (higher iterations for better decisions). */
+const INTERACTIVE_MCTS_CONFIG = { maxIterations: 5000, maxTimeMs: 3000 }
 
 interface UseBattleConfig {
   playerTeamPaste: string
@@ -28,19 +27,6 @@ interface UseBattleConfig {
   opponentName?: string
   playerTeamId?: string | null
   opponentTeamId?: string | null
-}
-
-function createAI(difficulty: AIDifficulty): AIPlayer {
-  switch (difficulty) {
-    case "random":
-      return new RandomAI()
-    case "greedy":
-      return new GreedyAI()
-    case "heuristic":
-      return new HeuristicAI()
-    case "expert":
-      return new MCTSAI({ maxIterations: 5000, maxTimeMs: 3000 })
-  }
 }
 
 export function useBattle() {
@@ -57,6 +43,27 @@ export function useBattle() {
       managerRef.current?.destroy()
     }
   }, [])
+
+  const makeOnUpdate = (
+    manager: BattleManager,
+    difficulty: AIDifficulty,
+  ): ((newState: BattleState) => void) => {
+    return (newState: BattleState) => {
+      setState({ ...newState })
+
+      if (newState.waitingForChoice && newState.phase === "battle") {
+        const cp = manager.getCheckpoint(difficulty)
+        if (cp) {
+          const extras = checkpointExtrasRef.current?.()
+          saveCheckpoint(extras ? { ...cp, ...extras } : cp)
+        }
+      }
+
+      if (newState.phase === "ended") {
+        clearCheckpoint()
+      }
+    }
+  }
 
   const startBattle = useCallback(async (config: UseBattleConfig) => {
     setIsLoading(true)
@@ -77,39 +84,17 @@ export function useBattle() {
       opponentName: config.opponentName || "Opponent",
     })
 
-    // Set AI
-    const ai = createAI(config.aiDifficulty)
+    const ai = createAI(config.aiDifficulty, INTERACTIVE_MCTS_CONFIG)
     manager.setAI(ai)
-
-    // Set up state update handler
-    manager.onUpdate((newState) => {
-      setState({ ...newState })
-
-      // Auto-save checkpoint when waiting for player choice
-      if (newState.waitingForChoice && newState.phase === "battle") {
-        const cp = manager.getCheckpoint(config.aiDifficulty)
-        if (cp) {
-          const extras = checkpointExtrasRef.current?.()
-          saveCheckpoint(extras ? { ...cp, ...extras } : cp)
-        }
-      }
-
-      // Clear checkpoint when battle ends
-      if (newState.phase === "ended") {
-        clearCheckpoint()
-      }
-    })
-
+    manager.onUpdate(makeOnUpdate(manager, config.aiDifficulty))
     managerRef.current = manager
 
     try {
-      // Start the battle
       await manager.start()
 
       // If another startBattle call superseded us while we were awaiting, bail out
       if (managerRef.current !== manager) return
 
-      // Update state after start
       setState({ ...manager.getState() })
     } catch (err) {
       // If another startBattle call superseded us, don't overwrite its state
@@ -193,7 +178,7 @@ export function useBattle() {
     }
 
     try {
-      const ai = createAI(checkpoint.aiDifficulty)
+      const ai = createAI(checkpoint.aiDifficulty, INTERACTIVE_MCTS_CONFIG)
       const manager = await BattleManager.resume(checkpoint, ai, (newState) => {
         setState({ ...newState })
 

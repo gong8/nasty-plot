@@ -1,32 +1,12 @@
 import { toPercent } from "@nasty-plot/core"
 import { runAutomatedBattle, type SingleBattleResult } from "./automated-battle-manager"
-import { RandomAI } from "../ai/random-ai"
-import { GreedyAI } from "../ai/greedy-ai"
-import { HeuristicAI } from "../ai/heuristic-ai"
-import { MCTSAI } from "../ai/mcts-ai"
-import type {
-  AIPlayer,
-  AIDifficulty,
-  BatchSimConfig,
-  PokemonStats,
-  BatchAnalytics,
-  BatchSimProgress,
-} from "../types"
+import { createAI } from "../ai/shared"
+import type { BatchSimConfig, PokemonStats, BatchAnalytics, BatchSimProgress } from "../types"
 
 export type { BatchSimConfig, PokemonStats, BatchAnalytics, BatchSimProgress }
 
-function createAI(difficulty: AIDifficulty): AIPlayer {
-  switch (difficulty) {
-    case "random":
-      return new RandomAI()
-    case "greedy":
-      return new GreedyAI()
-    case "heuristic":
-      return new HeuristicAI()
-    case "expert":
-      return new MCTSAI({ maxIterations: 2000, maxTimeMs: 1000 })
-  }
-}
+/** MCTS config tuned for batch simulation (lower iterations for throughput). */
+const BATCH_MCTS_CONFIG = { maxIterations: 2000, maxTimeMs: 1000 }
 
 /**
  * Run a batch simulation of N games between two teams.
@@ -45,13 +25,11 @@ export async function runBatchSimulation(
   let draws = 0
   let completed = 0
 
-  // Simple concurrency limiter
-  const queue: Promise<void>[] = []
-  let active = 0
+  const inflight = new Set<Promise<void>>()
 
   const runSingleGame = async (index: number) => {
-    const ai1 = createAI(config.aiDifficulty)
-    const ai2 = createAI(config.aiDifficulty)
+    const ai1 = createAI(config.aiDifficulty, BATCH_MCTS_CONFIG)
+    const ai2 = createAI(config.aiDifficulty, BATCH_MCTS_CONFIG)
     const seed = generateRandomSeed()
 
     try {
@@ -89,20 +67,16 @@ export async function runBatchSimulation(
     })
   }
 
-  // Run games with concurrency limit
   for (let i = 0; i < config.totalGames; i++) {
-    const p = runSingleGame(i).then(() => {
-      active--
-    })
-    queue.push(p)
-    active++
+    const p = runSingleGame(i).then(() => inflight.delete(p))
+    inflight.add(p)
 
-    if (active >= concurrency) {
-      await Promise.race(queue.filter(Boolean))
+    if (inflight.size >= concurrency) {
+      await Promise.race(inflight)
     }
   }
 
-  await Promise.all(queue)
+  await Promise.all(inflight)
 
   const validResults = results.filter(Boolean)
   const analytics = computeAnalytics(validResults, config.totalGames, team1Wins, team2Wins, draws)
@@ -120,10 +94,10 @@ function computeAnalytics(
   draws: number,
 ): BatchAnalytics {
   const turnCounts = results.map((r) => r.turnCount)
-  const avgTurnCount =
-    turnCounts.length > 0
-      ? Math.round(turnCounts.reduce((a, b) => a + b, 0) / turnCounts.length)
-      : 0
+  const hasTurns = turnCounts.length > 0
+  const avgTurnCount = hasTurns
+    ? Math.round(turnCounts.reduce((a, b) => a + b, 0) / turnCounts.length)
+    : 0
 
   const turnDistribution: Record<number, number> = {}
   for (const turns of turnCounts) {
@@ -133,9 +107,7 @@ function computeAnalytics(
 
   const pokemonStatsMap = new Map<string, PokemonStats>()
 
-  for (const result of results) {
-    const { finalState } = result
-
+  for (const { finalState } of results) {
     for (const side of [finalState.sides.p1, finalState.sides.p2]) {
       for (const pokemon of side.team) {
         const key = pokemon.pokemonId || pokemon.name
@@ -163,8 +135,8 @@ function computeAnalytics(
     team2WinRate: toPercent(team2Wins, total),
     drawRate: toPercent(draws, total),
     avgTurnCount,
-    minTurnCount: turnCounts.length > 0 ? Math.min(...turnCounts) : 0,
-    maxTurnCount: turnCounts.length > 0 ? Math.max(...turnCounts) : 0,
+    minTurnCount: hasTurns ? Math.min(...turnCounts) : 0,
+    maxTurnCount: hasTurns ? Math.max(...turnCounts) : 0,
     pokemonStats: [...pokemonStatsMap.values()],
     turnDistribution,
   }

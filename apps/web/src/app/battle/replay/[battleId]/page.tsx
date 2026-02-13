@@ -46,21 +46,17 @@ export default function ReplayPage({ params }: { params: Promise<{ battleId: str
 
   if (error) {
     return (
-      <>
-        <main className="container mx-auto p-4 text-center py-12">
-          <p className="text-destructive">Error: {error}</p>
-        </main>
-      </>
+      <main className="container mx-auto p-4 text-center py-12">
+        <p className="text-destructive">Error: {error}</p>
+      </main>
     )
   }
 
   if (!battleData) {
     return (
-      <>
-        <main className="container mx-auto p-4">
-          <LoadingSpinner size="lg" className="py-24" />
-        </main>
-      </>
+      <main className="container mx-auto p-4">
+        <LoadingSpinner size="lg" className="py-24" />
+      </main>
     )
   }
 

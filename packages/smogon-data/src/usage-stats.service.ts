@@ -84,6 +84,20 @@ export async function resolveYearMonth(
 // Upsert helpers for syncUsageStats
 // ---------------------------------------------------------------------------
 
+async function upsertSyncLog(formatId: string, message: string): Promise<void> {
+  await prisma.dataSyncLog.upsert({
+    where: { source_formatId: { source: "smogon-stats", formatId } },
+    update: { lastSynced: new Date(), status: "success", message },
+    create: {
+      source: "smogon-stats",
+      formatId,
+      lastSynced: new Date(),
+      status: "success",
+      message,
+    },
+  })
+}
+
 async function saveTeammates(
   formatId: string,
   pokemonId: string,
@@ -107,11 +121,9 @@ async function saveChecksAndCounters(
   targetId: string,
   counters: Record<string, [number, number, ...number[]]> | undefined,
 ): Promise<void> {
-  for (const [counterName, values] of Object.entries(counters ?? {})) {
+  for (const [counterName, [koPercent, switchPercent]] of Object.entries(counters ?? {})) {
     const counterId = toId(counterName)
     if (!counterId) continue
-    const koPercent = values[0] ?? 0
-    const switchPercent = values[1] ?? 0
     await prisma.checkCounter.upsert({
       where: {
         formatId_targetId_counterId: { formatId, targetId, counterId },
@@ -225,18 +237,7 @@ export async function syncUsageStats(
   }
 
   const monthStr = `${statYear}-${String(statMonth).padStart(2, "0")}`
-  const syncMessage = `Fetched ${entries.length} Pokemon for ${monthStr}`
-  await prisma.dataSyncLog.upsert({
-    where: { source_formatId: { source: "smogon-stats", formatId } },
-    update: { lastSynced: new Date(), status: "success", message: syncMessage },
-    create: {
-      source: "smogon-stats",
-      formatId,
-      lastSynced: new Date(),
-      status: "success",
-      message: syncMessage,
-    },
-  })
+  await upsertSyncLog(formatId, `Fetched ${entries.length} Pokemon for ${monthStr}`)
 
   console.log(`[usage-stats] Done: ${entries.length} Pokemon saved for ${formatId}`)
 }

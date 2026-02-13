@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import {
-  loggedApiErrorResponse,
+  apiErrorResponse,
   badRequestResponse,
   notFoundResponse,
 } from "../../../../../lib/api-error"
@@ -34,7 +34,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ batt
       commentary: JSON.parse(updated.commentary!),
     })
   } catch (err) {
-    return loggedApiErrorResponse("[PUT /api/battles/commentary]", err, {
+    return apiErrorResponse(err, {
       fallback: "Failed to save commentary",
     })
   }

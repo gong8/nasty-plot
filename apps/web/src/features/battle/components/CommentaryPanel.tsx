@@ -29,7 +29,7 @@ const AUTO_COMMENTARY_DELAY_MS = 500
 const SSE_DATA_PREFIX = "data: "
 
 async function streamCommentary(
-  payload: {
+  request: {
     state: BattleState
     recentEntries: BattleLogEntry[]
     team1Name: string
@@ -41,7 +41,7 @@ async function streamCommentary(
   const res = await fetch("/api/battles/commentary", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ mode: "turn", ...payload }),
+    body: JSON.stringify({ mode: "turn", ...request }),
     signal,
   })
 
@@ -58,10 +58,10 @@ async function streamCommentary(
     const chunk = decoder.decode(value, { stream: true })
     for (const line of chunk.split("\n")) {
       if (!line.startsWith(SSE_DATA_PREFIX)) continue
-      const payload = line.slice(SSE_DATA_PREFIX.length)
-      if (payload === "[DONE]") break
+      const data = line.slice(SSE_DATA_PREFIX.length)
+      if (data === "[DONE]") break
       try {
-        const parsed = JSON.parse(payload)
+        const parsed = JSON.parse(data)
         if (parsed.content) {
           text += parsed.content
           onChunk(text)

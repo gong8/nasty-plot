@@ -103,7 +103,7 @@ export function TeamPicker({
           {teamsLoading ? (
             <LoadingSpinner size="sm" />
           ) : compatibleTeams.length === 0 ? (
-            <div className="text-center py-6 text-sm text-muted-foreground">
+            <EmptyState className="py-6">
               <p>No saved teams yet</p>
               <a
                 href="/teams/new"
@@ -111,7 +111,7 @@ export function TeamPicker({
               >
                 Create a team
               </a>
-            </div>
+            </EmptyState>
           ) : (
             <div className="grid grid-cols-1 gap-2 max-h-[300px] overflow-y-auto pr-1">
               {compatibleTeams.map((t) => (

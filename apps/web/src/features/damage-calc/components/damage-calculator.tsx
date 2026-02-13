@@ -406,11 +406,13 @@ export function DamageCalculator() {
   const [moveName, setMoveName] = useState("")
   const [weather, setWeather] = useState("None")
   const [terrain, setTerrain] = useState("None")
-  const [isReflect, setIsReflect] = useState(false)
-  const [isLightScreen, setIsLightScreen] = useState(false)
-  const [isAuroraVeil, setIsAuroraVeil] = useState(false)
-  const [isCritical, setIsCritical] = useState(false)
-  const [isDoubles, setIsDoubles] = useState(false)
+  const [fieldToggles, setFieldToggles] = useState({
+    isReflect: false,
+    isLightScreen: false,
+    isAuroraVeil: false,
+    isCritical: false,
+    isDoubles: false,
+  })
 
   const { mutate: calculate, data: result, isPending, error } = useDamageCalc()
 
@@ -434,26 +436,10 @@ export function DamageCalculator() {
       field: {
         weather: weather !== "None" ? weather : undefined,
         terrain: terrain !== "None" ? terrain : undefined,
-        isReflect,
-        isLightScreen,
-        isAuroraVeil,
-        isCritical,
-        isDoubles,
+        ...fieldToggles,
       },
     })
-  }, [
-    attacker,
-    defender,
-    moveName,
-    weather,
-    terrain,
-    isReflect,
-    isLightScreen,
-    isAuroraVeil,
-    isCritical,
-    isDoubles,
-    calculate,
-  ])
+  }, [attacker, defender, moveName, weather, terrain, fieldToggles, calculate])
 
   return (
     <div className="space-y-4">
@@ -519,46 +505,26 @@ export function DamageCalculator() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <Label className="text-[10px]">Reflect</Label>
-                    <Switch
-                      checked={isReflect}
-                      onCheckedChange={setIsReflect}
-                      className="scale-75"
-                    />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <Label className="text-[10px]">Light Screen</Label>
-                    <Switch
-                      checked={isLightScreen}
-                      onCheckedChange={setIsLightScreen}
-                      className="scale-75"
-                    />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <Label className="text-[10px]">Aurora Veil</Label>
-                    <Switch
-                      checked={isAuroraVeil}
-                      onCheckedChange={setIsAuroraVeil}
-                      className="scale-75"
-                    />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <Label className="text-[10px]">Critical Hit</Label>
-                    <Switch
-                      checked={isCritical}
-                      onCheckedChange={setIsCritical}
-                      className="scale-75"
-                    />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <Label className="text-[10px]">Doubles</Label>
-                    <Switch
-                      checked={isDoubles}
-                      onCheckedChange={setIsDoubles}
-                      className="scale-75"
-                    />
-                  </div>
+                  {(
+                    [
+                      ["isReflect", "Reflect"],
+                      ["isLightScreen", "Light Screen"],
+                      ["isAuroraVeil", "Aurora Veil"],
+                      ["isCritical", "Critical Hit"],
+                      ["isDoubles", "Doubles"],
+                    ] as const
+                  ).map(([key, label]) => (
+                    <div key={key} className="flex items-center justify-between">
+                      <Label className="text-[10px]">{label}</Label>
+                      <Switch
+                        checked={fieldToggles[key]}
+                        onCheckedChange={(checked) =>
+                          setFieldToggles((prev) => ({ ...prev, [key]: checked }))
+                        }
+                        className="scale-75"
+                      />
+                    </div>
+                  ))}
                 </div>
               </div>
 

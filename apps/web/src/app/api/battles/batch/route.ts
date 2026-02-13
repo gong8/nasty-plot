@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { loggedApiErrorResponse, badRequestResponse } from "../../../../lib/api-error"
+import { apiErrorResponse, badRequestResponse } from "../../../../lib/api-error"
 import { runBatchSimulation } from "@nasty-plot/battle-engine"
 import {
   createBatchSimulation,
@@ -91,7 +91,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ id: batch.id, status: "running" }, { status: 201 })
   } catch (err) {
-    return loggedApiErrorResponse("[POST /api/battles/batch]", err, {
+    return apiErrorResponse(err, {
       fallback: "Failed to start batch simulation",
     })
   }

@@ -14,6 +14,13 @@ import type { ChatSessionData, PageType } from "@nasty-plot/core"
 
 const PREVIEW_MAX_LENGTH = 50
 
+function truncatePreview(content?: string): string | undefined {
+  if (!content) return undefined
+  return content.length > PREVIEW_MAX_LENGTH
+    ? content.slice(0, PREVIEW_MAX_LENGTH) + "..."
+    : content
+}
+
 /** Page types that are context-locked (have associated sessions with frozen context) */
 const CONTEXTUAL_PAGE_TYPES: PageType[] = [
   "team-editor",
@@ -122,12 +129,8 @@ export function ChatSessionList({ mode, onSelect }: ChatSessionListProps) {
           {isLoading && <LoadingSpinner size="sm" className="py-4" />}
           {filteredSessions?.map((session) => {
             const isActive = session.id === activeSessionId
-            const firstMsg = session.messages[0]
-            const truncatedContent = firstMsg
-              ? firstMsg.content.slice(0, PREVIEW_MAX_LENGTH) +
-                (firstMsg.content.length > PREVIEW_MAX_LENGTH ? "..." : "")
-              : undefined
-            const preview = session.title || truncatedContent || "New Chat"
+            const preview =
+              session.title || truncatePreview(session.messages[0]?.content) || "New Chat"
 
             return (
               <div

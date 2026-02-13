@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { loggedApiErrorResponse, badRequestResponse } from "../../../../lib/api-error"
+import { apiErrorResponse, badRequestResponse } from "../../../../lib/api-error"
 import { importFromReplayUrl, importFromRawLog } from "@nasty-plot/battle-engine"
 import { createBattle } from "@nasty-plot/battle-engine/db"
 import { ensureFormatExists } from "@nasty-plot/formats/db"
@@ -96,7 +96,7 @@ export async function POST(req: NextRequest) {
       { status: 201 },
     )
   } catch (err) {
-    return loggedApiErrorResponse("[POST /api/battles/import]", err, {
+    return apiErrorResponse(err, {
       fallback: "Failed to import battle",
     })
   }

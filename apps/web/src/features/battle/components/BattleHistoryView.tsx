@@ -12,6 +12,7 @@ import { useTeamBattles, useTeamBattleStats } from "../hooks/use-team-battles"
 const TREND_COLORS: Record<string, string> = {
   win: "bg-green-500",
   loss: "bg-red-500",
+  draw: "bg-gray-400",
 }
 
 interface BattleHistoryViewProps {

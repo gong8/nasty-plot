@@ -165,107 +165,13 @@ function evalActiveMatchup(
   return score
 }
 
-/**
- * Evaluate a battle position from the given perspective.
- *
- * Returns a score in [-1, +1] where positive favors the perspective side.
- */
-export function evaluatePosition(state: BattleState, perspective: "p1" | "p2" = "p1"): EvalResult {
-  const features: EvalFeature[] = []
-  let rawScore = 0
-
-  const my = perspective === "p1" ? state.sides.p1 : state.sides.p2
-  const opp = perspective === "p1" ? state.sides.p2 : state.sides.p1
-
-  // HP remaining differential
-  const myHp = hpFraction(my.team)
-  const oppHp = hpFraction(opp.team)
-  const hpDiff = (myHp - oppHp) * WEIGHT.HP_REMAINING
-  features.push({
-    name: "HP remaining",
-    rawValue: myHp - oppHp,
-    weight: WEIGHT.HP_REMAINING,
-    contribution: hpDiff,
-  })
-  rawScore += hpDiff
-
-  // Pokemon alive differential
-  const myAlive = aliveCount(my.team)
-  const oppAlive = aliveCount(opp.team)
-  const myTotal = my.team.length || 1
-  const oppTotal = opp.team.length || 1
-  const aliveDiff = (myAlive / myTotal - oppAlive / oppTotal) * WEIGHT.POKEMON_ALIVE
-  features.push({
-    name: "Pokemon alive",
-    rawValue: myAlive - oppAlive,
-    weight: WEIGHT.POKEMON_ALIVE,
-    contribution: aliveDiff,
-  })
-  rawScore += aliveDiff
-
-  // Fast Pokemon alive
-  const fastDiff = fastAliveCount(my.team) - fastAliveCount(opp.team)
-  const fastScore = (fastDiff / Math.max(myTotal, 1)) * WEIGHT.FAST_POKEMON_ALIVE
-  features.push({
-    name: "Fast mons alive",
-    rawValue: fastDiff,
-    weight: WEIGHT.FAST_POKEMON_ALIVE,
-    contribution: fastScore,
-  })
-  rawScore += fastScore
-
-  // Hazards on opponent's side = good for us
-  const hazardOnOpp = evalHazards(opp.sideConditions)
-  const hazardOnMe = evalHazards(my.sideConditions)
-  const hazardDiff = hazardOnOpp - hazardOnMe
-  features.push({ name: "Hazards", rawValue: hazardDiff, weight: 1, contribution: hazardDiff })
-  rawScore += hazardDiff
-
-  // Screens on our side = good
-  const myScreens = evalScreens(my.sideConditions)
-  const oppScreens = evalScreens(opp.sideConditions)
-  const screenDiff = myScreens - oppScreens
-  features.push({
-    name: "Screens/Tailwind",
-    rawValue: screenDiff,
-    weight: 1,
-    contribution: screenDiff,
-  })
-  rawScore += screenDiff
-
-  // Status inflicted on opponent = good
-  const statusOnOpp = evalStatus(opp.team)
-  const statusOnMe = evalStatus(my.team)
-  const statusDiff = statusOnOpp - statusOnMe
-  features.push({
-    name: "Status conditions",
-    rawValue: statusDiff,
-    weight: 1,
-    contribution: statusDiff,
-  })
-  rawScore += statusDiff
-
-  // Active matchup — in doubles, evaluate all active-vs-active pairs
-  let matchupScore = 0
-  if (state.format === "doubles") {
-    const myActives = my.active.filter((p): p is BattlePokemon => p != null && isAlive(p))
-    const oppActives = opp.active.filter((p): p is BattlePokemon => p != null && isAlive(p))
-    for (const myA of myActives) {
-      for (const oppA of oppActives) {
-        matchupScore += evalActiveMatchup(
-          myA,
-          oppA,
-          state.field,
-          my.sideConditions,
-          opp.sideConditions,
-        )
-      }
-    }
-    // Normalize by number of matchup pairs to keep weight comparable to singles
-    const pairCount = myActives.length * oppActives.length
-    if (pairCount > 1) matchupScore /= pairCount
-  } else {
-    matchupScore = evalActiveMatchup(
+function evalActiveMatchupScore(
+  state: BattleState,
+  my: BattleState["sides"]["p1"],
+  opp: BattleState["sides"]["p1"],
+): number {
+  if (state.format !== "doubles") {
+    return evalActiveMatchup(
       my.active[0],
       opp.active[0],
       state.field,
@@ -273,16 +179,69 @@ export function evaluatePosition(state: BattleState, perspective: "p1" | "p2" = 
       opp.sideConditions,
     )
   }
-  features.push({
-    name: "Active matchup",
-    rawValue: matchupScore,
-    weight: 1,
-    contribution: matchupScore,
-  })
-  rawScore += matchupScore
 
-  // Normalize via tanh
+  const myActives = my.active.filter((p): p is BattlePokemon => p != null && isAlive(p))
+  const oppActives = opp.active.filter((p): p is BattlePokemon => p != null && isAlive(p))
+  let total = 0
+  for (const myA of myActives) {
+    for (const oppA of oppActives) {
+      total += evalActiveMatchup(myA, oppA, state.field, my.sideConditions, opp.sideConditions)
+    }
+  }
+  const pairCount = myActives.length * oppActives.length
+  return pairCount > 1 ? total / pairCount : total
+}
+
+/**
+ * Evaluate a battle position from the given perspective.
+ *
+ * Returns a score in [-1, +1] where positive favors the perspective side.
+ */
+export function evaluatePosition(state: BattleState, perspective: "p1" | "p2" = "p1"): EvalResult {
+  const my = state.sides[perspective]
+  const opp = state.sides[perspective === "p1" ? "p2" : "p1"]
+  const myTotal = my.team.length || 1
+  const oppTotal = opp.team.length || 1
+
+  const features: EvalFeature[] = []
+  let rawScore = 0
+
+  function addFeature(name: string, rawValue: number, weight: number, contribution: number) {
+    features.push({ name, rawValue, weight, contribution })
+    rawScore += contribution
+  }
+
+  const hpDiff = hpFraction(my.team) - hpFraction(opp.team)
+  addFeature("HP remaining", hpDiff, WEIGHT.HP_REMAINING, hpDiff * WEIGHT.HP_REMAINING)
+
+  const aliveFrac = aliveCount(my.team) / myTotal - aliveCount(opp.team) / oppTotal
+  addFeature(
+    "Pokemon alive",
+    aliveCount(my.team) - aliveCount(opp.team),
+    WEIGHT.POKEMON_ALIVE,
+    aliveFrac * WEIGHT.POKEMON_ALIVE,
+  )
+
+  const fastDiff = fastAliveCount(my.team) - fastAliveCount(opp.team)
+  addFeature(
+    "Fast mons alive",
+    fastDiff,
+    WEIGHT.FAST_POKEMON_ALIVE,
+    (fastDiff / Math.max(myTotal, 1)) * WEIGHT.FAST_POKEMON_ALIVE,
+  )
+
+  const hazardDiff = evalHazards(opp.sideConditions) - evalHazards(my.sideConditions)
+  addFeature("Hazards", hazardDiff, 1, hazardDiff)
+
+  const screenDiff = evalScreens(my.sideConditions) - evalScreens(opp.sideConditions)
+  addFeature("Screens/Tailwind", screenDiff, 1, screenDiff)
+
+  const statusDiff = evalStatus(opp.team) - evalStatus(my.team)
+  addFeature("Status conditions", statusDiff, 1, statusDiff)
+
+  const matchupScore = evalActiveMatchupScore(state, my, opp)
+  addFeature("Active matchup", matchupScore, 1, matchupScore)
+
   const score = Math.tanh(rawScore / NORMALIZATION_FACTOR)
-
   return { score, rawScore, features }
 }

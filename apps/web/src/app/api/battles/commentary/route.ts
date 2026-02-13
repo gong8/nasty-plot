@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server"
-import { loggedApiErrorResponse, badRequestResponse } from "../../../../lib/api-error"
+import { apiErrorResponse, badRequestResponse } from "../../../../lib/api-error"
 import type { BattleState, BattleLogEntry } from "@nasty-plot/battle-engine"
 import {
   buildTurnCommentaryContext,
@@ -84,7 +84,7 @@ export async function POST(req: NextRequest) {
       },
     })
   } catch (err) {
-    return loggedApiErrorResponse("[Commentary API]", err, { fallback: "Commentary failed" })
+    return apiErrorResponse(err, { fallback: "Commentary failed" })
   }
 }
 

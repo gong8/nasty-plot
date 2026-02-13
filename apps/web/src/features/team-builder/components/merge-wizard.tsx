@@ -27,6 +27,14 @@ interface MergeWizardProps {
   isLoading?: boolean
 }
 
+const MAX_DISPLAY_NAME_LENGTH = 24
+
+function truncateTeamName(teamName: string): string {
+  return teamName.length > MAX_DISPLAY_NAME_LENGTH
+    ? teamName.slice(0, MAX_DISPLAY_NAME_LENGTH - 1) + "\u2026"
+    : teamName
+}
+
 export function MergeWizard({ open, onOpenChange, diff, onMerge, isLoading }: MergeWizardProps) {
   const [step, setStep] = useState(0)
   const [decisions, setDecisions] = useState<MergeDecision[]>([])
@@ -52,6 +60,10 @@ export function MergeWizard({ open, onOpenChange, diff, onMerge, isLoading }: Me
     })
   }
 
+  const removeDecision = (pokemonId: string) => {
+    setDecisions((prev) => prev.filter((d) => d.pokemonId !== pokemonId))
+  }
+
   const handleMerge = async () => {
     await onMerge(decisions, {
       name: name.trim(),
@@ -62,13 +74,8 @@ export function MergeWizard({ open, onOpenChange, diff, onMerge, isLoading }: Me
 
   const hasConflicts = diff.changed.length > 0 || diff.added.length > 0 || diff.removed.length > 0
 
-  const MAX_DISPLAY_NAME_LENGTH = 24
-  const truncateName = (name: string) =>
-    name.length > MAX_DISPLAY_NAME_LENGTH
-      ? name.slice(0, MAX_DISPLAY_NAME_LENGTH - 1) + "\u2026"
-      : name
-  const nameA = truncateName(diff.teamAName)
-  const nameB = truncateName(diff.teamBName)
+  const nameA = truncateTeamName(diff.teamAName)
+  const nameB = truncateTeamName(diff.teamBName)
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -154,9 +161,7 @@ export function MergeWizard({ open, onOpenChange, diff, onMerge, isLoading }: Me
                       <Button
                         variant={!dec ? "default" : "outline"}
                         size="sm"
-                        onClick={() =>
-                          setDecisions((prev) => prev.filter((d) => d.pokemonId !== slot.pokemonId))
-                        }
+                        onClick={() => removeDecision(slot.pokemonId)}
                       >
                         Exclude
                       </Button>
@@ -189,9 +194,7 @@ export function MergeWizard({ open, onOpenChange, diff, onMerge, isLoading }: Me
                       <Button
                         variant={!dec ? "default" : "outline"}
                         size="sm"
-                        onClick={() =>
-                          setDecisions((prev) => prev.filter((d) => d.pokemonId !== slot.pokemonId))
-                        }
+                        onClick={() => removeDecision(slot.pokemonId)}
                       >
                         Remove
                       </Button>

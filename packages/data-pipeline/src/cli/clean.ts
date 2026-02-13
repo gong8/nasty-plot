@@ -19,21 +19,21 @@ async function clean() {
     prisma.team.deleteMany(),
   ])
 
-  const labels = [
-    "BattleTurn",
-    "Battle",
-    "BatchSimulation",
-    "ChatMessage",
-    "ChatSession",
-    "TeamSlot",
-    "Team",
+  const deletions = [
+    { label: "BattleTurn", count: results[0].count },
+    { label: "Battle", count: results[1].count },
+    { label: "BatchSimulation", count: results[2].count },
+    { label: "ChatMessage", count: results[3].count },
+    { label: "ChatSession", count: results[4].count },
+    { label: "TeamSlot", count: results[5].count },
+    { label: "Team", count: results[6].count },
   ]
 
-  labels.forEach((label, i) => {
-    if (results[i].count > 0) {
-      console.log(`  Deleted ${results[i].count} ${label} rows`)
+  for (const { label, count } of deletions) {
+    if (count > 0) {
+      console.log(`  Deleted ${count} ${label} rows`)
     }
-  })
+  }
 
   console.log("\nDone. Seeded data (formats, usage stats, sets, etc.) is untouched.")
 }

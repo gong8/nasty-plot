@@ -25,7 +25,7 @@ export { HeuristicAI } from "./ai/heuristic-ai"
 export { MCTSAI } from "./ai/mcts-ai"
 export { SetPredictor } from "./ai/set-predictor"
 export { evaluatePosition, type EvalResult, type EvalFeature } from "./ai/evaluator"
-export { getEffectiveSpeed } from "./ai/shared"
+export { getEffectiveSpeed, createAI } from "./ai/shared"
 export {
   estimateWinProbability,
   winProbabilityDelta,

@@ -56,30 +56,29 @@ export function useContextMismatch(): { mismatch: ContextMismatch | null; isLoad
       return null
     }
 
-    let isMatch: boolean
-    switch (contextMode) {
-      case "team-editor":
-      case "guided-builder": {
-        const frozenTeamId = typeof ctxData.teamId === "string" ? ctxData.teamId : undefined
-        isMatch = !!frozenTeamId && pageContext.teamId === frozenTeamId
-        break
+    const matchesCurrentPage = (): boolean => {
+      switch (contextMode) {
+        case "team-editor":
+        case "guided-builder": {
+          const frozenTeamId = typeof ctxData.teamId === "string" ? ctxData.teamId : undefined
+          return !!frozenTeamId && pageContext.teamId === frozenTeamId
+        }
+        case "battle-live":
+          return pageContext.pageType === "battle-live"
+        case "battle-replay": {
+          const frozenBattleId = typeof ctxData.battleId === "string" ? ctxData.battleId : undefined
+          return (
+            !!frozenBattleId &&
+            pageContext.battleId === frozenBattleId &&
+            pageContext.pageType === "battle-replay"
+          )
+        }
+        default:
+          return true
       }
-      case "battle-live":
-        isMatch = pageContext.pageType === "battle-live"
-        break
-      case "battle-replay": {
-        const frozenBattleId = typeof ctxData.battleId === "string" ? ctxData.battleId : undefined
-        isMatch =
-          !!frozenBattleId &&
-          pageContext.battleId === frozenBattleId &&
-          pageContext.pageType === "battle-replay"
-        break
-      }
-      default:
-        return null
     }
 
-    if (isMatch) return null
+    if (matchesCurrentPage()) return null
 
     return {
       type: contextMode.includes("battle") ? "battle" : "team",

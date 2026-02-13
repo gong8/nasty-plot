@@ -47,6 +47,89 @@ function capitalize(str: string): string {
   return str.charAt(0).toUpperCase() + str.slice(1)
 }
 
+function CheckpointCard({
+  checkpoint,
+  onResume,
+  onAbandon,
+}: {
+  checkpoint: BattleCheckpoint
+  onResume: () => void
+  onAbandon: () => void
+}) {
+  const { sides, field, turn } = checkpoint.battleState
+  const p1Team = sides.p1.team
+  const p2Team = sides.p2.team
+
+  return (
+    <div className="flex justify-center mb-8">
+      <Card className="w-full max-w-xl border-primary/30">
+        <CardContent className="p-6 space-y-5">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold">Battle in Progress</h2>
+            <span className="text-xs text-muted-foreground">
+              {checkpoint.config.formatId} &middot; {capitalize(checkpoint.aiDifficulty)} AI
+              &middot; Turn {turn}
+            </span>
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium">{checkpoint.config.playerName}</span>
+              <span className="text-xs text-muted-foreground">
+                {p1Team.filter((p) => !p.fainted).length}/{p1Team.length} remaining
+              </span>
+            </div>
+            <PokemonRow pokemon={p1Team} side="p1" />
+          </div>
+
+          <div className="border-t" />
+
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium">{checkpoint.config.opponentName}</span>
+              <span className="text-xs text-muted-foreground">
+                {p2Team.filter((p) => !p.fainted).length}/{p2Team.length} remaining
+              </span>
+            </div>
+            <PokemonRow pokemon={p2Team} side="p2" />
+          </div>
+
+          {(field.weather || field.terrain || field.trickRoom > 0) && (
+            <div className="flex gap-2 flex-wrap">
+              {field.weather && (
+                <span className="text-xs bg-muted px-2 py-0.5 rounded">{field.weather}</span>
+              )}
+              {field.terrain && (
+                <span className="text-xs bg-muted px-2 py-0.5 rounded">
+                  {field.terrain} Terrain
+                </span>
+              )}
+              {field.trickRoom > 0 && (
+                <span className="text-xs bg-muted px-2 py-0.5 rounded">Trick Room</span>
+              )}
+            </div>
+          )}
+
+          <div className="flex gap-3 pt-1">
+            <Button className="flex-1 gap-2" onClick={onResume}>
+              <Play className="h-4 w-4" />
+              Resume
+            </Button>
+            <Button
+              variant="outline"
+              className="gap-2 text-destructive hover:text-destructive"
+              onClick={onAbandon}
+            >
+              <X className="h-4 w-4" />
+              Abandon
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
 function PokemonRow({ pokemon, side }: { pokemon: BattlePokemon[]; side: "p1" | "p2" }) {
   return (
     <div className="flex gap-2">
@@ -168,81 +251,14 @@ export default function BattleHubPage() {
         </Dialog>
 
         {checkpoint && (
-          <div className="flex justify-center mb-8">
-            <Card className="w-full max-w-xl border-primary/30">
-              <CardContent className="p-6 space-y-5">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-lg font-semibold">Battle in Progress</h2>
-                  <span className="text-xs text-muted-foreground">
-                    {checkpoint.config.formatId} &middot; {capitalize(checkpoint.aiDifficulty)} AI
-                    &middot; Turn {checkpoint.battleState.turn}
-                  </span>
-                </div>
-
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">{checkpoint.config.playerName}</span>
-                    <span className="text-xs text-muted-foreground">
-                      {checkpoint.battleState.sides.p1.team.filter((p) => !p.fainted).length}/
-                      {checkpoint.battleState.sides.p1.team.length} remaining
-                    </span>
-                  </div>
-                  <PokemonRow pokemon={checkpoint.battleState.sides.p1.team} side="p1" />
-                </div>
-
-                <div className="border-t" />
-
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">{checkpoint.config.opponentName}</span>
-                    <span className="text-xs text-muted-foreground">
-                      {checkpoint.battleState.sides.p2.team.filter((p) => !p.fainted).length}/
-                      {checkpoint.battleState.sides.p2.team.length} remaining
-                    </span>
-                  </div>
-                  <PokemonRow pokemon={checkpoint.battleState.sides.p2.team} side="p2" />
-                </div>
-
-                {(checkpoint.battleState.field.weather ||
-                  checkpoint.battleState.field.terrain ||
-                  checkpoint.battleState.field.trickRoom > 0) && (
-                  <div className="flex gap-2 flex-wrap">
-                    {checkpoint.battleState.field.weather && (
-                      <span className="text-xs bg-muted px-2 py-0.5 rounded">
-                        {checkpoint.battleState.field.weather}
-                      </span>
-                    )}
-                    {checkpoint.battleState.field.terrain && (
-                      <span className="text-xs bg-muted px-2 py-0.5 rounded">
-                        {checkpoint.battleState.field.terrain} Terrain
-                      </span>
-                    )}
-                    {checkpoint.battleState.field.trickRoom > 0 && (
-                      <span className="text-xs bg-muted px-2 py-0.5 rounded">Trick Room</span>
-                    )}
-                  </div>
-                )}
-
-                <div className="flex gap-3 pt-1">
-                  <Button className="flex-1 gap-2" onClick={() => router.push("/battle/live")}>
-                    <Play className="h-4 w-4" />
-                    Resume
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="gap-2 text-destructive hover:text-destructive"
-                    onClick={() => {
-                      clearCheckpoint()
-                      setCheckpoint(null)
-                    }}
-                  >
-                    <X className="h-4 w-4" />
-                    Abandon
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+          <CheckpointCard
+            checkpoint={checkpoint}
+            onResume={() => router.push("/battle/live")}
+            onAbandon={() => {
+              clearCheckpoint()
+              setCheckpoint(null)
+            }}
+          />
         )}
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

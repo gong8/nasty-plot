@@ -8,13 +8,18 @@
 
 import { Battle } from "@pkmn/sim"
 
+type SideRequest = {
+  wait?: boolean
+  forceSwitch?: boolean[]
+  active?: { moves: { disabled?: boolean; target?: string }[] }[]
+} | null
+
 /**
  * Clone a @pkmn/sim Battle by serializing + deserializing.
  * The clone is a fully independent copy that can be advanced independently.
  */
 export function cloneBattle(battle: Battle): Battle {
-  const json = battle.toJSON()
-  return Battle.fromJSON(json)
+  return Battle.fromJSON(battle.toJSON())
 }
 
 /**
@@ -27,6 +32,16 @@ export function applyChoices(battle: Battle, p1Choice: string, p2Choice: string)
   battle.choose("p1", p1Choice)
   battle.choose("p2", p2Choice)
   return battle
+}
+
+/** Get "move N" choices for all non-disabled moves in an active slot. */
+function getEnabledMoveChoices(active?: { moves: { disabled?: boolean }[] }): string[] {
+  if (!active) return []
+  const choices: string[] = []
+  for (let i = 0; i < active.moves.length; i++) {
+    if (!active.moves[i].disabled) choices.push(`move ${i + 1}`)
+  }
+  return choices
 }
 
 /** Get switch choices for all non-fainted, non-active Pokemon on a side. */
@@ -48,13 +63,8 @@ function getSwitchChoices(sideTyped: typeof Battle.prototype.p1): string[] {
  * For doubles, returns combined choice strings like "move 1 -1, move 2 -2".
  */
 export function getLegalChoices(battle: Battle, side: "p1" | "p2"): string[] {
-  // `request` exists at runtime but isn't in @pkmn/sim's type declarations
   const sideObj = battle[side] as unknown as Record<string, unknown>
-  const request = sideObj.request as {
-    wait?: boolean
-    forceSwitch?: boolean[]
-    active?: { moves: { disabled?: boolean; target?: string }[] }[]
-  } | null
+  const request = sideObj.request as SideRequest
   if (!request || request.wait) return []
 
   const sideTyped = battle[side]
@@ -66,27 +76,70 @@ export function getLegalChoices(battle: Battle, side: "p1" | "p2"): string[] {
     return getDoublesLegalChoices(battle, sideTyped, request)
   }
 
-  const choices: string[] = []
-
   const switchChoices = getSwitchChoices(sideTyped)
 
   if (request.forceSwitch) {
     return switchChoices.length > 0 ? switchChoices : ["default"]
   }
 
-  // Normal turn: moves + switches
-  const active = request.active?.[0]
-  if (active) {
-    for (let i = 0; i < active.moves.length; i++) {
-      if (!active.moves[i].disabled) {
-        choices.push(`move ${i + 1}`)
-      }
+  const choices = [...getEnabledMoveChoices(request.active?.[0]), ...switchChoices]
+  return choices.length > 0 ? choices : ["default"]
+}
+
+/** Get available switch target indices (1-indexed). */
+function getSwitchTargets(sideTyped: typeof Battle.prototype.p1): number[] {
+  const activeSet = new Set(sideTyped.active.filter(Boolean))
+  const targets: number[] = []
+  for (let i = 0; i < sideTyped.pokemon.length; i++) {
+    const mon = sideTyped.pokemon[i]
+    if (!mon.fainted && !activeSet.has(mon)) targets.push(i + 1)
+  }
+  return targets
+}
+
+/** Build choices for a single doubles slot during force-switch. */
+function getForceSwitchSlotChoices(mustSwitch: boolean, switchTargets: number[]): string[] {
+  if (!mustSwitch) return ["pass"]
+  const choices = switchTargets.map((sw) => `switch ${sw}`)
+  return choices.length > 0 ? choices : ["pass"]
+}
+
+/** Build choices for a single doubles slot during a normal turn. */
+function getNormalSlotChoices(
+  active: { moves: { disabled?: boolean; target?: string }[] } | undefined,
+  switchTargets: number[],
+): string[] {
+  if (!active) return ["pass"]
+
+  const choices: string[] = []
+  for (let i = 0; i < active.moves.length; i++) {
+    if (active.moves[i].disabled) continue
+    const target = active.moves[i].target
+    if (target === "normal" || target === "any") {
+      choices.push(`move ${i + 1} 1`)
+      choices.push(`move ${i + 1} 2`)
+    } else {
+      choices.push(`move ${i + 1}`)
     }
   }
 
-  choices.push(...switchChoices)
+  for (const sw of switchTargets) {
+    choices.push(`switch ${sw}`)
+  }
 
-  return choices.length > 0 ? choices : ["default"]
+  return choices.length > 0 ? choices : ["pass"]
+}
+
+/** Combine two slots' choices, preventing duplicate switch targets. */
+function combineSlotChoices(slot1: string[], slot2: string[]): string[] {
+  const combined: string[] = []
+  for (const c1 of slot1) {
+    for (const c2 of slot2) {
+      if (c1.startsWith("switch ") && c1 === c2) continue
+      combined.push(`${c1}, ${c2}`)
+    }
+  }
+  return combined.length > 0 ? combined : ["default"]
 }
 
 /**
@@ -96,95 +149,22 @@ export function getLegalChoices(battle: Battle, side: "p1" | "p2"): string[] {
 function getDoublesLegalChoices(
   battle: Battle,
   sideTyped: typeof battle.p1,
-  request: {
-    wait?: boolean
-    forceSwitch?: boolean[]
-    active?: { moves: { disabled?: boolean; target?: string }[] }[]
-  },
+  request: NonNullable<SideRequest>,
 ): string[] {
-  // Get choices for each slot independently
-  const slot1Choices: string[] = []
-  const slot2Choices: string[] = []
-
-  const pokemon = sideTyped.pokemon
-  const activeSet = new Set(sideTyped.active.filter(Boolean))
-
-  // Get available switch targets (not active, not fainted)
-  const switchTargets: number[] = []
-  for (let i = 0; i < pokemon.length; i++) {
-    if (!pokemon[i].fainted && !activeSet.has(pokemon[i])) {
-      switchTargets.push(i + 1)
-    }
-  }
+  const switchTargets = getSwitchTargets(sideTyped)
 
   if (request.forceSwitch) {
-    // Force switch: each slot that must switch picks from available bench
     const fs = request.forceSwitch
-    if (fs[0]) {
-      for (const sw of switchTargets) {
-        slot1Choices.push(`switch ${sw}`)
-      }
-      if (slot1Choices.length === 0) slot1Choices.push("pass")
-    } else {
-      slot1Choices.push("pass")
-    }
-
-    if (fs.length > 1 && fs[1]) {
-      for (const sw of switchTargets) {
-        slot2Choices.push(`switch ${sw}`)
-      }
-      if (slot2Choices.length === 0) slot2Choices.push("pass")
-    } else {
-      slot2Choices.push("pass")
-    }
-  } else {
-    // Normal turn: moves + switches for each active slot
-    for (let slot = 0; slot < 2; slot++) {
-      const active = request.active?.[slot]
-      const slotChoices = slot === 0 ? slot1Choices : slot2Choices
-
-      if (!active) {
-        slotChoices.push("pass")
-        continue
-      }
-
-      // Add moves with target slots
-      for (let i = 0; i < active.moves.length; i++) {
-        if (active.moves[i].disabled) continue
-        // Add target variants for moves that need targeting
-        const target = active.moves[i].target
-        if (target === "normal" || target === "any") {
-          // Can target either opponent: 1 (p2a) or 2 (p2b)
-          slotChoices.push(`move ${i + 1} 1`)
-          slotChoices.push(`move ${i + 1} 2`)
-        } else {
-          // Spread moves, self-targeting, etc. — no target needed
-          slotChoices.push(`move ${i + 1}`)
-        }
-      }
-
-      // Add switches
-      for (const sw of switchTargets) {
-        slotChoices.push(`switch ${sw}`)
-      }
-
-      if (slotChoices.length === 0) slotChoices.push("pass")
-    }
+    return combineSlotChoices(
+      getForceSwitchSlotChoices(!!fs[0], switchTargets),
+      getForceSwitchSlotChoices(fs.length > 1 && !!fs[1], switchTargets),
+    )
   }
 
-  // Combine slot choices, ensuring no duplicate switch targets
-  const combined: string[] = []
-  for (const c1 of slot1Choices) {
-    for (const c2 of slot2Choices) {
-      // Can't switch to same Pokemon from both slots
-      if (c1.startsWith("switch ") && c2.startsWith("switch ") && c1 === c2) {
-        continue
-      }
-      combined.push(`${c1}, ${c2}`)
-    }
-  }
-
-  return combined.length > 0 ? combined : ["default"]
+  return combineSlotChoices(
+    getNormalSlotChoices(request.active?.[0], switchTargets),
+    getNormalSlotChoices(request.active?.[1], switchTargets),
+  )
 }
 
 /**
