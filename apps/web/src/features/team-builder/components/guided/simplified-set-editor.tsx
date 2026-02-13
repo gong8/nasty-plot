@@ -97,7 +97,7 @@ export function SimplifiedSetEditor({
   const evRemaining = MAX_TOTAL_EVS - evTotal
 
   const calculatedStats = useMemo(() => {
-    if (!speciesData) return null
+    if (!speciesData?.baseStats) return null
     return calculateAllStats(speciesData.baseStats, ivs, evs, slot.level ?? DEFAULT_LEVEL, nature)
   }, [speciesData, ivs, evs, slot.level, nature])
 

@@ -56,7 +56,7 @@ async function calculateSpeedTiers(
   const entries: SpeedTierEntry[] = []
 
   for (const slot of slots) {
-    if (!slot.species) continue
+    if (!slot.species?.baseStats) continue
 
     const stats = calculateAllStats(
       slot.species.baseStats,
@@ -88,7 +88,7 @@ async function calculateSpeedTiers(
     if (teamPokemonIds.has(entry.pokemonId)) continue
 
     const species = getSpecies(entry.pokemonId)
-    if (!species) continue
+    if (!species?.baseStats) continue
 
     const maxSpeed = calculateStat(
       "spe",

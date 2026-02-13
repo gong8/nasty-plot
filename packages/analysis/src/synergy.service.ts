@@ -88,7 +88,7 @@ function calculateSpeedDiversity(slots: TeamSlotData[]): number {
   const speeds: number[] = []
 
   for (const slot of slots) {
-    if (!slot.species) continue
+    if (!slot.species?.baseStats) continue
     const stats = calculateAllStats(
       slot.species.baseStats,
       { ...DEFAULT_IVS, ...(slot.ivs ?? {}) },
@@ -122,7 +122,7 @@ function calculateAttackBalance(slots: TeamSlotData[]): number {
   let specialAttackers = 0
 
   for (const slot of slots) {
-    if (!slot.species) continue
+    if (!slot.species?.baseStats) continue
     const { atk, spa } = slot.species.baseStats
 
     if (atk > spa && atk >= MIN_ATTACK_STAT) physicalAttackers++

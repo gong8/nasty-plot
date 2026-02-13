@@ -136,7 +136,7 @@ export function SlotEditor({
 
   // Calculated stats
   const calculatedStats = useMemo(() => {
-    if (!speciesData) return null
+    if (!speciesData?.baseStats) return null
     return calculateAllStats(speciesData.baseStats, ivs, evs, level, nature)
   }, [speciesData, ivs, evs, level, nature])
 
