@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Swords } from "lucide-react"
-import { PokemonSprite } from "@nasty-plot/ui"
+import { PokemonSpriteRow } from "@/components/pokemon-sprite-row"
 
 interface SampleTeamCardProps {
   name: string
@@ -40,11 +40,7 @@ export function SampleTeamCard({
         </div>
       </CardHeader>
       <CardContent className="space-y-3">
-        <div className="flex gap-1 justify-center flex-wrap">
-          {ids.map((id) => (
-            <PokemonSprite key={id} pokemonId={id} size={48} />
-          ))}
-        </div>
+        <PokemonSpriteRow pokemonIds={ids} size={48} className="justify-center flex-wrap" />
 
         <div className="flex items-center justify-between">
           <span className="text-xs text-muted-foreground">{source ?? ""}</span>

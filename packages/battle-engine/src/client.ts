@@ -2,21 +2,21 @@ export * from "./types"
 
 // --- Core Battle Logic (Safe for Client) ---
 export { BattleManager, createInitialState } from "./battle-manager.service"
-export * from "./team-packer"
+export * from "./team-packer.service"
 export {
   serializeBattleState,
   formatMoveStats,
   formatBoosts,
   formatFieldState,
   formatSideConditions,
-} from "./battle-state-serializer"
+} from "./battle-state-serializer.service"
 export {
   processLine,
   processChunk,
   parseRequest,
   parseRequestForSlot,
   updateSideFromRequest,
-} from "./protocol-parser"
+} from "./protocol-parser.service"
 
 // --- AI & Heuristics ---
 export { RandomAI } from "./ai/random-ai"
@@ -24,19 +24,19 @@ export { GreedyAI } from "./ai/greedy-ai"
 export { HeuristicAI } from "./ai/heuristic-ai"
 export { MCTSAI } from "./ai/mcts-ai"
 export { SetPredictor } from "./ai/set-predictor"
-export { evaluatePosition, type EvalResult, type EvalFeature } from "./ai/evaluator"
+export { evaluatePosition, type EvalResult, type EvalFeature } from "./ai/evaluator.service"
 export { getEffectiveSpeed, createAI } from "./ai/shared"
 export {
   estimateWinProbability,
   winProbabilityDelta,
   type WinProbability,
-} from "./ai/win-probability"
+} from "./ai/win-probability.service"
 export {
   generateHints,
   type HintResult,
   type MoveHint,
   type MoveClassification,
-} from "./ai/hint-engine"
+} from "./ai/hint-engine.service"
 export { cloneBattle, getLegalChoices, isBattleOver, getBattleWinner } from "./ai/battle-cloner"
 export { type MCTSConfig, type MCTSResult, DEFAULT_MCTS_CONFIG } from "./ai/mcts-types"
 

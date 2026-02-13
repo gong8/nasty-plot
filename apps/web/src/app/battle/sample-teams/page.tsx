@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import {
@@ -18,7 +18,7 @@ import { ArrowLeft, Search } from "lucide-react"
 import Link from "next/link"
 import { getActiveFormats } from "@nasty-plot/formats"
 import type { SampleTeamData } from "@nasty-plot/teams"
-import { fetchJson } from "@/lib/api-client"
+import { useFetchData } from "@/lib/hooks/use-fetch-data"
 
 /** SampleTeam as returned by the API (createdAt serialized to string) */
 type SampleTeam = Omit<SampleTeamData, "createdAt"> & { createdAt: string }
@@ -43,38 +43,18 @@ const ARCHETYPE_OPTIONS = [
 
 export default function SampleTeamsPage() {
   const router = useRouter()
-  const [teams, setTeams] = useState<SampleTeam[]>([])
-  const [loading, setLoading] = useState(true)
   const [formatId, setFormatId] = useState("all")
   const [archetype, setArchetype] = useState("all")
   const [search, setSearch] = useState("")
 
-  useEffect(() => {
-    let cancelled = false
-
-    async function fetchTeams() {
-      setLoading(true)
-      const params = new URLSearchParams()
-      if (formatId && formatId !== "all") params.set("formatId", formatId)
-      if (archetype && archetype !== "all") params.set("archetype", archetype)
-      if (search) params.set("search", search)
-
-      try {
-        const data = await fetchJson<SampleTeam[]>(`/api/sample-teams?${params}`)
-        if (!cancelled) setTeams(data)
-      } catch {
-        // ignored
-      } finally {
-        if (!cancelled) setLoading(false)
-      }
-    }
-
-    fetchTeams()
-
-    return () => {
-      cancelled = true
-    }
-  }, [formatId, archetype, search])
+  const sampleTeamsUrl = (() => {
+    const params = new URLSearchParams()
+    if (formatId && formatId !== "all") params.set("formatId", formatId)
+    if (archetype && archetype !== "all") params.set("archetype", archetype)
+    if (search) params.set("search", search)
+    return `/api/sample-teams?${params}`
+  })()
+  const { data: teams, loading } = useFetchData<SampleTeam[]>(sampleTeamsUrl)
 
   const handleUseInBattle = (paste: string) => {
     const params = new URLSearchParams({
@@ -151,7 +131,7 @@ export default function SampleTeamsPage() {
             <div key={i} className="h-48 rounded-xl border bg-muted/50 animate-pulse" />
           ))}
         </div>
-      ) : teams.length === 0 ? (
+      ) : !teams || teams.length === 0 ? (
         <EmptyState>No sample teams found. Try adjusting your filters.</EmptyState>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

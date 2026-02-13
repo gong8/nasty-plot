@@ -1,8 +1,8 @@
 "use client"
 
-import { getSpriteUrl } from "@nasty-plot/pokemon-data"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@nasty-plot/ui"
+import { PokemonSpriteRow } from "@/components/pokemon-sprite-row"
 
 interface TeamPickerCardProps {
   team: {
@@ -39,26 +39,7 @@ export function TeamPickerCard({ team, selected, onSelect }: TeamPickerCardProps
           )}
         </div>
       </div>
-      <div className="flex gap-0.5 justify-center">
-        {team.pokemonIds.map((id) => {
-          const url = getSpriteUrl(id, { gen: "gen5ani" })
-          return (
-            <div
-              key={id}
-              className="flex items-center justify-center"
-              style={{ width: 40, height: 40 }}
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={url}
-                alt={id}
-                className="max-w-full max-h-full object-contain"
-                style={{ imageRendering: "pixelated" }}
-              />
-            </div>
-          )
-        })}
-      </div>
+      <PokemonSpriteRow pokemonIds={team.pokemonIds} size={40} className="justify-center gap-0.5" />
     </button>
   )
 }

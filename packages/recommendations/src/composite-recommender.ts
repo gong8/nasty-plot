@@ -1,9 +1,8 @@
 import type { Recommendation } from "@nasty-plot/core"
 import { getTeam } from "@nasty-plot/teams"
+import { MAX_SCORE } from "./constants"
 import { getCoverageBasedRecommendations } from "./coverage-recommender"
 import { getUsageBasedRecommendations } from "./usage-recommender"
-
-const MAX_SCORE = 100
 const CANDIDATE_MULTIPLIER = 2
 
 interface CompositeWeights {

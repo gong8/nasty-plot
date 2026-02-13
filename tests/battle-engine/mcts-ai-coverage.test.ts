@@ -24,7 +24,7 @@ vi.mock("#battle-engine/ai/battle-cloner", () => ({
 
 const mockEvaluatePosition = vi.fn()
 
-vi.mock("#battle-engine/ai/evaluator", () => ({
+vi.mock("#battle-engine/ai/evaluator.service", () => ({
   evaluatePosition: (...args: unknown[]) => mockEvaluatePosition(...args),
 }))
 

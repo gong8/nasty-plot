@@ -101,20 +101,20 @@ export async function createBattle(data: CreateBattleData) {
   })
 }
 
-export async function getBattle(id: string) {
+export async function getBattle(battleId: string) {
   return prisma.battle.findUnique({
-    where: { id },
+    where: { id: battleId },
     include: { turns: { orderBy: { turnNumber: "asc" } } },
   })
 }
 
-export async function deleteBattle(id: string) {
-  return prisma.battle.delete({ where: { id } })
+export async function deleteBattle(battleId: string) {
+  return prisma.battle.delete({ where: { id: battleId } })
 }
 
-export async function getBattleReplay(id: string) {
+export async function getBattleReplay(battleId: string) {
   return prisma.battle.findUnique({
-    where: { id },
+    where: { id: battleId },
     select: {
       id: true,
       formatId: true,
@@ -132,9 +132,9 @@ export async function getBattleReplay(id: string) {
   })
 }
 
-export async function getBattleForExport(id: string) {
+export async function getBattleForExport(battleId: string) {
   return prisma.battle.findUnique({
-    where: { id },
+    where: { id: battleId },
     select: {
       id: true,
       formatId: true,
@@ -152,16 +152,16 @@ export async function getBattleForExport(id: string) {
   })
 }
 
-export async function getBattleCommentary(id: string) {
+export async function getBattleCommentary(battleId: string) {
   return prisma.battle.findUnique({
-    where: { id },
+    where: { id: battleId },
     select: { commentary: true },
   })
 }
 
-export async function updateBattleCommentary(id: string, commentary: string) {
+export async function updateBattleCommentary(battleId: string, commentary: string) {
   return prisma.battle.update({
-    where: { id },
+    where: { id: battleId },
     data: { commentary },
     select: { commentary: true },
   })
@@ -189,24 +189,24 @@ export async function createBatchSimulation(data: CreateBatchData) {
   })
 }
 
-export async function getBatchSimulation(id: string) {
-  return prisma.batchSimulation.findUnique({ where: { id } })
+export async function getBatchSimulation(batchId: string) {
+  return prisma.batchSimulation.findUnique({ where: { id: batchId } })
 }
 
-export async function deleteBatchSimulation(id: string) {
+export async function deleteBatchSimulation(batchId: string) {
   return prisma.batchSimulation.update({
-    where: { id },
+    where: { id: batchId },
     data: { status: "cancelled" },
   })
 }
 
 export async function updateBatchProgress(
-  id: string,
+  batchId: string,
   progress: { completed: number; team1Wins: number; team2Wins: number; draws: number },
 ) {
   return prisma.batchSimulation
     .update({
-      where: { id },
+      where: { id: batchId },
       data: {
         completedGames: progress.completed,
         team1Wins: progress.team1Wins,
@@ -217,9 +217,13 @@ export async function updateBatchProgress(
     .catch(() => {})
 }
 
-export async function completeBatchSimulation(id: string, totalGames: number, analytics: string) {
+export async function completeBatchSimulation(
+  batchId: string,
+  totalGames: number,
+  analytics: string,
+) {
   return prisma.batchSimulation.update({
-    where: { id },
+    where: { id: batchId },
     data: {
       status: "completed",
       completedGames: totalGames,
@@ -228,10 +232,10 @@ export async function completeBatchSimulation(id: string, totalGames: number, an
   })
 }
 
-export async function failBatchSimulation(id: string) {
+export async function failBatchSimulation(batchId: string) {
   return prisma.batchSimulation
     .update({
-      where: { id },
+      where: { id: batchId },
       data: { status: "completed" },
     })
     .catch(() => {})

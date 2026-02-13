@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { apiErrorResponse } from "../../../../../lib/api-error"
 import { getUsageStats, getUsageStatsCount } from "@nasty-plot/smogon-data"
-import { getSpecies } from "@nasty-plot/pokemon-data"
+import { enrichWithSpeciesData } from "@nasty-plot/pokemon-data"
 import type { PaginatedResponse, UsageStatsEntry } from "@nasty-plot/core"
 
 export async function GET(
@@ -20,12 +20,12 @@ export async function GET(
     ])
 
     const enriched: UsageStatsEntry[] = data.map((entry) => {
-      const species = getSpecies(entry.pokemonId)
+      const speciesData = enrichWithSpeciesData(entry.pokemonId)
       return {
         ...entry,
-        pokemonName: species?.name ?? entry.pokemonId,
-        types: (species?.types as UsageStatsEntry["types"]) ?? [],
-        num: species?.num,
+        pokemonName: speciesData.pokemonName ?? entry.pokemonId,
+        types: (speciesData.types as UsageStatsEntry["types"]) ?? [],
+        num: speciesData.num,
       }
     })
 

@@ -1,6 +1,5 @@
 "use client"
 
-import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -14,6 +13,7 @@ import {
 } from "@/components/ui/dialog"
 import { Copy, Download } from "lucide-react"
 import { fetchJson, fetchText } from "@/lib/api-client"
+import { useDialogAsyncData } from "@/lib/hooks/use-dialog-async-data"
 
 interface BattleExportDialogProps {
   battleId: string | null
@@ -22,38 +22,19 @@ interface BattleExportDialogProps {
 }
 
 export function BattleExportDialog({ battleId, open, onOpenChange }: BattleExportDialogProps) {
-  const [logContent, setLogContent] = useState("")
-  const [jsonContent, setJsonContent] = useState("")
-  const [loading, setLoading] = useState(false)
-
-  useEffect(() => {
-    if (!open || !battleId) return
-    let cancelled = false
-    setLoading(true)
-
-    const loadExports = async () => {
-      try {
-        const [showdownLog, jsonData] = await Promise.all([
-          fetchText(`/api/battles/${battleId}/export?format=showdown`),
-          fetchJson(`/api/battles/${battleId}/export?format=json`),
-        ])
-        if (cancelled) return
-        setLogContent(showdownLog)
-        setJsonContent(JSON.stringify(jsonData, null, 2))
-      } catch {
-        if (cancelled) return
-        setLogContent("Error loading battle log")
-        setJsonContent("{}")
-      } finally {
-        if (!cancelled) setLoading(false)
-      }
-    }
-
-    loadExports()
-    return () => {
-      cancelled = true
-    }
-  }, [open, battleId])
+  const { data: exportData, loading } = useDialogAsyncData(
+    open && !!battleId,
+    async () => {
+      const [showdownLog, jsonData] = await Promise.all([
+        fetchText(`/api/battles/${battleId!}/export?format=showdown`),
+        fetchJson(`/api/battles/${battleId!}/export?format=json`),
+      ])
+      return { log: showdownLog, json: JSON.stringify(jsonData, null, 2) }
+    },
+    [battleId],
+  )
+  const logContent = exportData?.log ?? ""
+  const jsonContent = exportData?.json ?? ""
 
   const handleCopy = (content: string) => {
     navigator.clipboard.writeText(content)

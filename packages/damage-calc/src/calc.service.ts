@@ -1,6 +1,7 @@
 import { calculate, Field, Move, Pokemon, State } from "@smogon/calc"
 import {
   DEFAULT_LEVEL,
+  DEFAULT_NATURE,
   PERFECT_IV,
   STATUS_CALC_MAP,
   fillStats,
@@ -73,7 +74,7 @@ function buildCalcPokemon(input: CalcPokemonInput): Pokemon {
     level: input.level,
     ability: input.ability || undefined,
     item: input.item || undefined,
-    nature: input.nature || "Hardy",
+    nature: input.nature || DEFAULT_NATURE,
     evs: fillStats(input.evs, 0),
     ivs: fillStats(input.ivs, PERFECT_IV),
     boosts: toCalcBoosts(input.boosts),
@@ -198,12 +199,12 @@ export function calculateQuickDamage(
     const gen = getGen9()
     const attacker = new Pokemon(gen, attackerName, {
       level: config?.attackerLevel ?? DEFAULT_LEVEL,
-      nature: config?.attackerNature ?? "Hardy",
+      nature: config?.attackerNature ?? DEFAULT_NATURE,
       evs: fillStats(config?.attackerEvs, 0),
     })
     const defender = new Pokemon(gen, defenderName, {
       level: config?.defenderLevel ?? DEFAULT_LEVEL,
-      nature: config?.defenderNature ?? "Hardy",
+      nature: config?.defenderNature ?? DEFAULT_NATURE,
       evs: fillStats(config?.defenderEvs, 0),
     })
     const move = new Move(gen, moveName)

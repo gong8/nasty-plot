@@ -1,12 +1,12 @@
 export {
   getDex,
   getSpecies,
-  getAllSpecies,
+  listSpecies,
   getMove,
-  getAllMoves,
+  listMoves,
   getAbility,
   getItem,
-  getAllItems,
+  listItems,
   searchItems,
   getLearnset,
   searchSpecies,
@@ -22,6 +22,7 @@ export {
   getRawSpecies,
   getType,
   resolveSpeciesName,
+  enrichWithSpeciesData,
 } from "./dex.service"
 
 export type * from "./types"

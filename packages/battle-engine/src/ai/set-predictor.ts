@@ -1,4 +1,4 @@
-import { normalizeMoveName, type SmogonSetData } from "@nasty-plot/core"
+import { checkedFetch, normalizeMoveName, type SmogonSetData } from "@nasty-plot/core"
 
 /** Near-zero probability for sets that contradict observations */
 const MISMATCH_PROBABILITY_FACTOR = 0.01
@@ -14,8 +14,7 @@ export class SetPredictor {
   async initialize(formatId: string, opponentPokemonIds: string[]): Promise<void> {
     for (const pokemonId of opponentPokemonIds) {
       try {
-        const res = await fetch(`/api/pokemon/${pokemonId}/sets?formatId=${formatId}`)
-        if (!res.ok) continue
+        const res = await checkedFetch(`/api/pokemon/${pokemonId}/sets?formatId=${formatId}`)
         const sets: SmogonSetData[] = await res.json()
         this.initializeFromSets(pokemonId, sets)
       } catch {

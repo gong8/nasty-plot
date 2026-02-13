@@ -67,7 +67,7 @@ interface TargetSlotInfo {
   isSelf: boolean
 }
 
-interface MoveSelectorProps {
+interface BattleMoveSelectorProps {
   actions: BattleActionSet
   onMoveSelect: (moveIndex: number, tera?: boolean, targetSlot?: number) => void
   onSwitchClick: () => void
@@ -95,7 +95,7 @@ export function MoveSelector({
   opponentActive,
   playerActive,
   className,
-}: MoveSelectorProps) {
+}: BattleMoveSelectorProps) {
   /** Index (0-based) of the move pending target selection, or null */
   const [pendingMoveIndex, setPendingMoveIndex] = useState<number | null>(null)
   /** Whether the pending move should also terastallize */

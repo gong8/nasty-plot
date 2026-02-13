@@ -11,7 +11,7 @@ vi.mock("@nasty-plot/teams", () => ({
 
 vi.mock("@nasty-plot/pokemon-data", () => ({
   getSpecies: vi.fn(),
-  getAllSpecies: vi.fn(),
+  listSpecies: vi.fn(),
 }))
 
 vi.mock("@nasty-plot/smogon-data", () => ({

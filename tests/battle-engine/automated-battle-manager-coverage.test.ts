@@ -110,7 +110,7 @@ const mockParseRequest = vi.fn()
 const mockParseRequestForSlot = vi.fn()
 const mockUpdateSideFromRequest = vi.fn()
 
-vi.mock("#battle-engine/protocol-parser", () => ({
+vi.mock("#battle-engine/protocol-parser.service", () => ({
   processChunk: (...args: unknown[]) => mockProcessChunk(...args),
   parseRequest: (...args: unknown[]) => mockParseRequest(...args),
   parseRequestForSlot: (...args: unknown[]) => mockParseRequestForSlot(...args),

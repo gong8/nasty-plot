@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Switch } from "@/components/ui/switch"
-import { PokemonSprite } from "@nasty-plot/ui"
+import { PokemonSpriteRow } from "@/components/pokemon-sprite-row"
 import { useTeams, useRestoreTeam } from "@/features/teams/hooks/use-teams"
 import { PECHARUNT_SPRITE_URL } from "@/lib/constants"
 
@@ -139,13 +139,11 @@ export default function TeamsPage() {
                     </div>
                   </div>
                   {team.slots.length > 0 && (
-                    <div className="flex gap-1 mt-3">
-                      {team.slots.map((slot) => (
-                        <div key={slot.position} title={slot.species?.name || slot.pokemonId}>
-                          <PokemonSprite pokemonId={slot.pokemonId} size={32} />
-                        </div>
-                      ))}
-                    </div>
+                    <PokemonSpriteRow
+                      pokemonIds={team.slots.map((slot) => slot.pokemonId)}
+                      size={32}
+                      className="mt-3"
+                    />
                   )}
                 </CardContent>
               </Card>

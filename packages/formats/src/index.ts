@@ -2,7 +2,7 @@ export { FORMAT_DEFINITIONS } from "./data/format-definitions"
 export { resolveFormatId, getFormatFallbacks } from "./format-resolver.service"
 export {
   getFormat,
-  getAllFormats,
+  listFormats,
   getActiveFormats,
   getFormatPokemon,
   isLegalInFormat,

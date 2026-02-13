@@ -7,12 +7,12 @@ import {
   getOffensiveCoverage,
 } from "@nasty-plot/core"
 import { analyzeTypeCoverage } from "@nasty-plot/analysis"
-import { getSpecies, getAllSpecies } from "@nasty-plot/pokemon-data"
+import { getSpecies, listSpecies } from "@nasty-plot/pokemon-data"
 import { getUsageStats } from "@nasty-plot/smogon-data"
+import { MAX_SCORE } from "./constants"
 
 const OFFENSIVE_GAP_WEIGHT = 15
 const DEFENSIVE_RESIST_WEIGHT = 20
-const MAX_SCORE = 100
 const USAGE_CANDIDATE_LIMIT = 100
 const MAX_NATIONAL_DEX_NUM = 1025
 const FALLBACK_SPECIES_LIMIT = 200
@@ -105,7 +105,7 @@ function scoreDefensiveResistances(
 }
 
 function getAllLegalSpeciesIds(): string[] {
-  return getAllSpecies()
+  return listSpecies()
     .filter((sp) => sp.num <= MAX_NATIONAL_DEX_NUM)
     .slice(0, FALLBACK_SPECIES_LIMIT)
     .map((sp) => sp.id)

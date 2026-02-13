@@ -1,6 +1,5 @@
 "use client"
 
-import { useEffect, useState } from "react"
 import {
   Dialog,
   DialogContent,
@@ -19,6 +18,7 @@ import { MessageCircle, Lock, Globe, Loader2 } from "lucide-react"
 import type { ChatSessionData } from "@nasty-plot/core"
 import { PECHARUNT_SPRITE_URL } from "@/lib/constants"
 import { fetchJson } from "@/lib/api-client"
+import { useDialogAsyncData } from "@/lib/hooks/use-dialog-async-data"
 
 function matchesCurrentEntity(
   session: ChatSessionData,
@@ -48,36 +48,18 @@ export function NewChatModal() {
   } = useChatSidebar()
   const pageContext = usePageContext()
   const { contextMode, hasContext: hasContextOption, buildContextData } = useBuildContextData()
-  const [existingSessions, setExistingSessions] = useState<ChatSessionData[]>([])
-  const [loading, setLoading] = useState(false)
 
-  // Fetch existing sessions for this context when modal opens
-
-  useEffect(() => {
-    if (!showNewChatModal || !contextMode) {
-      return
-    }
-
-    let cancelled = false
-    setLoading(true) // eslint-disable-line react-hooks/set-state-in-effect -- loading state for async fetch
-    const params = new URLSearchParams({ contextMode })
-    fetchJson<{ data: ChatSessionData[] }>(`/api/chat/sessions?${params}`)
-      .then((data) => {
-        if (cancelled) return
-        const sessions = data.data ?? []
-        setExistingSessions(sessions.filter((s) => matchesCurrentEntity(s, pageContext)))
-      })
-      .catch(() => {
-        if (!cancelled) setExistingSessions([])
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false)
-      })
-
-    return () => {
-      cancelled = true
-    }
-  }, [showNewChatModal, contextMode, pageContext])
+  const { data: fetchedSessions, loading } = useDialogAsyncData<ChatSessionData[]>(
+    showNewChatModal && !!contextMode,
+    async () => {
+      const params = new URLSearchParams({ contextMode: contextMode! })
+      const data = await fetchJson<{ data: ChatSessionData[] }>(`/api/chat/sessions?${params}`)
+      const sessions = data.data ?? []
+      return sessions.filter((s) => matchesCurrentEntity(s, pageContext))
+    },
+    [contextMode, pageContext],
+  )
+  const existingSessions = fetchedSessions ?? []
 
   function openSidebarAndDismiss() {
     if (pendingQuestion) {

@@ -1,4 +1,4 @@
-import { DEFAULT_EVS, DEFAULT_IVS, DEFAULT_LEVEL } from "./constants"
+import { DEFAULT_EVS, DEFAULT_IVS, DEFAULT_LEVEL, DEFAULT_NATURE } from "./constants"
 import { STATS } from "./types"
 import type { NatureName, PokemonType, StatsTable, TeamSlotData } from "./types"
 
@@ -84,7 +84,7 @@ function parseOneSlot(block: string, position: number): Partial<TeamSlotData> | 
     nickname,
     item,
     ability: "",
-    nature: "Hardy" as NatureName,
+    nature: DEFAULT_NATURE as NatureName,
     moves: ["", undefined, undefined, undefined],
     evs: { ...DEFAULT_EVS },
     ivs: { ...DEFAULT_IVS },

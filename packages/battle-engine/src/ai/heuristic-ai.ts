@@ -13,6 +13,7 @@ import {
   calculateBattleDamage,
   getSpeciesTypes,
   fallbackMove,
+  pickHealthiestSwitch,
   HAZARD_SCORES,
   STATUS_INFLICTION_SCORES,
   SETUP_MOVE_SCORE,
@@ -377,8 +378,7 @@ export class HeuristicAI implements AIPlayer {
     }
 
     if (!oppActive) {
-      const healthiest = available.reduce((a, b) => (a.hp / a.maxHp > b.hp / b.maxHp ? a : b))
-      return { type: "switch", pokemonIndex: healthiest.index }
+      return pickHealthiestSwitch(actions)
     }
 
     const myActive = state.sides.p2.active[actions.activeSlot ?? 0]

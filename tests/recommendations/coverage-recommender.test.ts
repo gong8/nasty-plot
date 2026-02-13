@@ -8,18 +8,18 @@ import { getCoverageBasedRecommendations } from "@nasty-plot/recommendations"
 
 vi.mock("@nasty-plot/pokemon-data", () => ({
   getSpecies: vi.fn(),
-  getAllSpecies: vi.fn(),
+  listSpecies: vi.fn(),
 }))
 
 vi.mock("@nasty-plot/smogon-data", () => ({
   getUsageStats: vi.fn(),
 }))
 
-import { getSpecies, getAllSpecies } from "@nasty-plot/pokemon-data"
+import { getSpecies, listSpecies } from "@nasty-plot/pokemon-data"
 import { getUsageStats } from "@nasty-plot/smogon-data"
 
 const mockGetSpecies = getSpecies as ReturnType<typeof vi.fn>
-const mockGetAllSpecies = getAllSpecies as ReturnType<typeof vi.fn>
+const mockListSpecies = listSpecies as ReturnType<typeof vi.fn>
 const mockGetUsageStats = getUsageStats as ReturnType<typeof vi.fn>
 
 // ---------------------------------------------------------------------------
@@ -91,7 +91,7 @@ describe("getCoverageBasedRecommendations", () => {
     ]
 
     mockGetUsageStats.mockResolvedValue([])
-    mockGetAllSpecies.mockReturnValue([])
+    mockListSpecies.mockReturnValue([])
 
     const result = await getCoverageBasedRecommendations(team, "gen9ou")
     expect(Array.isArray(result)).toBe(true)
@@ -234,14 +234,14 @@ describe("getCoverageBasedRecommendations", () => {
   })
 
   // -----------------------------------------------------------------------
-  // Fallback to getAllSpecies when no usage data
+  // Fallback to listSpecies when no usage data
   // -----------------------------------------------------------------------
 
   it("falls back to getAllLegalSpeciesIds when no usage data exists", async () => {
     const team = [makeSlot("pikachu", ["Electric"])]
 
     mockGetUsageStats.mockResolvedValue([])
-    mockGetAllSpecies.mockReturnValue([
+    mockListSpecies.mockReturnValue([
       mockSpeciesResult("bulbasaur", ["Grass", "Poison"]),
       mockSpeciesResult("charmander", ["Fire"]),
     ])
@@ -260,7 +260,7 @@ describe("getCoverageBasedRecommendations", () => {
     const team = [makeSlot("pikachu", ["Electric"])]
 
     mockGetUsageStats.mockResolvedValue([])
-    mockGetAllSpecies.mockReturnValue([
+    mockListSpecies.mockReturnValue([
       mockSpeciesResult("bulbasaur", ["Grass", "Poison"]),
       { ...mockSpeciesResult("futuremon", ["Psychic"]), num: 1100 },
     ])
@@ -285,7 +285,7 @@ describe("getCoverageBasedRecommendations", () => {
       ...mockSpeciesResult(`mon${i}`, ["Fighting"]),
       num: i + 1,
     }))
-    mockGetAllSpecies.mockReturnValue(allSpecies)
+    mockListSpecies.mockReturnValue(allSpecies)
 
     mockGetSpecies.mockImplementation((id: string) => {
       return mockSpeciesResult(id, ["Fighting"])

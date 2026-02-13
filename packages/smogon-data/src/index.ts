@@ -23,6 +23,8 @@ export {
   resolveMoves,
   enrichExtractedTeam,
 } from "./set-inference.service"
+
+export { upsertSyncLog } from "./sync-log.service"
 export type {
   ExtractedPokemon,
   ExtractedTeam,

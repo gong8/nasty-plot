@@ -14,7 +14,7 @@ vi.mock("@nasty-plot/db", () => ({
 
 vi.mock("@nasty-plot/pokemon-data", () => ({
   getSpecies: vi.fn(),
-  getAllSpecies: vi.fn(),
+  listSpecies: vi.fn(),
 }))
 
 import { prisma } from "@nasty-plot/db"

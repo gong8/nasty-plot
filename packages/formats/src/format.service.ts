@@ -1,8 +1,8 @@
 import type { FormatDefinition, ItemData, MoveData, PokemonSpecies } from "@nasty-plot/core"
 import {
-  getAllItems,
-  getAllMoves,
-  getAllSpecies,
+  listItems,
+  listMoves,
+  listSpecies,
   getLearnset,
   getSpecies,
 } from "@nasty-plot/pokemon-data"
@@ -46,7 +46,7 @@ export function getFormat(id: string): FormatDefinition | null {
   return FORMAT_DEFINITIONS.find((f) => f.id === resolvedId) ?? null
 }
 
-export function getAllFormats(): FormatDefinition[] {
+export function listFormats(): FormatDefinition[] {
   return FORMAT_DEFINITIONS
 }
 
@@ -59,7 +59,7 @@ export function getFormatPokemon(formatId: string): PokemonSpecies[] {
   if (!format) return []
 
   const banSet = buildBanSet(format)
-  return getAllSpecies().filter((species) => {
+  return listSpecies().filter((species) => {
     if (isPastGenExcluded(format, species.isNonstandard)) return false
     return !isBanned(species, format, banSet)
   })
@@ -81,7 +81,7 @@ export function getFormatItems(formatId: string): ItemData[] {
   if (!format) return []
 
   const banSet = buildBanSet(format)
-  return getAllItems().filter((item) => !isNameOrIdBanned(item, format, banSet))
+  return listItems().filter((item) => !isNameOrIdBanned(item, format, banSet))
 }
 
 export function getFormatMoves(formatId: string): MoveData[] {
@@ -89,7 +89,7 @@ export function getFormatMoves(formatId: string): MoveData[] {
   if (!format) return []
 
   const banSet = buildBanSet(format)
-  return getAllMoves().filter((move) => !isNameOrIdBanned(move, format, banSet))
+  return listMoves().filter((move) => !isNameOrIdBanned(move, format, banSet))
 }
 
 export async function getFormatLearnset(pokemonId: string, formatId: string): Promise<string[]> {

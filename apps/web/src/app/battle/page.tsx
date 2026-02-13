@@ -2,8 +2,8 @@
 
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { useEffect, useState } from "react"
-import { fetchJson } from "@/lib/api-client"
+import { useState } from "react"
+import { useFetchData } from "@/lib/hooks/use-fetch-data"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import {
@@ -34,6 +34,7 @@ import { getHealthColorHex } from "@/features/battle/components/HealthBar"
 import type { BattleCheckpoint, BattlePokemon } from "@nasty-plot/battle-engine"
 import { timeAgo } from "@/lib/format-time"
 import type { BattleSummary } from "@/features/battle/types"
+import { capitalize } from "@nasty-plot/core"
 
 function winnerLabel(winnerId: string | null, team1Name: string, team2Name: string): string {
   if (!winnerId) return "No result"
@@ -41,10 +42,6 @@ function winnerLabel(winnerId: string | null, team1Name: string, team2Name: stri
   if (winnerId === "team1") return team1Name
   if (winnerId === "team2") return team2Name
   return winnerId
-}
-
-function capitalize(str: string): string {
-  return str.charAt(0).toUpperCase() + str.slice(1)
 }
 
 function CheckpointCard({
@@ -164,37 +161,24 @@ function PokemonRow({ pokemon, side }: { pokemon: BattlePokemon[]; side: "p1" | 
 
 export default function BattleHubPage() {
   const router = useRouter()
-  const [battles, setBattles] = useState<BattleSummary[]>([])
-  const [loadingBattles, setLoadingBattles] = useState(true)
   const [checkpoint, setCheckpoint] = useState<BattleCheckpoint | null>(() =>
     hasCheckpoint() ? loadCheckpoint() : null,
   )
   const [showNewBattleWarning, setShowNewBattleWarning] = useState(false)
-  const [teams, setTeams] = useState<{ id: string; name: string }[]>([])
   const [filterTeamId, setFilterTeamId] = useState<string>("all")
 
-  useEffect(() => {
-    fetchJson<{ teams?: { id: string; name: string }[] }>("/api/teams")
-      .then((data) => setTeams(data.teams ?? []))
-      .catch(() => {})
-  }, [])
+  const { data: teamsData } = useFetchData<{ teams?: { id: string; name: string }[] }>("/api/teams")
+  const teams = teamsData?.teams ?? []
 
-  useEffect(() => {
-    let cancelled = false
+  const battlesUrl = (() => {
     const params = new URLSearchParams({ limit: "10" })
     if (filterTeamId !== "all") params.set("teamId", filterTeamId)
-    fetchJson<{ battles?: BattleSummary[] }>(`/api/battles?${params}`)
-      .then((data) => {
-        if (!cancelled) setBattles(data.battles ?? [])
-      })
-      .catch(() => {})
-      .finally(() => {
-        if (!cancelled) setLoadingBattles(false)
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [filterTeamId])
+    return `/api/battles?${params}`
+  })()
+  const { data: battlesData, loading: loadingBattles } = useFetchData<{
+    battles?: BattleSummary[]
+  }>(battlesUrl)
+  const battles = battlesData?.battles ?? []
 
   return (
     <>

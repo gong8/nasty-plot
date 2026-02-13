@@ -10,7 +10,7 @@ import { seedSampleTeams } from "../seed-sample-teams"
 
 const ACTIVE_FORMATS = getActiveFormats()
 
-interface CliArgs {
+interface SeedCliArgs {
   formatId?: string
   force: boolean
   statsOnly: boolean
@@ -18,9 +18,9 @@ interface CliArgs {
   teamsOnly: boolean
 }
 
-function parseArgs(): CliArgs {
+function parseArgs(): SeedCliArgs {
   const args = process.argv.slice(2)
-  const result: CliArgs = { force: false, statsOnly: false, setsOnly: false, teamsOnly: false }
+  const result: SeedCliArgs = { force: false, statsOnly: false, setsOnly: false, teamsOnly: false }
 
   for (let i = 0; i < args.length; i++) {
     if (args[i] === "--format" && args[i + 1]) {

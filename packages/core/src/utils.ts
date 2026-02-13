@@ -14,3 +14,7 @@ export function toPercent(value: number, total: number): number {
 export function formatUsagePercent(percent: number, decimals = 1): string {
   return `${percent.toFixed(decimals)}%`
 }
+
+export function capitalize(str: string): string {
+  return str.charAt(0).toUpperCase() + str.slice(1)
+}

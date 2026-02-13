@@ -25,9 +25,9 @@ export async function createSession(
   return mapSession(session)
 }
 
-export async function getSession(id: string): Promise<ChatSessionData | null> {
+export async function getSession(sessionId: string): Promise<ChatSessionData | null> {
   const session = await prisma.chatSession.findUnique({
-    where: { id },
+    where: { id: sessionId },
     include: { messages: { orderBy: { createdAt: "asc" } } },
   })
 
@@ -73,11 +73,11 @@ export async function addMessage(
 }
 
 export async function updateSession(
-  id: string,
+  sessionId: string,
   data: { title?: string },
 ): Promise<ChatSessionData | null> {
   const session = await prisma.chatSession.update({
-    where: { id },
+    where: { id: sessionId },
     data: { title: data.title },
     include: { messages: { orderBy: { createdAt: "asc" } } },
   })
@@ -85,9 +85,9 @@ export async function updateSession(
   return mapSession(session)
 }
 
-export async function deleteSession(id: string): Promise<void> {
+export async function deleteSession(sessionId: string): Promise<void> {
   // Messages cascade on delete via schema
-  await prisma.chatSession.delete({ where: { id } })
+  await prisma.chatSession.delete({ where: { id: sessionId } })
 }
 
 export async function deleteLastAssistantMessage(sessionId: string): Promise<void> {

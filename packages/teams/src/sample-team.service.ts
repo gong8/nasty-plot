@@ -80,12 +80,12 @@ export async function listSampleTeams(filters?: {
   return prisma.sampleTeam.findMany({ where, orderBy: { createdAt: "desc" } })
 }
 
-export async function getSampleTeam(id: string): Promise<SampleTeamData | null> {
-  return prisma.sampleTeam.findUnique({ where: { id } })
+export async function getSampleTeam(sampleTeamId: string): Promise<SampleTeamData | null> {
+  return prisma.sampleTeam.findUnique({ where: { id: sampleTeamId } })
 }
 
-export async function deleteSampleTeam(id: string): Promise<void> {
-  await prisma.sampleTeam.delete({ where: { id } })
+export async function deleteSampleTeam(sampleTeamId: string): Promise<void> {
+  await prisma.sampleTeam.delete({ where: { id: sampleTeamId } })
 }
 
 export async function importSampleTeamsFromPastes(

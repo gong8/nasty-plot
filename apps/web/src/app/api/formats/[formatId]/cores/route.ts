@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { apiErrorResponse } from "../../../../../lib/api-error"
 import { getTopCores } from "@nasty-plot/smogon-data"
-import { getSpecies } from "@nasty-plot/pokemon-data"
+import { enrichWithSpeciesData } from "@nasty-plot/pokemon-data"
 
 export async function GET(
   request: NextRequest,
@@ -16,13 +16,13 @@ export async function GET(
     const cores = await getTopCores(formatId, { pokemonId, limit })
 
     const enriched = cores.map((core) => {
-      const speciesA = getSpecies(core.pokemonAId)
-      const speciesB = getSpecies(core.pokemonBId)
+      const { pokemonName: pokemonAName } = enrichWithSpeciesData(core.pokemonAId)
+      const { pokemonName: pokemonBName } = enrichWithSpeciesData(core.pokemonBId)
       return {
         pokemonAId: core.pokemonAId,
-        pokemonAName: speciesA?.name ?? core.pokemonAId,
+        pokemonAName: pokemonAName ?? core.pokemonAId,
         pokemonBId: core.pokemonBId,
-        pokemonBName: speciesB?.name ?? core.pokemonBId,
+        pokemonBName: pokemonBName ?? core.pokemonBId,
         correlationPercent: core.correlationPercent,
       }
     })

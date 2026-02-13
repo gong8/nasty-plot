@@ -18,6 +18,7 @@ import {
   DEFAULT_LEVEL,
   DEFAULT_EVS,
   DEFAULT_IVS,
+  DEFAULT_NATURE,
   calculateAllStats,
   getTotalEvs,
   type NatureName,
@@ -36,6 +37,7 @@ import {
   IvEditor,
   CalculatedStatsDisplay,
 } from "@nasty-plot/ui"
+import { PokemonInfoHeader } from "@/components/pokemon-info-header"
 import { PokemonSearchPanel } from "./pokemon-search-panel"
 import { ItemCombobox } from "./item-combobox"
 import { MoveInput } from "./shared/move-input"
@@ -66,7 +68,7 @@ export function SlotEditor({
   const [nickname, setNickname] = useState(slot?.nickname ?? "")
   const [ability, setAbility] = useState(slot?.ability ?? "")
   const [item, setItem] = useState(slot?.item ?? "")
-  const [nature, setNature] = useState<NatureName>(slot?.nature ?? "Hardy")
+  const [nature, setNature] = useState<NatureName>(slot?.nature ?? DEFAULT_NATURE)
   const [teraType, setTeraType] = useState<PokemonType | undefined>(slot?.teraType)
   const [level, setLevel] = useState(slot?.level ?? DEFAULT_LEVEL)
   const [moves, setMoves] = useState<[string, string?, string?, string?]>(
@@ -81,7 +83,7 @@ export function SlotEditor({
     setNickname(slot?.nickname ?? "")
     setAbility(slot?.ability ?? "")
     setItem(slot?.item ?? "")
-    setNature(slot?.nature ?? "Hardy")
+    setNature(slot?.nature ?? DEFAULT_NATURE)
     setTeraType(slot?.teraType)
     setLevel(slot?.level ?? DEFAULT_LEVEL)
     setMoves(slot?.moves ?? ["", undefined, undefined, undefined])
@@ -187,17 +189,7 @@ export function SlotEditor({
       <div className="flex flex-col gap-5 p-4">
         {/* Pokemon Header */}
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <PokemonSprite pokemonId={pokemonId} size={40} />
-            <div>
-              <div className="font-semibold">{speciesData?.name ?? pokemonId}</div>
-              <div className="flex gap-1 mt-0.5">
-                {speciesData?.types?.map((t: PokemonType) => (
-                  <TypeBadge key={t} type={t} size="sm" />
-                ))}
-              </div>
-            </div>
-          </div>
+          <PokemonInfoHeader pokemonId={pokemonId} speciesData={speciesData} />
           <Button
             variant="ghost"
             size="sm"

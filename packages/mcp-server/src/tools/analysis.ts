@@ -93,22 +93,22 @@ export function registerAnalysisTools(server: McpServer): void {
     "calculate_damage",
     "Calculate damage from one Pokemon's move against another, including KO chance",
     {
-      attackerPokemon: z.string().describe("Attacking Pokemon ID"),
-      defenderPokemon: z.string().describe("Defending Pokemon ID"),
+      attackerPokemonId: z.string().describe("Attacking Pokemon ID"),
+      defenderPokemonId: z.string().describe("Defending Pokemon ID"),
       moveName: z.string().describe("Move name (e.g., 'Earthquake')"),
       attackerLevel: z.number().optional().describe("Attacker level (default 100)"),
       defenderLevel: z.number().optional().describe("Defender level (default 100)"),
     },
-    ({ attackerPokemon, defenderPokemon, moveName, attackerLevel, defenderLevel }) =>
+    ({ attackerPokemonId, defenderPokemonId, moveName, attackerLevel, defenderLevel }) =>
       handleTool(
         () =>
           apiPost("/damage-calc", {
             attacker: {
-              pokemonId: attackerPokemon,
+              pokemonId: attackerPokemonId,
               level: attackerLevel ?? DEFAULT_LEVEL,
             },
             defender: {
-              pokemonId: defenderPokemon,
+              pokemonId: defenderPokemonId,
               level: defenderLevel ?? DEFAULT_LEVEL,
             },
             move: moveName,

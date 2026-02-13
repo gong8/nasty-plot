@@ -1,5 +1,5 @@
 import type { BattleState } from "../types"
-import { evaluatePosition, type EvalResult } from "./evaluator"
+import { evaluatePosition, type EvalResult } from "./evaluator.service"
 
 export interface WinProbability {
   /** p1 win percentage [0, 100] */

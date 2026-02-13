@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { getAllSpecies } from "@nasty-plot/pokemon-data"
+import { listSpecies } from "@nasty-plot/pokemon-data"
 import { getFormatPokemon } from "@nasty-plot/formats"
 import { getUsageStats } from "@nasty-plot/smogon-data"
 import {
@@ -24,7 +24,7 @@ export async function GET(request: Request) {
   if (formatId) {
     species = getFormatPokemon(formatId)
   } else {
-    species = getAllSpecies()
+    species = listSpecies()
   }
 
   if (search) {

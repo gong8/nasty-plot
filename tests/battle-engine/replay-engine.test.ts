@@ -1,7 +1,7 @@
 import { ReplayEngine } from "@nasty-plot/battle-engine"
 import { createInitialState } from "#battle-engine/battle-manager.service"
-import * as protocolParser from "#battle-engine/protocol-parser"
-import * as winProb from "#battle-engine/ai/win-probability"
+import * as protocolParser from "#battle-engine/protocol-parser.service"
+import * as winProb from "#battle-engine/ai/win-probability.service"
 import type { BattleState } from "@nasty-plot/battle-engine"
 
 // Mock dependencies
@@ -9,11 +9,11 @@ vi.mock("#battle-engine/battle-manager.service", () => ({
   createInitialState: vi.fn(),
 }))
 
-vi.mock("#battle-engine/protocol-parser", () => ({
+vi.mock("#battle-engine/protocol-parser.service", () => ({
   processLine: vi.fn(),
 }))
 
-vi.mock("#battle-engine/ai/win-probability", () => ({
+vi.mock("#battle-engine/ai/win-probability.service", () => ({
   estimateWinProbability: vi.fn(),
 }))
 

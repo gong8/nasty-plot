@@ -44,10 +44,3 @@ export {
 export type { PageType } from "./tool-context"
 export type { SSEEvent } from "./sse-events"
 export type { CreateSessionOptions } from "./chat-session.service"
-export type {
-  ChatMessage,
-  ChatSessionData,
-  ChatRole,
-  ChatMessageMetadata,
-  AutoAnalyzeDepth,
-} from "@nasty-plot/core"

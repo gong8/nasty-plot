@@ -1,6 +1,6 @@
 import {
   getFormat,
-  getAllFormats,
+  listFormats,
   getActiveFormats,
   getFormatPokemon,
   isLegalInFormat,
@@ -97,7 +97,7 @@ vi.mock("#formats/data/format-definitions", () => ({
 }))
 
 vi.mock("@nasty-plot/pokemon-data", () => ({
-  getAllSpecies: vi.fn(() => [
+  listSpecies: vi.fn(() => [
     {
       id: "garchomp",
       name: "Garchomp",
@@ -192,7 +192,7 @@ vi.mock("@nasty-plot/pokemon-data", () => ({
     }
     return species[id] ?? null
   }),
-  getAllItems: vi.fn(() => [
+  listItems: vi.fn(() => [
     { id: "leftovers", name: "Leftovers", description: "Restores HP", isNonstandard: null },
     { id: "choicescarf", name: "Choice Scarf", description: "Boosts Speed", isNonstandard: null },
     {
@@ -203,7 +203,7 @@ vi.mock("@nasty-plot/pokemon-data", () => ({
     },
     { id: "electriumz", name: "Electrium Z", description: "Z-Crystal", isNonstandard: "Past" },
   ]),
-  getAllMoves: vi.fn(() => [
+  listMoves: vi.fn(() => [
     {
       id: "earthquake",
       name: "Earthquake",
@@ -280,9 +280,9 @@ describe("getFormat", () => {
   })
 })
 
-describe("getAllFormats", () => {
+describe("listFormats", () => {
   it("returns all format definitions", () => {
-    const result = getAllFormats()
+    const result = listFormats()
 
     expect(result.length).toBe(6)
   })

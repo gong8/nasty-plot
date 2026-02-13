@@ -2,7 +2,7 @@ import { MAX_SINGLE_EV, MAX_TOTAL_EVS } from "./constants"
 import type { TeamData, TeamSlotData } from "./types"
 import { getTotalEvs } from "./stat-calc"
 
-interface ValidationError {
+export interface ValidationError {
   field: string
   message: string
 }

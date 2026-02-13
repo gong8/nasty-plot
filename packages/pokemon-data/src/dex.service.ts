@@ -52,7 +52,7 @@ function isCosmeticForme(species: ReturnType<typeof dex.species.get>): boolean {
   )
 }
 
-export function getAllSpecies(): PokemonSpecies[] {
+export function listSpecies(): PokemonSpecies[] {
   const all: PokemonSpecies[] = []
   for (const species of dex.species.all()) {
     if (
@@ -91,7 +91,7 @@ export function getMove(id: string): MoveData | null {
   return toMove(move)
 }
 
-export function getAllMoves(): MoveData[] {
+export function listMoves(): MoveData[] {
   const all: MoveData[] = []
   for (const move of dex.moves.all()) {
     if (move.exists && !EXCLUDED_NONSTANDARD.has(move.isNonstandard as string)) {
@@ -152,10 +152,10 @@ export async function getLearnset(pokemonId: string): Promise<string[]> {
 
 export function searchSpecies(query: string): PokemonSpecies[] {
   const lower = query.toLowerCase()
-  return getAllSpecies().filter((s) => s.name.toLowerCase().includes(lower))
+  return listSpecies().filter((s) => s.name.toLowerCase().includes(lower))
 }
 
-export function getAllItems(): ItemData[] {
+export function listItems(): ItemData[] {
   const all: ItemData[] = []
   for (const item of dex.items.all()) {
     if (item.exists && !EXCLUDED_NONSTANDARD.has(item.isNonstandard as string)) {
@@ -167,7 +167,7 @@ export function getAllItems(): ItemData[] {
 
 export function searchItems(query: string): ItemData[] {
   const lower = query.toLowerCase()
-  return getAllItems().filter((i) => i.name.toLowerCase().includes(lower))
+  return listItems().filter((i) => i.name.toLowerCase().includes(lower))
 }
 
 /** Check if an item is a Mega Stone */
@@ -235,6 +235,19 @@ export function getSignatureZCrystal(itemId: string): { pokemonId: string; moveI
     return { pokemonId: species.id, moveId: move.id }
   }
   return null
+}
+
+export function enrichWithSpeciesData(pokemonId: string): {
+  pokemonName: string | undefined
+  types: PokemonType[] | undefined
+  num: number | undefined
+} {
+  const species = getSpecies(pokemonId)
+  return {
+    pokemonName: species?.name,
+    types: species?.types,
+    num: species?.num,
+  }
 }
 
 // Lazy gen9 instance for @smogon/calc consumers

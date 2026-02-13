@@ -243,8 +243,8 @@ describe("registerAnalysisTools", () => {
 
       const handler = tools.get("calculate_damage")!
       await handler({
-        attackerPokemon: "greatTusk",
-        defenderPokemon: "ironValiant",
+        attackerPokemonId: "greatTusk",
+        defenderPokemonId: "ironValiant",
         moveName: "Headlong Rush",
       })
 
@@ -260,8 +260,8 @@ describe("registerAnalysisTools", () => {
 
       const handler = tools.get("calculate_damage")!
       await handler({
-        attackerPokemon: "pikachu",
-        defenderPokemon: "charizard",
+        attackerPokemonId: "pikachu",
+        defenderPokemonId: "charizard",
         moveName: "Thunderbolt",
         attackerLevel: 50,
         defenderLevel: 75,

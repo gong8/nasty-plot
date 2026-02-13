@@ -1,6 +1,6 @@
 "use client"
 
-import type { TeamAnalysis } from "@nasty-plot/core"
+import { capitalize, type TeamAnalysis } from "@nasty-plot/core"
 import { AlertTriangle, Info, Lightbulb } from "lucide-react"
 import { ConceptTooltip } from "./concept-tooltip"
 import { cn } from "@nasty-plot/ui"
@@ -8,10 +8,6 @@ import { cn } from "@nasty-plot/ui"
 interface RoleSuggestionBannerProps {
   analysis: TeamAnalysis | null
   filledSlotCount: number
-}
-
-function capitalize(s: string): string {
-  return s.charAt(0).toUpperCase() + s.slice(1)
 }
 
 type SuggestionIcon = "lightbulb" | "warning" | "info"

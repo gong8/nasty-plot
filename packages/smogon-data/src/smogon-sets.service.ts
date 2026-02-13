@@ -3,6 +3,7 @@ import { toId } from "@nasty-plot/core"
 import type { SmogonSetData, NatureName, PokemonType } from "@nasty-plot/core"
 import { resolveYearMonth, type SmogonChaosData } from "./usage-stats.service"
 import { generateSetsFromChaos } from "./chaos-sets.service"
+import { upsertSyncLog } from "./sync-log.service"
 
 function buildSetsUrl(formatId: string): string {
   return `https://data.pkmn.cc/sets/${formatId}.json`
@@ -31,20 +32,6 @@ function firstRecord(
   val: Record<string, number> | Record<string, number>[],
 ): Record<string, number> {
   return Array.isArray(val) ? val[0] : val
-}
-
-async function upsertSyncLog(formatId: string, message: string): Promise<void> {
-  await prisma.dataSyncLog.upsert({
-    where: { source_formatId: { source: "smogon-sets", formatId } },
-    update: { lastSynced: new Date(), status: "success", message },
-    create: {
-      source: "smogon-sets",
-      formatId,
-      lastSynced: new Date(),
-      status: "success",
-      message,
-    },
-  })
 }
 
 /**
@@ -113,7 +100,7 @@ export async function syncSmogonSets(
   }
 
   const syncMessage = `Fetched ${totalSets} sets${skipped > 0 ? ` (${skipped} entries skipped)` : ""}`
-  await upsertSyncLog(formatId, syncMessage)
+  await upsertSyncLog("smogon-sets", formatId, syncMessage)
   console.log(
     `[smogon-sets] Done: ${totalSets} sets saved for ${formatId}${skipped > 0 ? ` (${skipped} skipped)` : ""}`,
   )
@@ -155,7 +142,11 @@ async function fetchAndSaveChaosSets(formatId: string, smogonStatsId: string): P
     })
   }
 
-  await upsertSyncLog(formatId, `Generated ${sets.length} sets from usage stats (fallback)`)
+  await upsertSyncLog(
+    "smogon-sets",
+    formatId,
+    `Generated ${sets.length} sets from usage stats (fallback)`,
+  )
   console.log(`[smogon-sets] Done: ${sets.length} sets generated for ${formatId}`)
 }
 

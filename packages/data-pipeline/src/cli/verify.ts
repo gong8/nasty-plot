@@ -29,16 +29,16 @@ interface Issue {
   message: string
 }
 
-interface CliArgs {
+interface VerifyCliArgs {
   formatId?: string
   fix: boolean
 }
 
 // ─── CLI parsing ─────────────────────────────────────────────────────────────
 
-function parseArgs(): CliArgs {
+function parseArgs(): VerifyCliArgs {
   const args = process.argv.slice(2)
-  const result: CliArgs = { fix: false }
+  const result: VerifyCliArgs = { fix: false }
 
   for (let i = 0; i < args.length; i++) {
     if (args[i] === "--format" && args[i + 1]) {

@@ -1,5 +1,5 @@
 import { Battle } from "@pkmn/sim"
-import { DEFAULT_FORMAT_ID, type GameType } from "@nasty-plot/core"
+import { DEFAULT_FORMAT_ID, normalizeMoveName, type GameType } from "@nasty-plot/core"
 import {
   calcHpPercent,
   type AIPlayer,
@@ -9,7 +9,7 @@ import {
   type BattlePokemon,
   type PredictedSet,
 } from "../types"
-import { evaluatePosition } from "./evaluator"
+import { evaluatePosition } from "./evaluator.service"
 import {
   cloneBattle,
   applyChoices,
@@ -444,9 +444,7 @@ export class MCTSAI implements AIPlayer {
       return randomPick(choices)
     }
 
-    const predictedMoveIds = new Set(
-      prediction.predictedMoves.map((m) => m.toLowerCase().replace(/\s/g, "")),
-    )
+    const predictedMoveIds = new Set(prediction.predictedMoves.map((m) => normalizeMoveName(m)))
     const weights = choices.map((choice) => {
       if (!choice.startsWith("move ")) return 1
       const moveIdx = parseInt(choice.split(" ")[1], 10) - 1

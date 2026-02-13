@@ -7,12 +7,7 @@ import {
   getSignatureZCrystal,
   getMove,
 } from "@nasty-plot/pokemon-data"
-import type { TeamData, TeamSlotData } from "@nasty-plot/core"
-
-interface ValidationError {
-  field: string
-  message: string
-}
+import type { TeamData, TeamSlotData, ValidationError } from "@nasty-plot/core"
 
 function validateMegaStones(team: TeamData, errors: ValidationError[]): void {
   // One Mega per team

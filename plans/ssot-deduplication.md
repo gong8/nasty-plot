@@ -1,156 +1,169 @@
-# SSOT Deduplication Plan (v2)
+# SSOT Deduplication Plan (v3)
 
 **Audit date:** 2026-02-13
-**Status:** 22 violations across 50+ files
-**Test baseline:** 80 files, 1887 tests passing
-
----
-
-## Decisions (Pre-Approved)
-
-1. **UI components** → Extract to `@nasty-plot/ui` (shared package)
-2. **@smogon/calc in battle-engine** → Migrate to `@nasty-plot/damage-calc` wrapper
-3. **speciesId → pokemonId** → Standardize everywhere for consistency
-4. **Scope** → Full sweep (all 22 violations)
-5. **Test constants** → Leave tests as-is; hardcoded values acceptable in test fixtures
-6. **File naming** → Rename 7 files to `.service.ts` convention
-7. **Backward compat** → No re-exports; update all consumers immediately
-8. **Dead code** → Delete immediately (no deprecated shims)
+**Status:** 24 violations across 50+ files
+**Test baseline:** All tests passing (green)
 
 ---
 
 ## Violations
 
-### 1. Utilities (4 violations)
+### 1. Types (3 violations)
 
-#### U1. Identical file: usage-recommender.ts / usage-recommender.service.ts — CRITICAL
+#### T1. MoveSelectorProps name conflict — HIGH
 
-- **Locations:** `packages/recommendations/src/usage-recommender.ts`, `packages/recommendations/src/usage-recommender.service.ts`
-- **Fix:** Delete `usage-recommender.service.ts`. The `.ts` variant is the one imported by `index.ts`.
+- **Locations:** `packages/ui/src/move-selector.tsx:26`, `apps/web/src/features/battle/components/MoveSelector.tsx:70`
+- **Fix:** Rename web battle version to `BattleMoveSelectorProps`
 
-#### U2. Move deduplication in 3 places — HIGH
+#### T2. CliArgs duplicate names in data-pipeline — MEDIUM
 
-- **Locations:** `packages/core/src/showdown-paste.ts:59` (private `deduplicateMoves`), `packages/teams/src/team.service.ts:83` (private `validateNoDuplicateMoves`), `packages/smogon-data/src/set-inference.service.ts:~108` (inline via `usedNorms` Set)
-- **Fix:** Export `deduplicateMoves` from core. Have teams import and use it for validation.
+- **Locations:** `packages/data-pipeline/src/cli/seed.ts:13`, `packages/data-pipeline/src/cli/verify.ts:32`
+- **Fix:** Rename to `SeedCliArgs` and `VerifyCliArgs`
 
-#### U3. Stat formatting in 3 places — HIGH
+#### T3. ValidationError identical interface in two packages — MEDIUM
 
-- **Locations:** `packages/battle-engine/src/team-packer.ts:39` (private `formatEvs`/`formatIvs`), `packages/core/src/showdown-paste.ts:176` (private `formatStatSpread`), `packages/llm/src/context-builder.ts:4` (private `formatBaseStats`)
-- **Fix:** These serve different formats (packed, showdown paste, display). Acceptable separation. **DOWNGRADED — no action needed.**
+- **Locations:** `packages/core/src/validation.ts:5` (local), `packages/teams/src/validation.service.ts:12` (local)
+- **Fix:** Export from `@nasty-plot/core`, import in teams
 
-#### U4. teamToShowdownPaste deprecated wrapper — HIGH
+### 2. Constants (3 violations)
 
-- **Location:** `packages/battle-engine/src/team-packer.ts:16`
-- **Fix:** Remove function. Update any callers to use `serializeShowdownPaste` from `@nasty-plot/core`.
+#### C1. "Hardy" nature string literal repeated — HIGH
 
-### 2. Services (5 violations)
+- **Locations:** `core/showdown-paste.ts:87`, `damage-calc/calc.service.ts:76,201,206`, `battle-engine/team-packer.ts:43`, `apps/web/src/features/damage-calc/components/damage-calculator.tsx:66`, `apps/web/src/features/team-builder/components/guided/simplified-set-editor.tsx:71`, `apps/web/src/features/team-builder/components/slot-editor.tsx:69,84`
+- **Fix:** Add `DEFAULT_NATURE = "Hardy"` to `core/constants.ts`, use everywhere
 
-#### S1. toId/toID/toSpeciesId private copies — HIGH
+#### C2. MAX_SCORE = 100 defined 3x in recommendations — MEDIUM
 
-- **Locations:** `packages/core/src/showdown-paste.ts:189` (canonical `toId`), `packages/pokemon-data/src/dex.service.ts` (private `toID`), `packages/battle-engine/src/protocol-parser.ts` (private `toSpeciesId`), `packages/battle-engine/src/replay/replay-import.ts` (private `toSpeciesId`)
-- **Fix:** Delete private copies, import `toId` from `@nasty-plot/core`.
+- **Locations:** `recommendations/src/usage-recommender.ts:6`, `recommendations/src/composite-recommender.ts:6`, `recommendations/src/coverage-recommender.ts:15`
+- **Fix:** Extract to `recommendations/src/constants.ts`
 
-#### S2. resolveSpeciesName duplicate in team-packer — HIGH
+#### C3. MCP port 3001 hardcoded — LOW
 
-- **Locations:** `packages/pokemon-data/src/dex.service.ts:275` (canonical), `packages/battle-engine/src/team-packer.ts:29` (private copy)
-- **Fix:** Delete private copy, import from `@nasty-plot/pokemon-data`.
+- **Locations:** `mcp-server/src/index.ts:91`, `llm/src/config.ts:1`
+- **Fix:** Share via env constant
 
-#### S3. prisma.team.findUnique bypasses getTeam() service — HIGH
+### 3. Utilities (3 violations)
 
-- **Locations:** `packages/analysis/src/analysis.service.ts:30`, `packages/recommendations/src/composite-recommender.ts:35`
-- **Fix:** Replace direct Prisma query with `getTeam()` from `@nasty-plot/teams`.
+#### U1. capitalize() duplicated — MEDIUM
 
-#### S4. getBaseStatTotal duplicated in frontend — MEDIUM
+- **Locations:** `apps/web/src/app/battle/page.tsx:46`, `apps/web/src/features/team-builder/components/guided/role-suggestion-banner.tsx:13`
+- **Fix:** Add to `core/utils.ts`, import in both files
 
-- **Locations:** `apps/web/src/app/api/pokemon/route.ts:8`, `apps/web/src/app/pokemon/page.tsx:27`
-- **Fix:** Add `getBaseStatTotal()` to `packages/core/src/stat-calc.ts`, import in both files.
+#### U2. pickHealthiestSwitch inlined vs exported — HIGH
 
-#### S5. dbTeamToDomain not exported from teams barrel — MEDIUM
+- **Locations:** `battle-engine/src/ai/heuristic-ai.ts:380` (inline), `battle-engine/src/ai/shared.ts:52` (exported)
+- **Fix:** Use existing `pickHealthiestSwitch` from `shared.ts` in heuristic-ai.ts
 
-- **Location:** `packages/teams/src/team.service.ts:157` (exists but not in barrel)
-- **Fix:** Add to `packages/teams/src/index.ts` exports.
+#### U3. normalizeMoveName inlined — MEDIUM
 
-### 3. Constants (3 violations)
+- **Locations:** `battle-engine/src/ai/mcts-ai.ts:448` (inline), `core/src/utils.ts:1` (exported)
+- **Fix:** Import from `@nasty-plot/core` in mcts-ai.ts
 
-#### C1. Missing DEFAULT_ABILITY and DEFAULT_ITEM — MEDIUM
+### 4. Services (4 violations)
 
-- **Occurrences:** 36 combined (`item: ""` in 23 places, `ability: ""` in 13 places)
-- **Fix:** Add `DEFAULT_ABILITY = ""` and `DEFAULT_ITEM = ""` to `packages/core/src/constants.ts`. Replace in non-test production code.
+#### S1. Species enrichment pattern duplicated — MEDIUM
 
-#### C2. Missing DEFAULT_NATURE — MEDIUM
+- **Locations:** `apps/web/src/app/api/formats/[formatId]/usage/route.ts:22-30`, `apps/web/src/app/api/formats/[formatId]/cores/route.ts:18-28`
+- **Fix:** Extract `enrichWithSpeciesData()` to `pokemon-data/src/dex.service.ts`
 
-- **Occurrences:** 7 places hardcoding `"Adamant"`
-- **Fix:** Add `DEFAULT_NATURE = "Adamant"` to `packages/core/src/constants.ts`. Replace in non-test production code.
+#### S2. upsertSyncLog identical Prisma pattern — MEDIUM
 
-#### C3. API base URL duplicated — MEDIUM
+- **Locations:** `smogon-data/src/usage-stats.service.ts:87-99`, `smogon-data/src/smogon-sets.service.ts:36-48`
+- **Fix:** Extract to shared function in smogon-data package
 
-- **Locations:** `packages/core/src/api-client.ts:32` (`localhost:3000`), `packages/mcp-server/src/api-client.ts:3` (`localhost:3000/api`)
-- **Fix:** Add `DEFAULT_API_URL = "http://localhost:3000"` to core constants. Both api-clients reference it.
+#### S3. Direct fetch() bypasses API client — LOW
 
-### 4. Types (1 violation)
+- **Locations:** `battle-engine/src/ai/set-predictor.ts:17`
+- **Fix:** Use `@nasty-plot/core` API client (`checkedFetch`)
 
-#### T1. TeamMatchResult name collision — MEDIUM
+#### S4. Smogon fetch error patterns duplicated — LOW
 
-- **Locations:** `packages/teams/src/team-matcher.service.ts:21` (exported), `apps/web/src/app/api/battles/import/route.ts:13` (local)
-- **Fix:** Rename API route type to `TeamImportResult`.
+- **Locations:** `smogon-data/src/usage-stats.service.ts:201`, `smogon-data/src/smogon-sets.service.ts:63,129`
+- **Fix:** Extract `fetchSmogonData()` helper in smogon-data
 
-### 5. Package Boundaries (1 violation)
+### 5. Frontend (7 violations)
 
-#### P1. Direct @smogon/calc in battle-engine AI — MEDIUM
+#### F1. Dialog async loading pattern — HIGH
 
-- **Location:** `packages/battle-engine/src/ai/shared.ts:2` (imports `calculate`, `Pokemon`, `Move`, `Field`)
-- **Fix:** Add `calculateQuickDamage()` wrapper to `@nasty-plot/damage-calc`. Update AI to use it.
+- **Locations:** `BattleExportDialog.tsx:24-56`, `new-chat-modal.tsx:56-80`, `merge-wizard.tsx:45-54`
+- **Fix:** Extract `useDialogAsyncData` hook
 
-### 6. Frontend Components (5 violations)
+#### F2. Loading/Empty/Data state branching — HIGH
 
-#### F1. Ability Selector duplicated (~106 lines) — CRITICAL
+- **Locations:** `battle/sample-teams/page.tsx:44-77`, `battle/page.tsx:315-345`, `pokemon/page.tsx:164-219`, `teams/[teamId]/battles/page.tsx:22-43`
+- **Fix:** Extract `DataStateRenderer` component
 
-- **Locations:** `apps/web/src/features/team-builder/components/slot-editor.tsx:247`, `apps/web/src/features/team-builder/components/guided/simplified-set-editor.tsx:156`
-- **Fix:** Extract `AbilitySelector` to `packages/ui/src/components/AbilitySelector.tsx`.
+#### F3. useEffect + fetchJson cancel pattern — MEDIUM
 
-#### F2. EV/IV Editors duplicated (~205 lines) — HIGH
+- **Locations:** `battle/page.tsx:176-197`, `battle/simulate/page.tsx:78-100`, `battle/sample-teams/page.tsx:52-77`, `pokemon/page.tsx:62-65`
+- **Fix:** Extract `useFetchData` hook
 
-- **Locations:** `apps/web/src/features/team-builder/components/slot-editor.tsx:379`, `apps/web/src/features/team-builder/components/guided/simplified-set-editor.tsx:260`, `apps/web/src/features/damage-calc/components/damage-calculator.tsx:395`
-- **Fix:** Extract `EvEditor`, `IvEditor`, `CalculatedStatsDisplay` to `packages/ui/src/components/`.
+#### F4. Pokemon card layouts — MEDIUM
 
-#### F3. Usage % formatting inconsistent — MEDIUM
+- **Locations:** `SampleTeamCard.tsx:18-59`, `QuickBattleCard.tsx:13-44`, `recommendation-card.tsx:33-117`
+- **Fix:** Extract shared `PokemonCard` component
 
-- **Locations:** 5+ files using `.toFixed(0)` vs `.toFixed(1)` inline
-- **Fix:** Add `formatUsagePercent(percent, decimals?)` to `packages/core/src/utils.ts`. Replace inline formatting.
+#### F5. Pokemon info header inline — MEDIUM
 
-#### F4. Pokemon list items duplicated (~50 lines) — MEDIUM
+- **Locations:** `slot-editor.tsx:189-210`, `simplified-set-editor.tsx:112-122`
+- **Fix:** Extract `PokemonInfoHeader` component
 
-- **Locations:** `apps/web/src/features/battle/components/TeamPreview.tsx:59`, `apps/web/src/features/battle/components/PokeballIndicator.tsx:15`
-- **Fix:** Extract shared rendering pattern.
+#### F6. React Query used inconsistently — MEDIUM
 
-#### F5. Nature/Tera selectors not reused in damage-calc — LOW
+- **Locations:** `item-combobox.tsx`, `opponent-selector.tsx` use useQuery; pages use manual fetch
+- **Fix:** Standardize on custom `useFetchData` hook (per user decision)
 
-- **Locations:** `apps/web/src/features/team-builder/components/shared/nature-selector.tsx`, `apps/web/src/features/damage-calc/components/damage-calculator.tsx:331`
-- **Fix:** Import shared selectors from `team-builder/shared/` in damage-calc.
+#### F7. Pokemon sprite row/grid — LOW
 
-### 7. Naming (3 violations)
+- **Locations:** `SampleTeamCard.tsx:42-47`, `TeamPickerCard.tsx:42-61`, `teams/page.tsx:141-149`
+- **Fix:** Extract `PokemonSpriteRow` component
 
-#### N1. speciesId vs pokemonId — MEDIUM
+### 6. Imports (1 violation)
 
-- **Locations:** `packages/battle-engine/src/types.ts:61` (`BattlePokemon.speciesId`), `packages/pokemon-data/src/dex.service.ts` (parameter names), 30+ consumer files
-- **Fix:** Rename all `speciesId` → `pokemonId` throughout codebase.
+#### I1. Unused re-exports from llm — LOW
 
-#### N2. ShowdownReplayJson deprecated alias — LOW
+- **Locations:** `llm/src/index.ts:47-53`
+- **Fix:** Remove dead re-exports of ChatMessage, ChatSessionData, ChatRole, ChatMessageMetadata, AutoAnalyzeDepth
 
-- **Location:** `packages/battle-engine/src/replay/replay-import.ts:20`
-- **Fix:** Remove deprecated alias. Update any consumers to use `ShowdownReplayJSON`.
+### 7. Naming (5 violations)
 
-#### N3. 7 files not following .service.ts convention — MEDIUM
+#### N1. Generic `id` param in service functions — HIGH
 
-- **Files:**
-  1. `packages/llm/src/mcp-client.ts` → `mcp-client.service.ts`
-  2. `packages/llm/src/openai-client.ts` → `openai-client.service.ts`
-  3. `packages/llm/src/context-builder.ts` → `context-builder.service.ts`
-  4. `packages/llm/src/battle-context-builder.ts` → `battle-context-builder.service.ts`
-  5. `packages/battle-engine/src/battle-manager.ts` → `battle-manager.service.ts`
-  6. `packages/core/src/api-client.ts` → `api-client.service.ts`
-  7. `packages/formats/src/resolver.ts` → `format-resolver.service.ts`
-- **Fix:** Rename files, update barrel exports and within-package imports.
+- **Locations:** 15+ functions in `team.service.ts`, `sample-team.service.ts`, `chat-session.service.ts`, `battle.service.ts`
+- **Fix:** Rename to `teamId`, `sampleTeamId`, `sessionId`, `battleId`, `batchId` respectively + update all callers
+
+#### N2. Sample team parameter mismatch — HIGH
+
+- **Locations:** API routes use `sampleTeamId`, service uses `id`
+- **Fix:** Align service to use `sampleTeamId` (included in N1 fix)
+
+#### N3. Non-.service.ts files in battle-engine — MEDIUM
+
+- **Locations:** `protocol-parser.ts`, `team-packer.ts`, `battle-state-serializer.ts`, `evaluator.ts`, `hint-engine.ts`, `win-probability.ts`
+- **Fix:** Rename all to `.service.ts` suffix, update all imports
+
+#### N4. MCP tool parameter naming inconsistency — MEDIUM
+
+- **Locations:** `mcp-server/src/tools/analysis.ts:96-98` uses `attackerPokemon`/`defenderPokemon`
+- **Fix:** Rename to `attackerPokemonId`/`defenderPokemonId`
+
+#### N5. getAll* vs list* naming split — MEDIUM
+
+- **Locations:** `getAllSpecies`, `getAllMoves`, `getAllItems`, `getAllAbilities` in pokemon-data; `getAllFormats` in formats
+- **Fix:** Rename all to `list*` pattern + update all callers
+
+---
+
+## Decisions (Pre-Approved)
+
+1. Use `list*` everywhere for collection-returning functions
+2. Rename non-.service.ts files to .service.ts
+3. Use custom hooks (useFetchData, useDialogAsyncData) for frontend fetch patterns
+4. Aggressive deduplication — fix all 24 violations (HIGH + MEDIUM + LOW)
+5. Update all callers immediately — no backward-compatible aliases
+6. `capitalize()` goes in `core/utils.ts`
+7. Species enrichment helper goes in `pokemon-data` package
+8. Keep current type suffix mix (Data/View/Record/Entry/Result) — document convention
 
 ---
 
@@ -159,257 +172,252 @@
 ### Dependency Graph
 
 ```
-Wave 1: Create canonical sources (no deps)
-  ├── Agent 1: Core enhancements (constants, utils, stat-calc)
-  ├── Agent 2: Dead code cleanup (delete files, remove deprecated)
-  ├── Agent 3: Damage calc AI wrapper
-  └── Agent 4: Teams barrel export fix
-       │
-Wave 2: Backend consumer updates (depends on Wave 1)
-  ├── Agent 1: Service bypass fixes (prisma → service, getBaseStatTotal)
-  ├── Agent 2: ID normalization (toId, resolveSpeciesName)
-  ├── Agent 3: Constants consumers (DEFAULT_*, API URL)
-  ├── Agent 4: Package boundary fix (@smogon/calc → wrapper)
-  └── Agent 5: Type & formatting fixes (TeamMatchResult, formatUsagePercent)
-       │
-Wave 3: speciesId → pokemonId rename (depends on Wave 2)
-  └── Agent 1: Comprehensive speciesId rename
-       │
-Wave 4: Structure & UI foundation (depends on Wave 3)
-  ├── Agent 1: File renames to .service.ts
-  └── Agent 2: Create UI components (AbilitySelector, EvEditor, IvEditor, CalculatedStatsDisplay)
-       │
-Wave 5: Frontend refactoring (depends on Wave 4)
-  ├── Agent 1: Refactor team-builder components
-  ├── Agent 2: Refactor damage-calc components
-  └── Agent 3: Frontend polish (usage %, list items, Nature/Tera reuse)
+Wave 1 (Foundation — create canonical sources)
+  ├── Agent 1: Core foundation (constants, utils, validation export)
+  ├── Agent 2: Package-level constants (recommendations, smogon-data sync)
+  ├── Agent 3: Pokemon-data enrichment helper
+  └── Agent 4: Frontend infrastructure (hooks + components)
+          │
+          ▼
+Wave 2 (Consumers — update files to use Wave 1 sources)
+  ├── Agent 1: Package constant consumers (Hardy, MAX_SCORE, upsertSyncLog)
+  ├── Agent 2: Battle-engine internal fixes (heuristic-ai, mcts-ai, set-predictor)
+  ├── Agent 3: API route consumers (enrichment helper, smogon fetch)
+  ├── Agent 4: Frontend hook migration (pages using fetch patterns)
+  ├── Agent 5: Team-builder + damage-calc frontend (Hardy + PokemonInfoHeader)
+  └── Agent 6: Type fixes + remaining frontend (MoveSelectorProps, ValidationError, CliArgs, SpriteRow)
+          │
+          ▼
+Wave 3 (Naming — broad renames across codebase)
+  ├── Agent 1: Teams domain (id→teamId/sampleTeamId + all callers)
+  ├── Agent 2: Battle-engine domain (id→battleId + file renames to .service.ts)
+  ├── Agent 3: LLM domain (id→sessionId + remove unused re-exports)
+  ├── Agent 4: Data domain (getAll→list in pokemon-data/formats + all callers)
+  └── Agent 5: MCP fixes (analysis.ts param naming)
 ```
 
 ### Wave 1 — 4 Agents (No Dependencies)
 
-#### Agent 1: `core-enhancements`
+#### Agent 1: `core-foundation`
 
-**Scope:** `packages/core/` only
+**Scope:** `packages/core/src/constants.ts`, `packages/core/src/utils.ts`, `packages/core/src/validation.ts`, `packages/core/src/index.ts`
 **Tasks:**
 
-1. Read `packages/core/src/constants.ts`
-2. Add constants: `DEFAULT_ABILITY = ""`, `DEFAULT_ITEM = ""`, `DEFAULT_NATURE = "Adamant"`, `DEFAULT_API_URL = "http://localhost:3000"`
-3. Read `packages/core/src/stat-calc.ts`
-4. Add `getBaseStatTotal(stats: StatsTable): number` — sums all 6 stats
-5. Read `packages/core/src/utils.ts`
-6. Add `formatUsagePercent(percent: number, decimals = 1): string` — returns `${percent.toFixed(decimals)}%`
-7. Read `packages/core/src/showdown-paste.ts`
-8. Make `deduplicateMoves` function public (add `export` keyword)
-9. Ensure all new exports flow through barrel (`src/index.ts` uses `export *`)
-10. Run `pnpm test -- tests/core/`
+1. Read `packages/core/src/constants.ts`. Add `export const DEFAULT_NATURE = "Hardy" as const` near the other defaults (DEFAULT_LEVEL, etc.)
+2. Read `packages/core/src/utils.ts`. Add `export function capitalize(str: string): string { return str.charAt(0).toUpperCase() + str.slice(1) }`
+3. Read `packages/core/src/validation.ts`. Change the local `interface ValidationError` to `export interface ValidationError` so it can be imported by other packages
+4. Read `packages/core/src/index.ts`. Ensure `ValidationError` is exported (add to exports from `./validation` if not already). Ensure `capitalize` is exported from `./utils`. Ensure `DEFAULT_NATURE` is accessible via barrel (constants are likely already re-exported)
+5. Run: `pnpm test -- tests/core/`
 
-#### Agent 2: `dead-code-cleanup`
+#### Agent 2: `package-constants`
 
-**Scope:** `packages/recommendations/`, `packages/battle-engine/`
+**Scope:** `packages/recommendations/src/constants.ts` (new), `packages/smogon-data/src/sync-log.service.ts` (new), `packages/smogon-data/src/index.ts`, `packages/recommendations/src/index.ts`
 **Tasks:**
 
-1. DELETE file `packages/recommendations/src/usage-recommender.service.ts`
-2. Verify `packages/recommendations/src/index.ts` imports from `usage-recommender.ts` (not `.service.ts`)
-3. Read `packages/battle-engine/src/replay/replay-import.ts`
-4. Remove the deprecated `ShowdownReplayJson` type alias export
-5. Grep for any imports of `ShowdownReplayJson` — update to `ShowdownReplayJSON`
-6. Read `packages/battle-engine/src/team-packer.ts`
-7. Remove the deprecated `teamToShowdownPaste` function
-8. Grep for any callers of `teamToShowdownPaste` — update to use `serializeShowdownPaste` from `@nasty-plot/core`
-9. Read `packages/battle-engine/src/index.ts` — remove exports of deleted items
-10. Run `pnpm test -- tests/battle-engine/ tests/recommendations/`
+1. Create `packages/recommendations/src/constants.ts` with: `export const MAX_SCORE = 100`
+2. Read `packages/recommendations/src/index.ts`. Add export for the new constants file
+3. Read `packages/smogon-data/src/usage-stats.service.ts` lines 87-99 to see the upsertSyncLog pattern
+4. Create `packages/smogon-data/src/sync-log.service.ts` with extracted `upsertSyncLog(source: string, formatId: string, message: string)` function
+5. Read `packages/smogon-data/src/index.ts`. Add export for `sync-log.service`
+6. Run: `pnpm test -- tests/recommendations/ tests/smogon-data/`
 
-#### Agent 3: `damage-calc-wrapper`
+#### Agent 3: `pokemon-data-enrichment`
 
-**Scope:** `packages/damage-calc/` only
-**Tasks:**
-
-1. Read `packages/damage-calc/src/calc.service.ts` to understand existing API
-2. Read `packages/battle-engine/src/ai/shared.ts` to understand what the AI needs
-3. Add a new function `calculateQuickDamage(attackerName: string, defenderName: string, moveName: string, options?: { attackerLevel?: number, defenderLevel?: number }): { minPercent: number, maxPercent: number }` that wraps @smogon/calc for simple AI damage lookups
-4. Export from barrel
-5. Run `pnpm test -- tests/damage-calc/`
-
-#### Agent 4: `teams-barrel-fix`
-
-**Scope:** `packages/teams/` only
-**Tasks:**
-
-1. Read `packages/teams/src/index.ts`
-2. Read `packages/teams/src/team.service.ts` to find `dbTeamToDomain`
-3. Add `dbTeamToDomain` to the barrel exports in `packages/teams/src/index.ts`
-4. Run `pnpm test -- tests/teams/`
-
-### Wave 2 — 5 Agents (After Wave 1)
-
-#### Agent 1: `service-bypass-fixes`
-
-**Scope:** `packages/analysis/`, `packages/recommendations/`, `apps/web/src/app/api/pokemon/`, `apps/web/src/app/pokemon/`
-**Tasks:**
-
-1. Read `packages/analysis/src/analysis.service.ts`
-2. Replace `prisma.team.findUnique({ where: { id: teamId }, include: { slots: true } })` with `import { getTeam } from "@nasty-plot/teams"` and `const team = await getTeam(teamId)`. Adapt surrounding code to work with `TeamData` return type.
-3. Read `packages/recommendations/src/composite-recommender.ts`
-4. Same replacement: `prisma.team.findUnique` → `getTeam()` from `@nasty-plot/teams`
-5. Read `apps/web/src/app/api/pokemon/route.ts`
-6. Replace inline `getBaseStatTotal` with import from `@nasty-plot/core`
-7. Read `apps/web/src/app/pokemon/page.tsx`
-8. Replace inline `getBaseStatTotal` with import from `@nasty-plot/core`
-9. Run `pnpm test -- tests/analysis/ tests/recommendations/`
-
-#### Agent 2: `id-normalization`
-
-**Scope:** `packages/pokemon-data/`, `packages/battle-engine/src/protocol-parser.ts`, `packages/battle-engine/src/replay/`, `packages/battle-engine/src/team-packer.ts`
+**Scope:** `packages/pokemon-data/src/dex.service.ts`, `packages/pokemon-data/src/index.ts`
 **Tasks:**
 
 1. Read `packages/pokemon-data/src/dex.service.ts`
-2. Remove private `toID` function, add `import { toId } from "@nasty-plot/core"`, replace all `toID(...)` calls with `toId(...)`
-3. Read `packages/battle-engine/src/protocol-parser.ts`
-4. Remove private `toSpeciesId` function, add `import { toId } from "@nasty-plot/core"`, replace all `toSpeciesId(...)` calls with `toId(...)`
-5. Read `packages/battle-engine/src/replay/replay-import.ts`
-6. Remove private `toSpeciesId` function, add `import { toId } from "@nasty-plot/core"`, replace all `toSpeciesId(...)` calls with `toId(...)`
-7. Read `packages/battle-engine/src/team-packer.ts`
-8. Remove private `resolveSpeciesName` function, add `import { resolveSpeciesName } from "@nasty-plot/pokemon-data"`, replace calls
-9. Run `pnpm test -- tests/battle-engine/ tests/pokemon-data/`
+2. Read `apps/web/src/app/api/formats/[formatId]/usage/route.ts` to see the enrichment pattern
+3. Read `apps/web/src/app/api/formats/[formatId]/cores/route.ts` to see the other enrichment pattern
+4. Add to `dex.service.ts`: `export function enrichWithSpeciesData(pokemonId: string): { pokemonName: string | undefined; types: PokemonType[] | undefined; num: number | undefined }` that calls `getSpecies()` internally
+5. Ensure it's exported from `packages/pokemon-data/src/index.ts`
+6. Run: `pnpm test -- tests/pokemon-data/`
 
-#### Agent 3: `constants-consumers`
+#### Agent 4: `frontend-infrastructure`
 
-**Scope:** `apps/web/src/features/`, `packages/mcp-server/src/api-client.ts`, `packages/core/src/api-client.ts`
+**Scope:** New files only — `apps/web/src/lib/hooks/`, `apps/web/src/components/`
 **Tasks:**
 
-1. Search non-test production code for `item: ""` and `ability: ""` patterns
-2. Replace with `DEFAULT_ITEM` and `DEFAULT_ABILITY` from `@nasty-plot/core` where appropriate (skip test files)
-3. Search for hardcoded `"Adamant"` as default nature in production code
-4. Replace with `DEFAULT_NATURE` from `@nasty-plot/core` (focus on: `apps/web/src/features/team-builder/hooks/use-guided-builder.ts`, `apps/web/src/features/team-builder/context/guided-builder-provider.tsx`)
-5. Read `packages/core/src/api-client.ts` — replace hardcoded `"http://localhost:3000"` with `DEFAULT_API_URL` from core constants
-6. Read `packages/mcp-server/src/api-client.ts` — replace hardcoded `"http://localhost:3000/api"` with `${DEFAULT_API_URL}/api` using `DEFAULT_API_URL` from core constants
-7. Run `pnpm test`
+1. Create `apps/web/src/lib/hooks/use-fetch-data.ts`:
+   ```typescript
+   export function useFetchData<T>(
+     url: string | null,
+     enabled = true,
+   ): { data: T | null; loading: boolean; error: string | null }
+   ```
+   Implements the useEffect + fetchJson + cancelled flag pattern
+2. Create `apps/web/src/lib/hooks/use-dialog-async-data.ts`:
+   ```typescript
+   export function useDialogAsyncData<T>(
+     open: boolean,
+     fetchFn: () => Promise<T>,
+     deps?: any[],
+   ): { data: T | null; loading: boolean }
+   ```
+   Implements the dialog-specific async loading pattern with cancellation
+3. Read `apps/web/src/features/team-builder/components/slot-editor.tsx:189-210` to see PokemonInfoHeader pattern
+4. Create `apps/web/src/components/pokemon-info-header.tsx`: `PokemonInfoHeader` component (pokemonId, speciesData, spriteSize props)
+5. Create `apps/web/src/components/pokemon-sprite-row.tsx`: `PokemonSpriteRow` component (pokemonIds, size props)
+6. Create `apps/web/src/components/data-state-renderer.tsx`: `DataStateRenderer` component with loading/empty/data states
+7. Verify files compile: read relevant imports to ensure correct paths
 
-#### Agent 4: `package-boundary-fix`
+### Wave 2 — 6 Agents (After Wave 1)
 
-**Scope:** `packages/battle-engine/src/ai/shared.ts` only
+#### Agent 1: `constant-consumers`
+
+**Scope:** `packages/core/src/showdown-paste.ts`, `packages/damage-calc/src/calc.service.ts`, `packages/battle-engine/src/team-packer.ts`, `packages/recommendations/src/usage-recommender.ts`, `packages/recommendations/src/composite-recommender.ts`, `packages/recommendations/src/coverage-recommender.ts`, `packages/smogon-data/src/usage-stats.service.ts`, `packages/smogon-data/src/smogon-sets.service.ts`
 **Tasks:**
 
-1. Read `packages/battle-engine/src/ai/shared.ts`
-2. Read the new `calculateQuickDamage` function from `packages/damage-calc/src/calc.service.ts` (created in Wave 1)
-3. Replace the direct `@smogon/calc` import and manual `Pokemon`/`Move`/`Field` construction with a call to `calculateQuickDamage` from `@nasty-plot/damage-calc`
-4. Remove the `@smogon/calc` import
-5. Verify the function signature matches what the AI code needs
-6. Run `pnpm test -- tests/battle-engine/`
+1. Read each file, then replace `"Hardy"` string literals with `DEFAULT_NATURE` imported from `@nasty-plot/core` in: `core/showdown-paste.ts`, `damage-calc/calc.service.ts`, `battle-engine/team-packer.ts`
+2. In each of the 3 recommender files, replace `const MAX_SCORE = 100` with `import { MAX_SCORE } from "./constants"`
+3. In `smogon-data/usage-stats.service.ts`, replace the inline upsertSyncLog code with import from `./sync-log.service`
+4. In `smogon-data/smogon-sets.service.ts`, replace the inline upsertSyncLog code with import from `./sync-log.service`
+5. Extract `fetchSmogonData()` helper for shared fetch+error pattern in smogon-data (create in smogon-sets.service.ts or a shared file, and use in both services)
+6. Run: `pnpm test -- tests/core/ tests/damage-calc/ tests/battle-engine/ tests/recommendations/ tests/smogon-data/`
 
-#### Agent 5: `type-and-format-fixes`
+#### Agent 2: `battle-engine-fixes`
 
-**Scope:** `apps/web/src/app/api/battles/import/`, misc frontend files
+**Scope:** `packages/battle-engine/src/ai/heuristic-ai.ts`, `packages/battle-engine/src/ai/mcts-ai.ts`, `packages/battle-engine/src/ai/set-predictor.ts`
 **Tasks:**
 
-1. Read `apps/web/src/app/api/battles/import/route.ts`
-2. Rename local `TeamMatchResult` type to `TeamImportResult`
-3. Update all references within the file
-4. Search for inline `toFixed(0)` and `toFixed(1)` usage percentage patterns in `apps/web/src/features/`
-5. Replace with `formatUsagePercent()` from `@nasty-plot/core` (imported via `@nasty-plot/core`)
-6. Run `pnpm test`
+1. Read `packages/battle-engine/src/ai/heuristic-ai.ts`. Find the inlined healthiest switch logic (~line 380). Replace with import and call to `pickHealthiestSwitch` from `./shared`
+2. Read `packages/battle-engine/src/ai/mcts-ai.ts`. Find the inline `m.toLowerCase().replace(/\s/g, "")` (~line 448). Replace with import of `normalizeMoveName` from `@nasty-plot/core`
+3. Read `packages/battle-engine/src/ai/set-predictor.ts`. Replace the direct `fetch()` call with `checkedFetch` from `@nasty-plot/core` or the appropriate API client utility
+4. Run: `pnpm test -- tests/battle-engine/`
 
-### Wave 3 — 1 Agent (After Wave 2)
+#### Agent 3: `api-route-consumers`
 
-#### Agent 1: `speciesid-to-pokemonid`
-
-**Scope:** Entire codebase (excluding tests unless they reference the type field directly)
+**Scope:** `apps/web/src/app/api/formats/[formatId]/usage/route.ts`, `apps/web/src/app/api/formats/[formatId]/cores/route.ts`
 **Tasks:**
 
-1. Grep the entire codebase for `speciesId` (case-sensitive) to find ALL occurrences
-2. Read `packages/battle-engine/src/types.ts` — rename `speciesId` field to `pokemonId` in `BattlePokemon` interface and any related types
-3. For EVERY file that references `.speciesId` or destructures `speciesId`:
-   - Read the file
-   - Replace `speciesId` with `pokemonId` (both property access and destructuring)
-4. Check `packages/pokemon-data/src/dex.service.ts` for `speciesId` parameter names — rename to `pokemonId`
-5. Update all test files that reference `speciesId` on BattlePokemon objects
-6. Run `pnpm test` (full suite — this is a cross-cutting rename)
+1. Read `apps/web/src/app/api/formats/[formatId]/usage/route.ts`. Replace inline species enrichment with `enrichWithSpeciesData` from `@nasty-plot/pokemon-data`
+2. Read `apps/web/src/app/api/formats/[formatId]/cores/route.ts`. Replace inline species enrichment with `enrichWithSpeciesData` from `@nasty-plot/pokemon-data`
+3. Run: `pnpm test -- tests/api/`
 
-### Wave 4 — 2 Agents (After Wave 3)
+#### Agent 4: `frontend-hook-migration`
 
-#### Agent 1: `file-renames`
-
-**Scope:** `packages/llm/`, `packages/battle-engine/`, `packages/core/`, `packages/formats/`
+**Scope:** `apps/web/src/app/battle/page.tsx`, `apps/web/src/app/battle/simulate/page.tsx`, `apps/web/src/app/battle/sample-teams/page.tsx`, `apps/web/src/app/pokemon/page.tsx`, `apps/web/src/features/battle/components/BattleExportDialog.tsx`, `apps/web/src/features/chat/components/new-chat-modal.tsx`, `apps/web/src/features/team-builder/components/merge-wizard.tsx`, `apps/web/src/app/teams/[teamId]/battles/page.tsx`
 **Tasks:**
 
-1. For each rename below: read the file, create a new file with the `.service.ts` name and same content, delete the old file, update the barrel export in `src/index.ts`, update any within-package imports:
-   - `packages/llm/src/mcp-client.ts` → `packages/llm/src/mcp-client.service.ts`
-   - `packages/llm/src/openai-client.ts` → `packages/llm/src/openai-client.service.ts`
-   - `packages/llm/src/context-builder.ts` → `packages/llm/src/context-builder.service.ts`
-   - `packages/llm/src/battle-context-builder.ts` → `packages/llm/src/battle-context-builder.service.ts`
-   - `packages/battle-engine/src/battle-manager.ts` → `packages/battle-engine/src/battle-manager.service.ts`
-   - `packages/core/src/api-client.ts` → `packages/core/src/api-client.service.ts`
-   - `packages/formats/src/resolver.ts` → `packages/formats/src/format-resolver.service.ts`
-2. For each package, grep for internal imports of the old filename and update them
-3. Run `pnpm test` (full suite)
+1. Read each page file. Identify the useEffect + fetchJson + cancel pattern
+2. Replace with `useFetchData` hook from `../../lib/hooks/use-fetch-data` (adjust path for each file)
+3. For dialog components (BattleExportDialog, new-chat-modal, merge-wizard), replace the dialog-specific loading pattern with `useDialogAsyncData` hook
+4. Where Loading/Empty/Data branching exists, replace with `DataStateRenderer` component
+5. Remove the now-unused `capitalize()` function from `battle/page.tsx` (it will be imported from `@nasty-plot/core` instead)
+6. Run: `pnpm test` (frontend changes may not have dedicated tests, but verify no build errors)
 
-#### Agent 2: `ui-component-creation`
+#### Agent 5: `team-builder-frontend`
 
-**Scope:** `packages/ui/` only (CREATE components, do NOT refactor consumers)
+**Scope:** `apps/web/src/features/team-builder/components/slot-editor.tsx`, `apps/web/src/features/team-builder/components/guided/simplified-set-editor.tsx`, `apps/web/src/features/damage-calc/components/damage-calculator.tsx`
 **Tasks:**
 
-1. Read `apps/web/src/features/team-builder/components/slot-editor.tsx` (lines 247-298 for ability selector, lines 379-452 for EV/IV editors)
-2. Read `apps/web/src/features/team-builder/components/guided/simplified-set-editor.tsx` (lines 156-211 for ability selector, lines 260-351 for EV/IV editors)
-3. Read existing `packages/ui/src/` to understand component patterns, styling, and exports
-4. Create `packages/ui/src/components/AbilitySelector.tsx`:
-   - Props: `value: string`, `onValueChange: (ability: string) => void`, `abilities: string[]`, `popularity?: { name: string; usagePercent: number }[]`, `placeholder?: string`
-   - Renders Select with "Common" / "Other" groups based on usage percentages
-   - Handles case where no popularity data exists
-5. Create `packages/ui/src/components/EvEditor.tsx`:
-   - Props: `evs: StatsTable`, `onChange: (stat: StatName, value: number) => void`, `showRemaining?: boolean`
-   - Renders 6 stat sliders with labels, colors, 0-252 range, step=4
-   - Shows remaining EVs count
-6. Create `packages/ui/src/components/IvEditor.tsx`:
-   - Props: `ivs: StatsTable`, `onChange: (stat: StatName, value: number) => void`
-   - Renders 6 stat inputs, 0-31 range
-7. Create `packages/ui/src/components/CalculatedStatsDisplay.tsx`:
-   - Props: `stats: StatsTable`
-   - Renders 3-column grid of calculated stats
-8. Export all new components from `packages/ui/src/index.ts`
-9. Run `pnpm test -- tests/ui/`
+1. Read `slot-editor.tsx`. Replace `"Hardy"` string literals with `DEFAULT_NATURE` imported from `@nasty-plot/core`. Replace inline Pokemon info header JSX (~lines 189-210) with `PokemonInfoHeader` component
+2. Read `simplified-set-editor.tsx`. Replace `"Hardy"` with `DEFAULT_NATURE`. Replace inline Pokemon info header JSX (~lines 112-122) with `PokemonInfoHeader` component
+3. Read `damage-calculator.tsx`. Replace `"Hardy"` with `DEFAULT_NATURE`
+4. Import `capitalize` from `@nasty-plot/core` in `role-suggestion-banner.tsx` and remove the local definition
+5. Run: `pnpm test`
 
-### Wave 5 — 3 Agents (After Wave 4)
+#### Agent 6: `type-fixes-and-remaining-frontend`
 
-#### Agent 1: `refactor-team-builder`
-
-**Scope:** `apps/web/src/features/team-builder/` only
+**Scope:** `apps/web/src/features/battle/components/MoveSelector.tsx`, `packages/teams/src/validation.service.ts`, `packages/data-pipeline/src/cli/seed.ts`, `packages/data-pipeline/src/cli/verify.ts`, `apps/web/src/features/battle/components/SampleTeamCard.tsx`, `apps/web/src/features/battle/components/TeamPickerCard.tsx`, `apps/web/src/app/teams/page.tsx`, `packages/mcp-server/src/index.ts`
 **Tasks:**
 
-1. Read `apps/web/src/features/team-builder/components/slot-editor.tsx`
-2. Replace inline ability selector code (lines ~247-298) with `<AbilitySelector>` from `@nasty-plot/ui`
-3. Replace inline EV editor code (lines ~380-409) with `<EvEditor>` from `@nasty-plot/ui`
-4. Replace inline IV editor code (lines ~414-433) with `<IvEditor>` from `@nasty-plot/ui`
-5. Replace inline calculated stats display (lines ~438-452) with `<CalculatedStatsDisplay>` from `@nasty-plot/ui`
-6. Read `apps/web/src/features/team-builder/components/guided/simplified-set-editor.tsx`
-7. Same replacements: ability selector, EV editor, IV editor
-8. Remove now-unused local state/memo logic that was only needed for the inline implementations
-9. Run `pnpm test`
+1. Read `MoveSelector.tsx` (battle). Rename `interface MoveSelectorProps` to `interface BattleMoveSelectorProps`. Update the component function signature
+2. Read `packages/teams/src/validation.service.ts`. Remove the local `ValidationError` interface. Add `import type { ValidationError } from "@nasty-plot/core"`
+3. Read `packages/data-pipeline/src/cli/seed.ts`. Rename `CliArgs` to `SeedCliArgs`
+4. Read `packages/data-pipeline/src/cli/verify.ts`. Rename `CliArgs` to `VerifyCliArgs`
+5. Read `SampleTeamCard.tsx`. Replace inline Pokemon sprite row with `PokemonSpriteRow` component
+6. Read `TeamPickerCard.tsx`. Replace inline Pokemon sprite grid with `PokemonSpriteRow` component
+7. Read `apps/web/src/app/teams/page.tsx`. Replace inline Pokemon sprite list with `PokemonSpriteRow` component
+8. Read `packages/mcp-server/src/index.ts` — verify MCP port constant usage (C3 fix)
+9. Run: `pnpm test -- tests/teams/ tests/data-pipeline/`
 
-#### Agent 2: `refactor-damage-calc`
+### Wave 3 — 5 Agents (After Wave 2)
 
-**Scope:** `apps/web/src/features/damage-calc/` only
+#### Agent 1: `teams-domain-renames`
+
+**Scope:** `packages/teams/src/team.service.ts`, `packages/teams/src/sample-team.service.ts`, `packages/teams/src/version.service.ts`, `packages/teams/src/import-export.service.ts`, `packages/teams/src/index.ts`, all files under `apps/web/src/app/api/teams/`, `apps/web/src/app/api/sample-teams/`, `packages/mcp-server/src/tools/team-crud.ts`, web team pages
 **Tasks:**
 
-1. Read `apps/web/src/features/damage-calc/components/damage-calculator.tsx`
-2. Replace inline EV editor section (lines ~395-436) with `<EvEditor>` from `@nasty-plot/ui`
-3. Check if Nature selector can import from `apps/web/src/features/team-builder/components/shared/nature-selector.tsx`
-4. Check if Tera Type picker can import from `apps/web/src/features/team-builder/components/shared/tera-type-picker.tsx`
-5. If yes, replace inline selectors with shared imports
-6. Run `pnpm test`
+1. Read `team.service.ts`. Rename all `id: string` parameters to `teamId: string` in: `getTeam`, `updateTeam`, `deleteTeam`, and any other functions using generic `id` for teams
+2. Read `sample-team.service.ts`. Rename `id` to `sampleTeamId` in: `getSampleTeam`, `deleteSampleTeam`
+3. Read `version.service.ts`. Rename any generic `id` to `teamId` where applicable
+4. Read `import-export.service.ts`. Rename any generic `id` to `teamId`
+5. Update barrel exports if function signatures changed
+6. Read and update ALL callers: API routes under `/api/teams/`, `/api/sample-teams/`, MCP team-crud.ts, web team page components
+7. Update test files: `tests/teams/`, `tests/api/` (team-related tests), `tests/mcp-server/` (team-crud tests)
+8. Run: `pnpm test`
 
-#### Agent 3: `frontend-polish`
+#### Agent 2: `battle-domain-renames`
 
-**Scope:** `apps/web/src/features/battle/`, misc frontend files
+**Scope:** `packages/battle-engine/src/battle.service.ts`, `packages/battle-engine/src/index.ts`, all `packages/battle-engine/src/*.ts` files (for file renames), all files under `apps/web/src/app/api/battles/`, web battle pages
 **Tasks:**
 
-1. Search `apps/web/src/features/` for remaining `.toFixed(0)` and `.toFixed(1)` percentage patterns
-2. Replace any remaining inline percentage formatting with `formatUsagePercent()` from `@nasty-plot/core`
-3. Read `apps/web/src/features/battle/components/TeamPreview.tsx` and `PokeballIndicator.tsx`
-4. Identify the duplicated Pokemon list item rendering pattern
-5. Extract shared logic or simplify to reduce duplication
-6. Run `pnpm test`
+1. Read `battle.service.ts`. Rename all `id: string` to `battleId: string` in: `getBattle`, `deleteBattle`, `getBattleReplay`, etc. Rename `id` to `batchId` for batch-related functions
+2. Update barrel exports in `index.ts`
+3. Rename files to `.service.ts`:
+   - `protocol-parser.ts` → `protocol-parser.service.ts`
+   - `team-packer.ts` → `team-packer.service.ts`
+   - `battle-state-serializer.ts` → `battle-state-serializer.service.ts`
+   - `ai/evaluator.ts` → `ai/evaluator.service.ts`
+   - `ai/hint-engine.ts` → `ai/hint-engine.service.ts`
+   - `ai/win-probability.ts` → `ai/win-probability.service.ts`
+4. Update ALL internal imports within battle-engine that reference the renamed files
+5. Update ALL barrel exports (`index.ts`, `client.ts`) to use new file paths
+6. Read and update ALL callers: API routes under `/api/battles/`, web battle pages/hooks
+7. Update test files: `tests/battle-engine/`, `tests/api/` (battle-related tests)
+8. Run: `pnpm test`
 
-### Post-Execution Verification
+#### Agent 3: `llm-domain-renames`
+
+**Scope:** `packages/llm/src/chat-session.service.ts`, `packages/llm/src/index.ts`, all files under `apps/web/src/app/api/chat/`, web chat page
+**Tasks:**
+
+1. Read `chat-session.service.ts`. Rename all `id: string` to `sessionId: string` in: `getSession`, `deleteSession`, and any other functions
+2. Read `llm/src/index.ts`. Remove unused re-exports (lines 47-53): `ChatMessage`, `ChatSessionData`, `ChatRole`, `ChatMessageMetadata`, `AutoAnalyzeDepth`
+3. Read and update ALL callers: API routes under `/api/chat/`, web chat page components
+4. Update test files: `tests/llm/` (chat-session related tests)
+5. Run: `pnpm test -- tests/llm/ tests/api/`
+
+#### Agent 4: `data-domain-renames`
+
+**Scope:** `packages/pokemon-data/src/dex.service.ts`, `packages/pokemon-data/src/index.ts`, `packages/formats/src/format.service.ts`, `packages/formats/src/index.ts`, ALL callers across entire codebase
+**Tasks:**
+
+1. Read `pokemon-data/src/dex.service.ts`. Rename:
+   - `getAllSpecies` → `listSpecies`
+   - `getAllMoves` → `listMoves`
+   - `getAllItems` → `listItems`
+   - `getAllAbilities` → `listAbilities`
+   - Any other `getAll*` functions
+2. Read `formats/src/format.service.ts`. Rename `getAllFormats` → `listFormats`
+3. Update barrel exports in both `index.ts` files
+4. Search entire codebase for callers of the old names and update them. Key locations:
+   - `packages/analysis/src/*.ts`
+   - `packages/recommendations/src/*.ts`
+   - `packages/mcp-server/src/tools/data-query.ts`
+   - `packages/mcp-server/src/tools/meta-recs.ts`
+   - `apps/web/src/app/api/pokemon/route.ts`
+   - `apps/web/src/app/api/formats/route.ts`
+   - `apps/web/src/app/api/items/route.ts`
+   - Any other files that import these functions
+5. Update ALL test files that reference the old names
+6. Run: `pnpm test`
+
+#### Agent 5: `mcp-analysis-fix`
+
+**Scope:** `packages/mcp-server/src/tools/analysis.ts`
+**Tasks:**
+
+1. Read `packages/mcp-server/src/tools/analysis.ts`
+2. Find the `calculate_damage` tool definition (~line 96-98)
+3. Rename parameters: `attackerPokemon` → `attackerPokemonId`, `defenderPokemon` → `defenderPokemonId`
+4. Update the tool implementation to use the new parameter names
+5. Run: `pnpm test -- tests/mcp-server/`
+
+### Post-Execution
+
+After all waves complete:
 
 ```bash
 # Full test suite
@@ -418,28 +426,15 @@ pnpm test
 # Full build
 pnpm build
 
-# Verify no remaining deprecated items
-grep -rn "ShowdownReplayJson\b" packages/ --include="*.ts" | grep -v node_modules
-grep -rn "teamToShowdownPaste" packages/ --include="*.ts" | grep -v node_modules
-grep -rn "usage-recommender.service" packages/ --include="*.ts" | grep -v node_modules
+# Verify no remaining "Hardy" literals in source (excluding test files)
+grep -r '"Hardy"' packages/ apps/web/src/ --include="*.ts" --include="*.tsx" | grep -v node_modules | grep -v '.test.'
 
-# Verify no remaining private toId copies
-grep -rn "function toID\b" packages/ --include="*.ts" | grep -v node_modules | grep -v "core/"
-grep -rn "function toSpeciesId\b" packages/ --include="*.ts" | grep -v node_modules
+# Verify no remaining getAll* in source
+grep -rn 'getAllSpecies\|getAllMoves\|getAllItems\|getAllAbilities\|getAllFormats' packages/ apps/ --include="*.ts" --include="*.tsx" | grep -v node_modules | grep -v '.test.'
 
-# Verify no remaining speciesId
-grep -rn "speciesId" packages/ apps/ --include="*.ts" --include="*.tsx" | grep -v node_modules | grep -v ".test."
+# Verify no remaining generic id params in service functions
+grep -n 'function get.*\bid: string\b\|function delete.*\bid: string\b\|function update.*\bid: string\b' packages/teams/src/*.ts packages/battle-engine/src/*.ts packages/llm/src/*.ts
 
-# Verify no direct @smogon/calc in battle-engine AI
-grep -rn "from \"@smogon/calc\"" packages/battle-engine/ --include="*.ts" | grep -v node_modules
-
-# Verify no remaining prisma.team bypasses
-grep -rn "prisma\.team\.findUnique" packages/analysis/ packages/recommendations/ --include="*.ts"
-
-# Verify file renames complete
-ls packages/llm/src/mcp-client.service.ts
-ls packages/llm/src/openai-client.service.ts
-ls packages/battle-engine/src/battle-manager.service.ts
-ls packages/core/src/api-client.service.ts
-ls packages/formats/src/format-resolver.service.ts
+# Verify no remaining non-.service.ts files that should have been renamed
+ls packages/battle-engine/src/protocol-parser.ts packages/battle-engine/src/team-packer.ts packages/battle-engine/src/battle-state-serializer.ts packages/battle-engine/src/ai/evaluator.ts packages/battle-engine/src/ai/hint-engine.ts packages/battle-engine/src/ai/win-probability.ts 2>/dev/null
 ```

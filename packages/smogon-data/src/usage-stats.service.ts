@@ -1,6 +1,7 @@
 import { prisma } from "@nasty-plot/db"
 import { toId } from "@nasty-plot/core"
 import type { UsageStatsEntry, TeammateCorrelation } from "@nasty-plot/core"
+import { upsertSyncLog } from "./sync-log.service"
 
 // Build Smogon stats URL for a given format/year/month
 export function buildStatsUrl(
@@ -83,20 +84,6 @@ export async function resolveYearMonth(
 // ---------------------------------------------------------------------------
 // Upsert helpers for syncUsageStats
 // ---------------------------------------------------------------------------
-
-async function upsertSyncLog(formatId: string, message: string): Promise<void> {
-  await prisma.dataSyncLog.upsert({
-    where: { source_formatId: { source: "smogon-stats", formatId } },
-    update: { lastSynced: new Date(), status: "success", message },
-    create: {
-      source: "smogon-stats",
-      formatId,
-      lastSynced: new Date(),
-      status: "success",
-      message,
-    },
-  })
-}
 
 async function saveTeammates(
   formatId: string,
@@ -237,7 +224,7 @@ export async function syncUsageStats(
   }
 
   const monthStr = `${statYear}-${String(statMonth).padStart(2, "0")}`
-  await upsertSyncLog(formatId, `Fetched ${entries.length} Pokemon for ${monthStr}`)
+  await upsertSyncLog("smogon-stats", formatId, `Fetched ${entries.length} Pokemon for ${monthStr}`)
 
   console.log(`[usage-stats] Done: ${entries.length} Pokemon saved for ${formatId}`)
 }

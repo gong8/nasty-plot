@@ -4,7 +4,7 @@ import {
   parseRequest,
   parseRequestForSlot,
   updateSideFromRequest,
-} from "./protocol-parser"
+} from "./protocol-parser.service"
 import type { SetPredictor } from "./ai/set-predictor"
 import { DEFAULT_FORMAT_ID, toId, type GameType } from "@nasty-plot/core"
 import type {

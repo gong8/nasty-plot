@@ -11,22 +11,16 @@ import {
   DEFAULT_EVS,
   DEFAULT_IVS,
   DEFAULT_LEVEL,
+  DEFAULT_NATURE,
   calculateAllStats,
   getTotalEvs,
   type NatureName,
-  type PokemonType,
   type StatName,
   type StatsTable,
   type TeamSlotData,
 } from "@nasty-plot/core"
-import {
-  PokemonSprite,
-  TypeBadge,
-  AbilitySelector,
-  EvEditor,
-  IvEditor,
-  CalculatedStatsDisplay,
-} from "@nasty-plot/ui"
+import { AbilitySelector, EvEditor, IvEditor, CalculatedStatsDisplay } from "@nasty-plot/ui"
+import { PokemonInfoHeader } from "@/components/pokemon-info-header"
 import { ItemCombobox } from "../item-combobox"
 import { MoveInput } from "../shared/move-input"
 import { NatureSelector } from "../shared/nature-selector"
@@ -68,7 +62,7 @@ export function SimplifiedSetEditor({
 
   const evs = useMemo(() => (slot.evs ?? { ...DEFAULT_EVS }) as StatsTable, [slot.evs])
   const ivs = useMemo(() => (slot.ivs ?? { ...DEFAULT_IVS }) as StatsTable, [slot.ivs])
-  const nature = slot.nature ?? "Hardy"
+  const nature = slot.nature ?? DEFAULT_NATURE
 
   const evTotal = getTotalEvs(evs)
 
@@ -104,22 +98,10 @@ export function SimplifiedSetEditor({
     [slot.moves, onUpdate],
   )
 
-  const displayName = speciesData?.name ?? pokemonId
-
   return (
     <div className="space-y-4">
       {/* Pokemon header */}
-      <div className="flex items-center gap-3">
-        <PokemonSprite pokemonId={pokemonId} size={40} />
-        <div>
-          <div className="font-semibold">{displayName}</div>
-          <div className="flex gap-1 mt-0.5">
-            {speciesData?.types?.map((t: PokemonType) => (
-              <TypeBadge key={t} type={t} size="sm" />
-            ))}
-          </div>
-        </div>
-      </div>
+      <PokemonInfoHeader pokemonId={pokemonId} speciesData={speciesData} />
 
       {/* Set info */}
       {setInfo && (

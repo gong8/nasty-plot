@@ -87,7 +87,7 @@ vi.mock("#battle-engine/battle-manager.service", () => ({
   createInitialState: vi.fn(() => makeEndedState()),
 }))
 
-vi.mock("#battle-engine/protocol-parser", () => ({
+vi.mock("#battle-engine/protocol-parser.service", () => ({
   processChunk: vi.fn(() => []),
   parseRequest: vi.fn(() => ({
     actions: null,

@@ -1,5 +1,5 @@
 import { resolveSpeciesName } from "@nasty-plot/pokemon-data"
-import { DEFAULT_IVS, DEFAULT_LEVEL, PERFECT_IV, STATS } from "@nasty-plot/core"
+import { DEFAULT_IVS, DEFAULT_LEVEL, DEFAULT_NATURE, PERFECT_IV, STATS } from "@nasty-plot/core"
 import type { TeamSlotData, StatsTable } from "@nasty-plot/core"
 
 /**
@@ -40,7 +40,7 @@ export function packOneSlot(slot: TeamSlotData): string {
     slot.item || "", // 2: item
     slot.ability || "", // 3: ability
     formatMoves(slot.moves), // 4: moves
-    slot.nature || "Hardy", // 5: nature
+    slot.nature || DEFAULT_NATURE, // 5: nature
     serializeStats(slot.evs), // 6: evs
     "", // 7: gender
     formatIvs(slot.ivs ?? DEFAULT_IVS), // 8: ivs

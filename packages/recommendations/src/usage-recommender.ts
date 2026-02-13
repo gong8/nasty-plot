@@ -1,9 +1,9 @@
 import type { Recommendation, RecommendationReason } from "@nasty-plot/core"
 import { prisma } from "@nasty-plot/db"
 import { getSpecies } from "@nasty-plot/pokemon-data"
+import { MAX_SCORE } from "./constants"
 
 const CORRELATION_SCALE_FACTOR = 2
-const MAX_SCORE = 100
 const MAX_REASONS_PER_RECOMMENDATION = 3
 
 interface CorrelationAggregate {

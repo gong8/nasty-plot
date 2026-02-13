@@ -4,7 +4,7 @@ import {
   parseRequest,
   parseRequestForSlot,
   updateSideFromRequest,
-} from "../protocol-parser"
+} from "../protocol-parser.service"
 import { createInitialState } from "../battle-manager.service"
 import { DEFAULT_FORMAT_ID, type GameType } from "@nasty-plot/core"
 import type { BattleState, BattleAction, BattleActionSet, AIPlayer } from "../types"

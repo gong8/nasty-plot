@@ -1,12 +1,12 @@
 import {
   getDex,
   getSpecies,
-  getAllSpecies,
+  listSpecies,
   getMove,
-  getAllMoves,
+  listMoves,
   getAbility,
   getItem,
-  getAllItems,
+  listItems,
   getLearnset,
   searchSpecies,
   searchItems,
@@ -143,17 +143,17 @@ describe("getSpecies", () => {
 })
 
 // =============================================================================
-// getAllSpecies
+// listSpecies
 // =============================================================================
 
-describe("getAllSpecies", () => {
+describe("listSpecies", () => {
   it("returns a non-empty array", () => {
-    const all = getAllSpecies()
+    const all = listSpecies()
     expect(all.length).toBeGreaterThan(0)
   })
 
   it("contains well-known Pokemon", () => {
-    const all = getAllSpecies()
+    const all = listSpecies()
     const names = all.map((s) => s.name)
     expect(names).toContain("Pikachu")
     expect(names).toContain("Charizard")
@@ -161,14 +161,14 @@ describe("getAllSpecies", () => {
   })
 
   it("excludes species with num <= 0", () => {
-    const all = getAllSpecies()
+    const all = listSpecies()
     for (const species of all) {
       expect(species.num).toBeGreaterThan(0)
     }
   })
 
   it("every species has the required fields", () => {
-    const all = getAllSpecies()
+    const all = listSpecies()
     for (const species of all) {
       expect(species.id).toBeTruthy()
       expect(species.name).toBeTruthy()
@@ -182,7 +182,7 @@ describe("getAllSpecies", () => {
   })
 
   it("returns species with valid stat numbers", () => {
-    const all = getAllSpecies()
+    const all = listSpecies()
     const sample = all.slice(0, 20)
     for (const species of sample) {
       for (const stat of ["hp", "atk", "def", "spa", "spd", "spe"] as const) {
@@ -266,17 +266,17 @@ describe("getMove", () => {
 })
 
 // =============================================================================
-// getAllMoves
+// listMoves
 // =============================================================================
 
-describe("getAllMoves", () => {
+describe("listMoves", () => {
   it("returns a non-empty array", () => {
-    const all = getAllMoves()
+    const all = listMoves()
     expect(all.length).toBeGreaterThan(0)
   })
 
   it("includes well-known moves", () => {
-    const all = getAllMoves()
+    const all = listMoves()
     const names = all.map((m) => m.name)
     expect(names).toContain("Thunderbolt")
     expect(names).toContain("Earthquake")
@@ -284,7 +284,7 @@ describe("getAllMoves", () => {
   })
 
   it("every move has required fields", () => {
-    const all = getAllMoves()
+    const all = listMoves()
     for (const move of all.slice(0, 30)) {
       expect(move.id).toBeTruthy()
       expect(move.name).toBeTruthy()
@@ -565,8 +565,8 @@ describe("getTypeChart", () => {
 // =============================================================================
 
 describe("NatDex species support", () => {
-  it("getAllSpecies includes Past Pokemon (e.g. Caterpie)", () => {
-    const all = getAllSpecies()
+  it("listSpecies includes Past Pokemon (e.g. Caterpie)", () => {
+    const all = listSpecies()
     const ids = all.map((s) => s.id)
     expect(ids).toContain("caterpie")
   })
@@ -583,13 +583,13 @@ describe("NatDex species support", () => {
     expect(garchomp!.isNonstandard).toBeNull()
   })
 
-  it("getAllSpecies returns more than 1000 species (including Past)", () => {
-    const all = getAllSpecies()
+  it("listSpecies returns more than 1000 species (including Past)", () => {
+    const all = listSpecies()
     expect(all.length).toBeGreaterThan(1000)
   })
 
   it("excludes CAP Pokemon", () => {
-    const all = getAllSpecies()
+    const all = listSpecies()
     const ids = all.map((s) => s.id)
     // Syclant is a well-known CAP
     expect(ids).not.toContain("syclant")
@@ -601,14 +601,14 @@ describe("NatDex species support", () => {
 // =============================================================================
 
 describe("NatDex item support", () => {
-  it("getAllItems includes Mega Stones", () => {
-    const all = getAllItems()
+  it("listItems includes Mega Stones", () => {
+    const all = listItems()
     const ids = all.map((i) => i.id)
     expect(ids).toContain("charizarditex")
   })
 
-  it("getAllItems includes Z-Crystals", () => {
-    const all = getAllItems()
+  it("listItems includes Z-Crystals", () => {
+    const all = listItems()
     const ids = all.map((i) => i.id)
     expect(ids).toContain("electriumz")
   })
@@ -631,8 +631,8 @@ describe("NatDex item support", () => {
 // =============================================================================
 
 describe("NatDex move support", () => {
-  it("getAllMoves includes past moves like Hidden Power", () => {
-    const all = getAllMoves()
+  it("listMoves includes past moves like Hidden Power", () => {
+    const all = listMoves()
     const ids = all.map((m) => m.id)
     expect(ids).toContain("hiddenpower")
   })

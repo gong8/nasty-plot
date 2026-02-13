@@ -193,9 +193,9 @@ export async function createTeam(input: TeamCreateInput): Promise<TeamData> {
   return dbTeamToDomain(team)
 }
 
-export async function getTeam(id: string): Promise<TeamData | null> {
+export async function getTeam(teamId: string): Promise<TeamData | null> {
   const team = await prisma.team.findUnique({
-    where: { id },
+    where: { id: teamId },
     include: { slots: { orderBy: { position: "asc" } } },
   })
   if (!team) return null
@@ -218,9 +218,12 @@ export async function listTeams(filters?: {
   return teams.map(dbTeamToDomain)
 }
 
-export async function updateTeam(id: string, data: Partial<TeamCreateInput>): Promise<TeamData> {
+export async function updateTeam(
+  teamId: string,
+  data: Partial<TeamCreateInput>,
+): Promise<TeamData> {
   const team = await prisma.team.update({
-    where: { id },
+    where: { id: teamId },
     data: {
       ...(data.name !== undefined && { name: data.name }),
       ...(data.formatId !== undefined && { formatId: data.formatId }),
@@ -232,15 +235,15 @@ export async function updateTeam(id: string, data: Partial<TeamCreateInput>): Pr
   return dbTeamToDomain(team)
 }
 
-export async function deleteTeam(id: string): Promise<void> {
-  const team = await prisma.team.findUnique({ where: { id }, select: { parentId: true } })
+export async function deleteTeam(teamId: string): Promise<void> {
+  const team = await prisma.team.findUnique({ where: { id: teamId }, select: { parentId: true } })
   if (team) {
     await prisma.team.updateMany({
-      where: { parentId: id },
+      where: { parentId: teamId },
       data: { parentId: team.parentId },
     })
   }
-  await prisma.team.delete({ where: { id } })
+  await prisma.team.delete({ where: { id: teamId } })
 }
 
 export async function cleanupEmptyTeams(): Promise<number> {
