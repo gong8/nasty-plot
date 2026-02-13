@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { apiErrorResponse } from "../../../../lib/api-error"
+import { apiErrorResponse, badRequestResponse } from "../../../../lib/api-error"
 import {
   createBatchSimulation,
   updateBatchProgress,
@@ -10,6 +10,9 @@ import {
 import type { AIDifficulty } from "@nasty-plot/battle-engine"
 import type { GameType } from "@nasty-plot/core"
 import { parseShowdownPaste } from "@nasty-plot/core"
+
+const MAX_BATCH_GAMES = 500
+const PROGRESS_INTERVAL = 10
 
 export async function POST(req: NextRequest) {
   try {
@@ -27,40 +30,23 @@ export async function POST(req: NextRequest) {
     } = body
 
     if (!formatId || !team1Paste || !team2Paste || !totalGames) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
+      return badRequestResponse("Missing required fields")
     }
 
-    // Validate both teams have valid Pokemon with moves
-    const pasteErrors: string[] = []
-    for (const [label, paste] of [
-      ["Team 1", team1Paste],
-      ["Team 2", team2Paste],
-    ] as const) {
-      const parsed = parseShowdownPaste(paste)
-      if (parsed.length === 0) {
-        pasteErrors.push(`${label}: could not parse team`)
-        continue
-      }
-      for (const slot of parsed) {
-        if (!slot.pokemonId) continue
-        const moves = slot.moves?.filter(Boolean) ?? []
-        if (moves.length === 0) {
-          pasteErrors.push(`${label}: ${slot.pokemonId} needs at least 1 move`)
-        }
-      }
-    }
+    const pasteErrors = validateTeamPastes([
+      { label: "Team 1", paste: team1Paste },
+      { label: "Team 2", paste: team2Paste },
+    ])
     if (pasteErrors.length > 0) {
-      return NextResponse.json({ error: pasteErrors.join("; ") }, { status: 400 })
+      return badRequestResponse(pasteErrors.join("; "))
     }
 
-    const MAX_BATCH_GAMES = 500
     const games = Math.min(totalGames, MAX_BATCH_GAMES)
     const resolvedGameType = gameType || "singles"
     const resolvedDifficulty = aiDifficulty || "heuristic"
     const resolvedTeam1Name = team1Name || "Team 1"
     const resolvedTeam2Name = team2Name || "Team 2"
 
-    // Create the batch record
     const batch = await createBatchSimulation({
       formatId,
       gameType: resolvedGameType,
@@ -72,7 +58,6 @@ export async function POST(req: NextRequest) {
       totalGames: games,
     })
 
-    // Run simulation (fire-and-forget, update DB when done)
     runBatchSimulation(
       {
         formatId,
@@ -86,8 +71,7 @@ export async function POST(req: NextRequest) {
         totalGames: games,
       },
       async (progress) => {
-        // Update progress periodically (every 10 games)
-        if (progress.completed % 10 === 0 || progress.completed === games) {
+        if (progress.completed % PROGRESS_INTERVAL === 0 || progress.completed === games) {
           await updateBatchProgress(batch.id, {
             completed: progress.completed,
             team1Wins: progress.team1Wins,
@@ -110,4 +94,23 @@ export async function POST(req: NextRequest) {
     console.error("[POST /api/battles/batch]", err)
     return apiErrorResponse(err, { fallback: "Failed to start batch simulation" })
   }
+}
+
+function validateTeamPastes(teams: Array<{ label: string; paste: string }>): string[] {
+  const errors: string[] = []
+  for (const { label, paste } of teams) {
+    const parsed = parseShowdownPaste(paste)
+    if (parsed.length === 0) {
+      errors.push(`${label}: could not parse team`)
+      continue
+    }
+    for (const slot of parsed) {
+      if (!slot.pokemonId) continue
+      const moves = slot.moves?.filter(Boolean) ?? []
+      if (moves.length === 0) {
+        errors.push(`${label}: ${slot.pokemonId} needs at least 1 move`)
+      }
+    }
+  }
+  return errors
 }

@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getBatchSimulation, deleteBatchSimulation } from "@nasty-plot/battle-engine"
+import { notFoundResponse } from "../../../../../lib/api-error"
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ batchId: string }> }) {
   const { batchId } = await params
   const batch = await getBatchSimulation(batchId)
 
   if (!batch) {
-    return NextResponse.json({ error: "Batch not found" }, { status: 404 })
+    return notFoundResponse("Batch")
   }
 
   return NextResponse.json({
@@ -24,6 +25,6 @@ export async function DELETE(
     await deleteBatchSimulation(batchId)
     return NextResponse.json({ success: true })
   } catch {
-    return NextResponse.json({ error: "Batch not found" }, { status: 404 })
+    return notFoundResponse("Batch")
   }
 }

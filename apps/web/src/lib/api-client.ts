@@ -33,6 +33,17 @@ export async function postJson<T>(url: string, body: unknown): Promise<T> {
 }
 
 /**
+ * PUT JSON to a URL and return the parsed response.
+ */
+export async function putJson<T>(url: string, body: unknown): Promise<T> {
+  return fetchJson<T>(url, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  })
+}
+
+/**
  * POST JSON to an API route that returns `ApiResponse<T>` and unwrap to `T`.
  */
 export async function postApiData<T>(url: string, body: unknown): Promise<T> {

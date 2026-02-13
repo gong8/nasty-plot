@@ -95,10 +95,9 @@ export default function TeamsPage() {
               >
                 <CardHeader>
                   <CardTitle className="text-base flex items-center gap-2">
-                    {team.isArchived && (
-                      <span className="line-through text-muted-foreground">{team.name}</span>
-                    )}
-                    {!team.isArchived && team.name}
+                    <span className={team.isArchived ? "line-through text-muted-foreground" : ""}>
+                      {team.name}
+                    </span>
                     {team.parentId && <GitFork className="h-3.5 w-3.5 text-muted-foreground" />}
                   </CardTitle>
                   <CardDescription className="flex items-center gap-2">

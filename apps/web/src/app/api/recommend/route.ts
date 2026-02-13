@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getRecommendations } from "@nasty-plot/recommendations"
-import type { ApiResponse, Recommendation, ApiError } from "@nasty-plot/core"
-import { apiErrorResponse } from "../../../lib/api-error"
+import type { ApiResponse, Recommendation } from "@nasty-plot/core"
+import { apiErrorResponse, badRequestResponse } from "../../../lib/api-error"
 
 export async function POST(request: NextRequest) {
   try {
@@ -13,10 +13,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (!teamId) {
-      return NextResponse.json(
-        { error: "Missing required field: teamId", code: "INVALID_INPUT" } satisfies ApiError,
-        { status: 400 },
-      )
+      return badRequestResponse("Missing required field: teamId", "INVALID_INPUT")
     }
 
     const recommendations = await getRecommendations(teamId, limit ?? 10, weights)

@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { BattleHistoryView } from "@/features/battle/components/BattleHistoryView"
 import type { TeamData } from "@nasty-plot/core"
+import { fetchJson } from "@/lib/api-client"
 
 export default function TeamBattlesPage({ params }: { params: Promise<{ teamId: string }> }) {
   const { teamId } = use(params)
@@ -15,11 +16,7 @@ export default function TeamBattlesPage({ params }: { params: Promise<{ teamId: 
 
   const teamQuery = useQuery<TeamData>({
     queryKey: ["team", teamId],
-    queryFn: async () => {
-      const res = await fetch(`/api/teams/${teamId}`)
-      if (!res.ok) throw new Error("Team not found")
-      return res.json()
-    },
+    queryFn: () => fetchJson(`/api/teams/${teamId}`),
   })
 
   if (teamQuery.isLoading) {

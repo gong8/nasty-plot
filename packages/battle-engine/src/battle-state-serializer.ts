@@ -3,6 +3,8 @@ import {
   type BattleState,
   type BattlePokemon,
   type BattleSide,
+  type BoostTable,
+  type FieldState,
   type SideConditions,
 } from "./types"
 
@@ -14,11 +16,8 @@ export function serializeBattleState(state: BattleState): string {
 
   // --- Header ---
   const fieldParts = [`Turn ${state.turn}`, state.format]
-  if (state.field.weather)
-    fieldParts.push(`Weather: ${state.field.weather} (${state.field.weatherTurns} turns)`)
-  if (state.field.terrain)
-    fieldParts.push(`Terrain: ${state.field.terrain} (${state.field.terrainTurns} turns)`)
-  if (state.field.trickRoom > 0) fieldParts.push(`Trick Room (${state.field.trickRoom} turns)`)
+  const fieldStr = formatFieldState(state.field)
+  if (fieldStr) fieldParts.push(fieldStr)
   lines.push(fieldParts.join(" | "))
   lines.push("")
 
@@ -155,15 +154,36 @@ function serializePokemon(p: BattlePokemon, full: boolean): string {
   }
 
   // Stat boosts
-  const boosts = Object.entries(p.boosts)
-    .filter(([, v]) => v !== 0)
-    .map(([k, v]) => `${v > 0 ? "+" : ""}${v} ${k}`)
-  if (boosts.length > 0) parts.push(`Boosts: ${boosts.join(", ")}`)
+  const boostsStr = formatBoosts(p.boosts)
+  if (boostsStr) parts.push(`Boosts: ${boostsStr}`)
 
   // Volatiles
   if (p.volatiles.length > 0) parts.push(`Conditions: ${p.volatiles.join(", ")}`)
 
   return parts.join(" | ")
+}
+
+/**
+ * Format stat boosts into a comma-separated string like "+2 atk, -1 spe".
+ * Returns empty string if no boosts are active.
+ */
+export function formatBoosts(boosts: BoostTable): string {
+  return Object.entries(boosts)
+    .filter(([, v]) => v !== 0)
+    .map(([k, v]) => `${v > 0 ? "+" : ""}${v} ${k}`)
+    .join(", ")
+}
+
+/**
+ * Format field state (weather, terrain, trick room) into a comma-separated string.
+ * Returns empty string if no field effects are active.
+ */
+export function formatFieldState(field: FieldState): string {
+  const parts: string[] = []
+  if (field.weather) parts.push(`Weather: ${field.weather} (${field.weatherTurns} turns)`)
+  if (field.terrain) parts.push(`Terrain: ${field.terrain} (${field.terrainTurns} turns)`)
+  if (field.trickRoom > 0) parts.push(`Trick Room (${field.trickRoom} turns)`)
+  return parts.join(", ")
 }
 
 /**

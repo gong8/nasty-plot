@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from "next/server"
-import { apiErrorResponse } from "../../../../../lib/api-error"
+import {
+  apiErrorResponse,
+  badRequestResponse,
+  notFoundResponse,
+} from "../../../../../lib/api-error"
 import { getBattleCommentary, updateBattleCommentary } from "@nasty-plot/battle-engine"
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ battleId: string }> }) {
@@ -9,13 +13,13 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ batt
     const { turn, text } = await req.json()
 
     if (typeof turn !== "number" || typeof text !== "string") {
-      return NextResponse.json({ error: "Invalid turn or text" }, { status: 400 })
+      return badRequestResponse("Invalid turn or text")
     }
 
     const battle = await getBattleCommentary(battleId)
 
     if (!battle) {
-      return NextResponse.json({ error: "Battle not found" }, { status: 404 })
+      return notFoundResponse("Battle")
     }
 
     const existing: Record<string, string> = battle.commentary ? JSON.parse(battle.commentary) : {}

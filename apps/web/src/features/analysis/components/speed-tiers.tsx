@@ -36,7 +36,7 @@ export function SpeedTiers({ tiers }: SpeedTiersProps) {
         <div className="space-y-1">
           {tiers.map((entry, idx) => {
             const widthPercent = (entry.speed / maxSpeed) * 100
-            const isTeam = !entry.isBenchmark
+            const isTeamMember = !entry.isBenchmark
 
             return (
               <Tooltip key={`${entry.pokemonId}-${idx}`}>
@@ -44,7 +44,7 @@ export function SpeedTiers({ tiers }: SpeedTiersProps) {
                   <div
                     className={cn(
                       "flex items-center gap-2 py-0.5 cursor-default",
-                      !isTeam && "opacity-50",
+                      !isTeamMember && "opacity-50",
                     )}
                   >
                     {/* Sprite + Name */}
@@ -53,7 +53,7 @@ export function SpeedTiers({ tiers }: SpeedTiersProps) {
                       <span
                         className={cn(
                           "text-[11px] truncate",
-                          isTeam ? "font-medium" : "text-muted-foreground",
+                          isTeamMember ? "font-medium" : "text-muted-foreground",
                         )}
                       >
                         {entry.pokemonName}
@@ -65,17 +65,17 @@ export function SpeedTiers({ tiers }: SpeedTiersProps) {
                       <div
                         className={cn(
                           "h-full rounded-sm transition-all",
-                          isTeam ? "bg-primary/70" : "bg-muted-foreground/20",
+                          isTeamMember ? "bg-primary/70" : "bg-muted-foreground/20",
                         )}
                         style={{
                           width: `${widthPercent}%`,
-                          backgroundColor: isTeam ? STAT_COLORS.spe : undefined,
+                          backgroundColor: isTeamMember ? STAT_COLORS.spe : undefined,
                         }}
                       />
                       <span
                         className={cn(
                           "absolute right-1 top-0.5 text-[10px] font-mono",
-                          isTeam ? "font-bold" : "text-muted-foreground",
+                          isTeamMember ? "font-bold" : "text-muted-foreground",
                         )}
                       >
                         {entry.speed}
@@ -85,7 +85,7 @@ export function SpeedTiers({ tiers }: SpeedTiersProps) {
                 </TooltipTrigger>
                 <TooltipContent>
                   <div className="text-xs">
-                    {isTeam ? (
+                    {isTeamMember ? (
                       <>
                         <p className="font-medium">{entry.pokemonName}</p>
                         <p>Speed: {entry.speed}</p>

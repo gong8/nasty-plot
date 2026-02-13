@@ -8,6 +8,8 @@ import type { BattlePokemon } from "@nasty-plot/battle-engine"
 import type { GameType } from "@nasty-plot/core"
 import { Check } from "lucide-react"
 
+const DOUBLES_PICK_COUNT = 4
+
 interface TeamPreviewProps {
   playerTeam: BattlePokemon[]
   opponentTeam: BattlePokemon[]
@@ -23,18 +25,10 @@ export function TeamPreview({
   onSubmit,
   className,
 }: TeamPreviewProps) {
-  // --- Singles state ---
   const [selectedLead, setSelectedLead] = useState<number | null>(null)
-
-  // --- Doubles state: single ordered selection (first 2 = leads, last 2 = back) ---
   const [doublesOrder, setDoublesOrder] = useState<number[]>([])
 
   const isDoubles = format === "doubles"
-
-  // --- Singles handlers ---
-  const handleSinglesSelect = (index: number) => {
-    setSelectedLead(index)
-  }
 
   const handleSinglesSubmit = () => {
     if (selectedLead === null) return
@@ -42,25 +36,22 @@ export function TeamPreview({
     onSubmit([selectedLead + 1, ...rest])
   }
 
-  // --- Doubles handlers ---
   const handleDoublesToggle = (index: number) => {
     setDoublesOrder((prev) => {
       if (prev.includes(index)) {
         return prev.filter((i) => i !== index)
       }
-      if (prev.length >= 4) return prev
+      if (prev.length >= DOUBLES_PICK_COUNT) return prev
       return [...prev, index]
     })
   }
 
   const handleDoublesSubmit = () => {
-    if (doublesOrder.length !== 4) return
-    // doublesOrder is already in pick order: [lead1, lead2, back1, back2]
+    if (doublesOrder.length !== DOUBLES_PICK_COUNT) return
     const order = doublesOrder.map((i) => i + 1)
     onSubmit(order)
   }
 
-  // --- Shared opponent team section ---
   const opponentSection = (
     <div>
       <h3 className="text-sm font-semibold text-muted-foreground mb-2">Opponent&apos;s Team</h3>
@@ -83,7 +74,7 @@ export function TeamPreview({
     </div>
   )
 
-  // --- Singles render ---
+  // Singles render
   if (!isDoubles) {
     return (
       <div className={cn("space-y-6", className)}>
@@ -95,14 +86,13 @@ export function TeamPreview({
         {opponentSection}
         {divider}
 
-        {/* Player team */}
         <div>
           <h3 className="text-sm font-semibold text-muted-foreground mb-2">Your Team</h3>
           <div className="flex gap-3 justify-center flex-wrap">
             {playerTeam.map((pokemon, i) => (
               <button
                 key={i}
-                onClick={() => handleSinglesSelect(i)}
+                onClick={() => setSelectedLead(i)}
                 className={cn(
                   "flex flex-col items-center gap-1 p-2 rounded-lg",
                   "transition-all border-2",
@@ -138,20 +128,20 @@ export function TeamPreview({
     )
   }
 
-  // --- Doubles render ---
+  // Doubles render
   return (
     <div className={cn("space-y-6", className)}>
       <div className="text-center">
         <h2 className="text-lg font-bold">Team Preview</h2>
         <p className="text-sm text-muted-foreground">
-          Pick 4 Pokemon in order — first 2 are your leads ({doublesOrder.length}/4)
+          Pick {DOUBLES_PICK_COUNT} Pokemon in order — first 2 are your leads ({doublesOrder.length}
+          /{DOUBLES_PICK_COUNT})
         </p>
       </div>
 
       {opponentSection}
       {divider}
 
-      {/* Player team - click to add in order */}
       <div>
         <h3 className="text-sm font-semibold text-muted-foreground mb-2">Your Team</h3>
         <div className="flex gap-3 justify-center flex-wrap">
@@ -168,7 +158,7 @@ export function TeamPreview({
                   "transition-all border-2",
                   isSelected
                     ? "border-primary bg-primary/10 shadow-md"
-                    : doublesOrder.length >= 4
+                    : doublesOrder.length >= DOUBLES_PICK_COUNT
                       ? "border-transparent opacity-40 cursor-not-allowed"
                       : "border-transparent hover:bg-accent",
                 )}
@@ -201,7 +191,11 @@ export function TeamPreview({
       </div>
 
       <div className="flex justify-center">
-        <Button onClick={handleDoublesSubmit} disabled={doublesOrder.length !== 4} size="lg">
+        <Button
+          onClick={handleDoublesSubmit}
+          disabled={doublesOrder.length !== DOUBLES_PICK_COUNT}
+          size="lg"
+        >
           Start Battle
         </Button>
       </div>

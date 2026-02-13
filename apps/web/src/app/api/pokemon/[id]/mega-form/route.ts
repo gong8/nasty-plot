@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { getMegaForm } from "@nasty-plot/pokemon-data"
 import type { ApiResponse, PokemonSpecies } from "@nasty-plot/core"
+import { badRequestResponse, notFoundResponse } from "../../../../../lib/api-error"
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -8,19 +9,13 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   const itemId = searchParams.get("item")
 
   if (!itemId) {
-    return NextResponse.json(
-      { error: "Missing ?item= query parameter", code: "BAD_REQUEST" },
-      { status: 400 },
-    )
+    return badRequestResponse("Missing ?item= query parameter")
   }
 
   const megaForm = getMegaForm(id, itemId)
 
   if (!megaForm) {
-    return NextResponse.json(
-      { error: "No Mega form for this combination", code: "NOT_FOUND" },
-      { status: 404 },
-    )
+    return notFoundResponse("Mega form")
   }
 
   const response: ApiResponse<PokemonSpecies> = { data: megaForm }

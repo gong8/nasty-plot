@@ -13,14 +13,100 @@ import { EvalBar } from "./EvalBar"
 import { CommentaryPanel } from "./CommentaryPanel"
 import { useBattleHints } from "../hooks/use-battle-hints"
 import { useAutoAnalyze } from "../hooks/use-auto-analyze"
-import { useBattleAnimations } from "../hooks/use-battle-animations"
+import { useBattleAnimations, type AnimationState } from "../hooks/use-battle-animations"
 import { useBattleStatePublisher } from "../context/battle-state-context"
 import { useBuildContextData } from "@/features/chat/hooks/use-build-context-data"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Trophy, RotateCcw, ArrowLeft, Zap, Save, Loader2 } from "lucide-react"
 import { useChatSidebar } from "@/features/chat/context/chat-provider"
+import { putJson } from "@/lib/api-client"
 import Link from "next/link"
+
+interface BattleEndedProps {
+  state: BattleState
+  animState: AnimationState
+  textSpeed: number
+  isSaving: boolean
+  savedId: string | null
+  onSave?: () => void
+  onRematch?: () => void
+  className?: string
+}
+
+function BattleEnded({
+  state,
+  animState,
+  textSpeed,
+  isSaving,
+  savedId,
+  onSave,
+  onRematch,
+  className,
+}: BattleEndedProps) {
+  const playerWon = state.winner === "p1"
+  const winnerName = state.winner === "p1" ? state.sides.p1.name : state.sides.p2.name
+
+  return (
+    <div className={cn("space-y-3", className)}>
+      <BattleField
+        state={state}
+        animationStates={animState.slotAnimations}
+        textMessage={animState.textMessage}
+        damageNumbers={animState.damageNumbers}
+        textSpeed={textSpeed}
+      />
+
+      <Card className="max-w-md mx-auto">
+        <CardContent className="pt-6 text-center space-y-4">
+          <Trophy
+            className={cn(
+              "h-12 w-12 mx-auto",
+              playerWon ? "text-yellow-500" : "text-muted-foreground",
+            )}
+          />
+          <h2 className="text-xl font-bold">{playerWon ? "Victory." : "Defeat."}</h2>
+          <p className="text-muted-foreground">{winnerName} won the battle!</p>
+          <div className="flex gap-3 justify-center flex-wrap">
+            {onSave && !savedId && (
+              <Button onClick={onSave} disabled={isSaving} variant="outline" className="gap-1.5">
+                {isSaving ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Save className="h-4 w-4" />
+                )}
+                {isSaving ? "Saving..." : "Save Battle"}
+              </Button>
+            )}
+            {savedId && (
+              <Link href={`/battle/replay/${savedId}`}>
+                <Button variant="outline" className="gap-1.5">
+                  View Replay
+                </Button>
+              </Link>
+            )}
+            {onRematch && (
+              <Button onClick={onRematch} className="gap-1.5">
+                <RotateCcw className="h-4 w-4" />
+                Rematch
+              </Button>
+            )}
+            <Link href="/battle/new">
+              <Button variant="outline" className="gap-1.5">
+                <ArrowLeft className="h-4 w-4" />
+                New Battle
+              </Button>
+            </Link>
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="max-w-2xl mx-auto h-[300px] border rounded-lg">
+        <BattleLog entries={state.fullLog} />
+      </div>
+    </div>
+  )
+}
 
 interface BattleViewProps {
   state: BattleState
@@ -83,17 +169,18 @@ export function BattleView({
     [abortIfAnalyzing, onSwitch],
   )
 
-  const handleCommentaryGenerated = (turn: number, text: string) => {
-    commentaryRef.current[turn] = text
+  const handleCommentaryGenerated = useCallback(
+    (turn: number, text: string) => {
+      commentaryRef.current[turn] = text
 
-    if (savedId) {
-      fetch(`/api/battles/${savedId}/commentary`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ turn, text }),
-      }).catch((err) => console.error("[Commentary persist]", err))
-    }
-  }
+      if (savedId) {
+        putJson(`/api/battles/${savedId}/commentary`, { turn, text }).catch((err) =>
+          console.error("[Commentary persist]", err),
+        )
+      }
+    },
+    [savedId],
+  )
 
   const handleSave = async () => {
     if (!onSave || isSaving) return
@@ -104,7 +191,7 @@ export function BattleView({
     setIsSaving(false)
   }
 
-  const recentEntries = state.log.slice(-10)
+  const recentEntries = useMemo(() => state.log.slice(-10), [state.log])
 
   // Sidebar tabs — Log + Commentary (Hints tab removed, replaced by Auto-Analyze)
   const sidebarTabs = useMemo(() => {
@@ -139,7 +226,14 @@ export function BattleView({
 
     return tabs
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state.fullLog, state.log, commentaryAutoMode, state, recentEntries])
+  }, [
+    state.fullLog,
+    state.log,
+    commentaryAutoMode,
+    state,
+    recentEntries,
+    handleCommentaryGenerated,
+  ])
 
   // Team Preview Phase
   if (state.phase === "preview") {
@@ -157,72 +251,17 @@ export function BattleView({
 
   // Battle Ended
   if (state.phase === "ended") {
-    const playerWon = state.winner === "p1"
     return (
-      <div className={cn("space-y-3", className)}>
-        <BattleField
-          state={state}
-          animationStates={animState.slotAnimations}
-          textMessage={animState.textMessage}
-          damageNumbers={animState.damageNumbers}
-          textSpeed={textSpeed}
-        />
-
-        <Card className="max-w-md mx-auto">
-          <CardContent className="pt-6 text-center space-y-4">
-            <Trophy
-              className={cn(
-                "h-12 w-12 mx-auto",
-                playerWon ? "text-yellow-500" : "text-muted-foreground",
-              )}
-            />
-            <h2 className="text-xl font-bold">{playerWon ? "Victory." : "Defeat."}</h2>
-            <p className="text-muted-foreground">
-              {state.winner === "p1" ? state.sides.p1.name : state.sides.p2.name} won the battle!
-            </p>
-            <div className="flex gap-3 justify-center flex-wrap">
-              {onSave && !savedId && (
-                <Button
-                  onClick={handleSave}
-                  disabled={isSaving}
-                  variant="outline"
-                  className="gap-1.5"
-                >
-                  {isSaving ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Save className="h-4 w-4" />
-                  )}
-                  {isSaving ? "Saving..." : "Save Battle"}
-                </Button>
-              )}
-              {savedId && (
-                <Link href={`/battle/replay/${savedId}`}>
-                  <Button variant="outline" className="gap-1.5">
-                    View Replay
-                  </Button>
-                </Link>
-              )}
-              {onRematch && (
-                <Button onClick={onRematch} className="gap-1.5">
-                  <RotateCcw className="h-4 w-4" />
-                  Rematch
-                </Button>
-              )}
-              <Link href="/battle/new">
-                <Button variant="outline" className="gap-1.5">
-                  <ArrowLeft className="h-4 w-4" />
-                  New Battle
-                </Button>
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
-
-        <div className="max-w-2xl mx-auto h-[300px] border rounded-lg">
-          <BattleLog entries={state.fullLog} />
-        </div>
-      </div>
+      <BattleEnded
+        state={state}
+        animState={animState}
+        textSpeed={textSpeed}
+        isSaving={isSaving}
+        savedId={savedId}
+        onSave={onSave ? handleSave : undefined}
+        onRematch={onRematch}
+        className={className}
+      />
     )
   }
 

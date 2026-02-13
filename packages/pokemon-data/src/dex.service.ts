@@ -44,7 +44,7 @@ export function getSpecies(id: string): PokemonSpecies | null {
 function isCosmeticForme(species: ReturnType<typeof dex.species.get>): boolean {
   if (!species.forme || species.changesFrom || species.battleOnly) return false
   const base = dex.species.get(species.baseSpecies)
-  if (!base || !base.exists) return false
+  if (!base?.exists) return false
   return (
     JSON.stringify(species.baseStats) === JSON.stringify(base.baseStats) &&
     JSON.stringify(species.abilities) === JSON.stringify(base.abilities) &&
@@ -122,7 +122,7 @@ function toItemData(item: ReturnType<typeof dex.items.get>): ItemData {
 
 export function getItem(id: string): ItemData | null {
   const item = dex.items.get(id)
-  if (!item || !item.exists) return null
+  if (!item?.exists) return null
   return toItemData(item)
 }
 
@@ -132,7 +132,7 @@ export async function getLearnset(speciesId: string): Promise<string[]> {
   if (learnsetData?.learnset) return Object.keys(learnsetData.learnset)
 
   // Alternate forms (Gmax, Mega, Therian, etc.) don't have their own learnsets
-  // in @pkmn/dex — walk the inheritance chain: changesFrom → baseSpecies
+  // in @pkmn/dex -- walk the inheritance chain: changesFrom -> baseSpecies
   const species = dex.species.get(speciesId)
   if (!species.exists) return []
 
@@ -215,30 +215,24 @@ export function isZCrystal(itemId: string): boolean {
   return item.exists && item.zMove !== undefined
 }
 
-/** Get the type a Z-Crystal powers up (e.g., "Electrium Z" → "Electric"). Returns null for signature Z-Crystals. */
+/** Get the type a Z-Crystal powers up (e.g., "Electrium Z" -> "Electric"). Returns null for signature Z-Crystals. */
 export function getZCrystalType(itemId: string): PokemonType | null {
   const item = dex.items.get(itemId)
   if (!item.exists || !item.zMove) return null
-  // Type-based Z-Crystals have zMove === true and zMoveType set
   if (item.zMove === true && item.zMoveType) {
     return item.zMoveType as PokemonType
   }
   return null
 }
 
-/** Get signature Z-Crystal info (e.g., "Pikanium Z" → { pokemonId, moveId }). Returns null for type-based Z-Crystals. */
+/** Get signature Z-Crystal info (e.g., "Pikanium Z" -> { pokemonId, moveId }). Returns null for type-based Z-Crystals. */
 export function getSignatureZCrystal(itemId: string): { pokemonId: string; moveId: string } | null {
   const item = dex.items.get(itemId)
   if (!item.exists || !item.zMove) return null
-  // Signature Z-Crystals have zMove as a string (the Z-Move name),
-  // zMoveFrom (source move display name), and itemUser (species display names)
   if (typeof item.zMove === "string" && item.zMoveFrom && item.itemUser?.[0]) {
     const species = dex.species.get(item.itemUser[0])
     const move = dex.moves.get(item.zMoveFrom)
-    return {
-      pokemonId: species.id,
-      moveId: move.id,
-    }
+    return { pokemonId: species.id, moveId: move.id }
   }
   return null
 }
@@ -252,26 +246,33 @@ export function getGen9() {
   return _gen9
 }
 
-/** Raw Dex move access — use when you need fields not in MoveData (e.g. .flags, .secondary, .target) */
+/** Raw Dex move access -- use when you need fields not in MoveData (e.g. .flags, .secondary, .target) */
 export function getRawMove(nameOrId: string) {
   return dex.moves.get(nameOrId)
 }
 
-/** Raw Dex species access — use when you need fields not in PokemonSpecies (e.g. .exists, .baseSpecies) */
+/** Raw Dex species access -- use when you need fields not in PokemonSpecies (e.g. .exists, .baseSpecies) */
 export function getRawSpecies(nameOrId: string) {
   return dex.species.get(nameOrId)
 }
 
-/** Raw Dex type access — use for damageTaken lookups */
+/** Raw Dex type access -- use for damageTaken lookups */
 export function getType(name: string) {
   return dex.types.get(name)
 }
 
-/** Resolve a pokemonId to a display name (e.g. "greatTusk" → "Great Tusk") */
+/** Resolve a pokemonId to a display name (e.g. "greatTusk" -> "Great Tusk") */
 export function resolveSpeciesName(pokemonId: string): string {
   const species = dex.species.get(pokemonId)
   if (species?.exists) return species.name
   return pokemonId.replace(/([a-z])([A-Z])/g, "$1 $2").replace(/^./, (s) => s.toUpperCase())
+}
+
+// @pkmn/dex damageTaken encoding -> standard multiplier (0 = neutral is omitted from output)
+const DAMAGE_TAKEN_TO_MULTIPLIER: Record<number, number> = {
+  1: 2, // super effective
+  2: 0.5, // resist
+  3: 0, // immune
 }
 
 export function getTypeChart(): Record<PokemonType, Partial<Record<PokemonType, number>>> {
@@ -280,11 +281,9 @@ export function getTypeChart(): Record<PokemonType, Partial<Record<PokemonType, 
   for (const atkType of POKEMON_TYPES) {
     const partial: Partial<Record<PokemonType, number>> = {}
     for (const defType of POKEMON_TYPES) {
-      const effectiveness = dex.types.get(atkType).damageTaken[defType]
-      // @pkmn/dex damageTaken: 0 = normal, 1 = super effective (2x), 2 = resist (0.5x), 3 = immune (0x)
-      if (effectiveness === 1) partial[defType] = 2
-      else if (effectiveness === 2) partial[defType] = 0.5
-      else if (effectiveness === 3) partial[defType] = 0
+      const damageTaken = dex.types.get(atkType).damageTaken[defType]
+      const multiplier = DAMAGE_TAKEN_TO_MULTIPLIER[damageTaken]
+      if (multiplier !== undefined) partial[defType] = multiplier
     }
     chart[atkType] = partial
   }

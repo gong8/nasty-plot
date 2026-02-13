@@ -88,13 +88,13 @@ export function BattleHistoryView({ teamId }: BattleHistoryViewProps) {
         </TabsContent>
 
         <TabsContent value="analysis" className="pt-4">
-          <div className="text-center py-12 text-muted-foreground">
+          <EmptyState>
             <p className="text-lg font-medium">ANALYSIS TODO</p>
             <p className="text-sm mt-2">
               Protocol-level analysis coming soon: problem Pokemon tracking, KO analysis, and
               per-Pokemon performance metrics.
             </p>
-          </div>
+          </EmptyState>
         </TabsContent>
       </Tabs>
 

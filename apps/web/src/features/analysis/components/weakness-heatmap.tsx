@@ -30,6 +30,15 @@ function getEffectivenessStyle(multiplier: number): {
   return { bg: "bg-muted/30", text: "text-muted-foreground", label: `${multiplier}x` }
 }
 
+function getSummaryBgClass(weakCount: number, resistCount: number): string {
+  if (weakCount >= 3) return "bg-red-600/40"
+  if (weakCount >= 2 && resistCount === 0) return "bg-red-500/30"
+  const net = resistCount - weakCount
+  if (net > 0) return "bg-green-500/20"
+  if (net < 0) return "bg-red-400/20"
+  return "bg-muted/20"
+}
+
 export function WeaknessHeatmap({ slots }: WeaknessHeatmapProps) {
   if (slots.length === 0) {
     return (
@@ -132,17 +141,13 @@ export function WeaknessHeatmap({ slots }: WeaknessHeatmapProps) {
                       else if (eff < 1) resistCount++
                     }
 
-                    const net = resistCount - weakCount
-                    let bgClass = "bg-muted/20"
-                    if (weakCount >= 3) bgClass = "bg-red-600/40"
-                    else if (weakCount >= 2 && resistCount === 0) bgClass = "bg-red-500/30"
-                    else if (net > 0) bgClass = "bg-green-500/20"
-                    else if (net < 0) bgClass = "bg-red-400/20"
-
                     return (
                       <td key={attackType} className="p-0.5">
                         <div
-                          className={cn("rounded text-center py-1 text-[10px] font-mono", bgClass)}
+                          className={cn(
+                            "rounded text-center py-1 text-[10px] font-mono",
+                            getSummaryBgClass(weakCount, resistCount),
+                          )}
                         >
                           {weakCount > 0 && (
                             <span className="text-red-500 dark:text-red-400">{weakCount}W</span>

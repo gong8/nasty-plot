@@ -16,7 +16,13 @@ import { prisma } from "@nasty-plot/db"
 import { getSetsForPokemon } from "@nasty-plot/smogon-data"
 import { StatBar, TypeBadge } from "@nasty-plot/ui"
 import { CompetitiveData } from "./competitive-data"
-import { STATS, type MoveData, type StatName, type UsageStatsEntry } from "@nasty-plot/core"
+import {
+  STATS,
+  getBaseStatTotal,
+  type MoveData,
+  type StatName,
+  type UsageStatsEntry,
+} from "@nasty-plot/core"
 
 const CATEGORY_COLORS: Record<string, string> = {
   Physical: "text-red-500",
@@ -42,7 +48,7 @@ export default async function PokemonDetailPage({ params }: Props) {
     .filter((m): m is MoveData => m != null)
     .sort((a, b) => a.name.localeCompare(b.name))
 
-  const bst = STATS.reduce((sum, stat) => sum + species.baseStats[stat], 0)
+  const bst = getBaseStatTotal(species.baseStats)
   const spriteUrl = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${species.num}.png`
 
   // Fetch competitive data from DB (non-blocking, graceful on empty DB)

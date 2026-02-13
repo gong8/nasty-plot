@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { updateSlot, removeSlot } from "@nasty-plot/teams"
-import { apiErrorResponse } from "../../../../../../lib/api-error"
+import { apiErrorResponse, badRequestResponse } from "../../../../../../lib/api-error"
 
 function parsePosition(position: string): number | null {
   const pos = parseInt(position, 10)
@@ -16,7 +16,7 @@ export async function PUT(
     const { teamId, position } = await params
     const pos = parsePosition(position)
     if (pos === null) {
-      return NextResponse.json({ error: "Invalid position" }, { status: 400 })
+      return badRequestResponse("Invalid position")
     }
     const body = await request.json()
     const slot = await updateSlot(teamId, pos, body)
@@ -34,7 +34,7 @@ export async function DELETE(
     const { teamId, position } = await params
     const pos = parsePosition(position)
     if (pos === null) {
-      return NextResponse.json({ error: "Invalid position" }, { status: 400 })
+      return badRequestResponse("Invalid position")
     }
     await removeSlot(teamId, pos)
     return NextResponse.json({ success: true })

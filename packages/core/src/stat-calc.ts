@@ -74,3 +74,20 @@ export function validateEvs(evs: StatsTable): { valid: boolean; reason?: string 
 export function getBaseStatTotal(stats: StatsTable): number {
   return stats.hp + stats.atk + stats.def + stats.spa + stats.spd + stats.spe
 }
+
+/**
+ * Fill a partial StatsTable with a default value for missing stats.
+ */
+export function fillStats(
+  partial: Partial<StatsTable> | undefined,
+  defaultValue: number,
+): StatsTable {
+  return {
+    hp: partial?.hp ?? defaultValue,
+    atk: partial?.atk ?? defaultValue,
+    def: partial?.def ?? defaultValue,
+    spa: partial?.spa ?? defaultValue,
+    spd: partial?.spd ?? defaultValue,
+    spe: partial?.spe ?? defaultValue,
+  }
+}

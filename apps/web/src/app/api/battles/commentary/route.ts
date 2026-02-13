@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from "next/server"
-import { apiErrorResponse } from "../../../../lib/api-error"
+import { NextRequest } from "next/server"
+import { apiErrorResponse, badRequestResponse } from "../../../../lib/api-error"
 import {
   buildTurnCommentaryContext,
   buildPostBattleContext,
@@ -7,6 +7,8 @@ import {
   getOpenAI,
   MODEL,
 } from "@nasty-plot/llm"
+
+const DEFAULT_SYSTEM_PROMPT = "You are an expert Pokemon competitive battle commentator."
 
 export async function POST(req: NextRequest) {
   try {
@@ -24,38 +26,31 @@ export async function POST(req: NextRequest) {
       totalTurns,
     } = body
 
-    let systemPrompt = "You are an expert Pokemon competitive battle commentator."
-    let userPrompt = ""
+    const playerName = team1Name || "Player"
+    const opponentName = team2Name || "Opponent"
 
-    if (mode === "turn" && state && recentEntries) {
-      const ctx = buildTurnCommentaryContext(
-        state,
-        recentEntries,
-        team1Name || "Player",
-        team2Name || "Opponent",
-      )
-      systemPrompt = ctx.systemPrompt
-      userPrompt = ctx.turnContext
-    } else if (mode === "post-battle" && allEntries) {
-      userPrompt = buildPostBattleContext(
-        allEntries,
-        team1Name || "Player",
-        team2Name || "Opponent",
-        winner,
-        totalTurns || 0,
-      )
-    } else if (mode === "turn-analysis" && state && turnEntries) {
-      userPrompt = buildTurnAnalysisContext(state, turnEntries, prevTurnEntries)
-    } else {
-      return NextResponse.json({ error: "Invalid mode or missing data" }, { status: 400 })
+    const prompts = buildPrompts(mode, {
+      state,
+      recentEntries,
+      allEntries,
+      turnEntries,
+      prevTurnEntries,
+      playerName,
+      opponentName,
+      winner,
+      totalTurns,
+    })
+
+    if (!prompts) {
+      return badRequestResponse("Invalid mode or missing data")
     }
 
     const openai = getOpenAI()
     const stream = await openai.chat.completions.create({
       model: MODEL,
       messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt },
+        { role: "system", content: prompts.system },
+        { role: "user", content: prompts.user },
       ],
       stream: true,
       max_tokens: 300,
@@ -91,4 +86,42 @@ export async function POST(req: NextRequest) {
     console.error("[Commentary API]", err)
     return apiErrorResponse(err, { fallback: "Commentary failed" })
   }
+}
+
+function buildPrompts(
+  mode: string,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  data: Record<string, any>,
+): { system: string; user: string } | null {
+  if (mode === "turn" && data.state && data.recentEntries) {
+    const ctx = buildTurnCommentaryContext(
+      data.state,
+      data.recentEntries,
+      data.playerName,
+      data.opponentName,
+    )
+    return { system: ctx.systemPrompt, user: ctx.turnContext }
+  }
+
+  if (mode === "post-battle" && data.allEntries) {
+    return {
+      system: DEFAULT_SYSTEM_PROMPT,
+      user: buildPostBattleContext(
+        data.allEntries,
+        data.playerName,
+        data.opponentName,
+        data.winner,
+        data.totalTurns || 0,
+      ),
+    }
+  }
+
+  if (mode === "turn-analysis" && data.state && data.turnEntries) {
+    return {
+      system: DEFAULT_SYSTEM_PROMPT,
+      user: buildTurnAnalysisContext(data.state, data.turnEntries, data.prevTurnEntries),
+    }
+  }
+
+  return null
 }

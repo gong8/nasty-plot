@@ -47,6 +47,8 @@ interface SimplifiedSetEditorProps {
   onUpdate: (updates: Partial<TeamSlotData>) => void
 }
 
+const MAX_IV = 31
+
 export function SimplifiedSetEditor({
   slot,
   formatId,
@@ -68,9 +70,9 @@ export function SimplifiedSetEditor({
 
   const abilities = useMemo(() => {
     if (!speciesData?.abilities) return []
-    return Object.entries(speciesData.abilities).map(([slot, name]) => ({
+    return Object.entries(speciesData.abilities).map(([abilitySlot, name]) => ({
       name,
-      isHidden: slot === "H",
+      isHidden: abilitySlot === "H",
     }))
   }, [speciesData])
 
@@ -111,7 +113,7 @@ export function SimplifiedSetEditor({
 
   const handleIvChange = useCallback(
     (stat: StatName, value: number) => {
-      const clamped = Math.max(0, Math.min(31, value))
+      const clamped = Math.max(0, Math.min(MAX_IV, value))
       onUpdate({ ivs: { ...ivs, [stat]: clamped } as StatsTable })
     },
     [ivs, onUpdate],
@@ -164,13 +166,17 @@ export function SimplifiedSetEditor({
                 <SelectGroup>
                   <SelectLabel>Common</SelectLabel>
                   {commonAbilities.map((a) => {
-                    const pct = popularity?.abilities?.find((x) => x.name === a.name)?.usagePercent
+                    const usagePercent = popularity?.abilities?.find(
+                      (x) => x.name === a.name,
+                    )?.usagePercent
                     return (
                       <SelectItem key={a.name} value={a.name}>
                         {a.name}
                         {a.isHidden && <span className="text-muted-foreground ml-1">(Hidden)</span>}
-                        {pct != null && (
-                          <span className="text-muted-foreground ml-1">({pct.toFixed(0)}%)</span>
+                        {usagePercent != null && (
+                          <span className="text-muted-foreground ml-1">
+                            ({usagePercent.toFixed(0)}%)
+                          </span>
                         )}
                       </SelectItem>
                     )
@@ -331,7 +337,7 @@ export function SimplifiedSetEditor({
                   <Input
                     type="number"
                     min={0}
-                    max={31}
+                    max={MAX_IV}
                     value={ivs[stat]}
                     onChange={(e) => handleIvChange(stat, parseInt(e.target.value, 10) || 0)}
                     className="h-7 text-center text-xs"

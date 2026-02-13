@@ -6,12 +6,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Progress } from "@/components/ui/progress"
-import { Loader2, Play, BarChart3 } from "lucide-react"
+import { Play, BarChart3 } from "lucide-react"
+import { LoadingSpinner } from "@/components/loading-spinner"
 import type { BatchAnalytics } from "@nasty-plot/battle-engine"
 import { FormatSelector } from "@/features/battle/components/FormatSelector"
 import { TeamPicker, type TeamSelection } from "@/features/battle/components/TeamPicker"
 import { useFormat } from "@/features/battle/hooks/use-formats"
 import { DEFAULT_FORMAT_ID, parseShowdownPaste, type GameType } from "@nasty-plot/core"
+import { fetchJson, postJson } from "@/lib/api-client"
 
 type Phase = "setup" | "running" | "results"
 
@@ -76,9 +78,8 @@ export default function SimulatePage() {
   // Load sample teams from DB as defaults
   useEffect(() => {
     let cancelled = false
-    fetch(`/api/sample-teams?formatId=${formatId}`)
-      .then((res) => (res.ok ? res.json() : []))
-      .then((teams: Array<{ paste: string }>) => {
+    fetchJson<Array<{ paste: string }>>(`/api/sample-teams?formatId=${formatId}`)
+      .then((teams) => {
         if (cancelled) return
         if (teams.length >= 1 && !team1Selection.paste) {
           setTeam1Selection(emptySelection(teams[0].paste))
@@ -104,24 +105,17 @@ export default function SimulatePage() {
     setPhase("running")
 
     try {
-      const res = await fetch("/api/battles/batch", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          formatId,
-          simFormatId: format?.simFormatId,
-          gameType,
-          aiDifficulty,
-          team1Paste: team1Selection.paste,
-          team1Name,
-          team2Paste: team2Selection.paste,
-          team2Name,
-          totalGames,
-        }),
+      const data = await postJson<{ id: string }>("/api/battles/batch", {
+        formatId,
+        simFormatId: format?.simFormatId,
+        gameType,
+        aiDifficulty,
+        team1Paste: team1Selection.paste,
+        team1Name,
+        team2Paste: team2Selection.paste,
+        team2Name,
+        totalGames,
       })
-
-      if (!res.ok) throw new Error("Failed to start simulation")
-      const data = await res.json()
 
       setBatchState({
         id: data.id,
@@ -137,9 +131,7 @@ export default function SimulatePage() {
       // Poll for updates
       pollRef.current = setInterval(async () => {
         try {
-          const statusRes = await fetch(`/api/battles/batch/${data.id}`)
-          if (!statusRes.ok) return
-          const statusData = await statusRes.json()
+          const statusData = await fetchJson<BatchState>(`/api/battles/batch/${data.id}`)
 
           setBatchState({
             id: data.id,
@@ -279,8 +271,7 @@ export default function SimulatePage() {
 
         {phase === "running" && batchState && (
           <div className="space-y-6 max-w-lg mx-auto text-center">
-            <Loader2 className="h-8 w-8 animate-spin mx-auto text-muted-foreground" />
-            <h2 className="text-lg font-semibold">Simulating...</h2>
+            <LoadingSpinner size="lg" label="Simulating..." />
             <Progress
               value={(batchState.completedGames / batchState.totalGames) * 100}
               className="w-full"

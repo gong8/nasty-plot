@@ -1,6 +1,7 @@
 import { calculate, Field, Move, Pokemon, State } from "@smogon/calc"
 import {
   DEFAULT_LEVEL,
+  fillStats,
   type DamageCalcInput,
   type DamageCalcResult,
   type MatchupMatrixEntry,
@@ -8,21 +9,6 @@ import {
   type TeamSlotData,
 } from "@nasty-plot/core"
 import { getGen9, resolveSpeciesName } from "@nasty-plot/pokemon-data"
-
-// ---------------------------------------------------------------------------
-// Helpers: stat table conversion
-// ---------------------------------------------------------------------------
-
-function fillStats(partial: Partial<StatsTable> | undefined, defaultValue: number): StatsTable {
-  return {
-    hp: partial?.hp ?? defaultValue,
-    atk: partial?.atk ?? defaultValue,
-    def: partial?.def ?? defaultValue,
-    spa: partial?.spa ?? defaultValue,
-    spd: partial?.spd ?? defaultValue,
-    spe: partial?.spe ?? defaultValue,
-  }
-}
 
 function toCalcBoosts(boosts: Partial<StatsTable> | undefined): Partial<StatsTable> | undefined {
   if (!boosts) return undefined
@@ -167,6 +153,46 @@ export function calculateDamage(input: DamageCalcInput): DamageCalcResult {
   }
 }
 
+function slotToAttackerInput(slot: TeamSlotData): CalcPokemonInput {
+  return {
+    pokemonId: slot.pokemonId,
+    level: slot.level,
+    ability: slot.ability,
+    item: slot.item,
+    nature: slot.nature,
+    evs: slot.evs,
+    ivs: slot.ivs,
+  }
+}
+
+function findBestMove(
+  attackerInput: CalcPokemonInput,
+  moves: string[],
+  threatId: string,
+  baseEntry: MatchupMatrixEntry,
+): MatchupMatrixEntry {
+  return moves.reduce((best, moveName) => {
+    try {
+      const result = calculateDamage({
+        attacker: attackerInput,
+        defender: { pokemonId: threatId, level: DEFAULT_LEVEL },
+        move: moveName,
+      })
+      if (result.maxPercent > best.maxPercent) {
+        return {
+          ...best,
+          bestMove: moveName,
+          maxPercent: result.maxPercent,
+          koChance: result.koChance,
+        }
+      }
+    } catch {
+      // Skip moves that fail to calculate (status moves, etc.)
+    }
+    return best
+  }, baseEntry)
+}
+
 export function calculateMatchupMatrix(
   teamSlots: TeamSlotData[],
   threatIds: string[],
@@ -175,6 +201,7 @@ export function calculateMatchupMatrix(
   return teamSlots.map((slot) => {
     const moves = slot.moves.filter(Boolean) as string[]
     const attackerName = slot.species?.name ?? resolveSpeciesName(slot.pokemonId)
+    const attackerInput = slotToAttackerInput(slot)
 
     return threatIds.map((threatId) => {
       const baseEntry: MatchupMatrixEntry = {
@@ -186,36 +213,7 @@ export function calculateMatchupMatrix(
         maxPercent: 0,
         koChance: "N/A",
       }
-
-      return moves.reduce((best, moveName) => {
-        try {
-          const result = calculateDamage({
-            attacker: {
-              pokemonId: slot.pokemonId,
-              level: slot.level,
-              ability: slot.ability,
-              item: slot.item,
-              nature: slot.nature,
-              evs: slot.evs,
-              ivs: slot.ivs,
-            },
-            defender: { pokemonId: threatId, level: DEFAULT_LEVEL },
-            move: moveName,
-          })
-
-          if (result.maxPercent > best.maxPercent) {
-            return {
-              ...best,
-              bestMove: moveName,
-              maxPercent: result.maxPercent,
-              koChance: result.koChance,
-            }
-          }
-        } catch {
-          // Skip moves that fail to calculate (status moves, etc.)
-        }
-        return best
-      }, baseEntry)
+      return findBestMove(attackerInput, moves, threatId, baseEntry)
     })
   })
 }

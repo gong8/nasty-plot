@@ -58,31 +58,20 @@ const ALLOWED_ITEMS = new Set(["nothing"])
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-function speciesExists(id: string): boolean {
-  const s = dex.species.get(id)
-  return !!(s && s.exists)
+function dexExists(
+  category: "species" | "moves" | "items" | "abilities" | "natures",
+  id: string,
+): boolean {
+  if (category === "items" && ALLOWED_ITEMS.has(id.toLowerCase())) return true
+  const entry = dex[category].get(id)
+  return !!(entry && entry.exists)
 }
 
-function moveExists(name: string): boolean {
-  const m = dex.moves.get(name)
-  return !!(m && m.exists)
-}
-
-function itemExists(name: string): boolean {
-  if (ALLOWED_ITEMS.has(name.toLowerCase())) return true
-  const i = dex.items.get(name)
-  return !!(i && i.exists)
-}
-
-function abilityExists(name: string): boolean {
-  const a = dex.abilities.get(name)
-  return !!(a && a.exists)
-}
-
-function natureExists(name: string): boolean {
-  const n = dex.natures.get(name)
-  return !!(n && n.exists)
-}
+const speciesExists = (id: string) => dexExists("species", id)
+const moveExists = (name: string) => dexExists("moves", name)
+const itemExists = (name: string) => dexExists("items", name)
+const abilityExists = (name: string) => dexExists("abilities", name)
+const natureExists = (name: string) => dexExists("natures", name)
 
 // ─── Verification checks ────────────────────────────────────────────────────
 
@@ -383,13 +372,30 @@ const POKEMON_ID_FIELDS = new Set([
   "counterId",
 ])
 
+function buildDeleteQuery(table: string, idList: string[]): Promise<{ count: number }> | undefined {
+  const byPokemonId = { where: { pokemonId: { in: idList } } }
+  const queries: Record<string, Promise<{ count: number }>> = {
+    UsageStats: prisma.usageStats.deleteMany(byPokemonId),
+    SmogonSet: prisma.smogonSet.deleteMany(byPokemonId),
+    TeammateCorr: prisma.teammateCorr.deleteMany({
+      where: { OR: [{ pokemonAId: { in: idList } }, { pokemonBId: { in: idList } }] },
+    }),
+    CheckCounter: prisma.checkCounter.deleteMany({
+      where: { OR: [{ targetId: { in: idList } }, { counterId: { in: idList } }] },
+    }),
+    MoveUsage: prisma.moveUsage.deleteMany(byPokemonId),
+    ItemUsage: prisma.itemUsage.deleteMany(byPokemonId),
+    AbilityUsage: prisma.abilityUsage.deleteMany(byPokemonId),
+  }
+  return queries[table]
+}
+
 async function fixBadPokemonIds(issues: Issue[]): Promise<void> {
   const badIds = new Map<string, Set<string>>()
   for (const issue of issues) {
     if (POKEMON_ID_FIELDS.has(issue.field)) {
-      const key = issue.table
-      if (!badIds.has(key)) badIds.set(key, new Set())
-      badIds.get(key)!.add(issue.value)
+      if (!badIds.has(issue.table)) badIds.set(issue.table, new Set())
+      badIds.get(issue.table)!.add(issue.value)
     }
   }
 
@@ -402,46 +408,10 @@ async function fixBadPokemonIds(issues: Issue[]): Promise<void> {
 
   for (const [table, ids] of badIds) {
     const idList = [...ids]
-    let deleted = 0
-
-    switch (table) {
-      case "UsageStats":
-        deleted = (await prisma.usageStats.deleteMany({ where: { pokemonId: { in: idList } } }))
-          .count
-        break
-      case "SmogonSet":
-        deleted = (await prisma.smogonSet.deleteMany({ where: { pokemonId: { in: idList } } }))
-          .count
-        break
-      case "TeammateCorr":
-        deleted = (
-          await prisma.teammateCorr.deleteMany({
-            where: { OR: [{ pokemonAId: { in: idList } }, { pokemonBId: { in: idList } }] },
-          })
-        ).count
-        break
-      case "CheckCounter":
-        deleted = (
-          await prisma.checkCounter.deleteMany({
-            where: { OR: [{ targetId: { in: idList } }, { counterId: { in: idList } }] },
-          })
-        ).count
-        break
-      case "MoveUsage":
-        deleted = (await prisma.moveUsage.deleteMany({ where: { pokemonId: { in: idList } } }))
-          .count
-        break
-      case "ItemUsage":
-        deleted = (await prisma.itemUsage.deleteMany({ where: { pokemonId: { in: idList } } }))
-          .count
-        break
-      case "AbilityUsage":
-        deleted = (await prisma.abilityUsage.deleteMany({ where: { pokemonId: { in: idList } } }))
-          .count
-        break
-    }
-
-    console.log(`  [fix] ${table}: deleted ${deleted} rows (bad IDs: ${idList.join(", ")})`)
+    const query = buildDeleteQuery(table, idList)
+    if (!query) continue
+    const { count } = await query
+    console.log(`  [fix] ${table}: deleted ${count} rows (bad IDs: ${idList.join(", ")})`)
   }
 }
 

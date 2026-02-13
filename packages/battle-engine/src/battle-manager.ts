@@ -232,9 +232,7 @@ export class BattleManager {
       this.state.availableActions = this.pendingP1Slot2Actions
       this.pendingP1Slot2Actions = null
       this.state.waitingForChoice = true
-      if (this.eventHandler) {
-        this.eventHandler(this.state, [])
-      }
+      this.eventHandler?.(this.state, [])
       return
     }
 
@@ -255,15 +253,15 @@ export class BattleManager {
         this.stream.write(`>p1 ${choice}`)
       } else if (isDoubles && this.state.availableActions?.forceSwitch) {
         // Doubles forceSwitch with only one slot needing to switch
-        const slot = this.state.availableActions.activeSlot ?? 0
-        const actionStr = actionToChoice(action)
-        const choice = slot === 0 ? `${actionStr}, pass` : `pass, ${actionStr}`
+        const choice = buildPartialDoublesChoice(
+          actionToChoice(action),
+          this.state.availableActions.activeSlot ?? 0,
+        )
         console.log("[BattleManager] p1 doubles forceSwitch choice:", choice)
         this.stream.write(`>p1 ${choice}`)
       } else {
         // Singles or fallback
-        const choice = actionToChoice(action)
-        this.stream.write(`>p1 ${choice}`)
+        this.stream.write(`>p1 ${actionToChoice(action)}`)
       }
 
       // Let AI make its choice
@@ -459,6 +457,16 @@ export class BattleManager {
     }
   }
 
+  /** Process accumulated protocol lines, deduplicating identical chunks from the sim. */
+  private processDeduplicatedProtocol(protocolLines: string): BattleLogEntry[] {
+    const trimmed = protocolLines.trim()
+    if (!trimmed || trimmed === this.lastProtocolChunk) return []
+
+    this.lastProtocolChunk = trimmed
+    this.protocolLog += protocolLines
+    return processChunk(this.state, protocolLines)
+  }
+
   private processOutput(chunk: string) {
     if (this.suppressingOutput) return
     const lines = chunk.split("\n")
@@ -467,38 +475,14 @@ export class BattleManager {
 
     for (const line of lines) {
       if (line.startsWith("|request|")) {
-        // Process accumulated protocol lines, but skip if we already processed
-        // the same lines (sim emits identical protocol for each player's chunk)
-        if (protocolLines.trim()) {
-          if (protocolLines.trim() !== this.lastProtocolChunk) {
-            this.lastProtocolChunk = protocolLines.trim()
-            this.protocolLog += protocolLines
-            const entries = processChunk(this.state, protocolLines)
-            allEntries.push(...entries)
-          }
-          protocolLines = ""
-        }
-
+        allEntries.push(...this.processDeduplicatedProtocol(protocolLines))
+        protocolLines = ""
         this.handleRequest(line.slice(9))
         continue
       }
 
       if (line.startsWith("|error|")) {
-        const errorMsg = line.slice(7)
-        console.error("[BattleManager] Sim error:", errorMsg)
-        this.startError = errorMsg
-
-        // Resolve pending waiter so waitForUpdate doesn't hang forever.
-        // During start(), the timeout handles errors — only resolve mid-battle.
-        if (this.resolveReady && this.state.phase === "battle") {
-          const resolve = this.resolveReady
-          this.resolveReady = null
-          resolve()
-        } else if (this.state.phase === "battle") {
-          // Error arrived before waitForUpdate was called — store it so
-          // waitForUpdate can resolve immediately when it's called.
-          this.pendingError = errorMsg
-        }
+        this.handleSimError(line.slice(7))
         continue
       }
 
@@ -508,27 +492,17 @@ export class BattleManager {
         continue
       }
 
-      // Accumulate protocol lines
       protocolLines += line + "\n"
     }
 
-    // Process remaining protocol lines (deduplicated)
-    if (protocolLines.trim() && protocolLines.trim() !== this.lastProtocolChunk) {
-      this.lastProtocolChunk = protocolLines.trim()
-      this.protocolLog += protocolLines
-      const entries = processChunk(this.state, protocolLines)
-      allEntries.push(...entries)
-    }
+    allEntries.push(...this.processDeduplicatedProtocol(protocolLines))
 
     // Resolve immediately if battle has ended
     // This is critical because sim might not send a final request after |win|
-    if (this.state.phase === "ended" && this.resolveReady) {
-      const resolve = this.resolveReady
-      this.resolveReady = null
-      resolve()
+    if (this.state.phase === "ended") {
+      this.resolveWaiter()
     }
 
-    // Update SetPredictor from opponent observations
     if (this.setPredictor) {
       this.updateSetPredictorFromLines(chunk)
       this.populatePredictions()
@@ -536,6 +510,23 @@ export class BattleManager {
 
     if (allEntries.length > 0 && this.eventHandler) {
       this.eventHandler(this.state, allEntries)
+    }
+  }
+
+  private handleSimError(errorMsg: string) {
+    console.error("[BattleManager] Sim error:", errorMsg)
+    this.startError = errorMsg
+
+    if (this.state.phase !== "battle") return
+
+    // Resolve pending waiter so waitForUpdate doesn't hang forever.
+    // During start(), the timeout handles errors — only resolve mid-battle.
+    if (this.resolveReady) {
+      this.resolveWaiter()
+    } else {
+      // Error arrived before waitForUpdate was called — store it so
+      // waitForUpdate can resolve immediately when it's called.
+      this.pendingError = errorMsg
     }
   }
 
@@ -599,112 +590,124 @@ export class BattleManager {
       const isDoubles = this.state.format === "doubles"
 
       if (sideId === "p1") {
-        if (parsed.side) {
-          updateSideFromRequest(this.state, "p1", parsed.side)
-        }
-
-        // Reset pending slot-1 action on new request (new turn)
-        this.pendingP1Slot1Action = null
-
-        if (parsed.teamPreview) {
-          this.state.phase = "preview"
-          this.state.waitingForChoice = true
-        } else if (parsed.wait) {
-          this.state.waitingForChoice = false
-          if (isDoubles) {
-            console.log("[BattleManager] p1 received wait request")
-          }
-        } else {
-          // In doubles, also parse slot 2 actions for p1
-          if (isDoubles) {
-            const slot2 = parseRequestForSlot(requestJson, 1)
-
-            // If slot 0 has no moves and no forceSwitch but slot 1 needs to act
-            // (e.g. forceSwitch: [false, true]), show slot 1's actions directly
-            if (
-              parsed.actions &&
-              !parsed.actions.forceSwitch &&
-              parsed.actions.moves.length === 0 &&
-              slot2.actions
-            ) {
-              // Slot 0 passes, show slot 1's forceSwitch directly
-              this.pendingP1Slot1Action = { type: "move", moveIndex: 0 } // sentinel for "pass"
-              this.state.availableActions = slot2.actions
-              this.pendingP1Slot2Actions = null
-              console.log("[BattleManager] p1 doubles: slot0 pass, showing slot1 forceSwitch")
-            } else {
-              this.state.availableActions = parsed.actions
-              this.pendingP1Slot2Actions = slot2.actions
-            }
-
-            console.log(
-              "[BattleManager] p1 request: slot0 moves=%d, slot1 actions=%s, forceSwitch=%s",
-              parsed.actions?.moves.length ?? 0,
-              slot2.actions ? `moves=${slot2.actions.moves.length}` : "null",
-              parsed.actions?.forceSwitch ?? false,
-            )
-          } else {
-            this.state.availableActions = parsed.actions
-          }
-
-          if (this.state.availableActions && this.state.sides.p1.hasTerastallized) {
-            this.state.availableActions.canTera = false
-          }
-          this.state.waitingForChoice = true
-        }
-
-        if (this.eventHandler) {
-          this.eventHandler(this.state, [])
-        }
-
-        // Resolve any pending waiter
-        if (this.resolveReady) {
-          const resolve = this.resolveReady
-          this.resolveReady = null
-          resolve()
-        }
+        this.handleP1Request(parsed, requestJson, isDoubles)
       } else if (sideId === "p2") {
-        if (parsed.side) {
-          updateSideFromRequest(this.state, "p2", parsed.side)
-        }
-
-        // Reset stale p2 pending actions on every new p2 request to prevent
-        // sending choices for fainted Pokemon on subsequent turns.
-        this.pendingP2Actions = null
-        this.pendingP2Slot2Actions = null
-
-        if (parsed.teamPreview) {
-          // AI will handle team preview when player submits
-        } else if (!parsed.wait && parsed.actions) {
-          if (parsed.actions.forceSwitch && this.ai && !this.state.waitingForChoice) {
-            // Only p2 needs to switch (p1 is waiting) — AI responds immediately
-            if (isDoubles) {
-              const slot2 = parseRequestForSlot(requestJson, 1)
-              this.handleAIForceSwitchDoubles(parsed.actions, slot2.actions)
-            } else {
-              this.handleAIForceSwitch(parsed.actions)
-            }
-          } else {
-            // Store for AI to use when player submits their action
-            this.pendingP2Actions = parsed.actions
-            if (this.pendingP2Actions && this.state.sides.p2.hasTerastallized) {
-              this.pendingP2Actions.canTera = false
-            }
-            // In doubles, also store slot 2 actions
-            if (isDoubles) {
-              const slot2 = parseRequestForSlot(requestJson, 1)
-              this.pendingP2Slot2Actions = slot2.actions
-              console.log(
-                "[BattleManager] p2 request: slot0 moves=%d, slot1=%s",
-                parsed.actions?.moves.length ?? 0,
-                slot2.actions ? `moves=${slot2.actions.moves.length}` : "null",
-              )
-            }
-          }
-        }
+        this.handleP2Request(parsed, requestJson, isDoubles)
       }
     } catch (err) {
       console.error("[BattleManager] Failed to parse request:", err)
+    }
+  }
+
+  private handleP1Request(
+    parsed: ReturnType<typeof parseRequest>,
+    requestJson: string,
+    isDoubles: boolean,
+  ) {
+    if (parsed.side) {
+      updateSideFromRequest(this.state, "p1", parsed.side)
+    }
+
+    // Reset pending slot-1 action on new request (new turn)
+    this.pendingP1Slot1Action = null
+
+    if (parsed.teamPreview) {
+      this.state.phase = "preview"
+      this.state.waitingForChoice = true
+    } else if (parsed.wait) {
+      this.state.waitingForChoice = false
+      if (isDoubles) {
+        console.log("[BattleManager] p1 received wait request")
+      }
+    } else {
+      // In doubles, also parse slot 2 actions for p1
+      if (isDoubles) {
+        const slot2 = parseRequestForSlot(requestJson, 1)
+
+        // If slot 0 has no moves and no forceSwitch but slot 1 needs to act
+        // (e.g. forceSwitch: [false, true]), show slot 1's actions directly
+        if (
+          parsed.actions &&
+          !parsed.actions.forceSwitch &&
+          parsed.actions.moves.length === 0 &&
+          slot2.actions
+        ) {
+          // Slot 0 passes, show slot 1's forceSwitch directly
+          this.pendingP1Slot1Action = { type: "move", moveIndex: 0 } // sentinel for "pass"
+          this.state.availableActions = slot2.actions
+          this.pendingP1Slot2Actions = null
+          console.log("[BattleManager] p1 doubles: slot0 pass, showing slot1 forceSwitch")
+        } else {
+          this.state.availableActions = parsed.actions
+          this.pendingP1Slot2Actions = slot2.actions
+        }
+
+        console.log(
+          "[BattleManager] p1 request: slot0 moves=%d, slot1 actions=%s, forceSwitch=%s",
+          parsed.actions?.moves.length ?? 0,
+          slot2.actions ? `moves=${slot2.actions.moves.length}` : "null",
+          parsed.actions?.forceSwitch ?? false,
+        )
+      } else {
+        this.state.availableActions = parsed.actions
+      }
+
+      if (this.state.availableActions && this.state.sides.p1.hasTerastallized) {
+        this.state.availableActions.canTera = false
+      }
+      this.state.waitingForChoice = true
+    }
+
+    this.eventHandler?.(this.state, [])
+    this.resolveWaiter()
+  }
+
+  private handleP2Request(
+    parsed: ReturnType<typeof parseRequest>,
+    requestJson: string,
+    isDoubles: boolean,
+  ) {
+    if (parsed.side) {
+      updateSideFromRequest(this.state, "p2", parsed.side)
+    }
+
+    // Reset stale p2 pending actions on every new p2 request to prevent
+    // sending choices for fainted Pokemon on subsequent turns.
+    this.pendingP2Actions = null
+    this.pendingP2Slot2Actions = null
+
+    if (parsed.teamPreview) {
+      // AI will handle team preview when player submits
+      return
+    }
+
+    if (parsed.wait || !parsed.actions) return
+
+    if (parsed.actions.forceSwitch && this.ai && !this.state.waitingForChoice) {
+      // Only p2 needs to switch (p1 is waiting) — AI responds immediately
+      if (isDoubles) {
+        const slot2 = parseRequestForSlot(requestJson, 1)
+        this.handleAIForceSwitchDoubles(parsed.actions, slot2.actions)
+      } else {
+        this.handleAIForceSwitch(parsed.actions)
+      }
+      return
+    }
+
+    // Store for AI to use when player submits their action
+    this.pendingP2Actions = parsed.actions
+    if (this.state.sides.p2.hasTerastallized) {
+      this.pendingP2Actions.canTera = false
+    }
+    // In doubles, also store slot 2 actions
+    if (isDoubles) {
+      const slot2 = parseRequestForSlot(requestJson, 1)
+      this.pendingP2Slot2Actions = slot2.actions
+      console.log(
+        "[BattleManager] p2 request: slot0 moves=%d, slot1=%s",
+        parsed.actions?.moves.length ?? 0,
+        slot2.actions ? `moves=${slot2.actions.moves.length}` : "null",
+      )
     }
   }
 
@@ -734,25 +737,10 @@ export class BattleManager {
   private async handleAITurn() {
     if (!this.ai || !this.pendingP2Actions) return
 
-    // Add a small delay for realism
-    await new Promise((resolve) => setTimeout(resolve, 300 + Math.random() * 700))
-
-    // Pass serialized battle to MCTS AI if available
-    if (
-      "setBattleState" in this.ai &&
-      typeof (this.ai as { setBattleState: unknown }).setBattleState === "function"
-    ) {
-      const serialized = this.getSerializedBattle()
-      if (serialized) {
-        ;(this.ai as { setBattleState(json: unknown, fmt?: string): void }).setBattleState(
-          serialized,
-          this.config.formatId,
-        )
-      }
-    }
+    await aiThinkDelay(300, 700)
+    this.syncMCTSBattleState()
 
     if (this.state.format === "doubles" && this.pendingP2Slot2Actions) {
-      // Doubles: get action for each slot, combine
       const action1 = await this.ai.chooseAction(this.state, this.pendingP2Actions)
       const action2 = await this.ai.chooseAction(this.state, this.pendingP2Slot2Actions)
       const choice = `${actionToChoice(action1)}, ${actionToChoice(action2)}`
@@ -769,15 +757,30 @@ export class BattleManager {
     }
   }
 
+  /** Pass serialized battle state to MCTS AI if it supports it. */
+  private syncMCTSBattleState() {
+    if (
+      !this.ai ||
+      !("setBattleState" in this.ai) ||
+      typeof (this.ai as { setBattleState: unknown }).setBattleState !== "function"
+    ) {
+      return
+    }
+    const serialized = this.getSerializedBattle()
+    if (serialized) {
+      ;(this.ai as { setBattleState(json: unknown, fmt?: string): void }).setBattleState(
+        serialized,
+        this.config.formatId,
+      )
+    }
+  }
+
   private async handleAIForceSwitch(actions: BattleActionSet) {
     if (!this.ai) return
 
-    // Small delay for realism
-    await new Promise((resolve) => setTimeout(resolve, 200 + Math.random() * 300))
-
+    await aiThinkDelay(200, 300)
     const aiAction = await this.ai.chooseAction(this.state, actions)
-    const choice = actionToChoice(aiAction)
-    this.stream.write(`>p2 ${choice}`)
+    this.stream.write(`>p2 ${actionToChoice(aiAction)}`)
   }
 
   private async handleAIForceSwitchDoubles(
@@ -786,38 +789,40 @@ export class BattleManager {
   ) {
     if (!this.ai) return
 
-    await new Promise((resolve) => setTimeout(resolve, 200 + Math.random() * 300))
-
+    await aiThinkDelay(200, 300)
     const action1 = await this.ai.chooseAction(this.state, slot1Actions)
+
     if (slot2Actions) {
       const action2 = await this.ai.chooseAction(this.state, slot2Actions)
       const choice = `${actionToChoice(action1)}, ${actionToChoice(action2)}`
       console.log("[BattleManager] p2 AI doubles forceSwitch:", choice)
       this.stream.write(`>p2 ${choice}`)
     } else {
-      // Only slot 0 needs to switch — pass for slot 1
-      const slot = slot1Actions.activeSlot ?? 0
-      const actionStr = actionToChoice(action1)
-      const choice = slot === 0 ? `${actionStr}, pass` : `pass, ${actionStr}`
+      const choice = buildPartialDoublesChoice(
+        actionToChoice(action1),
+        slot1Actions.activeSlot ?? 0,
+      )
       console.log("[BattleManager] p2 AI doubles partial forceSwitch:", choice)
       this.stream.write(`>p2 ${choice}`)
     }
   }
 
+  private resolveWaiter() {
+    if (!this.resolveReady) return
+    const resolve = this.resolveReady
+    this.resolveReady = null
+    resolve()
+  }
+
   private async waitForUpdate(): Promise<void> {
+    if (this.state.phase === "ended") return
+    if (this.pendingError) {
+      this.pendingError = null
+      return
+    }
+
     await new Promise<void>((resolve) => {
       this.resolveReady = resolve
-      // Also resolve if battle has ended
-      if (this.state.phase === "ended") {
-        this.resolveReady = null
-        resolve()
-      }
-      // Resolve immediately if an error arrived before we started waiting
-      if (this.pendingError) {
-        this.pendingError = null
-        this.resolveReady = null
-        resolve()
-      }
 
       // Safety timeout to prevent permanent hangs
       setTimeout(() => {
@@ -829,6 +834,16 @@ export class BattleManager {
       }, 15_000)
     })
   }
+}
+
+/** Simulate AI "thinking" with a randomized delay for realism. */
+function aiThinkDelay(baseMs: number, jitterMs: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, baseMs + Math.random() * jitterMs))
+}
+
+/** Build a doubles choice string where only one slot acts and the other passes. */
+function buildPartialDoublesChoice(actionStr: string, activeSlot: number): string {
+  return activeSlot === 0 ? `${actionStr}, pass` : `pass, ${actionStr}`
 }
 
 function actionToChoice(action: BattleAction): string {

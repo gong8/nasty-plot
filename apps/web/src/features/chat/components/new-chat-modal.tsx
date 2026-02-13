@@ -18,6 +18,7 @@ import { ContextModeBadge } from "./context-mode-badge"
 import { MessageCircle, Lock, Globe, Loader2 } from "lucide-react"
 import type { ChatSessionData } from "@nasty-plot/core"
 import { PECHARUNT_SPRITE_URL } from "@/lib/constants"
+import { fetchJson } from "@/lib/api-client"
 
 export function NewChatModal() {
   const {
@@ -45,12 +46,11 @@ export function NewChatModal() {
     let cancelled = false
     setLoading(true) // eslint-disable-line react-hooks/set-state-in-effect -- loading state for async fetch
     const params = new URLSearchParams({ contextMode })
-    fetch(`/api/chat/sessions?${params}`)
-      .then((r) => r.json())
+    fetchJson<{ data: ChatSessionData[] }>(`/api/chat/sessions?${params}`)
       .then((data) => {
         if (cancelled) return
         // Filter to sessions matching the current entity (team or battle)
-        const sessions: ChatSessionData[] = data.data ?? []
+        const sessions = data.data ?? []
         const filtered = sessions.filter((s) => {
           if (!s.contextData) return false
           try {
@@ -76,7 +76,7 @@ export function NewChatModal() {
     }
   }, [showNewChatModal, contextMode, pageContext.teamId, pageContext.battleId])
 
-  function openAndClose() {
+  function openSidebarAndDismiss() {
     if (pendingQuestion) {
       openSidebar(pendingQuestion)
       clearPendingQuestion()
@@ -88,7 +88,7 @@ export function NewChatModal() {
 
   function handleResume(sessionId: string) {
     switchSession(sessionId)
-    openAndClose()
+    openSidebarAndDismiss()
   }
 
   function handleNewContextChat() {
@@ -97,12 +97,12 @@ export function NewChatModal() {
       contextMode,
       contextData: JSON.stringify(buildContextData()),
     })
-    openAndClose()
+    openSidebarAndDismiss()
   }
 
   function handleNewGeneralChat() {
     newSession()
-    openAndClose()
+    openSidebarAndDismiss()
   }
 
   return (

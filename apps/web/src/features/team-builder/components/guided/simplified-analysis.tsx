@@ -44,6 +44,35 @@ function getSynergyTier(score: number): { color: string; barColor: string; label
   return { color: "text-green-400", barColor: "bg-green-500", label: "Strong" }
 }
 
+function SynergyCard({ synergyScore }: { synergyScore: number }) {
+  const synergy = getSynergyTier(synergyScore)
+  return (
+    <Card className="gap-3 py-3">
+      <CardHeader className="px-4 py-0">
+        <CardTitle className="flex items-center justify-between text-xs">
+          <span className="flex items-center gap-1.5">
+            <Shield className="h-3.5 w-3.5 text-primary" />
+            Team Synergy
+          </span>
+          <span className="font-normal">
+            <span className={cn("font-semibold", synergy.color)}>{synergyScore}</span>
+            <span className="text-muted-foreground text-[10px] ml-1">/ 100 ({synergy.label})</span>
+          </span>
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="px-4 py-0">
+        <div className="relative">
+          <Progress value={synergyScore} className="h-2" />
+          <div
+            className={cn("absolute inset-0 h-2 rounded-full transition-all", synergy.barColor)}
+            style={{ width: `${synergyScore}%` }}
+          />
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
 export function SimplifiedAnalysis({
   analysis,
   isLoading,
@@ -158,42 +187,7 @@ export function SimplifiedAnalysis({
       )}
 
       {/* Synergy Score */}
-      {analysis.synergyScore != null &&
-        (() => {
-          const synergy = getSynergyTier(analysis.synergyScore)
-          return (
-            <Card className="gap-3 py-3">
-              <CardHeader className="px-4 py-0">
-                <CardTitle className="flex items-center justify-between text-xs">
-                  <span className="flex items-center gap-1.5">
-                    <Shield className="h-3.5 w-3.5 text-primary" />
-                    Team Synergy
-                  </span>
-                  <span className="font-normal">
-                    <span className={cn("font-semibold", synergy.color)}>
-                      {analysis.synergyScore}
-                    </span>
-                    <span className="text-muted-foreground text-[10px] ml-1">
-                      / 100 ({synergy.label})
-                    </span>
-                  </span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="px-4 py-0">
-                <div className="relative">
-                  <Progress value={analysis.synergyScore} className="h-2" />
-                  <div
-                    className={cn(
-                      "absolute inset-0 h-2 rounded-full transition-all",
-                      synergy.barColor,
-                    )}
-                    style={{ width: `${analysis.synergyScore}%` }}
-                  />
-                </div>
-              </CardContent>
-            </Card>
-          )
-        })()}
+      {analysis.synergyScore != null && <SynergyCard synergyScore={analysis.synergyScore} />}
 
       {/* Speed Tiers */}
       {analysis.speedTiers.length > 0 && filledSlotCount > 1 && (

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getBattle, deleteBattle } from "@nasty-plot/battle-engine"
+import { notFoundResponse } from "../../../../lib/api-error"
 
 export async function GET(
   _req: NextRequest,
@@ -9,7 +10,7 @@ export async function GET(
   const battle = await getBattle(battleId)
 
   if (!battle) {
-    return NextResponse.json({ error: "Battle not found" }, { status: 404 })
+    return notFoundResponse("Battle")
   }
 
   return NextResponse.json(battle)
@@ -24,6 +25,6 @@ export async function DELETE(
     await deleteBattle(battleId)
     return NextResponse.json({ success: true })
   } catch {
-    return NextResponse.json({ error: "Battle not found" }, { status: 404 })
+    return notFoundResponse("Battle")
   }
 }

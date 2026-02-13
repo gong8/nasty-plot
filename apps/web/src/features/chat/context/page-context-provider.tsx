@@ -6,6 +6,7 @@ import { useQuery } from "@tanstack/react-query"
 import type { TeamData, PokemonSpecies, PageType } from "@nasty-plot/core"
 import { serializeBattleState } from "@nasty-plot/battle-engine"
 import { useBattleStateContext } from "@/features/battle/context/battle-state-context"
+import { fetchJson } from "@/lib/api-client"
 
 export type { PageType } from "@nasty-plot/core"
 
@@ -57,6 +58,15 @@ function extractIds(pathname: string): {
   }
 }
 
+const STATIC_PAGE_SUMMARIES: Partial<Record<PageType, string>> = {
+  "pokemon-browser": "User is browsing the Pokemon list",
+  "damage-calc": "User is using the damage calculator",
+  "battle-live": "User is in a live battle simulation",
+  "battle-replay": "User is reviewing a battle replay",
+  chat: "User is on the dedicated chat page",
+  home: "User is on the home page",
+}
+
 export function PageContextProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname()
   const pageType = getPageType(pathname)
@@ -65,14 +75,14 @@ export function PageContextProvider({ children }: { children: ReactNode }) {
   // Fetch team data when on team page (deduplicates with page's own query)
   const teamQuery = useQuery<{ data: TeamData }>({
     queryKey: ["team", teamId],
-    queryFn: () => fetch(`/api/teams/${teamId}`).then((r) => r.json()),
+    queryFn: () => fetchJson(`/api/teams/${teamId}`),
     enabled: !!teamId && (pageType === "team-editor" || pageType === "guided-builder"),
   })
 
   // Fetch pokemon data when on pokemon detail page
   const pokemonQuery = useQuery<{ data: PokemonSpecies }>({
     queryKey: ["pokemon", pokemonId],
-    queryFn: () => fetch(`/api/pokemon/${pokemonId}`).then((r) => r.json()),
+    queryFn: () => fetchJson(`/api/pokemon/${pokemonId}`),
     enabled: !!pokemonId && pageType === "pokemon-detail",
   })
 
@@ -90,15 +100,7 @@ export function PageContextProvider({ children }: { children: ReactNode }) {
     if ((pageType === "battle-live" || pageType === "battle-replay") && battleState)
       return serializeBattleState(battleState)
 
-    const STATIC_SUMMARIES: Partial<Record<PageType, string>> = {
-      "pokemon-browser": "User is browsing the Pokemon list",
-      "damage-calc": "User is using the damage calculator",
-      "battle-live": "User is in a live battle simulation",
-      "battle-replay": "User is reviewing a battle replay",
-      chat: "User is on the dedicated chat page",
-      home: "User is on the home page",
-    }
-    return STATIC_SUMMARIES[pageType] ?? ""
+    return STATIC_PAGE_SUMMARIES[pageType] ?? ""
   }, [pageType, teamData, pokemonData, battleState])
 
   const value = useMemo<PageContext>(

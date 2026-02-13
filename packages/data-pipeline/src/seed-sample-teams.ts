@@ -55,21 +55,16 @@ export async function seedSampleTeams(force: boolean): Promise<{
     }
   }
 
-  // Log to DataSyncLog
+  const syncData = {
+    lastSynced: new Date(),
+    status: seeded === SAMPLE_TEAMS.length ? "ok" : "partial",
+    message: `Seeded ${seeded}/${SAMPLE_TEAMS.length} sample teams`,
+  }
+
   await prisma.dataSyncLog.upsert({
     where: { source_formatId: { source: "sample-teams", formatId: "all" } },
-    update: {
-      lastSynced: new Date(),
-      status: seeded === SAMPLE_TEAMS.length ? "ok" : "partial",
-      message: `Seeded ${seeded}/${SAMPLE_TEAMS.length} sample teams`,
-    },
-    create: {
-      source: "sample-teams",
-      formatId: "all",
-      lastSynced: new Date(),
-      status: seeded === SAMPLE_TEAMS.length ? "ok" : "partial",
-      message: `Seeded ${seeded}/${SAMPLE_TEAMS.length} sample teams`,
-    },
+    update: syncData,
+    create: { source: "sample-teams", formatId: "all", ...syncData },
   })
 
   return { seeded, skipped: false }

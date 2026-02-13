@@ -227,12 +227,11 @@ async function main(): Promise<void> {
   for (const r of results) {
     if (r.statsOk && r.setsOk) {
       console.log(`  [OK]      ${r.format}`)
-    } else if (r.statsOk && !r.setsOk) {
-      console.log(`  [PARTIAL] ${r.format} — sets failed: ${r.setsError}`)
-    } else if (!r.statsOk && r.setsOk) {
-      console.log(`  [PARTIAL] ${r.format} — stats failed: ${r.statsError}`)
-    } else {
+    } else if (!r.statsOk && !r.setsOk) {
       console.log(`  [FAIL]    ${r.format} — stats: ${r.statsError}; sets: ${r.setsError}`)
+    } else {
+      const detail = r.statsOk ? `sets failed: ${r.setsError}` : `stats failed: ${r.statsError}`
+      console.log(`  [PARTIAL] ${r.format} — ${detail}`)
     }
   }
 

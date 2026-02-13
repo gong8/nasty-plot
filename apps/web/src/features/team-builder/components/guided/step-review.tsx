@@ -1,5 +1,6 @@
 "use client"
 
+import { useMemo } from "react"
 import { useQueries } from "@tanstack/react-query"
 import {
   Sparkles,
@@ -69,16 +70,18 @@ export function StepReview({
     if (q.data) speciesMap.set(q.data.id, q.data)
   }
 
+  const usageByPokemonId = useMemo(() => {
+    const map = new Map<string, UsageStatsEntry>()
+    for (const entry of usageData) map.set(entry.pokemonId, entry)
+    return map
+  }, [usageData])
+
   function speciesName(id: string): string {
     return speciesMap.get(id)?.name ?? id
   }
 
   function getTypes(pokemonId: string): PokemonType[] {
-    return (
-      speciesMap.get(pokemonId)?.types ??
-      usageData.find((u) => u.pokemonId === pokemonId)?.types ??
-      []
-    )
+    return speciesMap.get(pokemonId)?.types ?? usageByPokemonId.get(pokemonId)?.types ?? []
   }
 
   return (
@@ -175,7 +178,7 @@ export function StepReview({
           )}
 
           {/* Suggestions with "go back" links */}
-          {analysis?.suggestions && analysis.suggestions.length > 0 && (
+          {analysis?.suggestions?.length ? (
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm">Tips</CardTitle>
@@ -198,7 +201,7 @@ export function StepReview({
                 </Button>
               </CardContent>
             </Card>
-          )}
+          ) : null}
 
           {/* Action buttons */}
           <div className="flex flex-col sm:flex-row gap-2">

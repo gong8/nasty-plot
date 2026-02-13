@@ -1,5 +1,5 @@
 import { resolveSpeciesName } from "@nasty-plot/pokemon-data"
-import { DEFAULT_IVS, serializeShowdownPaste } from "@nasty-plot/core"
+import { DEFAULT_IVS, STATS, serializeShowdownPaste } from "@nasty-plot/core"
 import type { TeamSlotData, StatsTable } from "@nasty-plot/core"
 
 /**
@@ -26,16 +26,18 @@ export function teamToShowdownPaste(slots: TeamSlotData[]): string {
  * a manual packer for cases where we need direct control.
  */
 
+function serializeStats(stats: StatsTable): string {
+  return STATS.map((s) => stats[s]).join(",")
+}
+
 function formatEvs(evs: StatsTable): string {
-  // Packed format: hp,atk,def,spa,spd,spe (all 6, comma separated)
-  return `${evs.hp},${evs.atk},${evs.def},${evs.spa},${evs.spd},${evs.spe}`
+  return serializeStats(evs)
 }
 
 function formatIvs(ivs: StatsTable): string {
-  // Only include if not all 31
   const allMax = Object.values(ivs).every((v) => v === 31)
   if (allMax) return ""
-  return `${ivs.hp},${ivs.atk},${ivs.def},${ivs.spa},${ivs.spd},${ivs.spe}`
+  return serializeStats(ivs)
 }
 
 function formatMoves(moves: TeamSlotData["moves"]): string {
@@ -48,7 +50,6 @@ function formatMoves(moves: TeamSlotData["moves"]): string {
 export function packOneSlot(slot: TeamSlotData): string {
   const speciesName = resolveSpeciesName(slot.pokemonId)
   const nickname = slot.nickname || ""
-  // If nickname matches species, omit it
   const displayNickname = nickname === speciesName ? "" : nickname
 
   const parts = [
@@ -64,13 +65,10 @@ export function packOneSlot(slot: TeamSlotData): string {
     "", // 9: shiny
     slot.level === 100 ? "" : String(slot.level), // 10: level (omit if 100)
     "", // 11: happiness
-    // Extended fields after happiness, separated by commas:
-    // pokeball,hiddenpowertype,gigantamax,dynamaxlevel,teratype
   ]
 
   let packed = parts.join("|")
 
-  // Append tera type if present
   if (slot.teraType) {
     packed += `,,,,${slot.teraType}`
   }

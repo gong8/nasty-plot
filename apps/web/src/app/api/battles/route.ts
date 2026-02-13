@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { apiErrorResponse } from "../../../lib/api-error"
+import { apiErrorResponse, badRequestResponse } from "../../../lib/api-error"
 import { listBattles, createBattle } from "@nasty-plot/battle-engine"
 
 export async function GET(req: NextRequest) {
@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
     } = body
 
     if (!formatId || !team1Paste || !team2Paste || !protocolLog) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
+      return badRequestResponse("Missing required fields")
     }
 
     const battle = await createBattle({

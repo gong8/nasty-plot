@@ -16,7 +16,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       getUsageStatsCount(formatId),
     ])
 
-    // Enrich each entry with species data from the dex
     const enriched: UsageStatsEntry[] = data.map((entry) => {
       const species = getSpecies(entry.pokemonId)
       return {

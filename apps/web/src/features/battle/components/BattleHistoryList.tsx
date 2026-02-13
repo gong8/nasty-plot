@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Download, ChevronLeft, ChevronRight } from "lucide-react"
 import { EmptyState } from "@/components/empty-state"
+import { timeAgo } from "@/lib/format-time"
 import type { BattleSummary } from "../hooks/use-team-battles"
 
 interface BattleHistoryListProps {
@@ -17,21 +18,7 @@ interface BattleHistoryListProps {
   onExport?: (battleId: string) => void
 }
 
-const MS_PER_MINUTE = 60_000
-const MINUTES_PER_HOUR = 60
-const HOURS_PER_DAY = 24
 const PAGE_SIZE = 20
-
-function timeAgo(dateStr: string): string {
-  const elapsedMs = Date.now() - new Date(dateStr).getTime()
-  const minutes = Math.floor(elapsedMs / MS_PER_MINUTE)
-  if (minutes < 1) return "just now"
-  if (minutes < MINUTES_PER_HOUR) return `${minutes}m ago`
-  const hours = Math.floor(minutes / MINUTES_PER_HOUR)
-  if (hours < HOURS_PER_DAY) return `${hours}h ago`
-  const days = Math.floor(hours / HOURS_PER_DAY)
-  return `${days}d ago`
-}
 
 function ResultBadge({ winnerId, isTeam1 }: { winnerId: string | null; isTeam1: boolean }) {
   if (!winnerId) return <Badge variant="secondary">No Result</Badge>

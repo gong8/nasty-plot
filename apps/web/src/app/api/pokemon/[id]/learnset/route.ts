@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { getSpecies, getLearnset, getMove } from "@nasty-plot/pokemon-data"
 import { getFormatLearnset } from "@nasty-plot/formats"
 import type { ApiResponse, MoveData } from "@nasty-plot/core"
+import { notFoundResponse } from "../../../../../lib/api-error"
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -11,19 +12,14 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   const species = getSpecies(id)
 
   if (!species) {
-    return NextResponse.json({ error: "Pokemon not found", code: "NOT_FOUND" }, { status: 404 })
+    return notFoundResponse("Pokemon")
   }
 
   const moveIds = formatId ? await getFormatLearnset(id, formatId) : await getLearnset(id)
-  const moves: MoveData[] = []
-
-  for (const moveId of moveIds) {
-    const move = getMove(moveId)
-    if (move) moves.push(move)
-  }
-
-  // Sort by name
-  moves.sort((a, b) => a.name.localeCompare(b.name))
+  const moves = moveIds
+    .map(getMove)
+    .filter((move): move is MoveData => move !== undefined)
+    .sort((a, b) => a.name.localeCompare(b.name))
 
   const response: ApiResponse<MoveData[]> = { data: moves }
   return NextResponse.json(response)

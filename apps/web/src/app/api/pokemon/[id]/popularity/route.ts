@@ -5,6 +5,7 @@ import {
   getAbilityUsage,
   getNatureUsage,
 } from "@nasty-plot/smogon-data"
+import { badRequestResponse } from "../../../../../lib/api-error"
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id: pokemonId } = await params
@@ -12,7 +13,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   const formatId = searchParams.get("format")
 
   if (!formatId) {
-    return NextResponse.json({ error: "format query param is required" }, { status: 400 })
+    return badRequestResponse("format query param is required")
   }
 
   const [moves, items, abilities, natures] = await Promise.all([
@@ -24,10 +25,13 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
   return NextResponse.json({
     data: {
-      moves: moves.map((m) => ({ name: m.moveName, usagePercent: m.usagePercent })),
-      items: items.map((i) => ({ name: i.itemName, usagePercent: i.usagePercent })),
-      abilities: abilities.map((a) => ({ name: a.abilityName, usagePercent: a.usagePercent })),
-      natures: natures.map((n) => ({ name: n.natureName, count: n.count })),
+      moves: moves.map((move) => ({ name: move.moveName, usagePercent: move.usagePercent })),
+      items: items.map((item) => ({ name: item.itemName, usagePercent: item.usagePercent })),
+      abilities: abilities.map((ability) => ({
+        name: ability.abilityName,
+        usagePercent: ability.usagePercent,
+      })),
+      natures: natures.map((nature) => ({ name: nature.natureName, count: nature.count })),
     },
   })
 }

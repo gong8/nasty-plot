@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from "next/server"
 import { calculateMatchupMatrix } from "@nasty-plot/damage-calc"
 import { getTeam } from "@nasty-plot/teams"
 import { getUsageStats } from "@nasty-plot/smogon-data"
-import type { ApiResponse, MatchupMatrixEntry, ApiError } from "@nasty-plot/core"
-import { apiErrorResponse } from "../../../../lib/api-error"
+import type { ApiResponse, MatchupMatrixEntry } from "@nasty-plot/core"
+import { apiErrorResponse, badRequestResponse, notFoundResponse } from "../../../../lib/api-error"
 
 export async function POST(request: NextRequest) {
   try {
@@ -15,21 +15,13 @@ export async function POST(request: NextRequest) {
     }
 
     if (!teamId || !formatId) {
-      return NextResponse.json(
-        {
-          error: "Missing required fields: teamId, formatId",
-          code: "INVALID_INPUT",
-        } satisfies ApiError,
-        { status: 400 },
-      )
+      return badRequestResponse("Missing required fields: teamId, formatId", "INVALID_INPUT")
     }
 
     const team = await getTeam(teamId)
 
     if (!team) {
-      return NextResponse.json({ error: "Team not found", code: "NOT_FOUND" } satisfies ApiError, {
-        status: 404,
-      })
+      return notFoundResponse("Team")
     }
 
     // Resolve threat IDs: use provided or top usage Pokemon

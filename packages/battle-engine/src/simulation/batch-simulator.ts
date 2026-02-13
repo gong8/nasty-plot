@@ -37,7 +37,7 @@ export interface BatchAnalytics {
   maxTurnCount: number
   /** Per-Pokemon statistics */
   pokemonStats: PokemonStats[]
-  /** Turn count distribution (turn → count) */
+  /** Turn count distribution (turn -> count) */
   turnDistribution: Record<number, number>
 }
 
@@ -83,18 +83,10 @@ export async function runBatchSimulation(
   const queue: Promise<void>[] = []
   let active = 0
 
-  const runOne = async (index: number) => {
-    // Each game gets fresh AI instances
+  const runSingleGame = async (index: number) => {
     const ai1 = createAI(config.aiDifficulty)
     const ai2 = createAI(config.aiDifficulty)
-
-    // Generate a unique PRNG seed so each game has different RNG (damage rolls, accuracy, etc.)
-    const seed: [number, number, number, number] = [
-      (Math.random() * 0x10000) >>> 0,
-      (Math.random() * 0x10000) >>> 0,
-      (Math.random() * 0x10000) >>> 0,
-      (Math.random() * 0x10000) >>> 0,
-    ]
+    const seed = generateRandomSeed()
 
     try {
       const result = await runAutomatedBattle({
@@ -133,7 +125,7 @@ export async function runBatchSimulation(
 
   // Run games with concurrency limit
   for (let i = 0; i < config.totalGames; i++) {
-    const p = runOne(i).then(() => {
+    const p = runSingleGame(i).then(() => {
       active--
     })
     queue.push(p)
@@ -152,6 +144,8 @@ export async function runBatchSimulation(
   return { results: validResults, analytics }
 }
 
+const TURN_BUCKET_SIZE = 5
+
 function computeAnalytics(
   results: SingleBattleResult[],
   total: number,
@@ -165,21 +159,18 @@ function computeAnalytics(
       ? Math.round(turnCounts.reduce((a, b) => a + b, 0) / turnCounts.length)
       : 0
 
-  // Turn distribution
   const turnDistribution: Record<number, number> = {}
-  for (const tc of turnCounts) {
-    // Bucket by 5s for cleaner charts
-    const bucket = Math.floor(tc / 5) * 5
+  for (const turns of turnCounts) {
+    const bucket = Math.floor(turns / TURN_BUCKET_SIZE) * TURN_BUCKET_SIZE
     turnDistribution[bucket] = (turnDistribution[bucket] || 0) + 1
   }
 
-  // Per-Pokemon stats (from final states)
   const pokemonStatsMap = new Map<string, PokemonStats>()
 
   for (const result of results) {
-    const state = result.finalState
+    const { finalState } = result
 
-    for (const side of [state.sides.p1, state.sides.p2]) {
+    for (const side of [finalState.sides.p1, finalState.sides.p2]) {
       for (const pokemon of side.team) {
         const key = pokemon.speciesId || pokemon.name
         if (!key) continue
@@ -202,13 +193,26 @@ function computeAnalytics(
   }
 
   return {
-    team1WinRate: total > 0 ? Math.round((team1Wins / total) * 1000) / 10 : 0,
-    team2WinRate: total > 0 ? Math.round((team2Wins / total) * 1000) / 10 : 0,
-    drawRate: total > 0 ? Math.round((draws / total) * 1000) / 10 : 0,
+    team1WinRate: toPercentage(team1Wins, total),
+    team2WinRate: toPercentage(team2Wins, total),
+    drawRate: toPercentage(draws, total),
     avgTurnCount,
     minTurnCount: turnCounts.length > 0 ? Math.min(...turnCounts) : 0,
     maxTurnCount: turnCounts.length > 0 ? Math.max(...turnCounts) : 0,
     pokemonStats: [...pokemonStatsMap.values()],
     turnDistribution,
   }
+}
+
+function toPercentage(count: number, total: number): number {
+  return total > 0 ? Math.round((count / total) * 1000) / 10 : 0
+}
+
+function generateRandomSeed(): [number, number, number, number] {
+  return [
+    (Math.random() * 0x10000) >>> 0,
+    (Math.random() * 0x10000) >>> 0,
+    (Math.random() * 0x10000) >>> 0,
+    (Math.random() * 0x10000) >>> 0,
+  ]
 }

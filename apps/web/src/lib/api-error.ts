@@ -4,6 +4,14 @@ export function getErrorMessage(error: unknown, fallback = "Unknown error"): str
   return error instanceof Error ? error.message : fallback
 }
 
+export function notFoundResponse(entity: string): NextResponse {
+  return NextResponse.json({ error: `${entity} not found`, code: "NOT_FOUND" }, { status: 404 })
+}
+
+export function badRequestResponse(message: string, code = "BAD_REQUEST"): NextResponse {
+  return NextResponse.json({ error: message, code }, { status: 400 })
+}
+
 /**
  * Build a standard error JSON response from a caught error.
  *

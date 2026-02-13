@@ -8,6 +8,7 @@ import { SkeletonList } from "@/components/skeleton-list"
 import { Plus, Sparkles } from "lucide-react"
 import { useAddSlot } from "@/features/teams/hooks/use-teams"
 import { DEFAULT_LEVEL, DEFAULT_EVS, DEFAULT_IVS, type Recommendation } from "@nasty-plot/core"
+import { postJson } from "@/lib/api-client"
 
 interface RecommendationPanelProps {
   teamId: string
@@ -32,15 +33,7 @@ export function RecommendationPanel({
 
   const { data, isLoading } = useQuery<{ data: Recommendation[] }>({
     queryKey: ["recommendations", teamId, formatId],
-    queryFn: () =>
-      fetch("/api/recommend", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ teamId, formatId, limit: 6 }),
-      }).then((r) => {
-        if (!r.ok) throw new Error("Failed to fetch recommendations")
-        return r.json()
-      }),
+    queryFn: () => postJson("/api/recommend", { teamId, formatId, limit: 6 }),
     enabled: currentSlotCount >= 1 && currentSlotCount <= 5,
   })
 

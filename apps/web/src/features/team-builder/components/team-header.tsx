@@ -77,10 +77,8 @@ export function TeamHeader({
     setExportLoading(true)
     try {
       const res = await fetch(`/api/teams/${team.id}/export`)
-      if (res.ok) {
-        const text = await res.text()
-        setExportPaste(text)
-      }
+      if (!res.ok) throw new Error("Export failed")
+      setExportPaste(await res.text())
     } catch {
       setExportPaste("Error exporting team")
     }

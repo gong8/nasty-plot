@@ -36,7 +36,6 @@ export async function GET(request: Request) {
     species = species.filter((s) => s.types.includes(typeFilter))
   }
 
-  // Sort
   if (sort === "usage" && formatId) {
     const usageStats = await getUsageStats(formatId, { limit: 9999 })
     const rankMap = new Map<string, number>()
@@ -53,7 +52,6 @@ export async function GET(request: Request) {
   } else if (sort === "bst") {
     species.sort((a, b) => getBaseStatTotal(b.baseStats) - getBaseStatTotal(a.baseStats))
   }
-  // "dex" = default order from getAllSpecies/getFormatPokemon
 
   const total = species.length
   const start = (page - 1) * pageSize

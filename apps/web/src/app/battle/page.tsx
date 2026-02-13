@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
+import { fetchJson } from "@/lib/api-client"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import {
@@ -20,6 +21,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { LoadingSpinner } from "@/components/loading-spinner"
+import { EmptyState } from "@/components/empty-state"
 import { Swords, FlaskConical, Clock, Trophy, Play, X, Upload } from "lucide-react"
 import {
   hasCheckpoint,
@@ -29,25 +32,19 @@ import {
 import { BattleSprite } from "@/features/battle/components/PokemonSprite"
 import { getHealthColorHex } from "@/features/battle/components/HealthBar"
 import type { BattleCheckpoint, BattlePokemon } from "@nasty-plot/battle-engine"
+import { timeAgo } from "@/lib/format-time"
 import type { BattleSummary } from "@/features/battle/types"
 
 function winnerLabel(winnerId: string | null, team1Name: string, team2Name: string): string {
   if (!winnerId) return "No result"
+  if (winnerId === "draw") return "Draw"
   if (winnerId === "team1") return team1Name
   if (winnerId === "team2") return team2Name
-  if (winnerId === "draw") return "Draw"
   return winnerId
 }
 
-function timeAgo(dateStr: string): string {
-  const diff = Date.now() - new Date(dateStr).getTime()
-  const mins = Math.floor(diff / 60000)
-  if (mins < 1) return "just now"
-  if (mins < 60) return `${mins}m ago`
-  const hours = Math.floor(mins / 60)
-  if (hours < 24) return `${hours}h ago`
-  const days = Math.floor(hours / 24)
-  return `${days}d ago`
+function capitalize(str: string): string {
+  return str.charAt(0).toUpperCase() + str.slice(1)
 }
 
 function PokemonRow({ pokemon, side }: { pokemon: BattlePokemon[]; side: "p1" | "p2" }) {
@@ -93,9 +90,8 @@ export default function BattleHubPage() {
   const [filterTeamId, setFilterTeamId] = useState<string>("all")
 
   useEffect(() => {
-    fetch("/api/teams")
-      .then((res) => res.json())
-      .then((data) => setTeams(data.teams || []))
+    fetchJson<{ teams?: { id: string; name: string }[] }>("/api/teams")
+      .then((data) => setTeams(data.teams ?? []))
       .catch(() => {})
   }, [])
 
@@ -103,10 +99,9 @@ export default function BattleHubPage() {
     let cancelled = false
     const params = new URLSearchParams({ limit: "10" })
     if (filterTeamId !== "all") params.set("teamId", filterTeamId)
-    fetch(`/api/battles?${params}`)
-      .then((res) => res.json())
+    fetchJson<{ battles?: BattleSummary[] }>(`/api/battles?${params}`)
       .then((data) => {
-        if (!cancelled) setBattles(data.battles || [])
+        if (!cancelled) setBattles(data.battles ?? [])
       })
       .catch(() => {})
       .finally(() => {
@@ -178,10 +173,8 @@ export default function BattleHubPage() {
                 <div className="flex items-center justify-between">
                   <h2 className="text-lg font-semibold">Battle in Progress</h2>
                   <span className="text-xs text-muted-foreground">
-                    {checkpoint.config.formatId} &middot;{" "}
-                    {checkpoint.aiDifficulty.charAt(0).toUpperCase() +
-                      checkpoint.aiDifficulty.slice(1)}{" "}
-                    AI &middot; Turn {checkpoint.battleState.turn}
+                    {checkpoint.config.formatId} &middot; {capitalize(checkpoint.aiDifficulty)} AI
+                    &middot; Turn {checkpoint.battleState.turn}
                   </span>
                 </div>
 
@@ -303,9 +296,9 @@ export default function BattleHubPage() {
           </div>
 
           {loadingBattles ? (
-            <p className="text-sm text-muted-foreground">Loading...</p>
+            <LoadingSpinner size="sm" />
           ) : battles.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No battles yet. Start one above!</p>
+            <EmptyState>No battles yet. Start one above!</EmptyState>
           ) : (
             <div className="space-y-2">
               {battles.map((battle) => (

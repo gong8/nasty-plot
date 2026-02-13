@@ -4,6 +4,7 @@ import {
   formatShowdownLog,
   formatShowdownReplayJSON,
 } from "@nasty-plot/battle-engine"
+import { notFoundResponse } from "../../../../../lib/api-error"
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ battleId: string }> }) {
   const { battleId } = await params
@@ -13,7 +14,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ batt
   const battle = await getBattleForExport(battleId)
 
   if (!battle) {
-    return NextResponse.json({ error: "Battle not found" }, { status: 404 })
+    return notFoundResponse("Battle")
   }
 
   if (format === "json") {

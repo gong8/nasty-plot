@@ -12,11 +12,13 @@ import {
 } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { EmptyState } from "@/components/empty-state"
 import { SampleTeamCard } from "@/features/battle/components/SampleTeamCard"
 import { ArrowLeft, Search } from "lucide-react"
 import Link from "next/link"
 import { getActiveFormats } from "@nasty-plot/formats"
 import type { SampleTeamData } from "@nasty-plot/teams"
+import { fetchJson } from "@/lib/api-client"
 
 /** SampleTeam as returned by the API (createdAt serialized to string) */
 type SampleTeam = Omit<SampleTeamData, "createdAt"> & { createdAt: string }
@@ -48,27 +50,30 @@ export default function SampleTeamsPage() {
   const [search, setSearch] = useState("")
 
   useEffect(() => {
-    const fetchTeams = async () => {
-      setLoading(true)
-      try {
-        const params = new URLSearchParams()
-        if (formatId && formatId !== "all") params.set("formatId", formatId)
-        if (archetype && archetype !== "all") params.set("archetype", archetype)
-        if (search) params.set("search", search)
+    let cancelled = false
 
-        const res = await fetch(`/api/sample-teams?${params.toString()}`)
-        if (res.ok) {
-          const data = await res.json()
-          setTeams(data)
-        }
+    async function fetchTeams() {
+      setLoading(true)
+      const params = new URLSearchParams()
+      if (formatId && formatId !== "all") params.set("formatId", formatId)
+      if (archetype && archetype !== "all") params.set("archetype", archetype)
+      if (search) params.set("search", search)
+
+      try {
+        const data = await fetchJson<SampleTeam[]>(`/api/sample-teams?${params}`)
+        if (!cancelled) setTeams(data)
       } catch {
-        // Failed to fetch
+        // ignored
       } finally {
-        setLoading(false)
+        if (!cancelled) setLoading(false)
       }
     }
 
     fetchTeams()
+
+    return () => {
+      cancelled = true
+    }
   }, [formatId, archetype, search])
 
   const handleUseInBattle = (paste: string) => {
@@ -147,11 +152,7 @@ export default function SampleTeamsPage() {
           ))}
         </div>
       ) : teams.length === 0 ? (
-        <div className="text-center py-12">
-          <p className="text-muted-foreground">
-            No sample teams found. Try adjusting your filters.
-          </p>
-        </div>
+        <EmptyState>No sample teams found. Try adjusting your filters.</EmptyState>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {teams.map((team) => (

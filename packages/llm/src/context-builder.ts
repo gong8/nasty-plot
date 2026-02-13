@@ -1,8 +1,8 @@
+import { getBaseStatTotal } from "@nasty-plot/core"
 import type { TeamData, UsageStatsEntry, PokemonSpecies, StatsTable } from "@nasty-plot/core"
 
 function formatBaseStats(stats: StatsTable): string {
-  const bst = Object.values(stats).reduce((a, b) => a + b, 0)
-  return `${stats.hp}/${stats.atk}/${stats.def}/${stats.spa}/${stats.spd}/${stats.spe} (BST: ${bst})`
+  return `${stats.hp}/${stats.atk}/${stats.def}/${stats.spa}/${stats.spd}/${stats.spe} (BST: ${getBaseStatTotal(stats)})`
 }
 
 export function buildTeamContext(teamData: TeamData): string {

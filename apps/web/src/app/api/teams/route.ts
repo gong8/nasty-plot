@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { createTeam, listTeams } from "@nasty-plot/teams"
 import type { TeamCreateInput } from "@nasty-plot/core"
-import { apiErrorResponse } from "../../../lib/api-error"
+import { apiErrorResponse, badRequestResponse } from "../../../lib/api-error"
 
 export async function GET(request: Request) {
   try {
@@ -22,7 +22,7 @@ export async function POST(request: Request) {
   try {
     const body: TeamCreateInput = await request.json()
     if (!body.name || !body.formatId) {
-      return NextResponse.json({ error: "name and formatId are required" }, { status: 400 })
+      return badRequestResponse("name and formatId are required")
     }
     const team = await createTeam(body)
     return NextResponse.json(team, { status: 201 })

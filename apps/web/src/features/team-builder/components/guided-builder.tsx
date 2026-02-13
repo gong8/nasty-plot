@@ -40,17 +40,16 @@ function StepIndicator({
         {STEP_ORDER.map((step, i) => {
           const isActive = step === current
           const isComplete = i < currentIdx
-          const canNavigate = isComplete
 
           return (
             <button
               key={step}
               type="button"
-              disabled={!canNavigate}
-              onClick={() => canNavigate && onGoToStep(step)}
+              disabled={!isComplete}
+              onClick={() => isComplete && onGoToStep(step)}
               className={cn(
                 "flex flex-col items-center gap-1 group",
-                canNavigate && "cursor-pointer",
+                isComplete && "cursor-pointer",
               )}
             >
               <div
@@ -67,7 +66,7 @@ function StepIndicator({
                 className={cn(
                   "text-xs hidden sm:block",
                   isActive ? "font-medium text-foreground" : "text-muted-foreground",
-                  canNavigate && "group-hover:text-foreground",
+                  isComplete && "group-hover:text-foreground",
                 )}
               >
                 {STEP_LABELS[step]}
@@ -88,28 +87,12 @@ export function GuidedBuilder() {
 
   // --- Navigation logic ---
 
-  const canGoBack = (() => {
-    if (ctx.step === "start") return false
-    if (ctx.step === "build" && ctx.currentBuildSlot > 2) return true
-    return true
-  })()
+  const canGoBack = ctx.step !== "start"
 
-  const canGoNext = (() => {
-    switch (ctx.step) {
-      case "start":
-        return false // Handled by start step buttons
-      case "lead":
-        return ctx.filledSlots.length >= 1
-      case "build":
-        return true // Can always move forward
-      case "sets":
-        return ctx.filledSlots.length > 0
-      case "review":
-        return false // Save button handles this
-      default:
-        return false
-    }
-  })()
+  const canGoNext =
+    (ctx.step === "lead" && ctx.filledSlots.length >= 1) ||
+    ctx.step === "build" ||
+    (ctx.step === "sets" && ctx.filledSlots.length > 0)
 
   const handleBack = () => {
     if (ctx.step === "build" && ctx.currentBuildSlot > 2) {

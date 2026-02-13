@@ -141,16 +141,15 @@ function buildCliArgs(
   ]
 }
 
-/** Emit parsed stream content and plan events */
+type Emitter = (event: SSEEvent) => void
+
 function emitParsedContent(
-  emit: (event: SSEEvent) => void,
+  emit: Emitter,
   result: { cleanContent: string; events: SSEEvent[] },
 ): void {
   if (result.cleanContent) emit({ type: "content", content: result.cleanContent })
   for (const evt of result.events) emit(evt)
 }
-
-type Emitter = (event: SSEEvent) => void
 
 function extractTextDelta(msg: Record<string, unknown>): string | null {
   if (msg.type !== "stream_event") return null
@@ -163,8 +162,9 @@ function extractTextDelta(msg: Record<string, unknown>): string | null {
 
 function extractToolBlocks(msg: Record<string, unknown>): Array<Record<string, unknown>> | null {
   if (msg.type !== "assistant") return null
-  const message = msg.message as Record<string, unknown> | undefined
-  const content = message?.content as Array<Record<string, unknown>> | undefined
+  const content = (msg.message as Record<string, unknown> | undefined)?.content as
+    | Array<Record<string, unknown>>
+    | undefined
   return content ?? null
 }
 
@@ -198,6 +198,10 @@ function logResult(msg: Record<string, unknown>, startMs: number): boolean {
   const turns = msg.num_turns ?? "?"
   console.log(`${LOG_PREFIX} ◀ Result: ${elapsed}ms, ${turns} turns, cost=${cost}`)
   return true
+}
+
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : "Unknown spawn error"
 }
 
 /**
@@ -234,7 +238,7 @@ export function streamCliChat(options: CliChatOptions): ReadableStream<Uint8Arra
           stdio: ["pipe", "pipe", "pipe"],
         })
       } catch (err) {
-        const msg = err instanceof Error ? err.message : "Unknown spawn error"
+        const msg = errorMessage(err)
         console.error(`${LOG_PREFIX} Spawn failed: ${msg}`)
         emit({ type: "error", error: msg })
         emit({ type: "done" })

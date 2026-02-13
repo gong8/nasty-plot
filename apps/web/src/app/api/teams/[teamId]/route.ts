@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server"
 import { getTeam, updateTeam, deleteTeam } from "@nasty-plot/teams"
-import { apiErrorResponse } from "../../../../lib/api-error"
+import { apiErrorResponse, notFoundResponse } from "../../../../lib/api-error"
 
 export async function GET(_request: Request, { params }: { params: Promise<{ teamId: string }> }) {
   try {
     const { teamId } = await params
     const team = await getTeam(teamId)
     if (!team) {
-      return NextResponse.json({ error: "Team not found" }, { status: 404 })
+      return notFoundResponse("Team")
     }
     return NextResponse.json(team)
   } catch (error) {

@@ -11,7 +11,7 @@ import type {
   MergeOptions,
   LineageNode,
 } from "@nasty-plot/core"
-import { fetchJson, postJson } from "@/lib/api-client"
+import { fetchJson, postJson, putJson } from "@/lib/api-client"
 
 // --- Queries ---
 
@@ -50,11 +50,7 @@ export function useUpdateTeam() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: ({ teamId, data }: { teamId: string; data: Partial<TeamCreateInput> }) =>
-      fetchJson<TeamData>(`/api/teams/${teamId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      }),
+      putJson<TeamData>(`/api/teams/${teamId}`, data),
     onSuccess: (result) => {
       qc.invalidateQueries({ queryKey: ["teams"] })
       qc.setQueryData(["team", result.id], result)
@@ -95,12 +91,7 @@ export function useUpdateSlot() {
       teamId: string
       position: number
       data: Partial<TeamSlotInput>
-    }) =>
-      fetchJson(`/api/teams/${teamId}/slots/${position}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      }),
+    }) => putJson(`/api/teams/${teamId}/slots/${position}`, data),
     onSuccess: (_, vars) => {
       qc.invalidateQueries({ queryKey: ["team", vars.teamId] })
       qc.invalidateQueries({ queryKey: ["team-compare"] })

@@ -3,6 +3,7 @@
 import { use, useCallback, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useQuery } from "@tanstack/react-query"
+import { fetchJson, postJson } from "@/lib/api-client"
 import { ArrowLeft, Plus, Swords, BarChart3, FlaskConical, History } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Button } from "@/components/ui/button"
@@ -48,6 +49,14 @@ import type {
   MergeDecision,
 } from "@nasty-plot/core"
 
+const TOTAL_TYPES = 18
+
+function computeCoverageScore(analysis: TeamAnalysis | undefined): number {
+  if (!analysis?.coverage?.offensive) return 0
+  const totalCoverage = Object.values(analysis.coverage.offensive).reduce((a, b) => a + b, 0)
+  return Math.round((totalCoverage / TOTAL_TYPES) * 100)
+}
+
 export default function TeamEditorPage({ params }: { params: Promise<{ teamId: string }> }) {
   const { teamId } = use(params)
   const router = useRouter()
@@ -75,11 +84,7 @@ export default function TeamEditorPage({ params }: { params: Promise<{ teamId: s
   // Fetch analysis data when analysis tab is selected and team has slots
   const analysisQuery = useQuery<{ data: TeamAnalysis }>({
     queryKey: ["team-analysis", teamId],
-    queryFn: () =>
-      fetch(`/api/teams/${teamId}/analysis`).then((r) => {
-        if (!r.ok) throw new Error("Failed to fetch analysis")
-        return r.json()
-      }),
+    queryFn: () => fetchJson(`/api/teams/${teamId}/analysis`),
     enabled: !!team && team.slots.length > 0, // Always fetch if we have slots, for the dashboard
   })
 
@@ -87,17 +92,10 @@ export default function TeamEditorPage({ params }: { params: Promise<{ teamId: s
   const matchupQuery = useQuery<{ data: MatchupMatrixEntry[][] }>({
     queryKey: ["matchup-matrix", teamId, team?.formatId, customThreatIds],
     queryFn: () =>
-      fetch("/api/damage-calc/matchup-matrix", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          teamId,
-          formatId: team?.formatId,
-          ...(customThreatIds.length > 0 && { threatIds: customThreatIds }),
-        }),
-      }).then((r) => {
-        if (!r.ok) throw new Error("Failed to fetch matchup matrix")
-        return r.json()
+      postJson("/api/damage-calc/matchup-matrix", {
+        teamId,
+        formatId: team?.formatId,
+        ...(customThreatIds.length > 0 && { threatIds: customThreatIds }),
       }),
     enabled: activeTab === "matchups" && !!team && team.slots.length > 0,
   })
@@ -151,15 +149,7 @@ export default function TeamEditorPage({ params }: { params: Promise<{ teamId: s
   const handleImport = useCallback(
     async (paste: string) => {
       if (!team) return
-      const res = await fetch(`/api/teams/${teamId}/import`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ paste }),
-      })
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}))
-        throw new Error(body.error || "Import failed")
-      }
+      await postJson(`/api/teams/${teamId}/import`, { paste })
       await refetch()
     },
     [team, teamId, refetch],
@@ -244,11 +234,7 @@ export default function TeamEditorPage({ params }: { params: Promise<{ teamId: s
 
   const nextPosition = team.slots.length + 1
   const analysis = analysisQuery.data?.data
-  const coverageScore = analysis
-    ? Math.round(
-        (Object.values(analysis.coverage?.offensive || {}).reduce((a, b) => a + b, 0) / 18) * 100,
-      )
-    : 0
+  const coverageScore = computeCoverageScore(analysis)
 
   return (
     <div className="min-h-screen bg-background/50">

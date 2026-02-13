@@ -1,10 +1,11 @@
 import {
   calcHpPercent,
+  formatBoosts,
+  formatFieldState,
   formatSideConditions,
   type BattleState,
   type BattlePokemon,
   type BattleLogEntry,
-  type FieldState,
   type SideConditions,
 } from "@nasty-plot/battle-engine"
 import type { AutoAnalyzeDepth } from "@nasty-plot/core"
@@ -43,20 +44,14 @@ function describePokemon(pokemon: BattlePokemon | null): string {
   if (knownMoves.length) {
     parts.push(`Moves: ${knownMoves.map((m) => `${m.name} (${m.type})`).join(", ")}`)
   }
-  const activeBoosts = Object.entries(boosts)
-    .filter(([, v]) => v !== 0)
-    .map(([k, v]) => `${v > 0 ? "+" : ""}${v} ${k}`)
-  if (activeBoosts.length) parts.push(activeBoosts.join(", "))
+  const boostsStr = formatBoosts(boosts)
+  if (boostsStr) parts.push(boostsStr)
   if (volatiles.length) parts.push(`Volatiles: ${volatiles.join(", ")}`)
   return parts.join(" | ")
 }
 
-function describeField(field: FieldState): string {
-  const parts: string[] = []
-  if (field.weather) parts.push(`Weather: ${field.weather} (${field.weatherTurns} turns)`)
-  if (field.terrain) parts.push(`Terrain: ${field.terrain} (${field.terrainTurns} turns)`)
-  if (field.trickRoom) parts.push(`Trick Room (${field.trickRoom} turns)`)
-  return parts.length ? parts.join(", ") : "No field effects"
+function describeField(field: BattleState["field"]): string {
+  return formatFieldState(field) || "No field effects"
 }
 
 function describeSideConditions(sc: SideConditions): string {

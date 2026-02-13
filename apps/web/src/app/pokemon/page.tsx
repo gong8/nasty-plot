@@ -24,6 +24,10 @@ import {
 } from "@nasty-plot/core"
 import { useFormats } from "@/features/battle/hooks/use-formats"
 import type { SortMode } from "@/features/pokemon/types"
+import { fetchJson } from "@/lib/api-client"
+
+const DEBOUNCE_MS = 300
+const PAGE_SIZE = 50
 
 export default function PokemonBrowserPage() {
   const [search, setSearch] = useState("")
@@ -32,7 +36,6 @@ export default function PokemonBrowserPage() {
   const [formatId, setFormatId] = useState<string>("")
   const [sortBy, setSortBy] = useState<SortMode>("dex")
   const [page, setPage] = useState(1)
-  const pageSize = 50
 
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   function handleSearchChange(value: string) {
@@ -41,7 +44,7 @@ export default function PokemonBrowserPage() {
     timerRef.current = setTimeout(() => {
       setDebouncedSearch(value)
       setPage(1)
-    }, 300)
+    }, DEBOUNCE_MS)
   }
 
   // Fetch formats for the selector
@@ -54,14 +57,14 @@ export default function PokemonBrowserPage() {
   if (formatId) params.set("format", formatId)
   params.set("sort", sortBy)
   params.set("page", String(page))
-  params.set("pageSize", String(pageSize))
+  params.set("pageSize", String(PAGE_SIZE))
 
   const { data: pokemonData, isLoading } = useQuery<PaginatedResponse<PokemonSpecies>>({
     queryKey: ["pokemon", debouncedSearch, typeFilter, formatId, sortBy, page],
-    queryFn: () => fetch(`/api/pokemon?${params}`).then((r) => r.json()),
+    queryFn: () => fetchJson(`/api/pokemon?${params}`),
   })
 
-  const totalPages = pokemonData ? Math.ceil(pokemonData.total / pageSize) : 0
+  const totalPages = pokemonData ? Math.ceil(pokemonData.total / PAGE_SIZE) : 0
 
   return (
     <div className="flex flex-col">

@@ -1,13 +1,14 @@
 import { NextResponse } from "next/server"
 import { getFormat, getFormatPokemon } from "@nasty-plot/formats"
 import type { PaginatedResponse, PokemonSpecies } from "@nasty-plot/core"
+import { notFoundResponse } from "../../../../../lib/api-error"
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const format = getFormat(id)
 
   if (!format) {
-    return NextResponse.json({ error: "Format not found", code: "NOT_FOUND" }, { status: 404 })
+    return notFoundResponse("Format")
   }
 
   const { searchParams } = new URL(request.url)

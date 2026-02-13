@@ -10,43 +10,42 @@ interface RoleSuggestionBannerProps {
   filledSlotCount: number
 }
 
+function capitalize(s: string): string {
+  return s.charAt(0).toUpperCase() + s.slice(1)
+}
+
+type SuggestionIcon = "lightbulb" | "warning" | "info"
+
 function getSuggestion(
   analysis: TeamAnalysis | null,
   filledSlotCount: number,
-): { message: React.ReactNode; icon: "lightbulb" | "warning" | "info" } {
-  if (analysis) {
-    const { coverage } = analysis
-
-    // Check for shared weaknesses (2+ team members weak to a type)
-    if (coverage.sharedWeaknesses.length > 0) {
-      const weakness = coverage.sharedWeaknesses[0]
-      return {
-        icon: "warning",
-        message: (
-          <>
-            Your team is weak to <span className="font-medium capitalize">{weakness}</span>{" "}
-            (multiple Pokemon). Consider a Pokemon that resists it.
-          </>
-        ),
-      }
+): { message: React.ReactNode; icon: SuggestionIcon } {
+  if (analysis?.coverage.sharedWeaknesses.length) {
+    const weakness = analysis.coverage.sharedWeaknesses[0]
+    return {
+      icon: "warning",
+      message: (
+        <>
+          Your team is weak to <span className="font-medium capitalize">{weakness}</span> (multiple
+          Pokemon). Consider a Pokemon that resists it.
+        </>
+      ),
     }
+  }
 
-    // Check for uncovered types
-    if (coverage.uncoveredTypes.length > 0) {
-      const displayTypes = coverage.uncoveredTypes.slice(0, 3)
-      const typeList = displayTypes.map((t) => t.charAt(0).toUpperCase() + t.slice(1)).join(", ")
-      return {
-        icon: "lightbulb",
-        message: (
-          <>
-            {"You can't hit "}
-            <span className="font-medium">{typeList}</span>
-            {" super-effectively yet. Adding "}
-            <ConceptTooltip term="coverage">coverage</ConceptTooltip>
-            {" would help."}
-          </>
-        ),
-      }
+  if (analysis?.coverage.uncoveredTypes.length) {
+    const typeList = analysis.coverage.uncoveredTypes.slice(0, 3).map(capitalize).join(", ")
+    return {
+      icon: "lightbulb",
+      message: (
+        <>
+          {"You can't hit "}
+          <span className="font-medium">{typeList}</span>
+          {" super-effectively yet. Adding "}
+          <ConceptTooltip term="coverage">coverage</ConceptTooltip>
+          {" would help."}
+        </>
+      ),
     }
   }
 

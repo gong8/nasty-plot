@@ -15,6 +15,7 @@ import { LoadingSpinner } from "@/components/loading-spinner"
 import { Button } from "@/components/ui/button"
 import { useChatSidebar } from "@/features/chat/context/chat-provider"
 import { useBattleStatePublisher } from "@/features/battle/context/battle-state-context"
+import { fetchJson, putJson } from "@/lib/api-client"
 import type { GameType } from "@nasty-plot/core"
 
 interface BattleData {
@@ -36,13 +37,11 @@ export default function ReplayPage({ params }: { params: Promise<{ battleId: str
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    fetch(`/api/battles/${battleId}/replay`)
-      .then((res) => {
-        if (!res.ok) throw new Error("Battle not found")
-        return res.json()
-      })
+    fetchJson<BattleData>(`/api/battles/${battleId}/replay`)
       .then(setBattleData)
-      .catch((err) => setError(err.message))
+      .catch((err: unknown) =>
+        setError(err instanceof Error ? err.message : "Failed to load replay"),
+      )
   }, [battleId])
 
   if (error) {
@@ -99,11 +98,9 @@ function ReplayViewerContent({ battleData }: { battleData: BattleData }) {
   const handleCommentaryGenerated = useCallback(
     (turn: number, text: string) => {
       // Persist to DB
-      fetch(`/api/battles/${battleData.id}/commentary`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ turn, text }),
-      }).catch((err) => console.error("[Replay commentary persist]", err))
+      putJson(`/api/battles/${battleData.id}/commentary`, { turn, text }).catch((err) =>
+        console.error("[Replay commentary persist]", err),
+      )
 
       // Update local state
       setCommentary((prev) => ({ ...prev, [turn]: text }))

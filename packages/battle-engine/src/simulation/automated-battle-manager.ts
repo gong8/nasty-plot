@@ -37,6 +37,10 @@ export interface AutomatedBattleConfig {
   seed?: [number, number, number, number]
 }
 
+const STREAM_MARKER_RE = /^(?:update|sideupdate|p[1-4])$/
+const REQUEST_PREFIX = "|request|"
+const REQUEST_PREFIX_LEN = REQUEST_PREFIX.length
+
 /**
  * Runs a fully automated battle between two AIs with no delay.
  * Optimized for speed — no UI callbacks or artificial delays.
@@ -50,6 +54,12 @@ export async function runAutomatedBattle(
   state.sides.p1.name = config.team1Name || "Team 1"
   state.sides.p2.name = config.team2Name || "Team 2"
 
+  const team1Packed = pasteToPackedTeam(config.team1Paste)
+  const team2Packed = pasteToPackedTeam(config.team2Paste)
+  if (!team1Packed || !team2Packed) {
+    throw new Error("Failed to parse team pastes")
+  }
+
   let protocolLog = ""
   const turnActions: SingleBattleResult["turnActions"] = []
   let pendingP1Actions: BattleActionSet | null = null
@@ -61,15 +71,7 @@ export async function runAutomatedBattle(
   let lastProtocolChunk = ""
   const isDoubles = config.gameType === "doubles"
 
-  // Convert pastes to packed format
-  const team1Packed = pasteToPackedTeam(config.team1Paste)
-  const team2Packed = pasteToPackedTeam(config.team2Paste)
-
-  if (!team1Packed || !team2Packed) {
-    throw new Error("Failed to parse team pastes")
-  }
-
-  function processDeduplicatedProtocol(proto: string) {
+  function deduplicateAndProcess(proto: string) {
     const trimmed = proto.trim()
     if (!trimmed || trimmed === lastProtocolChunk) return
     lastProtocolChunk = trimmed
@@ -77,40 +79,37 @@ export async function runAutomatedBattle(
     processChunk(state, proto)
   }
 
-  // Collect and process output
   const outputPromise = (async () => {
     for await (const chunk of stream) {
       const lines = chunk.split("\n")
       let protoLines = ""
 
       for (const line of lines) {
-        if (line.startsWith("|request|")) {
-          processDeduplicatedProtocol(protoLines)
+        if (line.startsWith(REQUEST_PREFIX)) {
+          deduplicateAndProcess(protoLines)
           protoLines = ""
 
-          // Parse request
           try {
-            const reqJson = line.slice(9)
+            const reqJson = line.slice(REQUEST_PREFIX_LEN)
             const parsed = parseRequest(reqJson)
             const rawReq = JSON.parse(reqJson)
             const sideId = rawReq.side?.id as "p1" | "p2" | undefined
+            if (!sideId) continue
 
-            if (sideId && parsed.side) {
+            if (parsed.side) {
               updateSideFromRequest(state, sideId, parsed.side)
             }
 
-            if (sideId === "p1" || sideId === "p2") {
-              if (parsed.teamPreview) {
-                if (sideId === "p1") p1TeamPreview = true
-                else p2TeamPreview = true
-              } else if (!parsed.wait && parsed.actions) {
-                if (sideId === "p1") {
-                  pendingP1Actions = parsed.actions
-                  if (isDoubles) pendingP1Slot2Actions = parseRequestForSlot(reqJson, 1).actions
-                } else {
-                  pendingP2Actions = parsed.actions
-                  if (isDoubles) pendingP2Slot2Actions = parseRequestForSlot(reqJson, 1).actions
-                }
+            if (parsed.teamPreview) {
+              if (sideId === "p1") p1TeamPreview = true
+              else p2TeamPreview = true
+            } else if (!parsed.wait && parsed.actions) {
+              if (sideId === "p1") {
+                pendingP1Actions = parsed.actions
+                if (isDoubles) pendingP1Slot2Actions = parseRequestForSlot(reqJson, 1).actions
+              } else {
+                pendingP2Actions = parsed.actions
+                if (isDoubles) pendingP2Slot2Actions = parseRequestForSlot(reqJson, 1).actions
               }
             }
           } catch {
@@ -122,7 +121,7 @@ export async function runAutomatedBattle(
         protoLines += line + "\n"
       }
 
-      processDeduplicatedProtocol(protoLines)
+      deduplicateAndProcess(protoLines)
     }
   })()
 
@@ -213,8 +212,6 @@ export async function runAutomatedBattle(
   }
 }
 
-const STREAM_MARKER_RE = /^(?:update|sideupdate|p[1-4])$/
-
 async function resolvePlayerChoice(
   ai: AIPlayer,
   state: BattleState,
@@ -253,12 +250,10 @@ function escapeTeam(team: string): string {
   return team.replace(/\\/g, "\\\\").replace(/"/g, '\\"')
 }
 
-function pasteToPackedTeam(team: string): string | null {
-  const trimmed = team.trim()
+function pasteToPackedTeam(paste: string): string | null {
+  const trimmed = paste.trim()
   if (!trimmed) return null
-  if (!trimmed.includes("\n") || (trimmed.includes("|") && !trimmed.includes("Ability:"))) {
-    return trimmed
-  }
+  if (isAlreadyPacked(trimmed)) return trimmed
   try {
     const sets = Teams.import(trimmed)
     if (!sets || sets.length === 0) return null
@@ -266,6 +261,10 @@ function pasteToPackedTeam(team: string): string | null {
   } catch {
     return null
   }
+}
+
+function isAlreadyPacked(text: string): boolean {
+  return !text.includes("\n") || (text.includes("|") && !text.includes("Ability:"))
 }
 
 function tick(): Promise<void> {

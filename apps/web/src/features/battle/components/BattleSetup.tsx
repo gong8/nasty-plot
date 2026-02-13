@@ -11,6 +11,7 @@ import { TeamPicker, type TeamSelection } from "./TeamPicker"
 import { useFormat } from "../hooks/use-formats"
 import { DEFAULT_FORMAT_ID, parseShowdownPaste, type GameType } from "@nasty-plot/core"
 import type { TeamValidation } from "../types"
+import { fetchJson } from "@/lib/api-client"
 
 interface BattleSetupProps {
   onStart: (config: {
@@ -96,9 +97,8 @@ export function BattleSetup({ onStart, initialTeamId, initialFormatId }: BattleS
   // Load sample teams from DB as defaults
   useEffect(() => {
     let cancelled = false
-    fetch(`/api/sample-teams?formatId=${formatId}`)
-      .then((res) => (res.ok ? res.json() : []))
-      .then((teams: Array<{ paste: string }>) => {
+    fetchJson<Array<{ paste: string }>>(`/api/sample-teams?formatId=${formatId}`)
+      .then((teams) => {
         if (cancelled) return
         if (teams.length >= 1 && !playerSelection.paste) {
           setPlayerSelection(emptySelection(teams[0].paste))

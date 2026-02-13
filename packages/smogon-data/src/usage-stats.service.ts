@@ -60,7 +60,7 @@ export async function resolveYearMonth(
     candidates.push({ y: d.getFullYear(), m: d.getMonth() + 1 })
   }
 
-  // Try each month × rating combination
+  // Try each month x rating combination
   for (const { y, m } of candidates) {
     for (const rating of RATING_THRESHOLDS) {
       const url = buildStatsUrl(formatId, y, m, rating)
@@ -75,12 +75,103 @@ export async function resolveYearMonth(
     }
   }
 
-  // No stats found for any month/rating combination.
-  // Throw so the caller knows data is unavailable for this format.
   throw new Error(
     `No Smogon stats found for ${formatId} in the last 6 months at any rating threshold (${RATING_THRESHOLDS.join(", ")})`,
   )
 }
+
+// ---------------------------------------------------------------------------
+// Upsert helpers for fetchUsageStats
+// ---------------------------------------------------------------------------
+
+async function saveTeammates(
+  formatId: string,
+  pokemonId: string,
+  teammates: Record<string, number> | undefined,
+): Promise<void> {
+  for (const [tmName, corrValue] of Object.entries(teammates ?? {})) {
+    const tmId = toId(tmName)
+    if (!tmId || corrValue <= 0) continue
+    await prisma.teammateCorr.upsert({
+      where: {
+        formatId_pokemonAId_pokemonBId: { formatId, pokemonAId: pokemonId, pokemonBId: tmId },
+      },
+      update: { correlationPercent: corrValue },
+      create: { formatId, pokemonAId: pokemonId, pokemonBId: tmId, correlationPercent: corrValue },
+    })
+  }
+}
+
+async function saveChecksAndCounters(
+  formatId: string,
+  targetId: string,
+  counters: Record<string, [number, number, ...number[]]> | undefined,
+): Promise<void> {
+  for (const [counterName, values] of Object.entries(counters ?? {})) {
+    const counterId = toId(counterName)
+    if (!counterId) continue
+    const koPercent = values[0] ?? 0
+    const switchPercent = values[1] ?? 0
+    await prisma.checkCounter.upsert({
+      where: {
+        formatId_targetId_counterId: { formatId, targetId, counterId },
+      },
+      update: { koPercent, switchPercent },
+      create: { formatId, targetId, counterId, koPercent, switchPercent },
+    })
+  }
+}
+
+async function saveMoveUsage(
+  formatId: string,
+  pokemonId: string,
+  moves: Record<string, number> | undefined,
+): Promise<void> {
+  for (const [moveName, usage] of Object.entries(moves ?? {})) {
+    if (!moveName || usage <= 0) continue
+    await prisma.moveUsage.upsert({
+      where: { formatId_pokemonId_moveName: { formatId, pokemonId, moveName } },
+      update: { usagePercent: usage },
+      create: { formatId, pokemonId, moveName, usagePercent: usage },
+    })
+  }
+}
+
+async function saveItemUsage(
+  formatId: string,
+  pokemonId: string,
+  items: Record<string, number> | undefined,
+): Promise<void> {
+  for (const [itemName, usage] of Object.entries(items ?? {})) {
+    if (!itemName || usage <= 0) continue
+    await prisma.itemUsage.upsert({
+      where: { formatId_pokemonId_itemName: { formatId, pokemonId, itemName } },
+      update: { usagePercent: usage },
+      create: { formatId, pokemonId, itemName, usagePercent: usage },
+    })
+  }
+}
+
+async function saveAbilityUsage(
+  formatId: string,
+  pokemonId: string,
+  abilities: Record<string, number> | undefined,
+): Promise<void> {
+  for (const [abilityName, usage] of Object.entries(abilities ?? {})) {
+    if (!abilityName || usage <= 0) continue
+    await prisma.abilityUsage.upsert({
+      where: { formatId_pokemonId_abilityName: { formatId, pokemonId, abilityName } },
+      update: { usagePercent: usage },
+      create: { formatId, pokemonId, abilityName, usagePercent: usage },
+    })
+  }
+}
+
+function formatMonthStr(year: number, month: number): string {
+  return `${year}-${String(month).padStart(2, "0")}`
+}
+
+// ---------------------------------------------------------------------------
 
 /**
  * Fetch usage statistics from Smogon and persist to DB.
@@ -107,10 +198,7 @@ export async function fetchUsageStats(
   const json: SmogonChaosData = await res.json()
   const entries = Object.entries(json.data)
 
-  // Sort by usage descending to compute rank
   entries.sort(([, a], [, b]) => b.usage - a.usage)
-
-  // Batch upsert usage stats
   console.log(`[usage-stats] Saving ${entries.length} Pokemon for ${formatId}`)
 
   for (let i = 0; i < entries.length; i++) {
@@ -120,17 +208,9 @@ export async function fetchUsageStats(
 
     await prisma.usageStats.upsert({
       where: {
-        formatId_pokemonId_year_month: {
-          formatId,
-          pokemonId,
-          year: statYear,
-          month: statMonth,
-        },
+        formatId_pokemonId_year_month: { formatId, pokemonId, year: statYear, month: statMonth },
       },
-      update: {
-        usagePercent: data.usage,
-        rank,
-      },
+      update: { usagePercent: data.usage, rank },
       create: {
         formatId,
         pokemonId,
@@ -141,113 +221,23 @@ export async function fetchUsageStats(
       },
     })
 
-    // Save teammate correlations
-    const teammates = Object.entries(data.Teammates ?? {})
-    for (const [tmName, corrValue] of teammates) {
-      const tmId = toId(tmName)
-      if (!tmId || corrValue <= 0) continue
-
-      await prisma.teammateCorr.upsert({
-        where: {
-          formatId_pokemonAId_pokemonBId: {
-            formatId,
-            pokemonAId: pokemonId,
-            pokemonBId: tmId,
-          },
-        },
-        update: { correlationPercent: corrValue },
-        create: {
-          formatId,
-          pokemonAId: pokemonId,
-          pokemonBId: tmId,
-          correlationPercent: corrValue,
-        },
-      })
-    }
-
-    // Save checks and counters
-    const counters = Object.entries(data["Checks and Counters"] ?? {})
-    for (const [counterName, values] of counters) {
-      const counterId = toId(counterName)
-      if (!counterId) continue
-      const koPercent = values[0] ?? 0
-      const switchPercent = values[1] ?? 0
-
-      await prisma.checkCounter.upsert({
-        where: {
-          formatId_targetId_counterId: {
-            formatId,
-            targetId: pokemonId,
-            counterId,
-          },
-        },
-        update: { koPercent, switchPercent },
-        create: {
-          formatId,
-          targetId: pokemonId,
-          counterId,
-          koPercent,
-          switchPercent,
-        },
-      })
-    }
-
-    // Save move usage
-    const moveEntries = Object.entries(data.Moves ?? {})
-    for (const [moveName, usage] of moveEntries) {
-      if (!moveName || usage <= 0) continue
-      await prisma.moveUsage.upsert({
-        where: {
-          formatId_pokemonId_moveName: { formatId, pokemonId, moveName },
-        },
-        update: { usagePercent: usage },
-        create: { formatId, pokemonId, moveName, usagePercent: usage },
-      })
-    }
-
-    // Save item usage
-    const itemEntries = Object.entries(data.Items ?? {})
-    for (const [itemName, usage] of itemEntries) {
-      if (!itemName || usage <= 0) continue
-      await prisma.itemUsage.upsert({
-        where: {
-          formatId_pokemonId_itemName: { formatId, pokemonId, itemName },
-        },
-        update: { usagePercent: usage },
-        create: { formatId, pokemonId, itemName, usagePercent: usage },
-      })
-    }
-
-    // Save ability usage
-    const abilityEntries = Object.entries(data.Abilities ?? {})
-    for (const [abilityName, usage] of abilityEntries) {
-      if (!abilityName || usage <= 0) continue
-      await prisma.abilityUsage.upsert({
-        where: {
-          formatId_pokemonId_abilityName: { formatId, pokemonId, abilityName },
-        },
-        update: { usagePercent: usage },
-        create: { formatId, pokemonId, abilityName, usagePercent: usage },
-      })
-    }
+    await saveTeammates(formatId, pokemonId, data.Teammates)
+    await saveChecksAndCounters(formatId, pokemonId, data["Checks and Counters"])
+    await saveMoveUsage(formatId, pokemonId, data.Moves)
+    await saveItemUsage(formatId, pokemonId, data.Items)
+    await saveAbilityUsage(formatId, pokemonId, data.Abilities)
   }
 
-  // Update sync log
+  const syncMessage = `Fetched ${entries.length} Pokemon for ${formatMonthStr(statYear, statMonth)}`
   await prisma.dataSyncLog.upsert({
-    where: {
-      source_formatId: { source: "smogon-stats", formatId },
-    },
-    update: {
-      lastSynced: new Date(),
-      status: "success",
-      message: `Fetched ${entries.length} Pokemon for ${statYear}-${String(statMonth).padStart(2, "0")}`,
-    },
+    where: { source_formatId: { source: "smogon-stats", formatId } },
+    update: { lastSynced: new Date(), status: "success", message: syncMessage },
     create: {
       source: "smogon-stats",
       formatId,
       lastSynced: new Date(),
       status: "success",
-      message: `Fetched ${entries.length} Pokemon for ${statYear}-${String(statMonth).padStart(2, "0")}`,
+      message: syncMessage,
     },
   })
 

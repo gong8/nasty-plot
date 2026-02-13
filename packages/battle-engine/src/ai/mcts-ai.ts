@@ -64,6 +64,14 @@ function outcomeValue(winner: string | null, perspective: "p1" | "p2"): number {
   return LOSS
 }
 
+function initActionStats(stats: Map<string, ActionStats>, choices: string[]): void {
+  for (const c of choices) {
+    if (!stats.has(c)) {
+      stats.set(c, { visits: 0, totalValue: 0, avgValue: 0 })
+    }
+  }
+}
+
 /** Map a @pkmn/sim Pokemon to a minimal BattlePokemon for the evaluator. */
 function mapSimPokemon(
   p: NonNullable<(typeof Battle.prototype.p1.active)[0]>,
@@ -188,7 +196,15 @@ export class MCTSAI implements AIPlayer {
       iterations++
     }
 
-    // Select best action by visit count (most robust)
+    return this.buildResult(root, perspective, iterations, Date.now() - startTime)
+  }
+
+  private buildResult(
+    root: DUCTNode,
+    perspective: "p1" | "p2",
+    iterations: number,
+    timeMs: number,
+  ): MCTSResult {
     const myStats = perspective === "p1" ? root.p1Stats : root.p2Stats
     const actionScores: MCTSResult["actionScores"] = Array.from(myStats, ([action, stats]) => ({
       action,
@@ -202,13 +218,7 @@ export class MCTSAI implements AIPlayer {
     const bestAvgValue = myStats.get(bestAction)?.avgValue ?? 0
     const winProbability = Math.round(((bestAvgValue + 1) / 2) * 1000) / 10
 
-    return {
-      bestAction,
-      actionScores,
-      winProbability,
-      iterations,
-      timeMs: Date.now() - startTime,
-    }
+    return { bestAction, actionScores, winProbability, iterations, timeMs }
   }
 
   /**
@@ -230,16 +240,8 @@ export class MCTSAI implements AIPlayer {
     }
 
     // Initialize stats for unseen actions
-    for (const c of p1Choices) {
-      if (!node.p1Stats.has(c)) {
-        node.p1Stats.set(c, { visits: 0, totalValue: 0, avgValue: 0 })
-      }
-    }
-    for (const c of p2Choices) {
-      if (!node.p2Stats.has(c)) {
-        node.p2Stats.set(c, { visits: 0, totalValue: 0, avgValue: 0 })
-      }
-    }
+    initActionStats(node.p1Stats, p1Choices)
+    initActionStats(node.p2Stats, p2Choices)
 
     // UCB1 selection for each player independently
     const p1Choice = this.selectUCB1(node.p1Stats, p1Choices, node.visits, perspective === "p1")

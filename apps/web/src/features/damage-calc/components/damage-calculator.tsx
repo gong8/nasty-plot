@@ -89,6 +89,26 @@ const MOVE_CATEGORY_COLORS: Record<string, string> = {
   Special: "text-blue-500",
 }
 
+const MOVE_CATEGORY_ABBREV: Record<string, string> = {
+  Physical: "Phys",
+  Special: "Spec",
+}
+
+function toCalcPokemon(config: PokemonConfig): DamageCalcInput["attacker"] {
+  return {
+    pokemonId: config.pokemonId,
+    level: config.level,
+    ability: config.ability || undefined,
+    item: config.item || undefined,
+    nature: config.nature,
+    evs: config.evs,
+    ivs: config.ivs,
+    boosts: config.boosts,
+    teraType: config.teraType || undefined,
+    status: config.status || undefined,
+  }
+}
+
 function getKoColor(koChance: string): string {
   if (koChance.includes("OHKO")) return "text-red-600 dark:text-red-400"
   if (koChance.includes("2HKO")) return "text-orange-600 dark:text-orange-400"
@@ -266,11 +286,7 @@ function MoveCombobox({
                       MOVE_CATEGORY_COLORS[move.category] ?? "text-muted-foreground",
                     )}
                   >
-                    {move.category === "Physical"
-                      ? "Phys"
-                      : move.category === "Special"
-                        ? "Spec"
-                        : "Stat"}
+                    {MOVE_CATEGORY_ABBREV[move.category] ?? "Stat"}
                   </span>
                   <Badge variant="secondary" className="text-[10px] ml-1">
                     {move.type}
@@ -643,31 +659,9 @@ export function DamageCalculator() {
   const handleCalculate = useCallback(() => {
     if (!attacker.pokemonId || !defender.pokemonId || !moveName) return
 
-    const input: DamageCalcInput = {
-      attacker: {
-        pokemonId: attacker.pokemonId,
-        level: attacker.level,
-        ability: attacker.ability || undefined,
-        item: attacker.item || undefined,
-        nature: attacker.nature,
-        evs: attacker.evs,
-        ivs: attacker.ivs,
-        boosts: attacker.boosts,
-        teraType: attacker.teraType || undefined,
-        status: attacker.status || undefined,
-      },
-      defender: {
-        pokemonId: defender.pokemonId,
-        level: defender.level,
-        ability: defender.ability || undefined,
-        item: defender.item || undefined,
-        nature: defender.nature,
-        evs: defender.evs,
-        ivs: defender.ivs,
-        boosts: defender.boosts,
-        teraType: defender.teraType || undefined,
-        status: defender.status || undefined,
-      },
+    calculate({
+      attacker: toCalcPokemon(attacker),
+      defender: toCalcPokemon(defender),
       move: moveName,
       field: {
         weather: weather !== "None" ? weather : undefined,
@@ -678,9 +672,7 @@ export function DamageCalculator() {
         isCritical,
         isDoubles,
       },
-    }
-
-    calculate(input)
+    })
   }, [
     attacker,
     defender,

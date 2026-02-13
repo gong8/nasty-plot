@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { apiErrorResponse } from "../../../../../lib/api-error"
+import { apiErrorResponse, badRequestResponse } from "../../../../../lib/api-error"
 import { getSetsForPokemon } from "@nasty-plot/smogon-data"
 import type { ApiResponse, SmogonSetData } from "@nasty-plot/core"
 
@@ -9,14 +9,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   const format = searchParams.get("format")
 
   if (!format) {
-    return NextResponse.json(
-      {
-        error: "Missing required query parameter: format",
-        code: "MISSING_FORMAT",
-        suggestion: "Add ?format=gen9ou to the request URL",
-      },
-      { status: 400 },
-    )
+    return badRequestResponse("Missing required query parameter: format", "MISSING_FORMAT")
   }
 
   try {

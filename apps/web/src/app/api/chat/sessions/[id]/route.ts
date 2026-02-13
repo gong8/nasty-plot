@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server"
 import { getSession, updateSession, deleteSession } from "@nasty-plot/llm"
-import { apiErrorResponse } from "../../../../../lib/api-error"
+import { apiErrorResponse, notFoundResponse } from "../../../../../lib/api-error"
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -8,7 +8,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     const session = await getSession(id)
 
     if (!session) {
-      return Response.json({ error: "Session not found", code: "NOT_FOUND" }, { status: 404 })
+      return notFoundResponse("Session")
     }
 
     return Response.json({ data: session })
@@ -26,7 +26,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
     const session = await updateSession(id, { title })
     if (!session) {
-      return Response.json({ error: "Session not found", code: "NOT_FOUND" }, { status: 404 })
+      return notFoundResponse("Session")
     }
 
     return Response.json({ data: session })

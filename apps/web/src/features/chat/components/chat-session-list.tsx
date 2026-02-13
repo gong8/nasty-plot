@@ -8,20 +8,11 @@ import { useChatSessions, useDeleteChatSession } from "@/features/chat/hooks/use
 import { ContextModeBadge } from "./context-mode-badge"
 import { cn } from "@nasty-plot/ui"
 import { EmptyState } from "@/components/empty-state"
+import { LoadingSpinner } from "@/components/loading-spinner"
+import { timeAgo } from "@/lib/format-time"
 import type { ChatSessionData, PageType } from "@nasty-plot/core"
 
-const MS_PER_MINUTE = 60_000
-
-function relativeTime(dateStr: string): string {
-  const mins = Math.floor((Date.now() - new Date(dateStr).getTime()) / MS_PER_MINUTE)
-  if (mins < 1) return "now"
-  if (mins < 60) return `${mins}m`
-  const hours = Math.floor(mins / 60)
-  if (hours < 24) return `${hours}h`
-  const days = Math.floor(hours / 24)
-  if (days < 7) return `${days}d`
-  return new Date(dateStr).toLocaleDateString()
-}
+const PREVIEW_MAX_LENGTH = 50
 
 /** Page types that are context-locked (have associated sessions with frozen context) */
 const CONTEXTUAL_PAGE_TYPES: PageType[] = [
@@ -75,7 +66,7 @@ export function ChatSessionList({ mode, onSelect }: ChatSessionListProps) {
   const { activeSessionId, switchSession, newSession } = useChatSidebar()
   const pageContext = usePageContext()
   const { data: sessions, isLoading } = useChatSessions()
-  const deleteMut = useDeleteChatSession()
+  const deleteSessionMutation = useDeleteChatSession()
   const [showAll, setShowAll] = useState(false)
 
   const isOnContextualPage = isContextualPage(pageContext.pageType)
@@ -102,7 +93,7 @@ export function ChatSessionList({ mode, onSelect }: ChatSessionListProps) {
     if (activeSessionId === id) {
       newSession()
     }
-    deleteMut.mutate(id)
+    deleteSessionMutation.mutate(id)
   }
 
   return (
@@ -128,14 +119,13 @@ export function ChatSessionList({ mode, onSelect }: ChatSessionListProps) {
             </div>
           )}
 
-          {isLoading && (
-            <div className="px-3 py-4 text-sm text-muted-foreground text-center">Loading...</div>
-          )}
+          {isLoading && <LoadingSpinner size="sm" className="py-4" />}
           {filteredSessions?.map((session) => {
             const isActive = session.id === activeSessionId
             const firstMsg = session.messages[0]
             const truncatedContent = firstMsg
-              ? firstMsg.content.slice(0, 50) + (firstMsg.content.length > 50 ? "..." : "")
+              ? firstMsg.content.slice(0, PREVIEW_MAX_LENGTH) +
+                (firstMsg.content.length > PREVIEW_MAX_LENGTH ? "..." : "")
               : undefined
             const preview = session.title || truncatedContent || "New Chat"
 
@@ -166,9 +156,7 @@ export function ChatSessionList({ mode, onSelect }: ChatSessionListProps) {
                     <span className="truncate font-medium">{preview}</span>
                     {session.contextMode && <ContextModeBadge mode={session.contextMode} />}
                   </div>
-                  <div className="text-xs text-muted-foreground">
-                    {relativeTime(session.updatedAt)}
-                  </div>
+                  <div className="text-xs text-muted-foreground">{timeAgo(session.updatedAt)}</div>
                 </div>
                 <button
                   onClick={(e) => handleDelete(session.id, e)}
