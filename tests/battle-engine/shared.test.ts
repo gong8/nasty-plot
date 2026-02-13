@@ -191,7 +191,7 @@ describe("pickHealthiestSwitch", () => {
         {
           index: 2,
           name: "Clefable",
-          speciesId: "clefable",
+          pokemonId: "clefable",
           hp: 100,
           maxHp: 394,
           status: "",
@@ -200,7 +200,7 @@ describe("pickHealthiestSwitch", () => {
         {
           index: 3,
           name: "Weavile",
-          speciesId: "weavile",
+          pokemonId: "weavile",
           hp: 281,
           maxHp: 281,
           status: "",
@@ -209,7 +209,7 @@ describe("pickHealthiestSwitch", () => {
         {
           index: 4,
           name: "Garchomp",
-          speciesId: "garchomp",
+          pokemonId: "garchomp",
           hp: 200,
           maxHp: 357,
           status: "",
@@ -231,7 +231,7 @@ describe("pickHealthiestSwitch", () => {
         {
           index: 2,
           name: "Clefable",
-          speciesId: "clefable",
+          pokemonId: "clefable",
           hp: 0,
           maxHp: 394,
           status: "",
@@ -265,7 +265,7 @@ describe("pickHealthiestSwitch", () => {
         {
           index: 2,
           name: "Clefable",
-          speciesId: "clefable",
+          pokemonId: "clefable",
           hp: 394,
           maxHp: 394,
           status: "",
@@ -274,7 +274,7 @@ describe("pickHealthiestSwitch", () => {
         {
           index: 3,
           name: "Weavile",
-          speciesId: "weavile",
+          pokemonId: "weavile",
           hp: 281,
           maxHp: 281,
           status: "",
@@ -310,7 +310,7 @@ function makeSideConditions(overrides: Partial<SideConditions> = {}): SideCondit
 
 function makeSpeedPokemon(overrides: Partial<BattlePokemon> = {}): BattlePokemon {
   return {
-    speciesId: "garchomp",
+    pokemonId: "garchomp",
     name: "Garchomp",
     nickname: "Garchomp",
     level: DEFAULT_LEVEL,

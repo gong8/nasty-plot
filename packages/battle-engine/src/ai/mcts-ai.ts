@@ -79,7 +79,7 @@ function mapSimPokemon(
 ): BattlePokemon {
   const stored = p.storedStats
   return {
-    speciesId: p.species.id,
+    pokemonId: p.species.id,
     name: p.species.name,
     nickname: p.name || p.species.name,
     level: p.level,
@@ -437,8 +437,8 @@ export class MCTSAI implements AIPlayer {
     if (choices.length <= 1) return choices[0]
 
     const active = battle.p2?.active?.[0]
-    const speciesId = active?.species?.id
-    const prediction = speciesId ? this.predictions[speciesId] : undefined
+    const pokemonId = active?.species?.id
+    const prediction = pokemonId ? this.predictions[pokemonId] : undefined
 
     if (!active || !prediction || prediction.predictedMoves.length === 0) {
       return randomPick(choices)

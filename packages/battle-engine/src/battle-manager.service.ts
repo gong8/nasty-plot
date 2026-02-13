@@ -566,7 +566,7 @@ export class BattleManager {
 
     const predictions: Record<string, PredictedSet> = {}
     for (const pokemon of this.state.sides.p2.team) {
-      const preds = this.setPredictor.getPrediction(pokemon.speciesId)
+      const preds = this.setPredictor.getPrediction(pokemon.pokemonId)
       if (preds.length === 0) continue
 
       // Use the most likely prediction
@@ -575,8 +575,8 @@ export class BattleManager {
         ? top.set.moves.flat().filter((m): m is string => typeof m === "string")
         : []
 
-      predictions[pokemon.speciesId] = {
-        pokemonId: pokemon.speciesId,
+      predictions[pokemon.pokemonId] = {
+        pokemonId: pokemon.pokemonId,
         predictedMoves: moves,
         predictedItem: top.set.item || undefined,
         predictedAbility: top.set.ability || undefined,

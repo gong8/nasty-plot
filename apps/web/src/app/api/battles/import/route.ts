@@ -10,14 +10,14 @@ import type { ExtractedTeamData } from "@nasty-plot/core"
 const MATCH_CONFIDENCE_THRESHOLD = 60
 const PLAYER_SIDE_MAP: Record<string, string> = { p1: "team1", p2: "team2" }
 
-type TeamMatchResult = {
+type TeamImportResult = {
   action: string
   teamId: string | null
   teamName: string | null
   confidence: number | null
 }
 
-const SKIPPED_MATCH: TeamMatchResult = {
+const SKIPPED_MATCH: TeamImportResult = {
   action: "skipped",
   teamId: null,
   teamName: null,
@@ -62,7 +62,7 @@ export async function POST(req: NextRequest) {
 
     await ensureFormatExists(parsed.formatId)
 
-    const winnerId = PLAYER_SIDE_MAP[parsed.winnerId] ?? parsed.winnerId
+    const winnerId = parsed.winnerId ? (PLAYER_SIDE_MAP[parsed.winnerId] ?? parsed.winnerId) : null
 
     const battle = await createBattle({
       formatId: parsed.formatId,
@@ -110,7 +110,7 @@ async function matchOrCreateTeam(
   teamData: ExtractedTeamData,
   formatId: string,
   options: { autoMatchTeams: boolean; autoCreateTeams: boolean },
-): Promise<{ id: string | null; result: TeamMatchResult }> {
+): Promise<{ id: string | null; result: TeamImportResult }> {
   if (!options.autoMatchTeams || teamData.pokemon.length === 0) {
     return { id: null, result: SKIPPED_MATCH }
   }

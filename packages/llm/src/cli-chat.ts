@@ -5,7 +5,7 @@ import { tmpdir } from "os"
 import { getToolLabel, isWriteTool } from "./tool-labels"
 import { StreamParser } from "./stream-parser"
 import type { SSEEvent } from "./sse-events"
-import type { PageContextData } from "./context-builder"
+import type { PageContextData } from "./context-builder.service"
 import { MCP_URL, MODEL } from "./config"
 
 const LOG_PREFIX = "[cli-chat]"

@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server"
 import { loggedApiErrorResponse, badRequestResponse } from "../../../../lib/api-error"
+import type { BattleState, BattleLogEntry } from "@nasty-plot/battle-engine"
 import {
   buildTurnCommentaryContext,
   buildPostBattleContext,
@@ -88,14 +89,14 @@ export async function POST(req: NextRequest) {
 }
 
 type CommentaryData = {
-  state?: unknown
-  recentEntries?: unknown[]
-  allEntries?: unknown[]
-  turnEntries?: unknown[]
-  prevTurnEntries?: unknown[]
+  state?: BattleState
+  recentEntries?: BattleLogEntry[]
+  allEntries?: BattleLogEntry[]
+  turnEntries?: BattleLogEntry[]
+  prevTurnEntries?: BattleLogEntry[]
   playerName: string
   opponentName: string
-  winner?: string
+  winner?: string | null
   totalTurns?: number
 }
 
@@ -117,7 +118,7 @@ function buildPrompts(mode: string, data: CommentaryData): { system: string; use
         data.allEntries,
         data.playerName,
         data.opponentName,
-        data.winner,
+        data.winner ?? null,
         data.totalTurns || 0,
       ),
     }

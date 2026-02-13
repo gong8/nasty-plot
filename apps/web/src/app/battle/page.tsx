@@ -53,7 +53,7 @@ function PokemonRow({ pokemon, side }: { pokemon: BattlePokemon[]; side: "p1" | 
       {pokemon.map((p, i) => (
         <div key={i} className="flex flex-col items-center gap-1">
           <PokemonSprite
-            pokemonId={p.speciesId}
+            pokemonId={p.pokemonId}
             side={side === "p1" ? "back" : "front"}
             size={48}
             fainted={p.fainted}

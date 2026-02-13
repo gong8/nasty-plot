@@ -1,4 +1,4 @@
-import { packOneSlot, packTeam, teamToShowdownPaste } from "@nasty-plot/battle-engine"
+import { packOneSlot, packTeam } from "@nasty-plot/battle-engine"
 import type { TeamSlotData, PokemonSpecies } from "@nasty-plot/core"
 import { DEFAULT_IVS, DEFAULT_LEVEL, MAX_SINGLE_EV, TEAM_SIZE } from "@nasty-plot/core"
 
@@ -113,75 +113,6 @@ describe("team-packer", () => {
       ]
       const packed = packTeam(team)
       expect(packed.split("]")).toHaveLength(TEAM_SIZE)
-    })
-  })
-
-  describe("teamToShowdownPaste", () => {
-    it("generates valid Showdown paste format", () => {
-      const team = [makeSlot()]
-      const paste = teamToShowdownPaste(team)
-
-      expect(paste).toContain("Garchomp @ Life Orb")
-      expect(paste).toContain("Ability: Rough Skin")
-      expect(paste).toContain("Tera Type: Ground")
-      expect(paste).toContain("Jolly Nature")
-      expect(paste).toContain("- Earthquake")
-      expect(paste).toContain("- Dragon Claw")
-      expect(paste).toContain("EVs: 252 Atk / 4 SpD / 252 Spe")
-    })
-
-    it("includes nickname format", () => {
-      const team = [makeSlot({ nickname: "Chompy" })]
-      const paste = teamToShowdownPaste(team)
-      expect(paste).toContain("Chompy (Garchomp)")
-    })
-
-    it("omits level when 100", () => {
-      const team = [makeSlot({ level: DEFAULT_LEVEL })]
-      const paste = teamToShowdownPaste(team)
-      expect(paste).not.toContain("Level:")
-    })
-
-    it("includes level when not 100", () => {
-      const team = [makeSlot({ level: 50 })]
-      const paste = teamToShowdownPaste(team)
-      expect(paste).toContain("Level: 50")
-    })
-
-    it("includes custom IVs", () => {
-      const team = [
-        makeSlot({
-          ivs: { hp: 31, atk: 0, def: 31, spa: 31, spd: 31, spe: 31 },
-        }),
-      ]
-      const paste = teamToShowdownPaste(team)
-      expect(paste).toContain("IVs: 0 Atk")
-    })
-
-    it("separates multiple Pokemon with double newline", () => {
-      const team = [
-        makeSlot({ pokemonId: "garchomp", position: 1 }),
-        makeSlot({ pokemonId: "heatran", position: 2 }),
-      ]
-      const paste = teamToShowdownPaste(team)
-      expect(paste).toContain("\n\n")
-    })
-
-    it("omits item line when no item is set", () => {
-      const team = [makeSlot({ item: "" })]
-      const paste = teamToShowdownPaste(team)
-      // Should just have the Pokemon name without " @ "
-      expect(paste).not.toContain("@")
-      // First line should just be the species name
-      const firstLine = paste.split("\n")[0]
-      expect(firstLine).toBe("Garchomp")
-    })
-
-    it("shows display name without nickname when nickname is empty", () => {
-      const team = [makeSlot({ nickname: undefined, item: "Leftovers" })]
-      const paste = teamToShowdownPaste(team)
-      expect(paste).toContain("Garchomp @ Leftovers")
-      expect(paste).not.toContain("(")
     })
   })
 

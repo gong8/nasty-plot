@@ -34,7 +34,7 @@ function makeBoosts(overrides?: Partial<BoostTable>): BoostTable {
 
 function makePokemon(overrides?: Partial<BattlePokemon>): BattlePokemon {
   return {
-    speciesId: "garchomp",
+    pokemonId: "garchomp",
     name: "Garchomp",
     nickname: "Garchomp",
     level: DEFAULT_LEVEL,
@@ -523,14 +523,14 @@ describe("describePokemon (via buildTurnCommentaryContext)", () => {
   it("shows bench pokemon details", () => {
     const active = makePokemon({ name: "Garchomp" })
     const bench1 = makePokemon({
-      speciesId: "heatran",
+      pokemonId: "heatran",
       name: "Heatran",
       types: ["Fire", "Steel"],
       status: "tox",
       hpPercent: 75,
     })
     const bench2 = makePokemon({
-      speciesId: "toxapex",
+      pokemonId: "toxapex",
       name: "Toxapex",
       types: ["Poison", "Water"],
       hpPercent: 100,
@@ -618,7 +618,7 @@ describe("buildAutoAnalyzePrompt", () => {
             hp: 200,
             maxHp: 300,
             status: "brn",
-            speciesId: "heatran",
+            pokemonId: "heatran",
             types: ["Fire", "Steel"],
           },
           {
@@ -626,7 +626,7 @@ describe("buildAutoAnalyzePrompt", () => {
             hp: 300,
             maxHp: 300,
             status: "",
-            speciesId: "toxapex",
+            pokemonId: "toxapex",
             types: ["Poison", "Water"],
           },
         ],
@@ -663,7 +663,7 @@ describe("buildAutoAnalyzePrompt", () => {
             hp: 300,
             maxHp: 300,
             status: "",
-            speciesId: "heatran",
+            pokemonId: "heatran",
             types: ["Fire", "Steel"],
           },
         ],
@@ -693,7 +693,7 @@ describe("buildAutoAnalyzePrompt", () => {
             hp: 150,
             maxHp: 300,
             status: "psn",
-            speciesId: "toxapex",
+            pokemonId: "toxapex",
             types: ["Poison", "Water"],
           },
         ],
@@ -783,7 +783,7 @@ describe("buildAutoAnalyzePrompt", () => {
             hp: 0,
             maxHp: 0,
             status: "",
-            speciesId: "shedinja",
+            pokemonId: "shedinja",
             types: ["Bug", "Ghost"],
           },
         ],

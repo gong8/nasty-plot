@@ -5,7 +5,7 @@ import {
   buildContextModePrompt,
   buildPlanModePrompt,
   type PageContextData,
-} from "./context-builder"
+} from "./context-builder.service"
 import {
   getDisallowedMcpTools,
   getDisallowedMcpToolsForContextMode,

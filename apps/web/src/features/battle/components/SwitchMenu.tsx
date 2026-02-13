@@ -24,8 +24,8 @@ function toSpeciesKey(name: string): string {
 }
 
 export function SwitchMenu({ actions, onSwitch, onBack, team, className }: SwitchMenuProps) {
-  function findTeamPokemon(speciesId: string): BattlePokemon | undefined {
-    return team?.find((p) => p.speciesId === speciesId || toSpeciesKey(p.name) === speciesId)
+  function findTeamPokemon(pokemonId: string): BattlePokemon | undefined {
+    return team?.find((p) => p.pokemonId === pokemonId || toSpeciesKey(p.name) === pokemonId)
   }
 
   return (
@@ -44,7 +44,7 @@ export function SwitchMenu({ actions, onSwitch, onBack, team, className }: Switc
 
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
         {actions.switches.map((sw) => {
-          const pokemon = findTeamPokemon(sw.speciesId)
+          const pokemon = findTeamPokemon(sw.pokemonId)
           return (
             <button
               key={sw.index}
@@ -58,7 +58,7 @@ export function SwitchMenu({ actions, onSwitch, onBack, team, className }: Switc
               )}
             >
               <PokemonSprite
-                pokemonId={sw.speciesId}
+                pokemonId={sw.pokemonId}
                 side="front"
                 fainted={sw.fainted}
                 size={36}

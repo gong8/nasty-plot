@@ -8,7 +8,7 @@ import {
 } from "@nasty-plot/pokemon-data"
 
 import { FORMAT_DEFINITIONS } from "./data/format-definitions"
-import { resolveFormatId } from "./resolver"
+import { resolveFormatId } from "./format-resolver.service"
 
 function buildBanSet(format: FormatDefinition): Set<string> {
   return new Set(format.bans.map((b) => b.toLowerCase()))
@@ -92,11 +92,11 @@ export function getFormatMoves(formatId: string): MoveData[] {
   return getAllMoves().filter((move) => !isNameOrIdBanned(move, format, banSet))
 }
 
-export async function getFormatLearnset(speciesId: string, formatId: string): Promise<string[]> {
+export async function getFormatLearnset(pokemonId: string, formatId: string): Promise<string[]> {
   const format = getFormat(formatId)
   if (!format) return []
 
-  const learnset = await getLearnset(speciesId)
+  const learnset = await getLearnset(pokemonId)
   const legalMoves = new Set(getFormatMoves(formatId).map((m) => m.id))
   return learnset.filter((moveId) => legalMoves.has(moveId))
 }

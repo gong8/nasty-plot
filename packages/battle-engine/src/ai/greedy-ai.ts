@@ -43,11 +43,10 @@ export class GreedyAI implements AIPlayer {
         const opponentPokemon = opponentActives[t]
 
         try {
-          const { damage } = calculateBattleDamage(activePokemon, opponentPokemon, move.name)
-          const avgDamage = damage.reduce((a, b) => a + b, 0) / damage.length
+          const { maxPercent } = calculateBattleDamage(activePokemon, opponentPokemon, move.name)
 
-          if (avgDamage > bestDamage) {
-            bestDamage = avgDamage
+          if (maxPercent > bestDamage) {
+            bestDamage = maxPercent
             bestMoveIndex = i
             // In doubles, foe target slots are positive: 1 = p2a, 2 = p2b
             bestTargetSlot = isDoubles ? t + 1 : undefined

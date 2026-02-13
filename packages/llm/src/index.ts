@@ -5,15 +5,15 @@ export {
   buildPageContextPrompt,
   buildContextModePrompt,
   buildPlanModePrompt,
-} from "./context-builder"
-export type { PageContextData } from "./context-builder"
+} from "./context-builder.service"
+export type { PageContextData } from "./context-builder.service"
 export {
   buildTurnCommentaryContext,
   buildPostBattleContext,
   buildTurnAnalysisContext,
   buildAutoAnalyzePrompt,
-} from "./battle-context-builder"
-export type { BattleCommentaryContext } from "./battle-context-builder"
+} from "./battle-context-builder.service"
+export type { BattleCommentaryContext } from "./battle-context-builder.service"
 export {
   createSession,
   getSession,
@@ -26,8 +26,13 @@ export {
 export { streamChat } from "./chat.service"
 export { streamCliChat } from "./cli-chat"
 export type { CliChatOptions } from "./cli-chat"
-export { getOpenAI, MODEL } from "./openai-client"
-export { getMcpTools, getMcpResourceContext, executeMcpTool, disconnectMcp } from "./mcp-client"
+export { getOpenAI, MODEL } from "./openai-client.service"
+export {
+  getMcpTools,
+  getMcpResourceContext,
+  executeMcpTool,
+  disconnectMcp,
+} from "./mcp-client.service"
 export { getToolLabel, isWriteTool } from "./tool-labels"
 export {
   TOOL_CATEGORIES,

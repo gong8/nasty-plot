@@ -5,7 +5,7 @@ import { SkeletonList } from "@/components/skeleton-list"
 import { AnalysisCard } from "@/components/analysis-card"
 import { AlertTriangle, Shield, Info } from "lucide-react"
 import { cn, PokemonSprite, TypeBadge } from "@nasty-plot/ui"
-import type { ThreatEntry, TeamSlotData } from "@nasty-plot/core"
+import { formatUsagePercent, type ThreatEntry, type TeamSlotData } from "@nasty-plot/core"
 
 interface ThreatListProps {
   threats: ThreatEntry[] | undefined
@@ -56,7 +56,7 @@ function ThreatGrid({ threats, slots }: { threats: ThreatEntry[]; slots?: TeamSl
                   {badge.label}
                 </Badge>
                 <span className="text-[10px] text-muted-foreground ml-auto shrink-0">
-                  {threat.usagePercent.toFixed(1)}%
+                  {formatUsagePercent(threat.usagePercent)}
                 </span>
               </div>
 

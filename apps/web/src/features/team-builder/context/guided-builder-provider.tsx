@@ -12,9 +12,12 @@ import {
 } from "react"
 import { useRouter } from "next/navigation"
 import {
+  DEFAULT_ABILITY,
   DEFAULT_EVS,
+  DEFAULT_ITEM,
   DEFAULT_IVS,
   DEFAULT_LEVEL,
+  DEFAULT_NATURE,
   type TeamSlotInput,
   type TeamSlotData,
   type NatureName,
@@ -163,9 +166,9 @@ export function GuidedBuilderProvider({ teamId, formatId, children }: GuidedBuil
       const slotInput: TeamSlotInput = {
         position,
         pokemonId,
-        ability: "",
-        item: "",
-        nature: "Adamant" as NatureName,
+        ability: DEFAULT_ABILITY,
+        item: DEFAULT_ITEM,
+        nature: DEFAULT_NATURE as NatureName,
         level: DEFAULT_LEVEL,
         moves: [""],
         evs: { ...DEFAULT_EVS } as StatsTable,
@@ -213,7 +216,7 @@ export function GuidedBuilderProvider({ teamId, formatId, children }: GuidedBuil
         pokemonId: slot.pokemonId,
         ability: slot.ability || "",
         item: slot.item || "",
-        nature: (slot.nature || "Adamant") as NatureName,
+        nature: (slot.nature || DEFAULT_NATURE) as NatureName,
         teraType: slot.teraType,
         level: slot.level || DEFAULT_LEVEL,
         moves: slot.moves || [""],

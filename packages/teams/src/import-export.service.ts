@@ -76,8 +76,8 @@ export async function exportShowdownPaste(teamId: string): Promise<string> {
   return serializeShowdownPaste(team.slots)
 }
 
-function resolveDefaultAbility(speciesId: string): string {
-  const species = getSpecies(speciesId)
+function resolveDefaultAbility(pokemonId: string): string {
+  const species = getSpecies(pokemonId)
   return species?.abilities?.["0"] ?? ""
 }
 

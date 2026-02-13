@@ -181,6 +181,44 @@ function findBestMove(
   }, baseEntry)
 }
 
+export function calculateQuickDamage(
+  attackerName: string,
+  defenderName: string,
+  moveName: string,
+  config?: {
+    attackerLevel?: number
+    defenderLevel?: number
+    attackerEvs?: Partial<StatsTable>
+    defenderEvs?: Partial<StatsTable>
+    attackerNature?: string
+    defenderNature?: string
+  },
+): { minPercent: number; maxPercent: number } {
+  try {
+    const gen = getGen9()
+    const attacker = new Pokemon(gen, attackerName, {
+      level: config?.attackerLevel ?? DEFAULT_LEVEL,
+      nature: config?.attackerNature ?? "Hardy",
+      evs: fillStats(config?.attackerEvs, 0),
+    })
+    const defender = new Pokemon(gen, defenderName, {
+      level: config?.defenderLevel ?? DEFAULT_LEVEL,
+      nature: config?.defenderNature ?? "Hardy",
+      evs: fillStats(config?.defenderEvs, 0),
+    })
+    const move = new Move(gen, moveName)
+    const result = calculate(gen, attacker, defender, move, new Field())
+    const damageArr = flattenDamage(result.damage)
+    const defenderHp = defender.maxHP()
+    return {
+      minPercent: toPercent(Math.min(...damageArr), defenderHp),
+      maxPercent: toPercent(Math.max(...damageArr), defenderHp),
+    }
+  } catch {
+    return { minPercent: 0, maxPercent: 0 }
+  }
+}
+
 export function calculateMatchupMatrix(
   teamSlots: TeamSlotData[],
   threatIds: string[],

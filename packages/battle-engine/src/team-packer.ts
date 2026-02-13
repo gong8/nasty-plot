@@ -1,26 +1,6 @@
 import { resolveSpeciesName } from "@nasty-plot/pokemon-data"
-import {
-  DEFAULT_IVS,
-  DEFAULT_LEVEL,
-  PERFECT_IV,
-  STATS,
-  serializeShowdownPaste,
-} from "@nasty-plot/core"
+import { DEFAULT_IVS, DEFAULT_LEVEL, PERFECT_IV, STATS } from "@nasty-plot/core"
 import type { TeamSlotData, StatsTable } from "@nasty-plot/core"
-
-/**
- * Convert team data to Showdown paste format.
- * Hydrates species display names via @pkmn/dex before delegating to core's serializer.
- * @deprecated Prefer `serializeShowdownPaste` from `@nasty-plot/core` with hydrated species.
- */
-export function teamToShowdownPaste(slots: TeamSlotData[]): string {
-  const hydrated = slots.map((slot) => {
-    if (slot.species?.name) return slot
-    const name = resolveSpeciesName(slot.pokemonId)
-    return { ...slot, species: { name } }
-  })
-  return serializeShowdownPaste(hydrated as TeamSlotData[])
-}
 
 /**
  * Convert a TeamSlotData[] into the packed team string that @pkmn/sim expects.

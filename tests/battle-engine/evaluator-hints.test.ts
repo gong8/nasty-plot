@@ -11,7 +11,7 @@ import { DEFAULT_LEVEL } from "@nasty-plot/core"
 
 function makePokemon(overrides: Partial<BattlePokemon> = {}): BattlePokemon {
   return {
-    speciesId: "garchomp",
+    pokemonId: "garchomp",
     name: "Garchomp",
     nickname: "Garchomp",
     level: DEFAULT_LEVEL,
@@ -42,7 +42,7 @@ function makeState(overrides: Partial<BattleState> = {}): BattleState {
         active: [makePokemon()],
         team: [
           makePokemon(),
-          makePokemon({ speciesId: "heatran", name: "Heatran", types: ["Fire", "Steel"] }),
+          makePokemon({ pokemonId: "heatran", name: "Heatran", types: ["Fire", "Steel"] }),
         ],
         name: "Player",
         sideConditions: {
@@ -60,19 +60,19 @@ function makeState(overrides: Partial<BattleState> = {}): BattleState {
       p2: {
         active: [
           makePokemon({
-            speciesId: "ironvaliant",
+            pokemonId: "ironvaliant",
             name: "Iron Valiant",
             types: ["Fairy", "Fighting"],
           }),
         ],
         team: [
           makePokemon({
-            speciesId: "ironvaliant",
+            pokemonId: "ironvaliant",
             name: "Iron Valiant",
             types: ["Fairy", "Fighting"],
           }),
           makePokemon({
-            speciesId: "greattusk",
+            pokemonId: "greattusk",
             name: "Great Tusk",
             types: ["Ground", "Fighting"],
           }),
@@ -169,7 +169,7 @@ function makeActions(overrides: Partial<BattleActionSet> = {}): BattleActionSet 
       {
         index: 2,
         name: "Heatran",
-        speciesId: "heatran",
+        pokemonId: "heatran",
         hp: 386,
         maxHp: 386,
         status: "",
@@ -221,7 +221,7 @@ describe("evaluatePosition", () => {
     const state = makeState()
     // Faint all of p2's team except the active
     state.sides.p2.team[1] = makePokemon({
-      speciesId: "greattusk",
+      pokemonId: "greattusk",
       name: "Great Tusk",
       types: ["Ground", "Fighting"],
       hp: 0,
@@ -359,7 +359,7 @@ describe("evaluatePosition", () => {
     ]
     normalState.sides.p2.active = [
       makePokemon({
-        speciesId: "ironvaliant",
+        pokemonId: "ironvaliant",
         name: "Iron Valiant",
         types: ["Fairy", "Fighting"],
         stats: { hp: 357, atk: 394, def: 226, spa: 196, spd: 206, spe: 100 },
@@ -374,7 +374,7 @@ describe("evaluatePosition", () => {
     ]
     trState.sides.p2.active = [
       makePokemon({
-        speciesId: "ironvaliant",
+        pokemonId: "ironvaliant",
         name: "Iron Valiant",
         types: ["Fairy", "Fighting"],
         stats: { hp: 357, atk: 394, def: 226, spa: 196, spd: 206, spe: 100 },
@@ -394,11 +394,11 @@ describe("evaluatePosition", () => {
         p1: {
           active: [
             makePokemon(),
-            makePokemon({ speciesId: "heatran", name: "Heatran", types: ["Fire", "Steel"] }),
+            makePokemon({ pokemonId: "heatran", name: "Heatran", types: ["Fire", "Steel"] }),
           ],
           team: [
             makePokemon(),
-            makePokemon({ speciesId: "heatran", name: "Heatran", types: ["Fire", "Steel"] }),
+            makePokemon({ pokemonId: "heatran", name: "Heatran", types: ["Fire", "Steel"] }),
           ],
           name: "Player",
           sideConditions: {
@@ -416,24 +416,24 @@ describe("evaluatePosition", () => {
         p2: {
           active: [
             makePokemon({
-              speciesId: "ironvaliant",
+              pokemonId: "ironvaliant",
               name: "Iron Valiant",
               types: ["Fairy", "Fighting"],
             }),
             makePokemon({
-              speciesId: "greattusk",
+              pokemonId: "greattusk",
               name: "Great Tusk",
               types: ["Ground", "Fighting"],
             }),
           ],
           team: [
             makePokemon({
-              speciesId: "ironvaliant",
+              pokemonId: "ironvaliant",
               name: "Iron Valiant",
               types: ["Fairy", "Fighting"],
             }),
             makePokemon({
-              speciesId: "greattusk",
+              pokemonId: "greattusk",
               name: "Great Tusk",
               types: ["Ground", "Fighting"],
             }),
@@ -546,7 +546,7 @@ describe("winProbabilityDelta", () => {
     const after = makeState()
     // p2 loses a Pokemon between turns
     after.sides.p2.team[1] = makePokemon({
-      speciesId: "greattusk",
+      pokemonId: "greattusk",
       name: "Great Tusk",
       types: ["Ground", "Fighting"],
       hp: 0,
@@ -563,7 +563,7 @@ describe("winProbabilityDelta", () => {
     const after = makeState()
     // p1 loses a Pokemon between turns
     after.sides.p1.team[1] = makePokemon({
-      speciesId: "heatran",
+      pokemonId: "heatran",
       name: "Heatran",
       types: ["Fire", "Steel"],
       hp: 0,
@@ -597,7 +597,7 @@ describe("winProbabilityDelta", () => {
     const after = makeState()
     // Small HP change on one p2 Pokemon
     after.sides.p2.team[1] = makePokemon({
-      speciesId: "greattusk",
+      pokemonId: "greattusk",
       name: "Great Tusk",
       types: ["Ground", "Fighting"],
       hp: 300,
@@ -733,7 +733,7 @@ describe("generateHints", () => {
         {
           index: 2,
           name: "Heatran",
-          speciesId: "heatran",
+          pokemonId: "heatran",
           hp: 386,
           maxHp: 386,
           status: "",
@@ -742,7 +742,7 @@ describe("generateHints", () => {
         {
           index: 3,
           name: "Dragonite",
-          speciesId: "dragonite",
+          pokemonId: "dragonite",
           hp: 323,
           maxHp: 323,
           status: "",
@@ -766,7 +766,7 @@ describe("generateHints", () => {
         {
           index: 2,
           name: "Heatran",
-          speciesId: "heatran",
+          pokemonId: "heatran",
           hp: 386,
           maxHp: 386,
           status: "",
@@ -775,7 +775,7 @@ describe("generateHints", () => {
         {
           index: 3,
           name: "Dragonite",
-          speciesId: "dragonite",
+          pokemonId: "dragonite",
           hp: 0,
           maxHp: 323,
           status: "",
@@ -1085,7 +1085,7 @@ describe("generateHints", () => {
     const state = makeState()
     state.sides.p2.active = [
       makePokemon({
-        speciesId: "ironvaliant",
+        pokemonId: "ironvaliant",
         name: "Iron Valiant",
         types: ["Fairy", "Fighting"],
         status: "brn",
@@ -1201,7 +1201,7 @@ describe("generateHints", () => {
     const state = makeState()
     state.sides.p2.active = [
       makePokemon({
-        speciesId: "ironvaliant",
+        pokemonId: "ironvaliant",
         name: "Iron Valiant",
         types: ["Fairy", "Fighting"],
         hp: 30,
@@ -1271,7 +1271,7 @@ describe("generateHints", () => {
     // Opponent is Dragon/Ground
     state.sides.p2.active = [
       makePokemon({
-        speciesId: "garchomp",
+        pokemonId: "garchomp",
         name: "Garchomp",
         types: ["Dragon", "Ground"],
       }),
@@ -1297,7 +1297,7 @@ describe("generateHints", () => {
         {
           index: 2,
           name: "Heatran",
-          speciesId: "heatran",
+          pokemonId: "heatran",
           hp: 386,
           maxHp: 386,
           status: "",
@@ -1435,7 +1435,7 @@ describe("generateHints", () => {
     // Opponent is Fire/Steel (Heatran) — from p2 perspective
     state.sides.p2.active = [
       makePokemon({
-        speciesId: "heatran",
+        pokemonId: "heatran",
         name: "Heatran",
         types: ["Fire", "Steel"],
       }),
@@ -1445,7 +1445,7 @@ describe("generateHints", () => {
     // estimateSwitchScore looks up in state.sides.p1.team (perspective side)
     state.sides.p1.team = [
       makePokemon(),
-      makePokemon({ speciesId: "garchomp", name: "Garchomp", types: ["Dragon", "Ground"] }),
+      makePokemon({ pokemonId: "garchomp", name: "Garchomp", types: ["Dragon", "Ground"] }),
     ]
 
     const actions = makeActions({
@@ -1468,7 +1468,7 @@ describe("generateHints", () => {
         {
           index: 2,
           name: "Garchomp",
-          speciesId: "garchomp",
+          pokemonId: "garchomp",
           hp: 357,
           maxHp: 357,
           status: "",
@@ -1491,7 +1491,7 @@ describe("generateHints", () => {
     // Set opponent HP to 160 — max (175) >= 160 but min (148) < 160 → partial KO
     state.sides.p2.active = [
       makePokemon({
-        speciesId: "ironvaliant",
+        pokemonId: "ironvaliant",
         name: "Iron Valiant",
         types: ["Fairy", "Fighting"],
         hp: 160,
@@ -1530,7 +1530,7 @@ describe("generateHints", () => {
     // Use a fake Pokemon name that doesn't exist in @smogon/calc to trigger the catch block
     state.sides.p1.active = [
       makePokemon({
-        speciesId: "fakemons",
+        pokemonId: "fakemons",
         name: "FakeMonster",
         types: ["Normal"],
       }),
@@ -1557,8 +1557,8 @@ describe("generateHints", () => {
     const result = generateHints(state, actions)
     const eqHint = result.rankedMoves.find((m) => m.name === "Earthquake")
     expect(eqHint).toBeDefined()
-    // Fallback should give type effectiveness estimate
-    expect(eqHint!.explanation).toContain("Type effectiveness")
+    // calculateQuickDamage handles unknown Pokemon gracefully, returning 0%
+    expect(eqHint!.explanation).toContain("~0% damage")
   })
 
   it("handles activeSlot=1 for doubles battles", () => {
@@ -1568,12 +1568,12 @@ describe("generateHints", () => {
         p1: {
           active: [
             makePokemon(),
-            makePokemon({ speciesId: "heatran", name: "Heatran", types: ["Fire", "Steel"] }),
+            makePokemon({ pokemonId: "heatran", name: "Heatran", types: ["Fire", "Steel"] }),
           ],
           team: [
             makePokemon(),
-            makePokemon({ speciesId: "heatran", name: "Heatran", types: ["Fire", "Steel"] }),
-            makePokemon({ speciesId: "clefable", name: "Clefable", types: ["Fairy"] }),
+            makePokemon({ pokemonId: "heatran", name: "Heatran", types: ["Fire", "Steel"] }),
+            makePokemon({ pokemonId: "clefable", name: "Clefable", types: ["Fairy"] }),
           ],
           name: "Player",
           sideConditions: {
@@ -1591,24 +1591,24 @@ describe("generateHints", () => {
         p2: {
           active: [
             makePokemon({
-              speciesId: "ironvaliant",
+              pokemonId: "ironvaliant",
               name: "Iron Valiant",
               types: ["Fairy", "Fighting"],
             }),
             makePokemon({
-              speciesId: "greattusk",
+              pokemonId: "greattusk",
               name: "Great Tusk",
               types: ["Ground", "Fighting"],
             }),
           ],
           team: [
             makePokemon({
-              speciesId: "ironvaliant",
+              pokemonId: "ironvaliant",
               name: "Iron Valiant",
               types: ["Fairy", "Fighting"],
             }),
             makePokemon({
-              speciesId: "greattusk",
+              pokemonId: "greattusk",
               name: "Great Tusk",
               types: ["Ground", "Fighting"],
             }),

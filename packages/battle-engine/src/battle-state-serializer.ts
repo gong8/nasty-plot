@@ -104,7 +104,7 @@ function serializeSide(side: BattleSide, label: string, isPlayer: boolean): stri
 
   // Bench Pokemon (summary)
   const bench = side.team.filter(
-    (p) => !side.active.some((a) => a && a.speciesId === p.speciesId && a.hp === p.hp),
+    (p) => !side.active.some((a) => a && a.pokemonId === p.pokemonId && a.hp === p.hp),
   )
   if (bench.length > 0) {
     lines.push("Bench:")

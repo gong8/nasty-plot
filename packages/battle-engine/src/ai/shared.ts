@@ -1,37 +1,23 @@
-import { getGen9, getRawSpecies } from "@nasty-plot/pokemon-data"
-import { calculate, Pokemon, Move, Field } from "@smogon/calc"
-import type { Result } from "@smogon/calc"
+import { getRawSpecies } from "@nasty-plot/pokemon-data"
 import type { PokemonType } from "@nasty-plot/core"
-import { flattenDamage } from "@nasty-plot/damage-calc"
+import { calculateQuickDamage, flattenDamage } from "@nasty-plot/damage-calc"
 import type { BattleAction, BattleActionSet, BattlePokemon, SideConditions } from "../types"
 
 export { flattenDamage }
 
 /**
- * Calculate damage from one BattlePokemon to another using @smogon/calc.
- * Centralizes the Pokemon/Move construction boilerplate used by all AI modules.
+ * Calculate damage from one BattlePokemon to another using @nasty-plot/damage-calc.
+ * Centralizes damage calculation for all AI modules.
  */
 export function calculateBattleDamage(
   attacker: BattlePokemon,
   defender: BattlePokemon,
   moveName: string,
-): { damage: number[]; result: Result } {
-  const gen = getGen9()
-  const atkCalc = new Pokemon(gen, attacker.name, {
-    level: attacker.level,
-    ability: attacker.ability || undefined,
-    item: attacker.item || undefined,
+): { minPercent: number; maxPercent: number } {
+  return calculateQuickDamage(attacker.name, defender.name, moveName, {
+    attackerLevel: attacker.level,
+    defenderLevel: defender.level,
   })
-  const defCalc = new Pokemon(gen, defender.name, {
-    level: defender.level,
-    ability: defender.ability || undefined,
-    item: defender.item || undefined,
-    curHP: defender.hp,
-  })
-  const calcMove = new Move(gen, moveName)
-  const result = calculate(gen, atkCalc, defCalc, calcMove, new Field())
-  const damage = flattenDamage(result.damage)
-  return { damage, result }
 }
 
 /** Look up a species' types by display name via @nasty-plot/pokemon-data. */

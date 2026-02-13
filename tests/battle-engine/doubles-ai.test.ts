@@ -13,7 +13,7 @@ function makeDoublesState(): BattleState {
   const state = createInitialState("test-doubles", "doubles")
 
   const makePokemon = (name: string, hp: number, maxHp: number): BattlePokemon => ({
-    speciesId: name.toLowerCase().replace(/[^a-z0-9]/g, ""),
+    pokemonId: name.toLowerCase().replace(/[^a-z0-9]/g, ""),
     name,
     nickname: name,
     level: DEFAULT_LEVEL,
@@ -354,7 +354,7 @@ describe("GreedyAI doubles", () => {
         {
           index: 3,
           name: "Clefable",
-          speciesId: "clefable",
+          pokemonId: "clefable",
           hp: 394,
           maxHp: 394,
           status: "",
@@ -468,7 +468,7 @@ describe("HeuristicAI doubles", () => {
         {
           index: 3,
           name: "Clefable",
-          speciesId: "clefable",
+          pokemonId: "clefable",
           hp: 394,
           maxHp: 394,
           status: "",

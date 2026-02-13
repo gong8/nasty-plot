@@ -437,7 +437,7 @@ function TargetCard({
       )}
     >
       <PokemonSprite
-        pokemonId={pokemon.speciesId || pokemon.name}
+        pokemonId={pokemon.pokemonId || pokemon.name}
         side={isFoe ? "front" : "back"}
         size={48}
         animated

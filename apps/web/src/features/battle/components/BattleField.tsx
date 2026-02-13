@@ -101,7 +101,7 @@ function ActivePokemonSlot({
           className={cn("left-1/2 -translate-x-1/2 z-0", isPlayer ? "bottom-4" : "-bottom-1")}
         />
         <PokemonSprite
-          pokemonId={pokemon.speciesId || pokemon.name}
+          pokemonId={pokemon.pokemonId || pokemon.name}
           side={isPlayer ? "back" : "front"}
           fainted={pokemon.fainted}
           size={isPlayer ? 128 : 96}

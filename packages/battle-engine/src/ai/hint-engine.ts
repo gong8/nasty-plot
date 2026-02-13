@@ -117,24 +117,22 @@ function estimateMoveScore(
     return estimateStatusMoveScore(moveData, myActive, oppActive, state)
   }
 
-  // Damaging moves: use @smogon/calc
+  // Damaging moves: use @nasty-plot/damage-calc
   try {
-    const { damage, result } = calculateBattleDamage(myActive, oppActive, move.name)
-    const avgDmg = damage.reduce((a, b) => a + b, 0) / damage.length
-    const maxDmg = Math.max(...damage)
-    const defMaxHP = result.defender.maxHP()
-    const dmgPercent = defMaxHP > 0 ? (avgDmg / defMaxHP) * 100 : 0
+    const { minPercent, maxPercent } = calculateBattleDamage(myActive, oppActive, move.name)
+    const avgPercent = (minPercent + maxPercent) / 2
 
-    let score = dmgPercent
-    let explanation = `~${Math.round(dmgPercent)}% damage`
+    let score = avgPercent
+    let explanation = `~${Math.round(avgPercent)}% damage`
 
     // KO bonuses
-    const minDmg = Math.min(...damage)
-    if (minDmg >= oppActive.hp) {
+    if (minPercent >= oppActive.hpPercent) {
       score += GUARANTEED_KO_BONUS
       explanation = "Guaranteed KO!"
-    } else if (maxDmg >= oppActive.hp) {
-      const koChance = damage.filter((d) => d >= oppActive.hp).length / damage.length
+    } else if (maxPercent >= oppActive.hpPercent) {
+      // Estimate KO chance linearly between min and max
+      const range = maxPercent - minPercent
+      const koChance = range > 0 ? (maxPercent - oppActive.hpPercent) / range : 0.5
       score += PARTIAL_KO_BASE + koChance * PARTIAL_KO_SCALING
       explanation = `${Math.round(koChance * 100)}% chance to KO`
     }
@@ -248,7 +246,7 @@ function estimateSwitchScore(
   if (!oppActive) return { score: 10, explanation: "Switch out" }
 
   const switchPokemon = state.sides.p1.team.find(
-    (p) => p.name === switchOption.name || p.speciesId === switchOption.speciesId,
+    (p) => p.name === switchOption.name || p.pokemonId === switchOption.pokemonId,
   )
   if (!switchPokemon) return { score: 5, explanation: "Switch to unknown" }
 

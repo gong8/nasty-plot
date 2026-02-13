@@ -960,7 +960,7 @@ describe("protocol-parser", () => {
       expect(state.sides.p1.team).toHaveLength(1)
       const pokemon = state.sides.p1.team[0]
       expect(pokemon.name).toBe("Garchomp")
-      expect(pokemon.speciesId).toBe("garchomp")
+      expect(pokemon.pokemonId).toBe("garchomp")
       expect(pokemon.level).toBe(100)
       expect(pokemon.hp).toBe(319)
       expect(pokemon.maxHp).toBe(319)

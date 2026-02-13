@@ -2,7 +2,7 @@
 
 import { Check } from "lucide-react"
 import { TypeBadge, PokemonCard } from "@nasty-plot/ui"
-import type { PokemonType, UsageStatsEntry } from "@nasty-plot/core"
+import { formatUsagePercent, type PokemonType, type UsageStatsEntry } from "@nasty-plot/core"
 import type { GuidedPokemonPick } from "../hooks/use-guided-builder"
 
 interface CorePickerProps {
@@ -69,7 +69,7 @@ export function CorePicker({ pokemon, selected, onToggle, maxPicks = 3 }: CorePi
                 </div>
               )}
               <span className="text-[10px] text-muted-foreground">
-                {p.usagePercent.toFixed(1)}% usage
+                {formatUsagePercent(p.usagePercent)} usage
               </span>
             </PokemonCard>
           )

@@ -15,7 +15,7 @@ import {
   CommandList,
   CommandSeparator,
 } from "@/components/ui/command"
-import type { ItemData, PaginatedResponse } from "@nasty-plot/core"
+import { formatUsagePercent, type ItemData, type PaginatedResponse } from "@nasty-plot/core"
 import { fetchJson } from "@/lib/api-client"
 import { usePopularityData } from "../hooks/use-popularity-data"
 
@@ -139,7 +139,7 @@ export function ItemCombobox({ value, onChange, formatId, pokemonId }: ItemCombo
                         <span>{item.name}</span>
                         {item.usagePercent != null && (
                           <span className="text-xs text-muted-foreground ml-2">
-                            {item.usagePercent.toFixed(1)}%
+                            {formatUsagePercent(item.usagePercent)}
                           </span>
                         )}
                       </div>

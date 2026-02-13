@@ -3,9 +3,12 @@
 import { useState, useCallback, useMemo, useEffect, useRef } from "react"
 import { useQuery } from "@tanstack/react-query"
 import {
+  DEFAULT_ABILITY,
   DEFAULT_EVS,
+  DEFAULT_ITEM,
   DEFAULT_IVS,
   DEFAULT_LEVEL,
+  DEFAULT_NATURE,
   type UsageStatsEntry,
   type PaginatedResponse,
   type SmogonSetData,
@@ -235,9 +238,9 @@ export function useGuidedBuilder(teamId: string, formatId: string) {
       const newSlot: Partial<TeamSlotData> = {
         position,
         pokemonId: pick.pokemonId,
-        ability: "",
-        item: "",
-        nature: "Adamant" as NatureName,
+        ability: DEFAULT_ABILITY,
+        item: DEFAULT_ITEM,
+        nature: DEFAULT_NATURE as NatureName,
         level: DEFAULT_LEVEL,
         moves: [""] as TeamSlotData["moves"],
         evs: { ...DEFAULT_EVS } as StatsTable,

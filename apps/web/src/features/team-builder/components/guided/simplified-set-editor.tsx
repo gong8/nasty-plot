@@ -3,25 +3,11 @@
 import { useState, useCallback, useMemo } from "react"
 import { ChevronDown, ChevronUp, Info } from "lucide-react"
 import { usePokemonQuery, useLearnsetQuery } from "../../hooks/use-pokemon-data"
-import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Slider } from "@/components/ui/slider"
 import { Separator } from "@/components/ui/separator"
 import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import {
-  STAT_LABELS,
-  STAT_COLORS,
   MAX_TOTAL_EVS,
   MAX_SINGLE_EV,
-  STATS,
   DEFAULT_EVS,
   DEFAULT_IVS,
   DEFAULT_LEVEL,
@@ -33,7 +19,14 @@ import {
   type StatsTable,
   type TeamSlotData,
 } from "@nasty-plot/core"
-import { cn, PokemonSprite, TypeBadge } from "@nasty-plot/ui"
+import {
+  PokemonSprite,
+  TypeBadge,
+  AbilitySelector,
+  EvEditor,
+  IvEditor,
+  CalculatedStatsDisplay,
+} from "@nasty-plot/ui"
 import { ItemCombobox } from "../item-combobox"
 import { MoveInput } from "../shared/move-input"
 import { NatureSelector } from "../shared/nature-selector"
@@ -70,31 +63,14 @@ export function SimplifiedSetEditor({
 
   const abilities = useMemo(() => {
     if (!speciesData?.abilities) return []
-    return Object.entries(speciesData.abilities).map(([abilitySlot, name]) => ({
-      name,
-      isHidden: abilitySlot === "H",
-    }))
+    return Object.values(speciesData.abilities)
   }, [speciesData])
-
-  // Sort abilities by usage
-  const { commonAbilities, otherAbilities } = useMemo(() => {
-    if (!popularity?.abilities?.length) {
-      return { commonAbilities: [] as typeof abilities, otherAbilities: abilities }
-    }
-    const usageMap = new Map(popularity.abilities.map((a) => [a.name, a.usagePercent]))
-    const common = abilities
-      .filter((a) => usageMap.has(a.name))
-      .sort((a, b) => (usageMap.get(b.name) ?? 0) - (usageMap.get(a.name) ?? 0))
-    const other = abilities.filter((a) => !usageMap.has(a.name))
-    return { commonAbilities: common, otherAbilities: other }
-  }, [abilities, popularity])
 
   const evs = useMemo(() => (slot.evs ?? { ...DEFAULT_EVS }) as StatsTable, [slot.evs])
   const ivs = useMemo(() => (slot.ivs ?? { ...DEFAULT_IVS }) as StatsTable, [slot.ivs])
   const nature = slot.nature ?? "Hardy"
 
   const evTotal = getTotalEvs(evs)
-  const evRemaining = MAX_TOTAL_EVS - evTotal
 
   const calculatedStats = useMemo(() => {
     if (!speciesData?.baseStats) return null
@@ -156,54 +132,13 @@ export function SimplifiedSetEditor({
       {/* Ability */}
       <div className="space-y-1.5">
         <Label className="text-xs">Ability</Label>
-        <Select value={slot.ability || ""} onValueChange={(v) => onUpdate({ ability: v })}>
-          <SelectTrigger className="h-9">
-            <SelectValue placeholder="Select ability" />
-          </SelectTrigger>
-          <SelectContent>
-            {commonAbilities.length > 0 ? (
-              <>
-                <SelectGroup>
-                  <SelectLabel>Common</SelectLabel>
-                  {commonAbilities.map((a) => {
-                    const usagePercent = popularity?.abilities?.find(
-                      (x) => x.name === a.name,
-                    )?.usagePercent
-                    return (
-                      <SelectItem key={a.name} value={a.name}>
-                        {a.name}
-                        {a.isHidden && <span className="text-muted-foreground ml-1">(Hidden)</span>}
-                        {usagePercent != null && (
-                          <span className="text-muted-foreground ml-1">
-                            ({usagePercent.toFixed(0)}%)
-                          </span>
-                        )}
-                      </SelectItem>
-                    )
-                  })}
-                </SelectGroup>
-                {otherAbilities.length > 0 && (
-                  <SelectGroup>
-                    <SelectLabel>Other</SelectLabel>
-                    {otherAbilities.map((a) => (
-                      <SelectItem key={a.name} value={a.name}>
-                        {a.name}
-                        {a.isHidden && <span className="text-muted-foreground ml-1">(Hidden)</span>}
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                )}
-              </>
-            ) : (
-              abilities.map((a) => (
-                <SelectItem key={a.name} value={a.name}>
-                  {a.name}
-                  {a.isHidden && <span className="text-muted-foreground ml-1">(Hidden)</span>}
-                </SelectItem>
-              ))
-            )}
-          </SelectContent>
-        </Select>
+        <AbilitySelector
+          value={slot.ability || ""}
+          onValueChange={(v) => onUpdate({ ability: v })}
+          abilities={abilities}
+          popularity={popularity?.abilities}
+          triggerClassName="h-9"
+        />
       </div>
 
       {/* Item */}
@@ -261,16 +196,7 @@ export function SimplifiedSetEditor({
       {calculatedStats && (
         <div className="space-y-1.5">
           <Label className="text-xs">Stats</Label>
-          <div className="grid grid-cols-3 gap-1.5">
-            {STATS.map((stat) => (
-              <div key={stat} className="rounded-md border p-1.5 text-center">
-                <div className="text-[10px] font-medium" style={{ color: STAT_COLORS[stat] }}>
-                  {STAT_LABELS[stat]}
-                </div>
-                <div className="text-sm font-bold tabular-nums">{calculatedStats[stat]}</div>
-              </div>
-            ))}
-          </div>
+          <CalculatedStatsDisplay stats={calculatedStats} className="gap-1.5 [&>div]:p-1.5" />
         </div>
       )}
 
@@ -293,60 +219,12 @@ export function SimplifiedSetEditor({
       {showEvs && (
         <div className="space-y-4 rounded-lg border p-3">
           {/* EVs */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label className="text-xs">EVs</Label>
-              <span
-                className={cn(
-                  "text-[10px]",
-                  evRemaining < 0 ? "text-destructive font-medium" : "text-muted-foreground",
-                )}
-              >
-                {evTotal} / {MAX_TOTAL_EVS} ({evRemaining} remaining)
-              </span>
-            </div>
-            {STATS.map((stat) => (
-              <div key={stat} className="space-y-0.5">
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-medium" style={{ color: STAT_COLORS[stat] }}>
-                    {STAT_LABELS[stat]}
-                  </span>
-                  <span className="text-[10px] tabular-nums">{evs[stat]}</span>
-                </div>
-                <Slider
-                  min={0}
-                  max={MAX_SINGLE_EV}
-                  step={4}
-                  value={[evs[stat]]}
-                  onValueChange={([v]) => handleEvChange(stat, v)}
-                />
-              </div>
-            ))}
-          </div>
+          <EvEditor evs={evs} onChange={handleEvChange} />
 
           <Separator />
 
           {/* IVs */}
-          <div className="space-y-2">
-            <Label className="text-xs">IVs</Label>
-            <div className="grid grid-cols-3 gap-2">
-              {STATS.map((stat) => (
-                <div key={stat} className="space-y-0.5">
-                  <span className="text-[10px] font-medium" style={{ color: STAT_COLORS[stat] }}>
-                    {STAT_LABELS[stat]}
-                  </span>
-                  <Input
-                    type="number"
-                    min={0}
-                    max={MAX_IV}
-                    value={ivs[stat]}
-                    onChange={(e) => handleIvChange(stat, parseInt(e.target.value, 10) || 0)}
-                    className="h-7 text-center text-xs"
-                  />
-                </div>
-              ))}
-            </div>
-          </div>
+          <IvEditor ivs={ivs} onChange={handleIvChange} />
         </div>
       )}
     </div>

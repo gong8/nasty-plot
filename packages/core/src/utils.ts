@@ -10,3 +10,7 @@ export function toPercent(value: number, total: number): number {
   if (total <= 0) return 0
   return Math.round((value / total) * 1000) / 10
 }
+
+export function formatUsagePercent(percent: number, decimals = 1): string {
+  return `${percent.toFixed(decimals)}%`
+}

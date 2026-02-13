@@ -1,5 +1,5 @@
 export { FORMAT_DEFINITIONS } from "./data/format-definitions"
-export { resolveFormatId, getFormatFallbacks } from "./resolver"
+export { resolveFormatId, getFormatFallbacks } from "./format-resolver.service"
 export {
   getFormat,
   getAllFormats,

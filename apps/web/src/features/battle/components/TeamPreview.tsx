@@ -59,7 +59,7 @@ export function TeamPreview({
         {opponentTeam.map((pokemon, i) => (
           <div key={i} className="flex flex-col items-center gap-1 p-2 rounded-lg bg-muted/50">
             <PokemonSprite
-              pokemonId={pokemon.speciesId || pokemon.name}
+              pokemonId={pokemon.pokemonId || pokemon.name}
               side="front"
               size={64}
               animated
@@ -108,7 +108,7 @@ export function TeamPreview({
               >
                 <div className="relative">
                   <PokemonSprite
-                    pokemonId={pokemon.speciesId || pokemon.name}
+                    pokemonId={pokemon.pokemonId || pokemon.name}
                     side="back"
                     size={64}
                     animated
@@ -171,7 +171,7 @@ export function TeamPreview({
               >
                 <div className="relative">
                   <PokemonSprite
-                    pokemonId={pokemon.speciesId || pokemon.name}
+                    pokemonId={pokemon.pokemonId || pokemon.name}
                     side="back"
                     size={64}
                     animated

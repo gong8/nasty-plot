@@ -11,8 +11,8 @@ import { parseShowdownPaste } from "@nasty-plot/core"
 
 export interface TeamFingerprint {
   /** Sorted species IDs */
-  speciesIds: string[]
-  /** Map of speciesId → sorted move names (lowercased) */
+  pokemonIds: string[]
+  /** Map of pokemonId → sorted move names (lowercased) */
   movesBySpecies: Record<string, string[]>
 }
 
@@ -55,16 +55,16 @@ export function fingerprintFromExtracted(
 }
 
 function buildFingerprint(pokemon: { pokemonId: string; moves: string[] }[]): TeamFingerprint {
-  const speciesIds: string[] = []
+  const pokemonIds: string[] = []
   const movesBySpecies: Record<string, string[]> = {}
 
   for (const p of pokemon) {
-    speciesIds.push(p.pokemonId)
+    pokemonIds.push(p.pokemonId)
     movesBySpecies[p.pokemonId] = p.moves.map((m) => m.toLowerCase()).sort()
   }
 
   return {
-    speciesIds: speciesIds.sort(),
+    pokemonIds: pokemonIds.sort(),
     movesBySpecies,
   }
 }
@@ -72,19 +72,19 @@ function buildFingerprint(pokemon: { pokemonId: string; moves: string[] }[]): Te
 /** Compare two fingerprints */
 export function compareFingerprints(a: TeamFingerprint, b: TeamFingerprint): MatchLevel {
   // Check if species sets match
-  if (a.speciesIds.length !== b.speciesIds.length) return "none"
+  if (a.pokemonIds.length !== b.pokemonIds.length) return "none"
 
-  const aSet = new Set(a.speciesIds)
-  const bSet = new Set(b.speciesIds)
+  const aSet = new Set(a.pokemonIds)
+  const bSet = new Set(b.pokemonIds)
   for (const id of aSet) {
     if (!bSet.has(id)) return "none"
   }
 
   // Species match — check moves
   let allMovesMatch = true
-  for (const speciesId of a.speciesIds) {
-    const aMoves = a.movesBySpecies[speciesId] || []
-    const bMoves = b.movesBySpecies[speciesId] || []
+  for (const pokemonId of a.pokemonIds) {
+    const aMoves = a.movesBySpecies[pokemonId] || []
+    const bMoves = b.movesBySpecies[pokemonId] || []
     // Exact move lists match
     if (aMoves.length !== bMoves.length || !aMoves.every((m, i) => m === bMoves[i])) {
       allMovesMatch = false
@@ -107,8 +107,8 @@ function moveSubsetScore(
   let totalRevealed = 0
   let totalMatched = 0
 
-  for (const [speciesId, revealed] of Object.entries(extractedMoves)) {
-    const teamMovesForSpecies = teamMoves[speciesId] || []
+  for (const [pokemonId, revealed] of Object.entries(extractedMoves)) {
+    const teamMovesForSpecies = teamMoves[pokemonId] || []
     const teamMoveSet = new Set(teamMovesForSpecies)
     for (const move of revealed) {
       totalRevealed++
@@ -157,7 +157,7 @@ export async function findMatchingTeams(
   })
 
   const extractedFp = fingerprintFromExtracted(extracted)
-  const extractedSpecies = new Set(extractedFp.speciesIds)
+  const extractedSpecies = new Set(extractedFp.pokemonIds)
   const results: TeamMatchResult[] = []
 
   for (const team of teams) {
@@ -165,8 +165,8 @@ export async function findMatchingTeams(
 
     const teamFp = fingerprintFromDbSlots(team.slots)
 
-    if (extractedFp.speciesIds.length !== teamFp.speciesIds.length) continue
-    if (!teamFp.speciesIds.every((id) => extractedSpecies.has(id))) continue
+    if (extractedFp.pokemonIds.length !== teamFp.pokemonIds.length) continue
+    if (!teamFp.pokemonIds.every((id) => extractedSpecies.has(id))) continue
 
     const moveScore = moveSubsetScore(extractedFp.movesBySpecies, teamFp.movesBySpecies)
     const confidence = SPECIES_MATCH_BASE_CONFIDENCE + moveScore * MOVE_MATCH_MAX_BONUS

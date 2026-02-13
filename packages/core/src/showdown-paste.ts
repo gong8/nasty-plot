@@ -56,7 +56,7 @@ function parseFirstLine(firstLine: string): {
   }
 }
 
-function deduplicateMoves(moves: string[]): [string, string?, string?, string?] {
+export function deduplicateMoves(moves: string[]): [string, string?, string?, string?] {
   const seen = new Set<string>()
   const unique: string[] = []
   for (const move of moves) {

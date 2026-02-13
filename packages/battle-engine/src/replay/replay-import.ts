@@ -16,9 +16,6 @@ import type { ShowdownReplayJSON } from "../types"
 
 export type { ExtractedPokemonData, ExtractedTeamData } from "@nasty-plot/core"
 
-/** @deprecated Use ShowdownReplayJSON from ../types */
-export type ShowdownReplayJson = ShowdownReplayJSON
-
 export interface ParsedBattleImport {
   source: "replay-url" | "raw-log"
   replayId: string | null
@@ -44,12 +41,12 @@ export function parseReplayUrl(url: string): string | null {
 }
 
 /** Fetch replay JSON from Showdown */
-export async function getShowdownReplay(replayId: string): Promise<ShowdownReplayJson> {
+export async function getShowdownReplay(replayId: string): Promise<ShowdownReplayJSON> {
   const res = await fetch(`https://replay.pokemonshowdown.com/${replayId}.json`)
   if (!res.ok) {
     throw new Error(`Failed to fetch replay: ${res.status} ${res.statusText}`)
   }
-  return res.json() as Promise<ShowdownReplayJson>
+  return res.json() as Promise<ShowdownReplayJSON>
 }
 
 type SideId = "p1" | "p2"
@@ -109,9 +106,9 @@ export function parseProtocolLog(log: string): ParsedBattleImport {
   }
 
   function resolvePokemon(side: SideId, nickname: string): ExtractedPokemonData | null {
-    const speciesId = nicknameToSpecies[side].get(nickname)
-    if (!speciesId) return null
-    return teams[side].get(speciesId) ?? null
+    const pokemonId = nicknameToSpecies[side].get(nickname)
+    if (!pokemonId) return null
+    return teams[side].get(pokemonId) ?? null
   }
 
   for (const line of lines) {
@@ -165,13 +162,13 @@ export function parseProtocolLog(log: string): ParsedBattleImport {
         if (!ident) break
         const detailParts = (args[1] || "").split(",").map((s) => s.trim())
         const species = detailParts[0]
-        const speciesId = toId(species)
+        const pokemonId = toId(species)
 
-        nicknameToSpecies[ident.side].set(ident.nickname, speciesId)
+        nicknameToSpecies[ident.side].set(ident.nickname, pokemonId)
 
         const pokemon = ensurePokemon(
           ident.side,
-          speciesId,
+          pokemonId,
           species,
           parseLevelFromDetails(detailParts),
         )

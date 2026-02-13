@@ -1,6 +1,11 @@
 "use client"
 
-import { type TeamAnalysis, POKEMON_TYPES, type PokemonType } from "@nasty-plot/core"
+import {
+  formatUsagePercent,
+  type TeamAnalysis,
+  POKEMON_TYPES,
+  type PokemonType,
+} from "@nasty-plot/core"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { cn, TypeGrid } from "@nasty-plot/ui"
@@ -150,7 +155,7 @@ export function SimplifiedAnalysis({
                     <div className="flex items-center gap-2">
                       <span className="text-xs font-medium truncate">{threat.pokemonName}</span>
                       <span className="text-[10px] text-muted-foreground shrink-0">
-                        {threat.usagePercent.toFixed(1)}%
+                        {formatUsagePercent(threat.usagePercent)}
                       </span>
                     </div>
                     <p className="text-[10px] text-muted-foreground leading-tight mt-0.5">

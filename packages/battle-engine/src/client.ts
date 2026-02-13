@@ -1,7 +1,7 @@
 export * from "./types"
 
 // --- Core Battle Logic (Safe for Client) ---
-export { BattleManager, createInitialState } from "./battle-manager"
+export { BattleManager, createInitialState } from "./battle-manager.service"
 export * from "./team-packer"
 export {
   serializeBattleState,
@@ -50,7 +50,6 @@ export {
   importFromRawLog,
 } from "./replay/replay-import"
 export type {
-  ShowdownReplayJson,
   ExtractedPokemonData,
   ExtractedTeamData,
   ParsedBattleImport,

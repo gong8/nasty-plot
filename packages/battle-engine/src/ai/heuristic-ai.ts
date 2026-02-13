@@ -135,12 +135,12 @@ export class HeuristicAI implements AIPlayer {
 
     // Score switches only if we have a bad matchup
     const matchupScore = this.evaluateMatchup(myActive, oppActive)
-    const oppPrediction = state.opponentPredictions?.[oppActive.speciesId]
+    const oppPrediction = state.opponentPredictions?.[oppActive.pokemonId]
     if (matchupScore < UNFAVORABLE_MATCHUP_THRESHOLD) {
       for (const sw of actions.switches) {
         if (sw.fainted) continue
         const swPokemon = state.sides.p2.team.find(
-          (p) => p.name === sw.name || p.speciesId === sw.speciesId,
+          (p) => p.name === sw.name || p.pokemonId === sw.pokemonId,
         )
         if (!swPokemon) continue
 
@@ -199,17 +199,14 @@ export class HeuristicAI implements AIPlayer {
     let score = 0
 
     try {
-      const { damage, result } = calculateBattleDamage(myPokemon, oppPokemon, moveName)
-      const avgDamage = damage.reduce((a, b) => a + b, 0) / damage.length
-      const maxDamage = Math.max(...damage)
+      const { minPercent, maxPercent } = calculateBattleDamage(myPokemon, oppPokemon, moveName)
+      const avgPercent = (minPercent + maxPercent) / 2
 
       // Base score from damage percentage
-      const defMaxHP = result.defender.maxHP()
-      const dmgPercent = defMaxHP > 0 ? avgDamage / defMaxHP : 0
-      score += dmgPercent * 100
+      score += avgPercent
 
       // Bonus for KO potential
-      if (maxDamage >= oppPokemon.hp) {
+      if (maxPercent >= oppPokemon.hpPercent) {
         score += 50
       }
 
@@ -385,14 +382,14 @@ export class HeuristicAI implements AIPlayer {
     }
 
     const myActive = state.sides.p2.active[actions.activeSlot ?? 0]
-    const oppPrediction = state.opponentPredictions?.[oppActive.speciesId]
+    const oppPrediction = state.opponentPredictions?.[oppActive.pokemonId]
 
     let bestScore = -Infinity
     let bestIndex = available[0].index
 
     for (const sw of available) {
       const pokemon = state.sides.p2.team.find(
-        (p) => p.name === sw.name || p.speciesId === sw.speciesId,
+        (p) => p.name === sw.name || p.pokemonId === sw.pokemonId,
       )
       if (!pokemon) continue
 

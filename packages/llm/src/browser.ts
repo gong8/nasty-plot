@@ -9,11 +9,11 @@ export {
   buildPostBattleContext,
   buildTurnAnalysisContext,
   buildAutoAnalyzePrompt,
-} from "./battle-context-builder"
-export type { BattleCommentaryContext } from "./battle-context-builder"
+} from "./battle-context-builder.service"
+export type { BattleCommentaryContext } from "./battle-context-builder.service"
 
-export { buildPageContextPrompt, buildContextModePrompt } from "./context-builder"
-export type { PageContextData } from "./context-builder"
+export { buildPageContextPrompt, buildContextModePrompt } from "./context-builder.service"
+export type { PageContextData } from "./context-builder.service"
 
 export { getToolLabel, isWriteTool } from "./tool-labels"
 

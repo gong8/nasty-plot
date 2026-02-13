@@ -56,7 +56,7 @@ Calm Nature
 - Toxic`
 
       const fp = fingerprintFromPaste(paste)
-      expect(fp.speciesIds).toEqual(["garchomp", "heatran"])
+      expect(fp.pokemonIds).toEqual(["garchomp", "heatran"])
       expect(fp.movesBySpecies["garchomp"]).toEqual([
         "earthquake",
         "outrage",
@@ -79,7 +79,7 @@ Calm Nature
         makeSlot("heatran", ["Lava Plume", "Earth Power", "Stealth Rock", "Toxic"]),
       ]
       const fp = fingerprintFromSlots(slots)
-      expect(fp.speciesIds).toEqual(["garchomp", "heatran"])
+      expect(fp.pokemonIds).toEqual(["garchomp", "heatran"])
       expect(fp.movesBySpecies["garchomp"]).toContain("earthquake")
     })
   })
@@ -91,7 +91,7 @@ Calm Nature
         { pokemonId: "heatran", moves: ["Lava Plume"] },
       ]
       const fp = fingerprintFromExtracted(pokemon)
-      expect(fp.speciesIds).toEqual(["garchomp", "heatran"])
+      expect(fp.pokemonIds).toEqual(["garchomp", "heatran"])
       expect(fp.movesBySpecies["garchomp"]).toEqual(["earthquake", "outrage"])
     })
   })

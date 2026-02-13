@@ -152,7 +152,7 @@ vi.mock("#battle-engine/ai/heuristic-ai", () => ({
 
 function makePokemon(overrides: Partial<BattlePokemon> = {}): BattlePokemon {
   return {
-    speciesId: "garchomp",
+    pokemonId: "garchomp",
     name: "Garchomp",
     nickname: "Garchomp",
     level: DEFAULT_LEVEL,
@@ -180,10 +180,10 @@ function makeState(): BattleState {
   state.sides.p1.active = [makePokemon()]
   state.sides.p1.team = [makePokemon()]
   state.sides.p2.active = [
-    makePokemon({ speciesId: "heatran", name: "Heatran", types: ["Fire", "Steel"] }),
+    makePokemon({ pokemonId: "heatran", name: "Heatran", types: ["Fire", "Steel"] }),
   ]
   state.sides.p2.team = [
-    makePokemon({ speciesId: "heatran", name: "Heatran", types: ["Fire", "Steel"] }),
+    makePokemon({ pokemonId: "heatran", name: "Heatran", types: ["Fire", "Steel"] }),
   ]
   return state
 }
@@ -223,7 +223,7 @@ function makeActions(): BattleActionSet {
       {
         index: 2,
         name: "Clefable",
-        speciesId: "clefable",
+        pokemonId: "clefable",
         hp: 394,
         maxHp: 394,
         status: "",
@@ -463,7 +463,7 @@ describe("MCTSAI - deep coverage", () => {
           {
             index: 3,
             name: "Tyranitar",
-            speciesId: "tyranitar",
+            pokemonId: "tyranitar",
             hp: 404,
             maxHp: 404,
             status: "",
@@ -1252,7 +1252,7 @@ describe("MCTSAI - deep coverage", () => {
           {
             index: 3,
             name: "Tyranitar",
-            speciesId: "tyranitar",
+            pokemonId: "tyranitar",
             hp: 404,
             maxHp: 404,
             status: "",

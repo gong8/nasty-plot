@@ -1,4 +1,4 @@
-import { createInitialState } from "../battle-manager"
+import { createInitialState } from "../battle-manager.service"
 import { processLine } from "../protocol-parser"
 import { estimateWinProbability } from "../ai/win-probability"
 import type { GameType } from "@nasty-plot/core"

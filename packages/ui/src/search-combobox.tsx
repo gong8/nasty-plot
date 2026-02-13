@@ -8,7 +8,6 @@ import { cn } from "./utils"
 
 interface SearchComboboxItem {
   id: string
-  [key: string]: unknown
 }
 
 interface SearchComboboxProps<T extends SearchComboboxItem> {

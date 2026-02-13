@@ -7,24 +7,14 @@ import { usePokemonQuery, useLearnsetQuery } from "../hooks/use-pokemon-data"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Slider } from "@/components/ui/slider"
 import { Separator } from "@/components/ui/separator"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import {
+  STATS,
   STAT_LABELS,
   STAT_COLORS,
   MAX_TOTAL_EVS,
   MAX_SINGLE_EV,
-  STATS,
   DEFAULT_LEVEL,
   DEFAULT_EVS,
   DEFAULT_IVS,
@@ -38,7 +28,14 @@ import {
   type TeamSlotData,
   type TeamSlotInput,
 } from "@nasty-plot/core"
-import { cn, PokemonSprite, TypeBadge } from "@nasty-plot/ui"
+import {
+  PokemonSprite,
+  TypeBadge,
+  AbilitySelector,
+  EvEditor,
+  IvEditor,
+  CalculatedStatsDisplay,
+} from "@nasty-plot/ui"
 import { PokemonSearchPanel } from "./pokemon-search-panel"
 import { ItemCombobox } from "./item-combobox"
 import { MoveInput } from "./shared/move-input"
@@ -121,27 +118,11 @@ export function SlotEditor({
     return Object.values(speciesData.abilities)
   }, [speciesData])
 
-  // Sort abilities by usage
-  const { commonAbilities, otherAbilities } = useMemo(() => {
-    if (!popularity?.abilities?.length) {
-      return { commonAbilities: [], otherAbilities: abilities }
-    }
-    const usageMap = new Map(popularity.abilities.map((a) => [a.name, a.usagePercent]))
-    const common = abilities
-      .filter((a) => usageMap.has(a))
-      .sort((a, b) => (usageMap.get(b) ?? 0) - (usageMap.get(a) ?? 0))
-    const other = abilities.filter((a) => !usageMap.has(a))
-    return { commonAbilities: common, otherAbilities: other }
-  }, [abilities, popularity])
-
   // Calculated stats
   const calculatedStats = useMemo(() => {
     if (!speciesData?.baseStats) return null
     return calculateAllStats(speciesData.baseStats, ivs, evs, level, nature)
   }, [speciesData, ivs, evs, level, nature])
-
-  const evTotal = getTotalEvs(evs)
-  const evRemaining = MAX_TOTAL_EVS - evTotal
 
   const handleEvChange = useCallback((stat: StatName, value: number) => {
     setEvs((prev) => {
@@ -247,54 +228,12 @@ export function SlotEditor({
             {/* Ability */}
             <div className="space-y-1.5">
               <Label>Ability</Label>
-              <Select value={ability} onValueChange={setAbility}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select ability" />
-                </SelectTrigger>
-                <SelectContent>
-                  {commonAbilities.length > 0 ? (
-                    <>
-                      <SelectGroup>
-                        <SelectLabel>Common</SelectLabel>
-                        {commonAbilities.map((a) => {
-                          const pct = popularity?.abilities?.find((x) => x.name === a)?.usagePercent
-                          return (
-                            <SelectItem key={a} value={a}>
-                              {a}{" "}
-                              {pct != null && (
-                                <span className="text-muted-foreground">({pct.toFixed(0)}%)</span>
-                              )}
-                            </SelectItem>
-                          )
-                        })}
-                      </SelectGroup>
-                      {otherAbilities.length > 0 && (
-                        <SelectGroup>
-                          <SelectLabel>Other</SelectLabel>
-                          {otherAbilities.map((a) => (
-                            <SelectItem key={a} value={a}>
-                              {a}
-                            </SelectItem>
-                          ))}
-                        </SelectGroup>
-                      )}
-                    </>
-                  ) : (
-                    <>
-                      {abilities.map((a) => (
-                        <SelectItem key={a} value={a}>
-                          {a}
-                        </SelectItem>
-                      ))}
-                      {abilities.length === 0 && (
-                        <SelectItem value={ability || "none"} disabled>
-                          No abilities loaded
-                        </SelectItem>
-                      )}
-                    </>
-                  )}
-                </SelectContent>
-              </Select>
+              <AbilitySelector
+                value={ability}
+                onValueChange={setAbility}
+                abilities={abilities}
+                popularity={popularity?.abilities}
+              />
             </div>
 
             {/* Item */}
@@ -378,34 +317,8 @@ export function SlotEditor({
           <div className="flex flex-col gap-5">
             {/* EVs */}
             <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <Label>EVs</Label>
-                <span
-                  className={cn(
-                    "text-xs",
-                    evRemaining < 0 ? "text-destructive font-medium" : "text-muted-foreground",
-                  )}
-                >
-                  {evTotal} / {MAX_TOTAL_EVS} ({evRemaining} remaining)
-                </span>
-              </div>
-              {STATS.map((stat) => (
-                <div key={stat} className="space-y-1">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium" style={{ color: STAT_COLORS[stat] }}>
-                      {STAT_LABELS[stat]}
-                    </span>
-                    <span className="text-xs tabular-nums">{evs[stat]}</span>
-                  </div>
-                  <Slider
-                    min={0}
-                    max={MAX_SINGLE_EV}
-                    step={4}
-                    value={[evs[stat]]}
-                    onValueChange={([v]) => handleEvChange(stat, v)}
-                  />
-                </div>
-              ))}
+              <Label>EVs</Label>
+              <EvEditor evs={evs} onChange={handleEvChange} />
             </div>
 
             <Separator />
@@ -413,23 +326,7 @@ export function SlotEditor({
             {/* IVs */}
             <div className="space-y-3">
               <Label>IVs</Label>
-              <div className="grid grid-cols-3 gap-2">
-                {STATS.map((stat) => (
-                  <div key={stat} className="space-y-1">
-                    <span className="text-xs font-medium" style={{ color: STAT_COLORS[stat] }}>
-                      {STAT_LABELS[stat]}
-                    </span>
-                    <Input
-                      type="number"
-                      min={0}
-                      max={31}
-                      value={ivs[stat]}
-                      onChange={(e) => handleIvChange(stat, parseInt(e.target.value, 10) || 0)}
-                      className="h-8 text-center"
-                    />
-                  </div>
-                ))}
-              </div>
+              <IvEditor ivs={ivs} onChange={handleIvChange} />
             </div>
 
             <Separator />
@@ -438,16 +335,7 @@ export function SlotEditor({
             {calculatedStats && (
               <div className="space-y-2">
                 <Label>Calculated Stats</Label>
-                <div className="grid grid-cols-3 gap-2">
-                  {STATS.map((stat) => (
-                    <div key={stat} className="rounded-md border p-2 text-center">
-                      <div className="text-xs font-medium" style={{ color: STAT_COLORS[stat] }}>
-                        {STAT_LABELS[stat]}
-                      </div>
-                      <div className="text-lg font-bold tabular-nums">{calculatedStats[stat]}</div>
-                    </div>
-                  ))}
-                </div>
+                <CalculatedStatsDisplay stats={calculatedStats} />
               </div>
             )}
 

@@ -52,7 +52,7 @@ function makeMockFinalState(overrides?: Partial<BattleState>): BattleState {
         active: [null],
         team: [
           {
-            speciesId: "garchomp",
+            pokemonId: "garchomp",
             name: "Garchomp",
             nickname: "Garchomp",
             level: DEFAULT_LEVEL,
@@ -71,7 +71,7 @@ function makeMockFinalState(overrides?: Partial<BattleState>): BattleState {
             volatiles: [],
           },
           {
-            speciesId: "clefable",
+            pokemonId: "clefable",
             name: "Clefable",
             nickname: "Clefable",
             level: DEFAULT_LEVEL,
@@ -107,7 +107,7 @@ function makeMockFinalState(overrides?: Partial<BattleState>): BattleState {
         active: [null],
         team: [
           {
-            speciesId: "heatran",
+            pokemonId: "heatran",
             name: "Heatran",
             nickname: "Heatran",
             level: DEFAULT_LEVEL,

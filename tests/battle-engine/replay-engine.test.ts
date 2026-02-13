@@ -1,11 +1,11 @@
 import { ReplayEngine } from "@nasty-plot/battle-engine"
-import { createInitialState } from "#battle-engine/battle-manager"
+import { createInitialState } from "#battle-engine/battle-manager.service"
 import * as protocolParser from "#battle-engine/protocol-parser"
 import * as winProb from "#battle-engine/ai/win-probability"
 import type { BattleState } from "@nasty-plot/battle-engine"
 
 // Mock dependencies
-vi.mock("#battle-engine/battle-manager", () => ({
+vi.mock("#battle-engine/battle-manager.service", () => ({
   createInitialState: vi.fn(),
 }))
 

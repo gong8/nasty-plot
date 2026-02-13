@@ -138,7 +138,7 @@ function computeAnalytics(
 
     for (const side of [finalState.sides.p1, finalState.sides.p2]) {
       for (const pokemon of side.team) {
-        const key = pokemon.speciesId || pokemon.name
+        const key = pokemon.pokemonId || pokemon.name
         if (!key) continue
 
         let stats = pokemonStatsMap.get(key)

@@ -6,7 +6,13 @@ import { Badge } from "@/components/ui/badge"
 import { AnalysisCard } from "@/components/analysis-card"
 import { Plus, Sparkles } from "lucide-react"
 import { useAddSlot } from "@/features/teams/hooks/use-teams"
-import { DEFAULT_LEVEL, DEFAULT_EVS, DEFAULT_IVS, type Recommendation } from "@nasty-plot/core"
+import {
+  DEFAULT_LEVEL,
+  DEFAULT_EVS,
+  DEFAULT_IVS,
+  DEFAULT_NATURE,
+  type Recommendation,
+} from "@nasty-plot/core"
 import { postJson } from "@/lib/api-client"
 
 interface RecommendationPanelProps {
@@ -52,7 +58,7 @@ export function RecommendationPanel({
         pokemonId: rec.pokemonId,
         ability: set?.ability ?? "",
         item: set?.item ?? "",
-        nature: set?.nature ?? "Adamant",
+        nature: set?.nature ?? DEFAULT_NATURE,
         teraType: set?.teraType,
         level: DEFAULT_LEVEL,
         moves: [moves[0] ?? "", moves[1], moves[2], moves[3]] as [

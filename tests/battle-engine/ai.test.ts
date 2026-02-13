@@ -11,7 +11,7 @@ function makeState(): BattleState {
   // Set up a basic battle scenario
   state.sides.p1.active = [
     {
-      speciesId: "garchomp",
+      pokemonId: "garchomp",
       name: "Garchomp",
       nickname: "Garchomp",
       level: DEFAULT_LEVEL,
@@ -33,7 +33,7 @@ function makeState(): BattleState {
 
   state.sides.p2.active = [
     {
-      speciesId: "heatran",
+      pokemonId: "heatran",
       name: "Heatran",
       nickname: "Heatran",
       level: DEFAULT_LEVEL,
@@ -119,7 +119,7 @@ function makeActions(): BattleActionSet {
       {
         index: 2,
         name: "Clefable",
-        speciesId: "clefable",
+        pokemonId: "clefable",
         hp: 394,
         maxHp: 394,
         status: "",
@@ -128,7 +128,7 @@ function makeActions(): BattleActionSet {
       {
         index: 3,
         name: "Weavile",
-        speciesId: "weavile",
+        pokemonId: "weavile",
         hp: 281,
         maxHp: 281,
         status: "",
@@ -147,7 +147,7 @@ function makeForceSwitchActions(): BattleActionSet {
       {
         index: 2,
         name: "Clefable",
-        speciesId: "clefable",
+        pokemonId: "clefable",
         hp: 394,
         maxHp: 394,
         status: "",
@@ -156,7 +156,7 @@ function makeForceSwitchActions(): BattleActionSet {
       {
         index: 3,
         name: "Weavile",
-        speciesId: "weavile",
+        pokemonId: "weavile",
         hp: 281,
         maxHp: 281,
         status: "",
@@ -299,7 +299,7 @@ describe("GreedyAI", () => {
         {
           index: 2,
           name: "Clefable",
-          speciesId: "clefable",
+          pokemonId: "clefable",
           hp: 394,
           maxHp: 394,
           status: "",
@@ -451,7 +451,7 @@ describe("HeuristicAI", () => {
     // Setup a very bad matchup: Fire/Steel Heatran active vs Ground type opponent
     state.sides.p2.active = [
       {
-        speciesId: "heatran",
+        pokemonId: "heatran",
         name: "Heatran",
         nickname: "Heatran",
         level: DEFAULT_LEVEL,
@@ -472,7 +472,7 @@ describe("HeuristicAI", () => {
     ]
     state.sides.p1.active = [
       {
-        speciesId: "garchomp",
+        pokemonId: "garchomp",
         name: "Garchomp",
         nickname: "Garchomp",
         level: DEFAULT_LEVEL,
@@ -495,7 +495,7 @@ describe("HeuristicAI", () => {
     state.sides.p2.team = [
       state.sides.p2.active[0]!,
       {
-        speciesId: "dragonite",
+        pokemonId: "dragonite",
         name: "Dragonite",
         nickname: "Dragonite",
         level: DEFAULT_LEVEL,
@@ -536,7 +536,7 @@ describe("HeuristicAI", () => {
         {
           index: 2,
           name: "Dragonite",
-          speciesId: "dragonite",
+          pokemonId: "dragonite",
           hp: 323,
           maxHp: 323,
           status: "",
@@ -770,7 +770,7 @@ describe("HeuristicAI", () => {
         {
           index: 2,
           name: "Clefable",
-          speciesId: "clefable",
+          pokemonId: "clefable",
           hp: 0,
           maxHp: 394,
           status: "",
@@ -792,7 +792,7 @@ describe("HeuristicAI", () => {
         {
           index: 2,
           name: "Clefable",
-          speciesId: "clefable",
+          pokemonId: "clefable",
           hp: 0,
           maxHp: 394,
           status: "",
@@ -801,7 +801,7 @@ describe("HeuristicAI", () => {
         {
           index: 3,
           name: "Weavile",
-          speciesId: "weavile",
+          pokemonId: "weavile",
           hp: 0,
           maxHp: 281,
           status: "",
@@ -825,7 +825,7 @@ describe("HeuristicAI", () => {
         {
           index: 2,
           name: "Clefable",
-          speciesId: "clefable",
+          pokemonId: "clefable",
           hp: 200,
           maxHp: 394,
           status: "",
@@ -834,7 +834,7 @@ describe("HeuristicAI", () => {
         {
           index: 3,
           name: "Weavile",
-          speciesId: "weavile",
+          pokemonId: "weavile",
           hp: 281,
           maxHp: 281,
           status: "",
@@ -853,7 +853,7 @@ describe("HeuristicAI", () => {
     // p2 active is Ice type (weak to p1's Fire STAB)
     state.sides.p2.active = [
       {
-        speciesId: "weavile",
+        pokemonId: "weavile",
         name: "Weavile",
         nickname: "Weavile",
         level: DEFAULT_LEVEL,
@@ -875,7 +875,7 @@ describe("HeuristicAI", () => {
     // p1 active is Fire/Fighting (SE against Dark/Ice)
     state.sides.p1.active = [
       {
-        speciesId: "blaziken",
+        pokemonId: "blaziken",
         name: "Blaziken",
         nickname: "Blaziken",
         level: DEFAULT_LEVEL,
@@ -896,7 +896,7 @@ describe("HeuristicAI", () => {
     ]
     // p2 team has a switch target
     const switchTarget: BattlePokemon = {
-      speciesId: "toxapex",
+      pokemonId: "toxapex",
       name: "Toxapex",
       nickname: "Toxapex",
       level: DEFAULT_LEVEL,
@@ -950,7 +950,7 @@ describe("HeuristicAI", () => {
         {
           index: 2,
           name: "Toxapex",
-          speciesId: "toxapex",
+          pokemonId: "toxapex",
           hp: 304,
           maxHp: 304,
           status: "",
@@ -970,7 +970,7 @@ describe("HeuristicAI", () => {
     // p1 is at low HP
     state.sides.p1.active = [
       {
-        speciesId: "garchomp",
+        pokemonId: "garchomp",
         name: "Garchomp",
         nickname: "Garchomp",
         level: DEFAULT_LEVEL,
@@ -1237,7 +1237,7 @@ describe("HeuristicAI", () => {
     // p2 has good matchup vs p1 (p2 = Dragon/Ground, p1 = Fire/Steel)
     state.sides.p2.active = [
       {
-        speciesId: "garchomp",
+        pokemonId: "garchomp",
         name: "Garchomp",
         nickname: "Garchomp",
         level: DEFAULT_LEVEL,
@@ -1299,7 +1299,7 @@ describe("HeuristicAI", () => {
     const state = makeState()
     state.sides.p2.active = [
       {
-        speciesId: "heatran",
+        pokemonId: "heatran",
         name: "Heatran",
         nickname: "Heatran",
         level: DEFAULT_LEVEL,
@@ -1416,7 +1416,7 @@ describe("HeuristicAI", () => {
     state.sides.p2.team = [
       state.sides.p2.active[0]!,
       {
-        speciesId: "toxapex",
+        pokemonId: "toxapex",
         name: "Toxapex",
         nickname: "Toxapex",
         level: DEFAULT_LEVEL,
@@ -1442,7 +1442,7 @@ describe("HeuristicAI", () => {
         {
           index: 2,
           name: "Toxapex",
-          speciesId: "toxapex",
+          pokemonId: "toxapex",
           hp: 304,
           maxHp: 304,
           status: "",
@@ -1461,7 +1461,7 @@ describe("HeuristicAI", () => {
     // Use a pokemon name that may cause calc issues but still has a valid type
     state.sides.p2.active = [
       {
-        speciesId: "missingno",
+        pokemonId: "missingno",
         name: "MissingNo",
         nickname: "MissingNo",
         level: DEFAULT_LEVEL,
@@ -1640,7 +1640,7 @@ describe("HeuristicAI", () => {
     // Opponent (p1) is Heatran (Fire/Steel)
     state.sides.p1.active = [
       {
-        speciesId: "heatran",
+        pokemonId: "heatran",
         name: "Heatran",
         nickname: "Heatran",
         level: DEFAULT_LEVEL,
@@ -1663,7 +1663,7 @@ describe("HeuristicAI", () => {
     // This triggers the switch scoring block (line 93)
     state.sides.p2.active = [
       {
-        speciesId: "garchomp",
+        pokemonId: "garchomp",
         name: "Garchomp",
         nickname: "Garchomp",
         level: DEFAULT_LEVEL,
@@ -1685,7 +1685,7 @@ describe("HeuristicAI", () => {
     // Switch target is Swampert (Water/Ground)
     // evaluateMatchup(Swampert, Heatran) = -0.75 < -0.3 → triggers line 335 penalty
     const switchTarget: BattlePokemon = {
-      speciesId: "swampert",
+      pokemonId: "swampert",
       name: "Swampert",
       nickname: "Swampert",
       level: DEFAULT_LEVEL,
@@ -1726,7 +1726,7 @@ describe("HeuristicAI", () => {
         {
           index: 2,
           name: "Swampert",
-          speciesId: "swampert",
+          pokemonId: "swampert",
           hp: 341,
           maxHp: 341,
           status: "",
@@ -1745,7 +1745,7 @@ describe("HeuristicAI", () => {
     // Opponent (p1) is Heatran (Fire/Steel), with Lava Plume prediction
     state.sides.p1.active = [
       {
-        speciesId: "heatran",
+        pokemonId: "heatran",
         name: "Heatran",
         nickname: "Heatran",
         level: DEFAULT_LEVEL,
@@ -1779,7 +1779,7 @@ describe("HeuristicAI", () => {
     // evaluateMatchup(Garchomp, Heatran) = -0.45 < -0.3 → enters switch scoring block
     state.sides.p2.active = [
       {
-        speciesId: "garchomp",
+        pokemonId: "garchomp",
         name: "Garchomp",
         nickname: "Garchomp",
         level: DEFAULT_LEVEL,
@@ -1802,7 +1802,7 @@ describe("HeuristicAI", () => {
     // evaluateMatchup(Swampert, Heatran) = -0.75 < -0.3 → triggers line 335
     // getTypeEffectiveness("Fire", ["Water", "Ground"]) = 4 > 1 → triggers lines 349-354 penalty
     const switchTarget: BattlePokemon = {
-      speciesId: "swampert",
+      pokemonId: "swampert",
       name: "Swampert",
       nickname: "Swampert",
       level: DEFAULT_LEVEL,
@@ -1843,7 +1843,7 @@ describe("HeuristicAI", () => {
         {
           index: 2,
           name: "Swampert",
-          speciesId: "swampert",
+          pokemonId: "swampert",
           hp: 341,
           maxHp: 341,
           status: "",
@@ -1863,7 +1863,7 @@ describe("HeuristicAI", () => {
     state.format = "doubles"
     state.sides.p1.active = [
       {
-        speciesId: "garchomp",
+        pokemonId: "garchomp",
         name: "Garchomp",
         nickname: "Garchomp",
         level: DEFAULT_LEVEL,
@@ -1882,7 +1882,7 @@ describe("HeuristicAI", () => {
         volatiles: [],
       },
       {
-        speciesId: "heatran",
+        pokemonId: "heatran",
         name: "Heatran",
         nickname: "Heatran",
         level: DEFAULT_LEVEL,
@@ -1903,7 +1903,7 @@ describe("HeuristicAI", () => {
     ]
     state.sides.p2.active = [
       {
-        speciesId: "heatran",
+        pokemonId: "heatran",
         name: "Heatran",
         nickname: "Heatran",
         level: DEFAULT_LEVEL,

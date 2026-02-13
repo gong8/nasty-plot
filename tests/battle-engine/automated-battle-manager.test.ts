@@ -83,7 +83,7 @@ function makeEndedState(): BattleState {
 }
 
 // Default: return state with phase "ended" so the main loop exits immediately
-vi.mock("#battle-engine/battle-manager", () => ({
+vi.mock("#battle-engine/battle-manager.service", () => ({
   createInitialState: vi.fn(() => makeEndedState()),
 }))
 
@@ -123,7 +123,7 @@ describe("runAutomatedBattle", () => {
       })),
     }
     // Re-set the default mock to return ended state
-    const { createInitialState } = await import("#battle-engine/battle-manager")
+    const { createInitialState } = await import("#battle-engine/battle-manager.service")
     vi.mocked(createInitialState).mockReturnValue(makeEndedState())
   })
 
@@ -254,7 +254,7 @@ describe("runAutomatedBattle", () => {
   })
 
   it("records p1 as winner when state.winner is p1", async () => {
-    const { createInitialState } = await import("#battle-engine/battle-manager")
+    const { createInitialState } = await import("#battle-engine/battle-manager.service")
     const state = makeEndedState()
     state.winner = "p1"
     state.turn = 5
@@ -279,7 +279,7 @@ describe("runAutomatedBattle", () => {
   })
 
   it("records p2 as winner when state.winner is p2", async () => {
-    const { createInitialState } = await import("#battle-engine/battle-manager")
+    const { createInitialState } = await import("#battle-engine/battle-manager.service")
     const state = makeEndedState()
     state.winner = "p2"
     state.turn = 10

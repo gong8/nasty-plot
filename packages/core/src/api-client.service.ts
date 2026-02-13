@@ -1,3 +1,5 @@
+import { DEFAULT_API_URL } from "./constants"
+
 export interface ApiClient {
   get<T>(path: string, params?: Record<string, string>): Promise<T>
   post<T>(path: string, body: unknown): Promise<T>
@@ -28,8 +30,7 @@ export function createApiClient(baseUrl?: string): ApiClient {
       const cleanPath = path.startsWith("/") ? path : `/${path}`
       url = new URL(`${base}${cleanPath}`)
     } else {
-      const origin =
-        typeof window !== "undefined" ? window.location.origin : "http://localhost:3000"
+      const origin = typeof window !== "undefined" ? window.location.origin : DEFAULT_API_URL
       const cleanPath = path.startsWith("/") ? path : `/${path}`
       url = new URL(cleanPath, origin)
     }

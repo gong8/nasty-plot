@@ -57,8 +57,8 @@ export interface BoostTable {
 }
 
 export interface BattlePokemon {
-  /** Species identifier (e.g. "Garchomp") */
-  speciesId: string
+  /** Species identifier (e.g. "garchomp") */
+  pokemonId: string
   name: string
   /** Player-given nickname, falls back to species name */
   nickname: string
@@ -189,7 +189,7 @@ export interface BattleActionSet {
   switches: {
     index: number
     name: string
-    speciesId: string
+    pokemonId: string
     hp: number
     maxHp: number
     status: StatusCondition

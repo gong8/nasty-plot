@@ -1,6 +1,6 @@
-import { createApiClient } from "@nasty-plot/core"
+import { createApiClient, DEFAULT_API_URL } from "@nasty-plot/core"
 
-const API_BASE = process.env.API_URL || "http://localhost:3000/api"
+const API_BASE = process.env.API_URL || `${DEFAULT_API_URL}/api`
 
 const client = createApiClient(API_BASE)
 

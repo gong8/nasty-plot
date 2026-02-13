@@ -126,14 +126,14 @@ export function getItem(id: string): ItemData | null {
   return toItemData(item)
 }
 
-export async function getLearnset(speciesId: string): Promise<string[]> {
+export async function getLearnset(pokemonId: string): Promise<string[]> {
   // Try exact ID first
-  const learnsetData = await dex.learnsets.get(speciesId)
+  const learnsetData = await dex.learnsets.get(pokemonId)
   if (learnsetData?.learnset) return Object.keys(learnsetData.learnset)
 
   // Alternate forms (Gmax, Mega, Therian, etc.) don't have their own learnsets
   // in @pkmn/dex -- walk the inheritance chain: changesFrom -> baseSpecies
-  const species = dex.species.get(speciesId)
+  const species = dex.species.get(pokemonId)
   if (!species.exists) return []
 
   if (species.changesFrom) {

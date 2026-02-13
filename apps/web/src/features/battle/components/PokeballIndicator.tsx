@@ -22,7 +22,7 @@ function PokemonIcon({ pokemon }: { pokemon?: BattlePokemon }) {
     )
   }
 
-  const icon = getIconUrl(pokemon.speciesId || pokemon.name)
+  const icon = getIconUrl(pokemon.pokemonId || pokemon.name)
 
   return (
     <div

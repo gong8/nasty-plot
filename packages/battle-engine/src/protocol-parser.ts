@@ -204,7 +204,7 @@ function defaultBoosts(): BoostTable {
 
 function makeEmptyPokemon(): BattlePokemon {
   return {
-    speciesId: "",
+    pokemonId: "",
     name: "",
     nickname: "",
     level: DEFAULT_LEVEL,
@@ -295,7 +295,7 @@ export function processLine(state: BattleState, line: string): BattleLogEntry | 
         // New pokemon we haven't seen
         pokemon = makeEmptyPokemon()
         pokemon.name = details.species
-        pokemon.speciesId = toId(details.species)
+        pokemon.pokemonId = toId(details.species)
         pokemon.nickname = ident.name
         pokemon.level = details.level
         side.team.push(pokemon)
@@ -950,7 +950,7 @@ function extractSwitches(pokemon: RequestPokemon[]): BattleActionSet["switches"]
       return {
         index: i + 1, // 1-indexed
         name: details.species,
-        speciesId: toId(details.species),
+        pokemonId: toId(details.species),
         hp: hpData.hp,
         maxHp: hpData.maxHp,
         status,
@@ -977,13 +977,13 @@ export function updateSideFromRequest(
 
     // Find existing or create
     let pokemon = state.sides[side].team.find(
-      (p) => p.name === details.species || p.speciesId === toId(details.species),
+      (p) => p.name === details.species || p.pokemonId === toId(details.species),
     )
 
     if (!pokemon) {
       pokemon = makeEmptyPokemon()
       pokemon.name = details.species
-      pokemon.speciesId = toId(details.species)
+      pokemon.pokemonId = toId(details.species)
       pokemon.nickname = reqPoke.ident?.replace(/^p[12][a-d]?: /, "") || details.species
       pokemon.level = details.level
       state.sides[side].team.push(pokemon)

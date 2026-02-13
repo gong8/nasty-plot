@@ -95,7 +95,7 @@ let tickCount: number
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 let mockStateRef: BattleState
 
-vi.mock("#battle-engine/battle-manager", () => ({
+vi.mock("#battle-engine/battle-manager.service", () => ({
   createInitialState: vi.fn((_id: string, format: string) => {
     const state = makeBattleState({
       format: format as "singles" | "doubles",
@@ -189,7 +189,7 @@ describe("runAutomatedBattle - deep coverage", () => {
       // Packed format: contains | but no newlines
       const packed = "Garchomp|||roughskin|earthquake|||||||"
       const state = makeBattleState({ phase: "ended" })
-      const { createInitialState } = await import("#battle-engine/battle-manager")
+      const { createInitialState } = await import("#battle-engine/battle-manager.service")
       vi.mocked(createInitialState).mockReturnValue(state)
 
       const ai1 = createMockAI()
@@ -213,7 +213,7 @@ describe("runAutomatedBattle - deep coverage", () => {
       setupEmptyStream()
 
       const state = makeBattleState({ phase: "ended" })
-      const { createInitialState } = await import("#battle-engine/battle-manager")
+      const { createInitialState } = await import("#battle-engine/battle-manager.service")
       vi.mocked(createInitialState).mockReturnValue(state)
 
       const ai1 = createMockAI()
@@ -237,7 +237,7 @@ describe("runAutomatedBattle - deep coverage", () => {
       setupEmptyStream()
 
       const state = makeBattleState({ phase: "ended" })
-      const { createInitialState } = await import("#battle-engine/battle-manager")
+      const { createInitialState } = await import("#battle-engine/battle-manager.service")
       vi.mocked(createInitialState).mockReturnValue(state)
 
       const ai1 = createMockAI()
@@ -263,7 +263,7 @@ describe("runAutomatedBattle - deep coverage", () => {
       setupEmptyStream()
 
       const state = makeBattleState({ phase: "ended" })
-      const { createInitialState } = await import("#battle-engine/battle-manager")
+      const { createInitialState } = await import("#battle-engine/battle-manager.service")
       vi.mocked(createInitialState).mockReturnValue(state)
 
       const ai1 = createMockAI()
@@ -290,7 +290,7 @@ describe("runAutomatedBattle - deep coverage", () => {
       setupEmptyStream()
 
       const state = makeBattleState({ phase: "ended" })
-      const { createInitialState } = await import("#battle-engine/battle-manager")
+      const { createInitialState } = await import("#battle-engine/battle-manager.service")
       vi.mocked(createInitialState).mockReturnValue(state)
 
       const ai1 = createMockAI()
@@ -318,7 +318,7 @@ describe("runAutomatedBattle - deep coverage", () => {
   describe("protocol and request parsing", () => {
     it("processes protocol lines from stream chunks", async () => {
       const state = makeBattleState({ phase: "ended" })
-      const { createInitialState } = await import("#battle-engine/battle-manager")
+      const { createInitialState } = await import("#battle-engine/battle-manager.service")
       vi.mocked(createInitialState).mockReturnValue(state)
 
       // Stream emits protocol lines (not requests)
@@ -343,7 +343,7 @@ describe("runAutomatedBattle - deep coverage", () => {
     })
 
     it("parses p1 request and sets pending actions", async () => {
-      const { createInitialState } = await import("#battle-engine/battle-manager")
+      const { createInitialState } = await import("#battle-engine/battle-manager.service")
       let turnsSeen = 0
 
       // Create state that transitions from battle to ended after one action
@@ -444,7 +444,7 @@ describe("runAutomatedBattle - deep coverage", () => {
     })
 
     it("handles team preview for both players", async () => {
-      const { createInitialState } = await import("#battle-engine/battle-manager")
+      const { createInitialState } = await import("#battle-engine/battle-manager.service")
       const state = makeBattleState({ phase: "ended" })
       vi.mocked(createInitialState).mockReturnValue(state)
 
@@ -501,7 +501,7 @@ describe("runAutomatedBattle - deep coverage", () => {
     })
 
     it("skips bad request JSON without crashing", async () => {
-      const { createInitialState } = await import("#battle-engine/battle-manager")
+      const { createInitialState } = await import("#battle-engine/battle-manager.service")
       const state = makeBattleState({ phase: "ended" })
       vi.mocked(createInitialState).mockReturnValue(state)
 
@@ -530,7 +530,7 @@ describe("runAutomatedBattle - deep coverage", () => {
     })
 
     it("does not process duplicate protocol chunks", async () => {
-      const { createInitialState } = await import("#battle-engine/battle-manager")
+      const { createInitialState } = await import("#battle-engine/battle-manager.service")
       const state = makeBattleState({ phase: "ended" })
       vi.mocked(createInitialState).mockReturnValue(state)
 
@@ -561,7 +561,7 @@ describe("runAutomatedBattle - deep coverage", () => {
     })
 
     it("handles request with wait=true (no actions needed)", async () => {
-      const { createInitialState } = await import("#battle-engine/battle-manager")
+      const { createInitialState } = await import("#battle-engine/battle-manager.service")
       const state = makeBattleState({ phase: "ended" })
       vi.mocked(createInitialState).mockReturnValue(state)
 
@@ -599,7 +599,7 @@ describe("runAutomatedBattle - deep coverage", () => {
     })
 
     it("calls updateSideFromRequest when side info is present", async () => {
-      const { createInitialState } = await import("#battle-engine/battle-manager")
+      const { createInitialState } = await import("#battle-engine/battle-manager.service")
       const state = makeBattleState({ phase: "ended" })
       vi.mocked(createInitialState).mockReturnValue(state)
 
@@ -645,7 +645,7 @@ describe("runAutomatedBattle - deep coverage", () => {
 
   describe("action processing - singles", () => {
     it("processes both pending actions in singles mode", async () => {
-      const { createInitialState } = await import("#battle-engine/battle-manager")
+      const { createInitialState } = await import("#battle-engine/battle-manager.service")
       let actionCallCount = 0
 
       vi.mocked(createInitialState).mockImplementation((_id, fmt) => {
@@ -744,7 +744,7 @@ describe("runAutomatedBattle - deep coverage", () => {
 
   describe("action processing - doubles", () => {
     it("handles doubles mode with slot 2 actions", async () => {
-      const { createInitialState } = await import("#battle-engine/battle-manager")
+      const { createInitialState } = await import("#battle-engine/battle-manager.service")
       let actionCallCount = 0
 
       vi.mocked(createInitialState).mockImplementation((_id, fmt) => {
@@ -880,7 +880,7 @@ describe("runAutomatedBattle - deep coverage", () => {
 
   describe("force switch handling", () => {
     it("handles p1 force switch in singles", async () => {
-      const { createInitialState } = await import("#battle-engine/battle-manager")
+      const { createInitialState } = await import("#battle-engine/battle-manager.service")
       let switchCount = 0
 
       vi.mocked(createInitialState).mockImplementation((_id, fmt) => {
@@ -902,7 +902,7 @@ describe("runAutomatedBattle - deep coverage", () => {
           {
             index: 2,
             name: "Clefable",
-            speciesId: "clefable",
+            pokemonId: "clefable",
             hp: 394,
             maxHp: 394,
             status: "",
@@ -952,7 +952,7 @@ describe("runAutomatedBattle - deep coverage", () => {
     })
 
     it("handles p2 force switch in singles", async () => {
-      const { createInitialState } = await import("#battle-engine/battle-manager")
+      const { createInitialState } = await import("#battle-engine/battle-manager.service")
       let switchCount = 0
 
       vi.mocked(createInitialState).mockImplementation((_id, fmt) => {
@@ -974,7 +974,7 @@ describe("runAutomatedBattle - deep coverage", () => {
           {
             index: 3,
             name: "Tyranitar",
-            speciesId: "tyranitar",
+            pokemonId: "tyranitar",
             hp: 404,
             maxHp: 404,
             status: "",
@@ -1024,7 +1024,7 @@ describe("runAutomatedBattle - deep coverage", () => {
     })
 
     it("handles p1 force switch in doubles with slot2", async () => {
-      const { createInitialState } = await import("#battle-engine/battle-manager")
+      const { createInitialState } = await import("#battle-engine/battle-manager.service")
       let switchCount = 0
 
       vi.mocked(createInitialState).mockImplementation((_id, fmt) => {
@@ -1046,7 +1046,7 @@ describe("runAutomatedBattle - deep coverage", () => {
           {
             index: 3,
             name: "Clefable",
-            speciesId: "clefable",
+            pokemonId: "clefable",
             hp: 394,
             maxHp: 394,
             status: "",
@@ -1063,7 +1063,7 @@ describe("runAutomatedBattle - deep coverage", () => {
           {
             index: 4,
             name: "Tyranitar",
-            speciesId: "tyranitar",
+            pokemonId: "tyranitar",
             hp: 404,
             maxHp: 404,
             status: "",
@@ -1121,7 +1121,7 @@ describe("runAutomatedBattle - deep coverage", () => {
     })
 
     it("handles p2 force switch in doubles with slot2", async () => {
-      const { createInitialState } = await import("#battle-engine/battle-manager")
+      const { createInitialState } = await import("#battle-engine/battle-manager.service")
       let switchCount = 0
 
       vi.mocked(createInitialState).mockImplementation((_id, fmt) => {
@@ -1143,7 +1143,7 @@ describe("runAutomatedBattle - deep coverage", () => {
           {
             index: 3,
             name: "Clefable",
-            speciesId: "clefable",
+            pokemonId: "clefable",
             hp: 394,
             maxHp: 394,
             status: "",
@@ -1160,7 +1160,7 @@ describe("runAutomatedBattle - deep coverage", () => {
           {
             index: 4,
             name: "Tyranitar",
-            speciesId: "tyranitar",
+            pokemonId: "tyranitar",
             hp: 404,
             maxHp: 404,
             status: "",
@@ -1223,7 +1223,7 @@ describe("runAutomatedBattle - deep coverage", () => {
 
   describe("actionToChoice", () => {
     it("converts switch action to 'switch N' choice string", async () => {
-      const { createInitialState } = await import("#battle-engine/battle-manager")
+      const { createInitialState } = await import("#battle-engine/battle-manager.service")
       let actionCallCount = 0
 
       vi.mocked(createInitialState).mockImplementation((_id, fmt) => {
@@ -1259,7 +1259,7 @@ describe("runAutomatedBattle - deep coverage", () => {
           {
             index: 3,
             name: "Clefable",
-            speciesId: "clefable",
+            pokemonId: "clefable",
             hp: 394,
             maxHp: 394,
             status: "",
@@ -1322,7 +1322,7 @@ describe("runAutomatedBattle - deep coverage", () => {
     })
 
     it("converts move action with tera flag", async () => {
-      const { createInitialState } = await import("#battle-engine/battle-manager")
+      const { createInitialState } = await import("#battle-engine/battle-manager.service")
       let actionCallCount = 0
 
       vi.mocked(createInitialState).mockImplementation((_id, fmt) => {
@@ -1409,7 +1409,7 @@ describe("runAutomatedBattle - deep coverage", () => {
     })
 
     it("converts move action with mega flag", async () => {
-      const { createInitialState } = await import("#battle-engine/battle-manager")
+      const { createInitialState } = await import("#battle-engine/battle-manager.service")
       let actionCallCount = 0
 
       vi.mocked(createInitialState).mockImplementation((_id, fmt) => {
@@ -1496,7 +1496,7 @@ describe("runAutomatedBattle - deep coverage", () => {
     })
 
     it("converts move action with targetSlot", async () => {
-      const { createInitialState } = await import("#battle-engine/battle-manager")
+      const { createInitialState } = await import("#battle-engine/battle-manager.service")
       let actionCallCount = 0
 
       vi.mocked(createInitialState).mockImplementation((_id, fmt) => {
@@ -1591,7 +1591,7 @@ describe("runAutomatedBattle - deep coverage", () => {
     it("returns draw when state has no winner and phase is ended", async () => {
       // This test verifies the winner determination logic at the end of runAutomatedBattle.
       // When state.winner is null, the result should be "draw".
-      const { createInitialState } = await import("#battle-engine/battle-manager")
+      const { createInitialState } = await import("#battle-engine/battle-manager.service")
       const state = makeBattleState({ phase: "ended" })
       state.winner = null
       state.turn = 100
@@ -1622,7 +1622,7 @@ describe("runAutomatedBattle - deep coverage", () => {
 
   describe("escapeTeam", () => {
     it("escapes backslashes and quotes in team strings", async () => {
-      const { createInitialState } = await import("#battle-engine/battle-manager")
+      const { createInitialState } = await import("#battle-engine/battle-manager.service")
       const state = makeBattleState({ phase: "ended" })
       vi.mocked(createInitialState).mockReturnValue(state)
       setupEmptyStream()
@@ -1660,7 +1660,7 @@ describe("runAutomatedBattle - deep coverage", () => {
 
   describe("stream cleanup", () => {
     it("handles stream.destroy throwing without crashing", async () => {
-      const { createInitialState } = await import("#battle-engine/battle-manager")
+      const { createInitialState } = await import("#battle-engine/battle-manager.service")
       const state = makeBattleState({ phase: "ended" })
       vi.mocked(createInitialState).mockReturnValue(state)
       setupEmptyStream()
@@ -1688,7 +1688,7 @@ describe("runAutomatedBattle - deep coverage", () => {
     })
 
     it("accumulates protocol log from stream chunks", async () => {
-      const { createInitialState } = await import("#battle-engine/battle-manager")
+      const { createInitialState } = await import("#battle-engine/battle-manager.service")
       const state = makeBattleState({ phase: "ended" })
       vi.mocked(createInitialState).mockReturnValue(state)
 
@@ -1723,7 +1723,7 @@ describe("runAutomatedBattle - deep coverage", () => {
 
   describe("protocol edge cases", () => {
     it("processes request followed by protocol in same chunk", async () => {
-      const { createInitialState } = await import("#battle-engine/battle-manager")
+      const { createInitialState } = await import("#battle-engine/battle-manager.service")
       const state = makeBattleState({ phase: "ended" })
       vi.mocked(createInitialState).mockReturnValue(state)
 
@@ -1761,7 +1761,7 @@ describe("runAutomatedBattle - deep coverage", () => {
     })
 
     it("handles protocol before request in same chunk", async () => {
-      const { createInitialState } = await import("#battle-engine/battle-manager")
+      const { createInitialState } = await import("#battle-engine/battle-manager.service")
       const state = makeBattleState({ phase: "ended" })
       vi.mocked(createInitialState).mockReturnValue(state)
 
@@ -1797,7 +1797,7 @@ describe("runAutomatedBattle - deep coverage", () => {
     })
 
     it("handles request without side id", async () => {
-      const { createInitialState } = await import("#battle-engine/battle-manager")
+      const { createInitialState } = await import("#battle-engine/battle-manager.service")
       const state = makeBattleState({ phase: "ended" })
       vi.mocked(createInitialState).mockReturnValue(state)
 
@@ -1833,7 +1833,7 @@ describe("runAutomatedBattle - deep coverage", () => {
     })
 
     it("uses fallback formatId when config.formatId is empty", async () => {
-      const { createInitialState } = await import("#battle-engine/battle-manager")
+      const { createInitialState } = await import("#battle-engine/battle-manager.service")
       const state = makeBattleState({ phase: "ended" })
       vi.mocked(createInitialState).mockReturnValue(state)
       setupEmptyStream()

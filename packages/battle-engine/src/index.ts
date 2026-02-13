@@ -1,5 +1,5 @@
 export * from "./types"
-export * from "./battle-manager"
+export * from "./battle-manager.service"
 export {
   serializeBattleState,
   formatMoveStats,
@@ -44,7 +44,6 @@ export {
   importFromRawLog,
 } from "./replay/replay-import"
 export type {
-  ShowdownReplayJson,
   ExtractedPokemonData,
   ExtractedTeamData,
   ParsedBattleImport,

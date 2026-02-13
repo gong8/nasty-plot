@@ -6,12 +6,13 @@ import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { SkeletonList } from "@/components/skeleton-list"
 import { cn } from "@nasty-plot/ui"
-import type {
-  Recommendation,
-  TeamAnalysis,
-  UsageStatsEntry,
-  PokemonSpecies,
-  PokemonType,
+import {
+  formatUsagePercent,
+  type Recommendation,
+  type TeamAnalysis,
+  type UsageStatsEntry,
+  type PokemonSpecies,
+  type PokemonType,
 } from "@nasty-plot/core"
 import { PokemonSearchPanel } from "../pokemon-search-panel"
 import { RecommendationCard } from "./recommendation-card"
@@ -71,7 +72,7 @@ export function StepPickPokemon({
             reasons: [
               {
                 type: "usage" as const,
-                description: `${u.usagePercent.toFixed(1)}% usage in this format`,
+                description: `${formatUsagePercent(u.usagePercent)} usage in this format`,
                 weight: 1,
               },
             ],

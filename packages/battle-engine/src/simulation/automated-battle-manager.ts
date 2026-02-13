@@ -5,7 +5,7 @@ import {
   parseRequestForSlot,
   updateSideFromRequest,
 } from "../protocol-parser"
-import { createInitialState } from "../battle-manager"
+import { createInitialState } from "../battle-manager.service"
 import { DEFAULT_FORMAT_ID, type GameType } from "@nasty-plot/core"
 import type { BattleState, BattleActionSet, AIPlayer } from "../types"
 
@@ -174,15 +174,15 @@ export async function runAutomatedBattle(
       pendingP1Slot2Actions = null
       pendingP2Slot2Actions = null
       turns++
-    } else if (pendingP1Actions?.forceSwitch) {
+    } else if ((pendingP1Actions as BattleActionSet | null)?.forceSwitch) {
       stream.write(
-        `>p1 ${await resolvePlayerChoice(config.ai1, state, pendingP1Actions, pendingP1Slot2Actions, isDoubles)}`,
+        `>p1 ${await resolvePlayerChoice(config.ai1, state, pendingP1Actions!, pendingP1Slot2Actions, isDoubles)}`,
       )
       pendingP1Actions = null
       pendingP1Slot2Actions = null
-    } else if (pendingP2Actions?.forceSwitch) {
+    } else if ((pendingP2Actions as BattleActionSet | null)?.forceSwitch) {
       stream.write(
-        `>p2 ${await resolvePlayerChoice(config.ai2, state, pendingP2Actions, pendingP2Slot2Actions, isDoubles)}`,
+        `>p2 ${await resolvePlayerChoice(config.ai2, state, pendingP2Actions!, pendingP2Slot2Actions, isDoubles)}`,
       )
       pendingP2Actions = null
       pendingP2Slot2Actions = null

@@ -10,7 +10,7 @@ import { DEFAULT_LEVEL } from "@nasty-plot/core"
 
 function makePokemon(overrides: Partial<BattlePokemon> = {}): BattlePokemon {
   return {
-    speciesId: "garchomp",
+    pokemonId: "garchomp",
     name: "Garchomp",
     nickname: "Garchomp",
     level: DEFAULT_LEVEL,
@@ -38,14 +38,14 @@ function makeState(): BattleState {
   state.sides.p1.team = [makePokemon()]
   state.sides.p2.active = [
     makePokemon({
-      speciesId: "heatran",
+      pokemonId: "heatran",
       name: "Heatran",
       types: ["Fire", "Steel"],
     }),
   ]
   state.sides.p2.team = [
     makePokemon({
-      speciesId: "heatran",
+      pokemonId: "heatran",
       name: "Heatran",
       types: ["Fire", "Steel"],
     }),
@@ -89,7 +89,7 @@ function makeActions(): BattleActionSet {
       {
         index: 2,
         name: "Clefable",
-        speciesId: "clefable",
+        pokemonId: "clefable",
         hp: 394,
         maxHp: 394,
         status: "",
@@ -192,7 +192,7 @@ describe("MCTSAI", () => {
         {
           index: 2,
           name: "Clefable",
-          speciesId: "clefable",
+          pokemonId: "clefable",
           hp: 394,
           maxHp: 394,
           status: "",
@@ -222,12 +222,12 @@ describe("MCTSAI", () => {
         p1: {
           active: [
             makePokemon(),
-            makePokemon({ speciesId: "heatran", name: "Heatran", types: ["Fire", "Steel"] }),
+            makePokemon({ pokemonId: "heatran", name: "Heatran", types: ["Fire", "Steel"] }),
           ],
           team: [
             makePokemon(),
-            makePokemon({ speciesId: "heatran", name: "Heatran", types: ["Fire", "Steel"] }),
-            makePokemon({ speciesId: "clefable", name: "Clefable", types: ["Fairy"] }),
+            makePokemon({ pokemonId: "heatran", name: "Heatran", types: ["Fire", "Steel"] }),
+            makePokemon({ pokemonId: "clefable", name: "Clefable", types: ["Fairy"] }),
           ],
           name: "Player",
           sideConditions: {
@@ -245,24 +245,24 @@ describe("MCTSAI", () => {
         p2: {
           active: [
             makePokemon({
-              speciesId: "ironvaliant",
+              pokemonId: "ironvaliant",
               name: "Iron Valiant",
               types: ["Fairy", "Fighting"],
             }),
             makePokemon({
-              speciesId: "greattusk",
+              pokemonId: "greattusk",
               name: "Great Tusk",
               types: ["Ground", "Fighting"],
             }),
           ],
           team: [
             makePokemon({
-              speciesId: "ironvaliant",
+              pokemonId: "ironvaliant",
               name: "Iron Valiant",
               types: ["Fairy", "Fighting"],
             }),
             makePokemon({
-              speciesId: "greattusk",
+              pokemonId: "greattusk",
               name: "Great Tusk",
               types: ["Ground", "Fighting"],
             }),

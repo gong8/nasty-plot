@@ -1,1 +1,6 @@
-export { calculateDamage, calculateMatchupMatrix, flattenDamage } from "./calc.service"
+export {
+  calculateDamage,
+  calculateMatchupMatrix,
+  calculateQuickDamage,
+  flattenDamage,
+} from "./calc.service"

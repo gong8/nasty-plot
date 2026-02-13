@@ -8,7 +8,7 @@ function makeState(): BattleState {
 
   state.sides.p1.active = [
     {
-      speciesId: "garchomp",
+      pokemonId: "garchomp",
       name: "Garchomp",
       nickname: "Garchomp",
       level: DEFAULT_LEVEL,
@@ -38,7 +38,7 @@ function makeState(): BattleState {
 
   state.sides.p2.active = [
     {
-      speciesId: "heatran",
+      pokemonId: "heatran",
       name: "Heatran",
       nickname: "Heatran",
       level: DEFAULT_LEVEL,
@@ -106,7 +106,7 @@ function makeActions(): BattleActionSet {
       {
         index: 2,
         name: "Clefable",
-        speciesId: "clefable",
+        pokemonId: "clefable",
         hp: 394,
         maxHp: 394,
         status: "",
@@ -115,7 +115,7 @@ function makeActions(): BattleActionSet {
       {
         index: 3,
         name: "Weavile",
-        speciesId: "weavile",
+        pokemonId: "weavile",
         hp: 281,
         maxHp: 281,
         status: "",
@@ -171,7 +171,7 @@ describe("HeuristicAI with opponentPredictions", () => {
     // p2 active: Weavile (Dark/Ice), p1 active: Blaziken (Fire/Fighting)
     state.sides.p2.active = [
       {
-        speciesId: "weavile",
+        pokemonId: "weavile",
         name: "Weavile",
         nickname: "Weavile",
         level: DEFAULT_LEVEL,
@@ -200,7 +200,7 @@ describe("HeuristicAI with opponentPredictions", () => {
     ]
     state.sides.p1.active = [
       {
-        speciesId: "blaziken",
+        pokemonId: "blaziken",
         name: "Blaziken",
         nickname: "Blaziken",
         level: DEFAULT_LEVEL,
@@ -243,7 +243,7 @@ describe("HeuristicAI with opponentPredictions", () => {
     state.sides.p2.team = [
       state.sides.p2.active[0]!,
       {
-        speciesId: "dragonite",
+        pokemonId: "dragonite",
         name: "Dragonite",
         nickname: "Dragonite",
         level: DEFAULT_LEVEL,
@@ -270,7 +270,7 @@ describe("HeuristicAI with opponentPredictions", () => {
         volatiles: [],
       },
       {
-        speciesId: "toxapex",
+        pokemonId: "toxapex",
         name: "Toxapex",
         nickname: "Toxapex",
         level: DEFAULT_LEVEL,
@@ -319,7 +319,7 @@ describe("HeuristicAI with opponentPredictions", () => {
         {
           index: 2,
           name: "Dragonite",
-          speciesId: "dragonite",
+          pokemonId: "dragonite",
           hp: 323,
           maxHp: 323,
           status: "",
@@ -328,7 +328,7 @@ describe("HeuristicAI with opponentPredictions", () => {
         {
           index: 3,
           name: "Toxapex",
-          speciesId: "toxapex",
+          pokemonId: "toxapex",
           hp: 304,
           maxHp: 304,
           status: "",
@@ -369,7 +369,7 @@ describe("HeuristicAI with opponentPredictions", () => {
     // The only scoring difference comes from prediction penalties.
     state.sides.p1.active = [
       {
-        speciesId: "snorlax",
+        pokemonId: "snorlax",
         name: "Snorlax",
         nickname: "Snorlax",
         level: DEFAULT_LEVEL,
@@ -411,7 +411,7 @@ describe("HeuristicAI with opponentPredictions", () => {
     state.sides.p2.team = [
       state.sides.p2.active[0]!,
       {
-        speciesId: "dragonite",
+        pokemonId: "dragonite",
         name: "Dragonite",
         nickname: "Dragonite",
         level: DEFAULT_LEVEL,
@@ -438,7 +438,7 @@ describe("HeuristicAI with opponentPredictions", () => {
         volatiles: [],
       },
       {
-        speciesId: "toxapex",
+        pokemonId: "toxapex",
         name: "Toxapex",
         nickname: "Toxapex",
         level: DEFAULT_LEVEL,
@@ -473,7 +473,7 @@ describe("HeuristicAI with opponentPredictions", () => {
         {
           index: 2,
           name: "Dragonite",
-          speciesId: "dragonite",
+          pokemonId: "dragonite",
           hp: 323,
           maxHp: 323,
           status: "",
@@ -482,7 +482,7 @@ describe("HeuristicAI with opponentPredictions", () => {
         {
           index: 3,
           name: "Toxapex",
-          speciesId: "toxapex",
+          pokemonId: "toxapex",
           hp: 304,
           maxHp: 304,
           status: "",

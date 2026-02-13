@@ -14,21 +14,17 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
-import { Slider } from "@/components/ui/slider"
 import { Switch } from "@/components/ui/switch"
 import { Separator } from "@/components/ui/separator"
 import { Progress } from "@/components/ui/progress"
 import { ArrowRight, Swords, Shield, Zap } from "lucide-react"
-import { cn, PokemonSprite, SearchCombobox, MoveSelector } from "@nasty-plot/ui"
+import { cn, PokemonSprite, SearchCombobox, MoveSelector, EvEditor } from "@nasty-plot/ui"
+import { NatureSelector } from "@/features/team-builder/components/shared/nature-selector"
+import { TeraTypePicker } from "@/features/team-builder/components/shared/tera-type-picker"
 import { useDamageCalc } from "../hooks/use-damage-calc"
 import {
-  POKEMON_TYPES,
-  NATURES,
-  STATS,
   STAT_LABELS,
   STAT_COLORS,
-  MAX_SINGLE_EV,
-  MAX_TOTAL_EVS,
   DEFAULT_LEVEL,
   DEFAULT_EVS,
   DEFAULT_IVS,
@@ -258,8 +254,6 @@ function PokemonPanel({
     })
   }
 
-  const totalEvs = Object.values(config.evs).reduce((a, b) => a + b, 0)
-
   return (
     <Card className="flex-1">
       <CardHeader className="pb-3">
@@ -330,44 +324,20 @@ function PokemonPanel({
         {/* Nature */}
         <div className="space-y-1.5">
           <Label className="text-xs">Nature</Label>
-          <Select
+          <NatureSelector
             value={config.nature}
-            onValueChange={(v) => updateField("nature", v as NatureName)}
-          >
-            <SelectTrigger className="h-8 text-xs">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {NATURES.map((n) => (
-                <SelectItem key={n} value={n} className="text-xs">
-                  {n}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            onChange={(v) => updateField("nature", v)}
+            triggerClassName="w-full h-8 text-xs"
+          />
         </div>
 
         {/* Tera Type */}
         <div className="space-y-1.5">
           <Label className="text-xs">Tera Type</Label>
-          <Select
-            value={config.teraType || "none"}
-            onValueChange={(v) => updateField("teraType", v === "none" ? "" : (v as PokemonType))}
-          >
-            <SelectTrigger className="h-8 text-xs">
-              <SelectValue placeholder="None" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="none" className="text-xs">
-                None
-              </SelectItem>
-              {POKEMON_TYPES.map((t) => (
-                <SelectItem key={t} value={t} className="text-xs">
-                  {t}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <TeraTypePicker
+            value={config.teraType || undefined}
+            onChange={(v) => updateField("teraType", v)}
+          />
         </div>
 
         {/* Status */}
@@ -393,47 +363,7 @@ function PokemonPanel({
         <Separator />
 
         {/* EVs */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <Label className="text-xs font-medium">EVs</Label>
-            <span
-              className={cn(
-                "text-xs",
-                totalEvs > MAX_TOTAL_EVS ? "text-red-500" : "text-muted-foreground",
-              )}
-            >
-              {totalEvs}/{MAX_TOTAL_EVS}
-            </span>
-          </div>
-          {STATS.map((stat) => (
-            <div key={stat} className="flex items-center gap-2">
-              <span className="w-8 text-xs font-medium" style={{ color: STAT_COLORS[stat] }}>
-                {STAT_LABELS[stat]}
-              </span>
-              <Slider
-                min={0}
-                max={MAX_SINGLE_EV}
-                step={4}
-                value={[config.evs[stat]]}
-                onValueChange={([v]) => updateEv(stat, v)}
-                className="flex-1"
-              />
-              <Input
-                type="number"
-                min={0}
-                max={MAX_SINGLE_EV}
-                value={config.evs[stat]}
-                onChange={(e) =>
-                  updateEv(
-                    stat,
-                    Math.min(MAX_SINGLE_EV, Math.max(0, parseInt(e.target.value) || 0)),
-                  )
-                }
-                className="w-14 h-7 text-xs text-center"
-              />
-            </div>
-          ))}
-        </div>
+        <EvEditor evs={config.evs} onChange={updateEv} showRemaining />
 
         <Separator />
 

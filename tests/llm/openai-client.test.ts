@@ -26,7 +26,7 @@ describe("openai-client", () => {
   it("exports getOpenAI and MODEL constant", async () => {
     vi.stubEnv("LLM_API_KEY", "test-key")
 
-    const mod = await import("#llm/openai-client")
+    const mod = await import("#llm/openai-client.service")
 
     expect(mod.getOpenAI).toBeDefined()
     expect(mod.MODEL).toBeDefined()
@@ -34,7 +34,7 @@ describe("openai-client", () => {
   })
 
   it("defaults to claude-opus-4-6 when no model env is set", async () => {
-    const mod = await import("#llm/openai-client")
+    const mod = await import("#llm/openai-client.service")
 
     expect(mod.MODEL).toBe("claude-opus-4-6")
   })
@@ -43,7 +43,7 @@ describe("openai-client", () => {
     vi.stubEnv("LLM_MODEL", "claude-opus-4-6")
     vi.stubEnv("OPENAI_MODEL", "gpt-4o")
 
-    const mod = await import("#llm/openai-client")
+    const mod = await import("#llm/openai-client.service")
 
     expect(mod.MODEL).toBe("claude-opus-4-6")
   })
@@ -51,7 +51,7 @@ describe("openai-client", () => {
   it("falls back to OPENAI_MODEL when LLM_MODEL is unset", async () => {
     vi.stubEnv("OPENAI_MODEL", "gpt-3.5-turbo")
 
-    const mod = await import("#llm/openai-client")
+    const mod = await import("#llm/openai-client.service")
 
     expect(mod.MODEL).toBe("gpt-3.5-turbo")
   })
@@ -60,7 +60,7 @@ describe("openai-client", () => {
     vi.stubEnv("LLM_API_KEY", "llm-key")
     vi.stubEnv("OPENAI_API_KEY", "openai-key")
 
-    const mod = await import("#llm/openai-client")
+    const mod = await import("#llm/openai-client.service")
     const client = mod.getOpenAI()
 
     expect((client as unknown as { apiKey: string }).apiKey).toBe("llm-key")
@@ -69,14 +69,14 @@ describe("openai-client", () => {
   it("falls back to OPENAI_API_KEY when LLM_API_KEY is unset", async () => {
     vi.stubEnv("OPENAI_API_KEY", "openai-key")
 
-    const mod = await import("#llm/openai-client")
+    const mod = await import("#llm/openai-client.service")
     const client = mod.getOpenAI()
 
     expect((client as unknown as { apiKey: string }).apiKey).toBe("openai-key")
   })
 
   it("uses 'not-needed' when no API key env is set", async () => {
-    const mod = await import("#llm/openai-client")
+    const mod = await import("#llm/openai-client.service")
     const client = mod.getOpenAI()
 
     expect((client as unknown as { apiKey: string }).apiKey).toBe("not-needed")
@@ -85,7 +85,7 @@ describe("openai-client", () => {
   it("passes baseURL when LLM_BASE_URL is set", async () => {
     vi.stubEnv("LLM_BASE_URL", "http://localhost:3456/v1")
 
-    const mod = await import("#llm/openai-client")
+    const mod = await import("#llm/openai-client.service")
     const client = mod.getOpenAI()
 
     expect((client as unknown as { baseURL: string }).baseURL).toBe("http://localhost:3456/v1")
