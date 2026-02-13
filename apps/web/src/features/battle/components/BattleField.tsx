@@ -138,8 +138,8 @@ export function BattleField({
   return (
     <div
       className={cn(
-        "relative aspect-[2/1] w-full overflow-hidden rounded-xl border",
-        "bg-gradient-to-b from-sky-200 via-sky-100 to-emerald-200",
+        "relative aspect-2/1 w-full overflow-hidden rounded-xl border",
+        "bg-linear-to-b from-sky-200 via-sky-100 to-emerald-200",
         "dark:from-slate-900 dark:via-indigo-950 dark:to-emerald-950",
         className,
       )}
