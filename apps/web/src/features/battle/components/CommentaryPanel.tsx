@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { MessageSquare, Loader2 } from "lucide-react"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import type { BattleState, BattleLogEntry } from "@nasty-plot/battle-engine"
+import type { BattleState, BattleLogEntry } from "@nasty-plot/battle-engine/client"
 
 interface CommentaryPanelProps {
   state: BattleState

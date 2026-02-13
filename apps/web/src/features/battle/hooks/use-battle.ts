@@ -12,7 +12,7 @@ import {
   type AIDifficulty,
   type AIPlayer,
   type BattleCheckpoint,
-} from "@nasty-plot/battle-engine"
+} from "@nasty-plot/battle-engine/client"
 import type { GameType } from "@nasty-plot/core"
 import { saveCheckpoint, clearCheckpoint } from "@/features/battle/lib/checkpoint-store"
 import { postJson } from "@/lib/api-client"

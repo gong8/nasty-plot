@@ -7,7 +7,7 @@ import {
   type BattleState,
   type HintResult,
   type WinProbability,
-} from "@nasty-plot/battle-engine"
+} from "@nasty-plot/battle-engine/client"
 
 interface UseBattleHintsConfig {
   enabled: boolean

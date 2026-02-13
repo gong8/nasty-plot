@@ -3,51 +3,16 @@ import { RandomAI } from "../ai/random-ai"
 import { GreedyAI } from "../ai/greedy-ai"
 import { HeuristicAI } from "../ai/heuristic-ai"
 import { MCTSAI } from "../ai/mcts-ai"
-import type { GameType } from "@nasty-plot/core"
-import type { AIPlayer, AIDifficulty } from "../types"
+import type {
+  AIPlayer,
+  AIDifficulty,
+  BatchSimConfig,
+  PokemonStats,
+  BatchAnalytics,
+  BatchSimProgress,
+} from "../types"
 
-export interface BatchSimConfig {
-  formatId: string
-  simFormatId?: string // @pkmn/sim format ID when different from formatId
-  gameType: GameType
-  team1Paste: string
-  team2Paste: string
-  team1Name?: string
-  team2Name?: string
-  aiDifficulty: AIDifficulty
-  totalGames: number
-  /** Max concurrent battles. Default: 4 */
-  concurrency?: number
-}
-
-export interface PokemonStats {
-  pokemonId: string
-  name: string
-  totalKOs: number
-  totalFaints: number
-  gamesAppeared: number
-}
-
-export interface BatchAnalytics {
-  team1WinRate: number
-  team2WinRate: number
-  drawRate: number
-  avgTurnCount: number
-  minTurnCount: number
-  maxTurnCount: number
-  /** Per-Pokemon statistics */
-  pokemonStats: PokemonStats[]
-  /** Turn count distribution (turn -> count) */
-  turnDistribution: Record<number, number>
-}
-
-export interface BatchSimProgress {
-  completed: number
-  total: number
-  team1Wins: number
-  team2Wins: number
-  draws: number
-}
+export type { BatchSimConfig, PokemonStats, BatchAnalytics, BatchSimProgress }
 
 function createAI(difficulty: AIDifficulty): AIPlayer {
   switch (difficulty) {

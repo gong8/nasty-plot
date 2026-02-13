@@ -4,7 +4,7 @@ import { createContext, useContext, useMemo, type ReactNode } from "react"
 import { usePathname } from "next/navigation"
 import { useQuery } from "@tanstack/react-query"
 import type { TeamData, PokemonSpecies, PageType } from "@nasty-plot/core"
-import { serializeBattleState } from "@nasty-plot/battle-engine"
+import { serializeBattleState } from "@nasty-plot/battle-engine/client"
 import { useBattleStateContext } from "@/features/battle/context/battle-state-context"
 import { fetchJson } from "@/lib/api-client"
 

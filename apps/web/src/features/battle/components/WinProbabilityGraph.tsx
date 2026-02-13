@@ -11,7 +11,7 @@ import {
   Tooltip,
   CartesianGrid,
 } from "recharts"
-import type { ReplayFrame } from "@nasty-plot/battle-engine"
+import type { ReplayFrame } from "@nasty-plot/battle-engine/client"
 import { cn } from "@nasty-plot/ui"
 
 interface WinProbabilityGraphProps {
