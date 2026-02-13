@@ -5,13 +5,11 @@ import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import {
   POKEMON_TYPES,
-  TYPE_COLORS,
-  isLightTypeColor,
   getTypeEffectiveness,
   type PokemonType,
   type TeamSlotData,
 } from "@nasty-plot/core"
-import { cn } from "@nasty-plot/ui"
+import { cn, TypeBadge } from "@nasty-plot/ui"
 
 interface WeaknessHeatmapProps {
   slots: TeamSlotData[]
@@ -64,12 +62,12 @@ export function WeaknessHeatmap({ slots }: WeaknessHeatmapProps) {
                   </th>
                   {POKEMON_TYPES.map((type) => (
                     <th key={type} className="p-1 text-center min-w-[38px]">
-                      <span
-                        className={`text-[9px] font-bold px-1 py-px rounded ${isLightTypeColor(TYPE_COLORS[type]) ? "text-gray-900" : "text-white"}`}
-                        style={{ backgroundColor: TYPE_COLORS[type] }}
-                      >
-                        {type.slice(0, 3)}
-                      </span>
+                      <TypeBadge
+                        type={type}
+                        size="sm"
+                        label={type.slice(0, 3)}
+                        className="text-[9px] px-1 py-px rounded min-w-0"
+                      />
                     </th>
                   ))}
                 </tr>

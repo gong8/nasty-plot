@@ -87,8 +87,8 @@ Calm Nature
   describe("fingerprintFromExtracted", () => {
     it("builds fingerprint from extracted data", () => {
       const pokemon = [
-        { speciesId: "garchomp", moves: ["Earthquake", "Outrage"] },
-        { speciesId: "heatran", moves: ["Lava Plume"] },
+        { pokemonId: "garchomp", moves: ["Earthquake", "Outrage"] },
+        { pokemonId: "heatran", moves: ["Lava Plume"] },
       ]
       const fp = fingerprintFromExtracted(pokemon)
       expect(fp.speciesIds).toEqual(["garchomp", "heatran"])
@@ -99,49 +99,49 @@ Calm Nature
   describe("compareFingerprints", () => {
     it("returns exact for identical fingerprints", () => {
       const fp1 = fingerprintFromExtracted([
-        { speciesId: "garchomp", moves: ["Earthquake", "Outrage"] },
-        { speciesId: "heatran", moves: ["Lava Plume", "Toxic"] },
+        { pokemonId: "garchomp", moves: ["Earthquake", "Outrage"] },
+        { pokemonId: "heatran", moves: ["Lava Plume", "Toxic"] },
       ])
       const fp2 = fingerprintFromExtracted([
-        { speciesId: "heatran", moves: ["Toxic", "Lava Plume"] },
-        { speciesId: "garchomp", moves: ["Outrage", "Earthquake"] },
+        { pokemonId: "heatran", moves: ["Toxic", "Lava Plume"] },
+        { pokemonId: "garchomp", moves: ["Outrage", "Earthquake"] },
       ])
       expect(compareFingerprints(fp1, fp2)).toBe("exact")
     })
 
     it("returns pokemon-match when species match but moves differ", () => {
       const fp1 = fingerprintFromExtracted([
-        { speciesId: "garchomp", moves: ["Earthquake", "Outrage"] },
+        { pokemonId: "garchomp", moves: ["Earthquake", "Outrage"] },
       ])
       const fp2 = fingerprintFromExtracted([
-        { speciesId: "garchomp", moves: ["Earthquake", "Swords Dance"] },
+        { pokemonId: "garchomp", moves: ["Earthquake", "Swords Dance"] },
       ])
       expect(compareFingerprints(fp1, fp2)).toBe("pokemon-match")
     })
 
     it("returns none when species differ", () => {
-      const fp1 = fingerprintFromExtracted([{ speciesId: "garchomp", moves: ["Earthquake"] }])
-      const fp2 = fingerprintFromExtracted([{ speciesId: "heatran", moves: ["Lava Plume"] }])
+      const fp1 = fingerprintFromExtracted([{ pokemonId: "garchomp", moves: ["Earthquake"] }])
+      const fp2 = fingerprintFromExtracted([{ pokemonId: "heatran", moves: ["Lava Plume"] }])
       expect(compareFingerprints(fp1, fp2)).toBe("none")
     })
 
     it("returns none when team sizes differ", () => {
       const fp1 = fingerprintFromExtracted([
-        { speciesId: "garchomp", moves: ["Earthquake"] },
-        { speciesId: "heatran", moves: ["Lava Plume"] },
+        { pokemonId: "garchomp", moves: ["Earthquake"] },
+        { pokemonId: "heatran", moves: ["Lava Plume"] },
       ])
-      const fp2 = fingerprintFromExtracted([{ speciesId: "garchomp", moves: ["Earthquake"] }])
+      const fp2 = fingerprintFromExtracted([{ pokemonId: "garchomp", moves: ["Earthquake"] }])
       expect(compareFingerprints(fp1, fp2)).toBe("none")
     })
 
     it("compares as sets not arrays (order independent)", () => {
       const fp1 = fingerprintFromExtracted([
-        { speciesId: "garchomp", moves: [] },
-        { speciesId: "heatran", moves: [] },
+        { pokemonId: "garchomp", moves: [] },
+        { pokemonId: "heatran", moves: [] },
       ])
       const fp2 = fingerprintFromExtracted([
-        { speciesId: "heatran", moves: [] },
-        { speciesId: "garchomp", moves: [] },
+        { pokemonId: "heatran", moves: [] },
+        { pokemonId: "garchomp", moves: [] },
       ])
       expect(compareFingerprints(fp1, fp2)).toBe("exact")
     })
@@ -185,8 +185,8 @@ Calm Nature
       ])
 
       const extracted = [
-        { speciesId: "garchomp", moves: ["Earthquake", "Outrage"] },
-        { speciesId: "heatran", moves: ["Lava Plume"] },
+        { pokemonId: "garchomp", moves: ["Earthquake", "Outrage"] },
+        { pokemonId: "heatran", moves: ["Lava Plume"] },
       ]
 
       const results = await findMatchingTeams(extracted)
@@ -199,7 +199,7 @@ Calm Nature
     it("skips teams with no slots", async () => {
       mockFindMany.mockResolvedValue([{ id: "empty-team", name: "Empty", slots: [] }])
 
-      const results = await findMatchingTeams([{ speciesId: "garchomp", moves: ["Earthquake"] }])
+      const results = await findMatchingTeams([{ pokemonId: "garchomp", moves: ["Earthquake"] }])
 
       expect(results).toHaveLength(0)
     })
@@ -215,7 +215,7 @@ Calm Nature
         },
       ])
 
-      const results = await findMatchingTeams([{ speciesId: "garchomp", moves: ["Earthquake"] }])
+      const results = await findMatchingTeams([{ pokemonId: "garchomp", moves: ["Earthquake"] }])
 
       expect(results).toHaveLength(0)
     })
@@ -232,7 +232,7 @@ Calm Nature
         },
       ])
 
-      const results = await findMatchingTeams([{ speciesId: "garchomp", moves: ["Earthquake"] }])
+      const results = await findMatchingTeams([{ pokemonId: "garchomp", moves: ["Earthquake"] }])
 
       expect(results).toHaveLength(0)
     })
@@ -255,7 +255,7 @@ Calm Nature
       ])
 
       const results = await findMatchingTeams([
-        { speciesId: "garchomp", moves: ["Earthquake", "Outrage"] },
+        { pokemonId: "garchomp", moves: ["Earthquake", "Outrage"] },
       ])
 
       expect(results).toHaveLength(1)
@@ -281,7 +281,7 @@ Calm Nature
       ])
 
       const results = await findMatchingTeams([
-        { speciesId: "garchomp", moves: ["Earthquake", "Outrage"] },
+        { pokemonId: "garchomp", moves: ["Earthquake", "Outrage"] },
       ])
 
       expect(results).toHaveLength(1)
@@ -292,7 +292,7 @@ Calm Nature
     it("filters by format when provided", async () => {
       mockFindMany.mockResolvedValue([])
 
-      await findMatchingTeams([{ speciesId: "garchomp", moves: [] }], "gen9ou")
+      await findMatchingTeams([{ pokemonId: "garchomp", moves: [] }], "gen9ou")
 
       expect(mockFindMany).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -320,7 +320,7 @@ Calm Nature
 
       // 1 of 2 moves match → moveScore = 0.5 → confidence = 60 + 0.5 * 40 = 80
       const results = await findMatchingTeams([
-        { speciesId: "garchomp", moves: ["Earthquake", "Outrage"] },
+        { pokemonId: "garchomp", moves: ["Earthquake", "Outrage"] },
       ])
 
       expect(results).toHaveLength(1)

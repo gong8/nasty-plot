@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from "next/server"
-import { prisma } from "@nasty-plot/db"
+import { getBatchSimulation, deleteBatchSimulation } from "@nasty-plot/battle-engine"
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ batchId: string }> }) {
   const { batchId } = await params
-  const batch = await prisma.batchSimulation.findUnique({
-    where: { id: batchId },
-  })
+  const batch = await getBatchSimulation(batchId)
 
   if (!batch) {
     return NextResponse.json({ error: "Batch not found" }, { status: 404 })
@@ -23,10 +21,7 @@ export async function DELETE(
 ) {
   const { batchId } = await params
   try {
-    await prisma.batchSimulation.update({
-      where: { id: batchId },
-      data: { status: "cancelled" },
-    })
+    await deleteBatchSimulation(batchId)
     return NextResponse.json({ success: true })
   } catch {
     return NextResponse.json({ error: "Batch not found" }, { status: 404 })

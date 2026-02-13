@@ -42,8 +42,8 @@ function makeSet(overrides?: Partial<SmogonSetData>): SmogonSetData {
 
 function makeExtracted(overrides?: Partial<ExtractedPokemon>): ExtractedPokemon {
   return {
-    speciesId: "garchomp",
-    species: "Garchomp",
+    pokemonId: "garchomp",
+    pokemonName: "Garchomp",
     level: 100,
     moves: ["Earthquake"],
     ...overrides,
@@ -409,7 +409,7 @@ describe("enrichExtractedTeam", () => {
       playerName: "Test Player",
       pokemon: [
         makeExtracted({
-          speciesId: "garchomp",
+          pokemonId: "garchomp",
           moves: ["Earthquake"],
         }),
       ],
@@ -440,7 +440,7 @@ describe("enrichExtractedTeam", () => {
       playerName: "Test Player",
       pokemon: [
         makeExtracted({
-          speciesId: "garchomp",
+          pokemonId: "garchomp",
           moves: ["Earthquake"],
           ability: "Sand Veil",
           item: "Choice Band",
@@ -459,7 +459,7 @@ describe("enrichExtractedTeam", () => {
     mockFindMany.mockResolvedValue([])
 
     const pokemon = makeExtracted({
-      speciesId: "garchomp",
+      pokemonId: "garchomp",
       moves: ["Earthquake"],
     })
     const team = {
@@ -491,10 +491,10 @@ describe("enrichExtractedTeam", () => {
     const team = {
       playerName: "Test Player",
       pokemon: [
-        makeExtracted({ speciesId: "garchomp", moves: ["Earthquake"] }),
+        makeExtracted({ pokemonId: "garchomp", moves: ["Earthquake"] }),
         makeExtracted({
-          speciesId: "heatran",
-          species: "Heatran",
+          pokemonId: "heatran",
+          pokemonName: "Heatran",
           moves: ["Lava Plume"],
         }),
       ],
@@ -514,7 +514,7 @@ describe("enrichExtractedTeam", () => {
 
     const team = {
       playerName: "Test Player",
-      pokemon: [makeExtracted({ speciesId: "garchomp" })],
+      pokemon: [makeExtracted({ pokemonId: "garchomp" })],
     }
 
     await enrichExtractedTeam(team, "gen9ou")
@@ -546,8 +546,8 @@ describe("enrichExtractedTeam", () => {
       playerName: "Test Player",
       pokemon: [
         makeExtracted({
-          speciesId: "fluttermane",
-          species: "Flutter Mane",
+          pokemonId: "fluttermane",
+          pokemonName: "Flutter Mane",
           moves: ["Moonblast"],
         }),
       ],
@@ -577,7 +577,9 @@ describe("enrichExtractedTeam", () => {
 
     const team = {
       playerName: "Test Player",
-      pokemon: [makeExtracted({ speciesId: "dondozo", species: "Dondozo", moves: ["Earthquake"] })],
+      pokemon: [
+        makeExtracted({ pokemonId: "dondozo", pokemonName: "Dondozo", moves: ["Earthquake"] }),
+      ],
     }
 
     const result = await enrichExtractedTeam(team, "gen9vgc2030regz")

@@ -1,16 +1,23 @@
 import { vi } from "vitest"
 import { NextRequest } from "next/server"
 
-vi.mock("@nasty-plot/db", () => ({
-  prisma: {
-    batchSimulation: {
-      create: vi.fn(),
-      update: vi.fn(),
-    },
-  },
+const {
+  mockCreateBatch,
+  mockUpdateBatchProgress,
+  mockCompleteBatchSimulation,
+  mockFailBatchSimulation,
+} = vi.hoisted(() => ({
+  mockCreateBatch: vi.fn(),
+  mockUpdateBatchProgress: vi.fn(),
+  mockCompleteBatchSimulation: vi.fn(),
+  mockFailBatchSimulation: vi.fn(),
 }))
 
 vi.mock("@nasty-plot/battle-engine", () => ({
+  createBatchSimulation: mockCreateBatch,
+  updateBatchProgress: mockUpdateBatchProgress,
+  completeBatchSimulation: mockCompleteBatchSimulation,
+  failBatchSimulation: mockFailBatchSimulation,
   runBatchSimulation: vi.fn().mockReturnValue(
     new Promise(() => {}), // Never resolves — fire-and-forget
   ),
@@ -24,7 +31,6 @@ vi.mock("@nasty-plot/core", () => ({
     ]),
 }))
 
-import { prisma } from "@nasty-plot/db"
 import { POST } from "../../apps/web/src/app/api/battles/batch/route"
 
 describe("POST /api/battles/batch", () => {
@@ -39,7 +45,7 @@ describe("POST /api/battles/batch", () => {
       status: "running",
       totalGames: 100,
     }
-    ;(prisma.batchSimulation.create as ReturnType<typeof vi.fn>).mockResolvedValue(mockBatch)
+    mockCreateBatch.mockResolvedValue(mockBatch)
 
     const req = new NextRequest("http://localhost:3000/api/battles/batch", {
       method: "POST",
@@ -58,20 +64,17 @@ describe("POST /api/battles/batch", () => {
     expect(response.status).toBe(201)
     expect(data.id).toBe("batch-123")
     expect(data.status).toBe("running")
-    expect(prisma.batchSimulation.create).toHaveBeenCalledWith(
+    expect(mockCreateBatch).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: expect.objectContaining({
-          formatId: "gen9ou",
-          totalGames: 100,
-          status: "running",
-        }),
+        formatId: "gen9ou",
+        totalGames: 100,
       }),
     )
   })
 
   it("caps totalGames at 500", async () => {
     const mockBatch = { id: "batch-capped", status: "running" }
-    ;(prisma.batchSimulation.create as ReturnType<typeof vi.fn>).mockResolvedValue(mockBatch)
+    mockCreateBatch.mockResolvedValue(mockBatch)
 
     const req = new NextRequest("http://localhost:3000/api/battles/batch", {
       method: "POST",
@@ -86,11 +89,7 @@ describe("POST /api/battles/batch", () => {
 
     await POST(req)
 
-    expect(prisma.batchSimulation.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({ totalGames: 500 }),
-      }),
-    )
+    expect(mockCreateBatch).toHaveBeenCalledWith(expect.objectContaining({ totalGames: 500 }))
   })
 
   it("returns 400 when missing required fields", async () => {

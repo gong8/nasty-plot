@@ -1,6 +1,5 @@
 import type { Recommendation } from "@nasty-plot/core"
-import { prisma } from "@nasty-plot/db"
-import { dbSlotToDomain } from "@nasty-plot/teams"
+import { getTeam } from "@nasty-plot/teams"
 import { getCoverageBasedRecommendations } from "./coverage-recommender"
 import { getUsageBasedRecommendations } from "./usage-recommender"
 
@@ -32,14 +31,11 @@ export async function getRecommendations(
   limit: number = 10,
   weights: CompositeWeights = DEFAULT_WEIGHTS,
 ): Promise<Recommendation[]> {
-  const team = await prisma.team.findUnique({
-    where: { id: teamId },
-    include: { slots: true },
-  })
+  const team = await getTeam(teamId)
 
   if (!team) throw new Error(`Team not found: ${teamId}`)
 
-  const slots = team.slots.map(dbSlotToDomain)
+  const slots = team.slots
   const teamPokemonIds = slots.map((s) => s.pokemonId)
   const candidateLimit = limit * CANDIDATE_MULTIPLIER
 

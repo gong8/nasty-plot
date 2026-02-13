@@ -29,14 +29,14 @@ export type DbSlotRow = {
   evHp: number
   evAtk: number
   evDef: number
-  evSpA: number
-  evSpD: number
+  evSpa: number
+  evSpd: number
   evSpe: number
   ivHp: number
   ivAtk: number
   ivDef: number
-  ivSpA: number
-  ivSpD: number
+  ivSpa: number
+  ivSpd: number
   ivSpe: number
 }
 
@@ -62,8 +62,8 @@ function evsToDb(evs: StatsTable) {
     evHp: evs.hp,
     evAtk: evs.atk,
     evDef: evs.def,
-    evSpA: evs.spa,
-    evSpD: evs.spd,
+    evSpa: evs.spa,
+    evSpd: evs.spd,
     evSpe: evs.spe,
   }
 }
@@ -73,8 +73,8 @@ function ivsToDb(ivs: StatsTable) {
     ivHp: ivs.hp,
     ivAtk: ivs.atk,
     ivDef: ivs.def,
-    ivSpA: ivs.spa,
-    ivSpD: ivs.spd,
+    ivSpa: ivs.spa,
+    ivSpd: ivs.spd,
     ivSpe: ivs.spe,
   }
 }
@@ -123,16 +123,16 @@ export function dbSlotToDomain(dbSlot: DbSlotRow): TeamSlotData {
       hp: dbSlot.evHp,
       atk: dbSlot.evAtk,
       def: dbSlot.evDef,
-      spa: dbSlot.evSpA,
-      spd: dbSlot.evSpD,
+      spa: dbSlot.evSpa,
+      spd: dbSlot.evSpd,
       spe: dbSlot.evSpe,
     },
     ivs: {
       hp: dbSlot.ivHp,
       atk: dbSlot.ivAtk,
       def: dbSlot.ivDef,
-      spa: dbSlot.ivSpA,
-      spd: dbSlot.ivSpD,
+      spa: dbSlot.ivSpa,
+      spd: dbSlot.ivSpd,
       spe: dbSlot.ivSpe,
     },
   }

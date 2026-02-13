@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { apiErrorResponse } from "../../../../lib/api-error"
 import { prisma } from "@nasty-plot/db"
-import { importFromReplayUrl, importFromRawLog } from "@nasty-plot/battle-engine"
+import { importFromReplayUrl, importFromRawLog, createBattle } from "@nasty-plot/battle-engine"
 import { findMatchingTeams, createTeamFromExtractedData } from "@nasty-plot/teams"
 import { enrichExtractedTeam } from "@nasty-plot/smogon-data"
 
@@ -112,22 +112,20 @@ export async function POST(req: NextRequest) {
     })
 
     // Create battle record
-    const battle = await prisma.battle.create({
-      data: {
-        formatId: parsed.formatId,
-        gameType: parsed.gameType,
-        mode: "imported",
-        team1Paste: parsed.team1.pokemon.map((p) => p.species).join(", "),
-        team1Name: parsed.playerNames[0],
-        team2Paste: parsed.team2.pokemon.map((p) => p.species).join(", "),
-        team2Name: parsed.playerNames[1],
-        team1Id,
-        team2Id,
-        winnerId:
-          parsed.winnerId === "p1" ? "team1" : parsed.winnerId === "p2" ? "team2" : parsed.winnerId,
-        turnCount: parsed.turnCount,
-        protocolLog: parsed.protocolLog,
-      },
+    const battle = await createBattle({
+      formatId: parsed.formatId,
+      gameType: parsed.gameType,
+      mode: "imported",
+      team1Paste: parsed.team1.pokemon.map((p) => p.pokemonName).join(", "),
+      team1Name: parsed.playerNames[0],
+      team2Paste: parsed.team2.pokemon.map((p) => p.pokemonName).join(", "),
+      team2Name: parsed.playerNames[1],
+      team1Id,
+      team2Id,
+      winnerId:
+        parsed.winnerId === "p1" ? "team1" : parsed.winnerId === "p2" ? "team2" : parsed.winnerId,
+      turnCount: parsed.turnCount,
+      protocolLog: parsed.protocolLog,
     })
 
     return NextResponse.json(

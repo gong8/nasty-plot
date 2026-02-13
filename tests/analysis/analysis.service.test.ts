@@ -4,12 +4,8 @@ import { analyzeTeam } from "@nasty-plot/analysis"
 // Mocks
 // ---------------------------------------------------------------------------
 
-vi.mock("@nasty-plot/db", () => ({
-  prisma: {
-    team: {
-      findUnique: vi.fn(),
-    },
-  },
+vi.mock("@nasty-plot/teams", () => ({
+  getTeam: vi.fn(),
 }))
 
 vi.mock("@nasty-plot/pokemon-data", () => ({
@@ -40,14 +36,14 @@ vi.mock("@nasty-plot/formats", () => ({
   }),
 }))
 
-import { prisma } from "@nasty-plot/db"
+import { getTeam } from "@nasty-plot/teams"
 import { getSpecies } from "@nasty-plot/pokemon-data"
 import { getUsageStats } from "@nasty-plot/smogon-data"
 import { analyzeTypeCoverage } from "#analysis/coverage.service"
 import { identifyThreats } from "#analysis/threat.service"
 import { calculateSynergy } from "#analysis/synergy.service"
 
-const mockTeamFindUnique = prisma.team.findUnique as ReturnType<typeof vi.fn>
+const mockGetTeam = getTeam as ReturnType<typeof vi.fn>
 const mockGetSpecies = getSpecies as ReturnType<typeof vi.fn>
 const mockGetUsageStats = getUsageStats as ReturnType<typeof vi.fn>
 const mockCoverage = analyzeTypeCoverage as ReturnType<typeof vi.fn>
@@ -58,47 +54,34 @@ const mockSynergy = calculateSynergy as ReturnType<typeof vi.fn>
 // Helpers
 // ---------------------------------------------------------------------------
 
-function makeDbTeam(slots: unknown[] = []) {
+function makeTeamData(slots: unknown[] = []) {
   return {
     id: "team-1",
     name: "Test Team",
     formatId: "gen9ou",
     mode: "freeform",
-    notes: null,
-    createdAt: new Date(),
-    updatedAt: new Date(),
+    source: "manual",
+    notes: undefined,
+    isArchived: false,
     slots,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   }
 }
 
-function makeDbSlot(overrides?: Record<string, unknown>) {
+function makeSlot(overrides?: Record<string, unknown>) {
   return {
-    id: 1,
-    teamId: "team-1",
     position: 1,
     pokemonId: "garchomp",
-    nickname: null,
+    species: makeSpecies("garchomp", ["Dragon", "Ground"]),
     ability: "Rough Skin",
     item: "Leftovers",
     nature: "Jolly",
-    teraType: null,
+    teraType: undefined,
     level: 100,
-    move1: "Earthquake",
-    move2: "Dragon Claw",
-    move3: null,
-    move4: null,
-    evHp: 0,
-    evAtk: 252,
-    evDef: 0,
-    evSpA: 0,
-    evSpD: 4,
-    evSpe: 252,
-    ivHp: 31,
-    ivAtk: 31,
-    ivDef: 31,
-    ivSpA: 31,
-    ivSpD: 31,
-    ivSpe: 31,
+    moves: ["Earthquake", "Dragon Claw", undefined, undefined],
+    evs: { hp: 0, atk: 252, def: 0, spa: 0, spd: 4, spe: 252 },
+    ivs: { hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31 },
     ...overrides,
   }
 }
@@ -135,13 +118,13 @@ describe("analyzeTeam", () => {
   })
 
   it("throws when team not found", async () => {
-    mockTeamFindUnique.mockResolvedValue(null)
+    mockGetTeam.mockResolvedValue(null)
 
     await expect(analyzeTeam("nonexistent")).rejects.toThrow("Team not found")
   })
 
   it("returns a TeamAnalysis object", async () => {
-    mockTeamFindUnique.mockResolvedValue(makeDbTeam([makeDbSlot()]))
+    mockGetTeam.mockResolvedValue(makeTeamData([makeSlot()]))
     mockGetSpecies.mockReturnValue(makeSpecies("garchomp", ["Dragon", "Ground"]))
 
     const result = await analyzeTeam("team-1")
@@ -154,7 +137,7 @@ describe("analyzeTeam", () => {
   })
 
   it("calls analyzeTypeCoverage with converted slots", async () => {
-    mockTeamFindUnique.mockResolvedValue(makeDbTeam([makeDbSlot()]))
+    mockGetTeam.mockResolvedValue(makeTeamData([makeSlot()]))
     mockGetSpecies.mockReturnValue(makeSpecies("garchomp", ["Dragon", "Ground"]))
 
     await analyzeTeam("team-1")
@@ -166,7 +149,7 @@ describe("analyzeTeam", () => {
   })
 
   it("calls identifyThreats with slots and formatId", async () => {
-    mockTeamFindUnique.mockResolvedValue(makeDbTeam([makeDbSlot()]))
+    mockGetTeam.mockResolvedValue(makeTeamData([makeSlot()]))
     mockGetSpecies.mockReturnValue(makeSpecies("garchomp", ["Dragon", "Ground"]))
 
     await analyzeTeam("team-1")
@@ -175,7 +158,7 @@ describe("analyzeTeam", () => {
   })
 
   it("calls calculateSynergy with converted slots", async () => {
-    mockTeamFindUnique.mockResolvedValue(makeDbTeam([makeDbSlot()]))
+    mockGetTeam.mockResolvedValue(makeTeamData([makeSlot()]))
     mockGetSpecies.mockReturnValue(makeSpecies("garchomp", ["Dragon", "Ground"]))
 
     await analyzeTeam("team-1")
@@ -184,7 +167,7 @@ describe("analyzeTeam", () => {
   })
 
   it("calculates speed tiers", async () => {
-    mockTeamFindUnique.mockResolvedValue(makeDbTeam([makeDbSlot()]))
+    mockGetTeam.mockResolvedValue(makeTeamData([makeSlot()]))
     mockGetSpecies.mockReturnValue(makeSpecies("garchomp", ["Dragon", "Ground"]))
 
     const result = await analyzeTeam("team-1")
@@ -198,7 +181,7 @@ describe("analyzeTeam", () => {
   })
 
   it("generates suggestions based on analysis", async () => {
-    mockTeamFindUnique.mockResolvedValue(makeDbTeam([makeDbSlot()]))
+    mockGetTeam.mockResolvedValue(makeTeamData([makeSlot()]))
     mockGetSpecies.mockReturnValue(makeSpecies("garchomp", ["Dragon", "Ground"]))
     mockCoverage.mockReturnValue({
       offensive: {},
@@ -213,7 +196,7 @@ describe("analyzeTeam", () => {
   })
 
   it("suggests filling team when less than 6 Pokemon", async () => {
-    mockTeamFindUnique.mockResolvedValue(makeDbTeam([makeDbSlot()]))
+    mockGetTeam.mockResolvedValue(makeTeamData([makeSlot()]))
     mockGetSpecies.mockReturnValue(makeSpecies("garchomp", ["Dragon", "Ground"]))
 
     const result = await analyzeTeam("team-1")
@@ -223,10 +206,18 @@ describe("analyzeTeam", () => {
   })
 
   it("handles team with multiple slots", async () => {
-    mockTeamFindUnique.mockResolvedValue(
-      makeDbTeam([
-        makeDbSlot({ position: 1, pokemonId: "garchomp" }),
-        makeDbSlot({ position: 2, pokemonId: "heatran", id: 2 }),
+    mockGetTeam.mockResolvedValue(
+      makeTeamData([
+        makeSlot({
+          position: 1,
+          pokemonId: "garchomp",
+          species: makeSpecies("garchomp", ["Dragon", "Ground"]),
+        }),
+        makeSlot({
+          position: 2,
+          pokemonId: "heatran",
+          species: makeSpecies("heatran", ["Fire", "Steel"]),
+        }),
       ]),
     )
 
@@ -243,7 +234,7 @@ describe("analyzeTeam", () => {
   })
 
   it("suggests addressing shared weaknesses", async () => {
-    mockTeamFindUnique.mockResolvedValue(makeDbTeam([makeDbSlot()]))
+    mockGetTeam.mockResolvedValue(makeTeamData([makeSlot()]))
     mockGetSpecies.mockReturnValue(makeSpecies("garchomp", ["Dragon", "Ground"]))
     mockCoverage.mockReturnValue({
       offensive: {},
@@ -261,7 +252,7 @@ describe("analyzeTeam", () => {
   })
 
   it("suggests counters for multiple high threats (plural)", async () => {
-    mockTeamFindUnique.mockResolvedValue(makeDbTeam([makeDbSlot()]))
+    mockGetTeam.mockResolvedValue(makeTeamData([makeSlot()]))
     mockGetSpecies.mockReturnValue(makeSpecies("garchomp", ["Dragon", "Ground"]))
     mockThreats.mockResolvedValue([
       { pokemonId: "ironValiant", pokemonName: "Iron Valiant", threatLevel: "high" },
@@ -279,7 +270,7 @@ describe("analyzeTeam", () => {
   })
 
   it("suggests counters for a single high threat (singular)", async () => {
-    mockTeamFindUnique.mockResolvedValue(makeDbTeam([makeDbSlot()]))
+    mockGetTeam.mockResolvedValue(makeTeamData([makeSlot()]))
     mockGetSpecies.mockReturnValue(makeSpecies("garchomp", ["Dragon", "Ground"]))
     mockThreats.mockResolvedValue([
       { pokemonId: "ironValiant", pokemonName: "Iron Valiant", threatLevel: "high" },
@@ -294,7 +285,7 @@ describe("analyzeTeam", () => {
   })
 
   it("suggests improving synergy when score is low", async () => {
-    mockTeamFindUnique.mockResolvedValue(makeDbTeam([makeDbSlot()]))
+    mockGetTeam.mockResolvedValue(makeTeamData([makeSlot()]))
     mockGetSpecies.mockReturnValue(makeSpecies("garchomp", ["Dragon", "Ground"]))
     mockSynergy.mockReturnValue(30)
 
@@ -305,7 +296,7 @@ describe("analyzeTeam", () => {
   })
 
   it("does not suggest synergy improvement when score is adequate", async () => {
-    mockTeamFindUnique.mockResolvedValue(makeDbTeam([makeDbSlot()]))
+    mockGetTeam.mockResolvedValue(makeTeamData([makeSlot()]))
     mockGetSpecies.mockReturnValue(makeSpecies("garchomp", ["Dragon", "Ground"]))
     mockSynergy.mockReturnValue(60)
 
@@ -316,7 +307,7 @@ describe("analyzeTeam", () => {
   })
 
   it("includes benchmark speed tiers from format usage data", async () => {
-    mockTeamFindUnique.mockResolvedValue(makeDbTeam([makeDbSlot()]))
+    mockGetTeam.mockResolvedValue(makeTeamData([makeSlot()]))
     mockGetSpecies.mockImplementation((id: string) => {
       if (id === "garchomp") return makeSpecies("garchomp", ["Dragon", "Ground"])
       if (id === "ironValiant")
@@ -356,7 +347,7 @@ describe("analyzeTeam", () => {
   })
 
   it("skips benchmark entries for Pokemon already on the team", async () => {
-    mockTeamFindUnique.mockResolvedValue(makeDbTeam([makeDbSlot()]))
+    mockGetTeam.mockResolvedValue(makeTeamData([makeSlot()]))
     mockGetSpecies.mockReturnValue(makeSpecies("garchomp", ["Dragon", "Ground"]))
 
     // garchomp is already on the team — it should be skipped as a benchmark
@@ -373,7 +364,7 @@ describe("analyzeTeam", () => {
   })
 
   it("limits benchmarks to 10 entries", async () => {
-    mockTeamFindUnique.mockResolvedValue(makeDbTeam([makeDbSlot()]))
+    mockGetTeam.mockResolvedValue(makeTeamData([makeSlot()]))
     mockGetSpecies.mockImplementation((id: string) => {
       if (id === "garchomp") return makeSpecies("garchomp", ["Dragon", "Ground"])
       return makeSpecies(id, ["Normal"])
@@ -397,7 +388,7 @@ describe("analyzeTeam", () => {
   })
 
   it("skips benchmark entries for non-existent species", async () => {
-    mockTeamFindUnique.mockResolvedValue(makeDbTeam([makeDbSlot()]))
+    mockGetTeam.mockResolvedValue(makeTeamData([makeSlot()]))
     mockGetSpecies.mockImplementation((id: string) => {
       if (id === "garchomp") return makeSpecies("garchomp", ["Dragon", "Ground"])
       return null
@@ -416,10 +407,25 @@ describe("analyzeTeam", () => {
   })
 
   it("speed tiers are sorted by speed descending", async () => {
-    mockTeamFindUnique.mockResolvedValue(
-      makeDbTeam([
-        makeDbSlot({ position: 1, pokemonId: "garchomp" }),
-        makeDbSlot({ position: 2, pokemonId: "ferrothorn", id: 2 }),
+    mockGetTeam.mockResolvedValue(
+      makeTeamData([
+        makeSlot({
+          position: 1,
+          pokemonId: "garchomp",
+          species: makeSpecies("garchomp", ["Dragon", "Ground"]),
+        }),
+        makeSlot({
+          position: 2,
+          pokemonId: "ferrothorn",
+          species: makeSpecies("ferrothorn", ["Grass", "Steel"], {
+            hp: 74,
+            atk: 94,
+            def: 131,
+            spa: 54,
+            spd: 116,
+            spe: 20,
+          }),
+        }),
       ]),
     )
 

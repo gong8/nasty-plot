@@ -16,6 +16,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton"
 import { PokemonSprite, TypeBadge } from "@nasty-plot/ui"
 import {
+  getBaseStatTotal,
   POKEMON_TYPES,
   type PaginatedResponse,
   type PokemonSpecies,
@@ -23,10 +24,6 @@ import {
 } from "@nasty-plot/core"
 import { useFormats } from "@/features/battle/hooks/use-formats"
 import type { SortMode } from "@/features/pokemon/types"
-
-function getBaseStatTotal(stats: PokemonSpecies["baseStats"]): number {
-  return Object.values(stats).reduce((sum, val) => sum + val, 0)
-}
 
 export default function PokemonBrowserPage() {
   const [search, setSearch] = useState("")

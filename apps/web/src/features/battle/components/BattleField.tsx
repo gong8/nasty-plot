@@ -1,6 +1,7 @@
 "use client"
 
 import { cn } from "@nasty-plot/ui"
+import { STATUS_BADGE_CONFIG } from "@nasty-plot/core"
 import type { BattleState, BattlePokemon } from "@nasty-plot/battle-engine"
 import { BattleSprite } from "./PokemonSprite"
 import { HealthBar } from "./HealthBar"
@@ -24,15 +25,6 @@ interface BattleFieldProps {
 
 const SPEED_OPTIONS = [1, 2, 4] as const
 
-const STATUS_BADGE: Record<string, { label: string; color: string }> = {
-  brn: { label: "BRN", color: "bg-red-500" },
-  par: { label: "PAR", color: "bg-yellow-500" },
-  slp: { label: "SLP", color: "bg-muted-foreground" },
-  frz: { label: "FRZ", color: "bg-cyan-400" },
-  psn: { label: "PSN", color: "bg-purple-500" },
-  tox: { label: "TOX", color: "bg-purple-700 dark:bg-purple-500" },
-}
-
 /** Positioning configs for singles and doubles */
 const SINGLES_POSITIONS = {
   player: [{ bottom: "14%", left: "10%" }],
@@ -51,7 +43,7 @@ const DOUBLES_POSITIONS = {
 } as const
 
 function PokemonInfoPlate({ pokemon, isPlayer }: { pokemon: BattlePokemon; isPlayer: boolean }) {
-  const statusInfo = pokemon.status ? STATUS_BADGE[pokemon.status] : null
+  const statusInfo = pokemon.status ? STATUS_BADGE_CONFIG[pokemon.status] : null
 
   return (
     <div

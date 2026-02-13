@@ -1,6 +1,7 @@
 "use client"
 
 import { cn, TypeBadge } from "@nasty-plot/ui"
+import { STATUS_BADGE_CONFIG } from "@nasty-plot/core"
 import type { BattleActionSet, BattlePokemon } from "@nasty-plot/battle-engine"
 import { Button } from "@/components/ui/button"
 import { HealthBar } from "./HealthBar"
@@ -14,24 +15,6 @@ interface SwitchMenuProps {
   /** Full team data for showing types and moves */
   team?: BattlePokemon[]
   className?: string
-}
-
-const STATUS_LABELS: Record<string, string> = {
-  brn: "BRN",
-  par: "PAR",
-  slp: "SLP",
-  frz: "FRZ",
-  psn: "PSN",
-  tox: "TOX",
-}
-
-const STATUS_COLORS: Record<string, string> = {
-  brn: "text-red-500 bg-red-500/10",
-  par: "text-yellow-500 bg-yellow-500/10",
-  slp: "text-muted-foreground bg-muted-foreground/10",
-  frz: "text-cyan-400 bg-cyan-400/10",
-  psn: "text-purple-500 bg-purple-500/10",
-  tox: "text-purple-600 dark:text-purple-400 bg-purple-600/10 dark:bg-purple-400/15",
 }
 
 const NON_ALPHANUMERIC = /[^a-z0-9]/g
@@ -80,14 +63,14 @@ export function SwitchMenu({ actions, onSwitch, onBack, team, className }: Switc
                 {/* Name + status */}
                 <div className="flex items-center gap-1">
                   <span className="font-medium text-xs truncate">{sw.name}</span>
-                  {sw.status && (
+                  {sw.status && STATUS_BADGE_CONFIG[sw.status] && (
                     <span
                       className={cn(
-                        "text-[9px] px-1 rounded font-semibold shrink-0",
-                        STATUS_COLORS[sw.status] || "text-muted-foreground",
+                        "text-[9px] px-1 rounded font-semibold shrink-0 text-white",
+                        STATUS_BADGE_CONFIG[sw.status].color,
                       )}
                     >
-                      {STATUS_LABELS[sw.status] || sw.status.toUpperCase()}
+                      {STATUS_BADGE_CONFIG[sw.status].label}
                     </span>
                   )}
                 </div>

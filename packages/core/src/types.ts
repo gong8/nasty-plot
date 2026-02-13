@@ -444,8 +444,8 @@ export type PageType =
 // --- Extracted Replay Data ---
 
 export interface ExtractedPokemonData {
-  speciesId: string
-  species: string
+  pokemonId: string
+  pokemonName: string
   nickname?: string
   level: number
   moves: string[]

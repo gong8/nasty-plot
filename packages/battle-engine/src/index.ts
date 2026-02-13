@@ -47,6 +47,24 @@ export { formatShowdownLog, formatShowdownReplayJSON } from "./export/battle-exp
 export type { BattleRecord } from "./export/battle-export.service"
 export { computeTeamBattleAnalytics } from "./battle-history.service"
 export type { TeamBattleAnalytics } from "./battle-history.service"
+export {
+  listBattles,
+  createBattle,
+  getBattle,
+  deleteBattle,
+  getBattleReplay,
+  getBattleForExport,
+  getBattleCommentary,
+  updateBattleCommentary,
+  createBatchSimulation,
+  getBatchSimulation,
+  deleteBatchSimulation,
+  updateBatchProgress,
+  completeBatchSimulation,
+  failBatchSimulation,
+  getTeamBattleStats,
+} from "./battle.service"
+export type { ListBattlesOptions, CreateBattleData, CreateBatchData } from "./battle.service"
 export { runAutomatedBattle, type SingleBattleResult } from "./simulation/automated-battle-manager"
 export {
   runBatchSimulation,

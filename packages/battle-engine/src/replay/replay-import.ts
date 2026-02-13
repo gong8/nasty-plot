@@ -96,14 +96,14 @@ export function parseProtocolLog(log: string): ParsedBattleImport {
 
   function ensurePokemon(
     side: SideId,
-    speciesId: string,
-    species: string,
+    pokemonId: string,
+    pokemonName: string,
     level: number,
   ): ExtractedPokemonData {
-    let pokemon = teams[side].get(speciesId)
+    let pokemon = teams[side].get(pokemonId)
     if (!pokemon) {
-      pokemon = { speciesId, species, level, moves: [] }
-      teams[side].set(speciesId, pokemon)
+      pokemon = { pokemonId, pokemonName, level, moves: [] }
+      teams[side].set(pokemonId, pokemon)
     }
     return pokemon
   }

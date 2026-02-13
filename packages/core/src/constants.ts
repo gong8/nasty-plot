@@ -140,16 +140,10 @@ export const STAT_COLORS: Record<StatName, string> = {
   spe: "#FA92B2",
 }
 
-// --- Generations ---
-
-export const CURRENT_GENERATION = 9
-
 // --- EV/IV Limits ---
 
 export const MAX_TOTAL_EVS = 510
 export const MAX_SINGLE_EV = 252
-export const MAX_IV = 31
-export const MIN_IV = 0
 
 // --- Default IVs/EVs ---
 
@@ -208,3 +202,13 @@ export const ARCHETYPE_OPTIONS = [
   { value: "sand", label: "Sand" },
   { value: "trick-room", label: "Trick Room" },
 ] as const
+
+// --- Status Badge Config (for battle UI) ---
+export const STATUS_BADGE_CONFIG: Record<string, { label: string; color: string }> = {
+  brn: { label: "BRN", color: "bg-red-500" },
+  par: { label: "PAR", color: "bg-yellow-500" },
+  slp: { label: "SLP", color: "bg-gray-500" },
+  frz: { label: "FRZ", color: "bg-cyan-400" },
+  psn: { label: "PSN", color: "bg-purple-500" },
+  tox: { label: "TOX", color: "bg-purple-600" },
+}

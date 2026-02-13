@@ -88,8 +88,8 @@ export async function createTeamFromExtractedData(
   extracted: {
     playerName: string
     pokemon: {
-      speciesId: string
-      species: string
+      pokemonId: string
+      pokemonName: string
       level: number
       moves: string[]
       ability?: string
@@ -112,8 +112,8 @@ export async function createTeamFromExtractedData(
   const slotInputs = extracted.pokemon.slice(0, 6).map(
     (p, i): TeamSlotInput => ({
       position: i + 1,
-      pokemonId: p.speciesId,
-      ability: p.ability || resolveDefaultAbility(p.speciesId),
+      pokemonId: p.pokemonId,
+      ability: p.ability || resolveDefaultAbility(p.pokemonId),
       item: p.item || "",
       nature: (p.nature || "Hardy") as NatureName,
       teraType: p.teraType as TeamSlotInput["teraType"],

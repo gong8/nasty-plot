@@ -93,43 +93,43 @@ describe("replay-import", () => {
     it("extracts team 1 pokemon", () => {
       const result = parseProtocolLog(sampleLog)
       expect(result.team1.pokemon).toHaveLength(2)
-      expect(result.team1.pokemon[0].species).toBe("Garchomp")
-      expect(result.team1.pokemon[0].speciesId).toBe("garchomp")
-      expect(result.team1.pokemon[1].species).toBe("Heatran")
+      expect(result.team1.pokemon[0].pokemonName).toBe("Garchomp")
+      expect(result.team1.pokemon[0].pokemonId).toBe("garchomp")
+      expect(result.team1.pokemon[1].pokemonName).toBe("Heatran")
     })
 
     it("extracts team 2 pokemon", () => {
       const result = parseProtocolLog(sampleLog)
       expect(result.team2.pokemon).toHaveLength(2)
-      expect(result.team2.pokemon[0].species).toBe("Great Tusk")
-      expect(result.team2.pokemon[0].speciesId).toBe("greattusk")
+      expect(result.team2.pokemon[0].pokemonName).toBe("Great Tusk")
+      expect(result.team2.pokemon[0].pokemonId).toBe("greattusk")
     })
 
     it("extracts moves from protocol", () => {
       const result = parseProtocolLog(sampleLog)
-      const garchomp = result.team1.pokemon.find((p) => p.speciesId === "garchomp")
+      const garchomp = result.team1.pokemon.find((p) => p.pokemonId === "garchomp")
       expect(garchomp?.moves).toContain("Earthquake")
 
-      const greatTusk = result.team2.pokemon.find((p) => p.speciesId === "greattusk")
+      const greatTusk = result.team2.pokemon.find((p) => p.pokemonId === "greattusk")
       expect(greatTusk?.moves).toContain("Headlong Rush")
       expect(greatTusk?.moves).toContain("Close Combat")
     })
 
     it("extracts abilities", () => {
       const result = parseProtocolLog(sampleLog)
-      const greatTusk = result.team2.pokemon.find((p) => p.speciesId === "greattusk")
+      const greatTusk = result.team2.pokemon.find((p) => p.pokemonId === "greattusk")
       expect(greatTusk?.ability).toBe("Protosynthesis")
     })
 
     it("extracts items", () => {
       const result = parseProtocolLog(sampleLog)
-      const ironValiant = result.team2.pokemon.find((p) => p.speciesId === "ironvaliant")
+      const ironValiant = result.team2.pokemon.find((p) => p.pokemonId === "ironvaliant")
       expect(ironValiant?.item).toBe("Booster Energy")
     })
 
     it("extracts tera types", () => {
       const result = parseProtocolLog(sampleLog)
-      const ironValiant = result.team2.pokemon.find((p) => p.speciesId === "ironvaliant")
+      const ironValiant = result.team2.pokemon.find((p) => p.pokemonId === "ironvaliant")
       expect(ironValiant?.teraType).toBe("Fairy")
     })
 
@@ -148,7 +148,7 @@ describe("replay-import", () => {
         "|move|p1a: Chomper|Earthquake|p2a: Bob",
       ].join("\n")
       const result = parseProtocolLog(nickLog)
-      const garchomp = result.team1.pokemon.find((p) => p.speciesId === "garchomp")
+      const garchomp = result.team1.pokemon.find((p) => p.pokemonId === "garchomp")
       expect(garchomp?.nickname).toBe("Chomper")
       expect(garchomp?.moves).toContain("Earthquake")
     })
@@ -171,7 +171,7 @@ describe("replay-import", () => {
         "|move|p1a: Garchomp|Swords Dance|",
       ].join("\n")
       const result = parseProtocolLog(repeatLog)
-      const garchomp = result.team1.pokemon.find((p) => p.speciesId === "garchomp")
+      const garchomp = result.team1.pokemon.find((p) => p.pokemonId === "garchomp")
       expect(garchomp?.moves).toEqual(["Earthquake", "Swords Dance"])
     })
   })
@@ -193,7 +193,7 @@ describe("replay-import", () => {
         "|-enditem|p1a: Garchomp|Focus Sash",
       ].join("\n")
       const result = parseProtocolLog(log)
-      const garchomp = result.team1.pokemon.find((p) => p.speciesId === "garchomp")
+      const garchomp = result.team1.pokemon.find((p) => p.pokemonId === "garchomp")
       expect(garchomp?.item).toBe("Focus Sash")
     })
 
@@ -206,7 +206,7 @@ describe("replay-import", () => {
         "|-enditem|p1a: Garchomp|Life Orb",
       ].join("\n")
       const result = parseProtocolLog(log)
-      const garchomp = result.team1.pokemon.find((p) => p.speciesId === "garchomp")
+      const garchomp = result.team1.pokemon.find((p) => p.pokemonId === "garchomp")
       // item should remain "Life Orb" from -item, enditem should not overwrite
       expect(garchomp?.item).toBe("Life Orb")
     })
@@ -222,7 +222,7 @@ describe("replay-import", () => {
         "|move|p1a: Garchomp|Earthquake|",
       ].join("\n")
       const result = parseProtocolLog(log)
-      const garchomp = result.team1.pokemon.find((p) => p.speciesId === "garchomp")
+      const garchomp = result.team1.pokemon.find((p) => p.pokemonId === "garchomp")
       expect(garchomp).toBeDefined()
       expect(garchomp?.moves).toContain("Earthquake")
     })
@@ -234,7 +234,7 @@ describe("replay-import", () => {
         "|replace|p1a: Zoroark|Zoroark, L100|255/255",
       ].join("\n")
       const result = parseProtocolLog(log)
-      const zoroark = result.team1.pokemon.find((p) => p.speciesId === "zoroark")
+      const zoroark = result.team1.pokemon.find((p) => p.pokemonId === "zoroark")
       expect(zoroark).toBeDefined()
     })
   })

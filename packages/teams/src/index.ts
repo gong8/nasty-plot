@@ -10,6 +10,7 @@ export {
   clearSlots,
   reorderSlots,
   domainSlotToDb,
+  dbTeamToDomain,
   dbSlotToDomain,
   cleanupEmptyTeams,
 } from "./team.service"
@@ -47,13 +48,3 @@ export {
   archiveTeam,
   restoreTeam,
 } from "./version.service"
-export type {
-  TeamDiff,
-  SlotChange,
-  FieldChange,
-  DiffSummary,
-  MergeDecision,
-  MergeOptions,
-  ForkOptions,
-  LineageNode,
-} from "@nasty-plot/core"

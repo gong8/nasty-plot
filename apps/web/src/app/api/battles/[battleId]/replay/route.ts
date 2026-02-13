@@ -1,28 +1,12 @@
 import { NextRequest, NextResponse } from "next/server"
-import { prisma } from "@nasty-plot/db"
+import { getBattleReplay } from "@nasty-plot/battle-engine"
 
 export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ battleId: string }> },
 ) {
   const { battleId } = await params
-  const battle = await prisma.battle.findUnique({
-    where: { id: battleId },
-    select: {
-      id: true,
-      formatId: true,
-      gameType: true,
-      team1Name: true,
-      team2Name: true,
-      winnerId: true,
-      turnCount: true,
-      protocolLog: true,
-      commentary: true,
-      chatSessionId: true,
-      createdAt: true,
-      turns: { orderBy: { turnNumber: "asc" } },
-    },
-  })
+  const battle = await getBattleReplay(battleId)
 
   if (!battle) {
     return NextResponse.json({ error: "Battle not found" }, { status: 404 })

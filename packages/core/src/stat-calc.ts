@@ -70,3 +70,7 @@ export function validateEvs(evs: StatsTable): { valid: boolean; reason?: string 
   }
   return { valid: true }
 }
+
+export function getBaseStatTotal(stats: StatsTable): number {
+  return stats.hp + stats.atk + stats.def + stats.spa + stats.spd + stats.spe
+}

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useCallback } from "react"
-import { cn } from "@nasty-plot/ui"
+import { cn, TypeBadge } from "@nasty-plot/ui"
 import { TYPE_COLORS, isLightTypeColor, type PokemonType } from "@nasty-plot/core"
 import type { BattleActionSet, BattlePokemon } from "@nasty-plot/battle-engine"
 import type { GameType } from "@nasty-plot/core"
@@ -270,7 +270,11 @@ export function MoveSelector({
                         <span className="font-mono">
                           {move.accuracy === true ? "—" : `${move.accuracy}%`}
                         </span>
-                        <span className="uppercase tracking-wider ml-auto">{move.type}</span>
+                        <TypeBadge
+                          type={move.type}
+                          size="sm"
+                          className="ml-auto min-w-0 px-1.5 py-0 text-[10px] rounded shadow-none"
+                        />
                       </div>
                     </button>
                   </TooltipTrigger>
@@ -461,13 +465,7 @@ function TargetCard({
       {/* Type badges */}
       <div className="flex gap-0.5">
         {pokemon.types.map((t) => (
-          <span
-            key={t}
-            className={`text-[9px] px-1 py-px rounded font-medium ${isLightTypeColor(TYPE_COLORS[t] || FALLBACK_TYPE_COLOR) ? "text-gray-900" : "text-white"}`}
-            style={{ backgroundColor: TYPE_COLORS[t] || FALLBACK_TYPE_COLOR }}
-          >
-            {t}
-          </span>
+          <TypeBadge key={t} type={t} size="sm" className="min-w-0 px-1 py-px text-[9px] rounded" />
         ))}
       </div>
     </button>

@@ -253,7 +253,7 @@ export async function enrichExtractedTeam(
   const { sets: allSets } = await resolveFormatWithSets(formatId)
 
   const enrichedPokemon: EnrichedPokemon[] = team.pokemon.map((pokemon) => {
-    const candidateSets = allSets[pokemon.speciesId] ?? []
+    const candidateSets = allSets[pokemon.pokemonId] ?? []
     const result = inferFromSets(pokemon, candidateSets)
 
     if (!result.bestMatch) {

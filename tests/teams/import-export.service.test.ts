@@ -215,8 +215,8 @@ describe("createTeamFromExtractedData", () => {
       playerName: "Alice",
       pokemon: [
         {
-          speciesId: "garchomp",
-          species: "Garchomp",
+          pokemonId: "garchomp",
+          pokemonName: "Garchomp",
           level: DEFAULT_LEVEL,
           moves: ["Earthquake", "Dragon Claw"],
           ability: "Rough Skin",
@@ -241,7 +241,9 @@ describe("createTeamFromExtractedData", () => {
   it("uses custom team name when provided", async () => {
     const extracted = {
       playerName: "Alice",
-      pokemon: [{ speciesId: "garchomp", species: "Garchomp", level: DEFAULT_LEVEL, moves: [] }],
+      pokemon: [
+        { pokemonId: "garchomp", pokemonName: "Garchomp", level: DEFAULT_LEVEL, moves: [] },
+      ],
     }
     mockCreateTeam.mockResolvedValue(makeTeamData())
     mockAddSlot.mockResolvedValue({})
@@ -261,7 +263,12 @@ describe("createTeamFromExtractedData", () => {
     const extracted = {
       playerName: "Alice",
       pokemon: [
-        { speciesId: "garchomp", species: "Garchomp", level: DEFAULT_LEVEL, moves: ["Earthquake"] },
+        {
+          pokemonId: "garchomp",
+          pokemonName: "Garchomp",
+          level: DEFAULT_LEVEL,
+          moves: ["Earthquake"],
+        },
       ],
     }
     mockCreateTeam.mockResolvedValue(makeTeamData({ id: "new-team" }))
@@ -280,8 +287,8 @@ describe("createTeamFromExtractedData", () => {
       playerName: "Alice",
       pokemon: [
         {
-          speciesId: "garchomp",
-          species: "Garchomp",
+          pokemonId: "garchomp",
+          pokemonName: "Garchomp",
           level: DEFAULT_LEVEL,
           moves: [],
           ability: "Sand Veil",
@@ -302,8 +309,8 @@ describe("createTeamFromExtractedData", () => {
     const extracted = {
       playerName: "Alice",
       pokemon: Array.from({ length: 8 }, (_, i) => ({
-        speciesId: `mon${i}`,
-        species: `Mon${i}`,
+        pokemonId: `mon${i}`,
+        pokemonName: `Mon${i}`,
         level: DEFAULT_LEVEL,
         moves: [],
       })),
@@ -323,8 +330,8 @@ describe("createTeamFromExtractedData", () => {
       playerName: "Alice",
       pokemon: [
         {
-          speciesId: "garchomp",
-          species: "Garchomp",
+          pokemonId: "garchomp",
+          pokemonName: "Garchomp",
           level: DEFAULT_LEVEL,
           moves: ["Earthquake"],
           ability: "Rough Skin",

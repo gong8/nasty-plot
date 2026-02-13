@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from "next/server"
 import { apiErrorResponse } from "../../../../lib/api-error"
-import { prisma } from "@nasty-plot/db"
-import { runBatchSimulation } from "@nasty-plot/battle-engine"
+import {
+  createBatchSimulation,
+  updateBatchProgress,
+  completeBatchSimulation,
+  failBatchSimulation,
+  runBatchSimulation,
+} from "@nasty-plot/battle-engine"
 import type { AIDifficulty } from "@nasty-plot/battle-engine"
 import type { GameType } from "@nasty-plot/core"
 import { parseShowdownPaste } from "@nasty-plot/core"
@@ -56,18 +61,15 @@ export async function POST(req: NextRequest) {
     const resolvedTeam2Name = team2Name || "Team 2"
 
     // Create the batch record
-    const batch = await prisma.batchSimulation.create({
-      data: {
-        formatId,
-        gameType: resolvedGameType,
-        aiDifficulty: resolvedDifficulty,
-        team1Paste,
-        team1Name: resolvedTeam1Name,
-        team2Paste,
-        team2Name: resolvedTeam2Name,
-        totalGames: games,
-        status: "running",
-      },
+    const batch = await createBatchSimulation({
+      formatId,
+      gameType: resolvedGameType,
+      aiDifficulty: resolvedDifficulty,
+      team1Paste,
+      team1Name: resolvedTeam1Name,
+      team2Paste,
+      team2Name: resolvedTeam2Name,
+      totalGames: games,
     })
 
     // Run simulation (fire-and-forget, update DB when done)
@@ -86,38 +88,21 @@ export async function POST(req: NextRequest) {
       async (progress) => {
         // Update progress periodically (every 10 games)
         if (progress.completed % 10 === 0 || progress.completed === games) {
-          await prisma.batchSimulation
-            .update({
-              where: { id: batch.id },
-              data: {
-                completedGames: progress.completed,
-                team1Wins: progress.team1Wins,
-                team2Wins: progress.team2Wins,
-                draws: progress.draws,
-              },
-            })
-            .catch(() => {})
+          await updateBatchProgress(batch.id, {
+            completed: progress.completed,
+            team1Wins: progress.team1Wins,
+            team2Wins: progress.team2Wins,
+            draws: progress.draws,
+          })
         }
       },
     )
       .then(async ({ analytics }) => {
-        await prisma.batchSimulation.update({
-          where: { id: batch.id },
-          data: {
-            status: "completed",
-            completedGames: games,
-            analytics: JSON.stringify(analytics),
-          },
-        })
+        await completeBatchSimulation(batch.id, games, JSON.stringify(analytics))
       })
       .catch(async (err) => {
         console.error("[BatchSim] Error:", err)
-        await prisma.batchSimulation
-          .update({
-            where: { id: batch.id },
-            data: { status: "completed" },
-          })
-          .catch(() => {})
+        await failBatchSimulation(batch.id)
       })
 
     return NextResponse.json({ id: batch.id, status: "running" }, { status: 201 })

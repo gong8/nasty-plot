@@ -227,7 +227,7 @@ describe("calculateAllStats", () => {
 
   it("calculates stats with all 0 IVs and 0 EVs", () => {
     const evs = makeEvs()
-    const ivs: StatsTable = { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 }
+    const ivs: StatsTable = { ...DEFAULT_EVS }
     const result = calculateAllStats(garchompBase, ivs, evs, 100, "Hardy")
 
     // HP: floor((2*108+0+0)*100/100)+110 = 216+110 = 326

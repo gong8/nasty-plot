@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { apiErrorResponse } from "../../../../../lib/api-error"
-import { prisma } from "@nasty-plot/db"
+import { getBattleCommentary, updateBattleCommentary } from "@nasty-plot/battle-engine"
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ battleId: string }> }) {
   const { battleId } = await params
@@ -12,10 +12,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ batt
       return NextResponse.json({ error: "Invalid turn or text" }, { status: 400 })
     }
 
-    const battle = await prisma.battle.findUnique({
-      where: { id: battleId },
-      select: { commentary: true },
-    })
+    const battle = await getBattleCommentary(battleId)
 
     if (!battle) {
       return NextResponse.json({ error: "Battle not found" }, { status: 404 })
@@ -25,11 +22,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ batt
 
     existing[String(turn)] = text
 
-    const updated = await prisma.battle.update({
-      where: { id: battleId },
-      data: { commentary: JSON.stringify(existing) },
-      select: { commentary: true },
-    })
+    const updated = await updateBattleCommentary(battleId, JSON.stringify(existing))
 
     return NextResponse.json({
       commentary: JSON.parse(updated.commentary!),

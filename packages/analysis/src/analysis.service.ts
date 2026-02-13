@@ -7,11 +7,10 @@ import {
   type TeamAnalysis,
   type SpeedTierEntry,
 } from "@nasty-plot/core"
-import { prisma } from "@nasty-plot/db"
 import { getFormat } from "@nasty-plot/formats"
 import { getSpecies } from "@nasty-plot/pokemon-data"
 import { getUsageStats } from "@nasty-plot/smogon-data"
-import { dbSlotToDomain } from "@nasty-plot/teams"
+import { getTeam } from "@nasty-plot/teams"
 import { analyzeTypeCoverage } from "./coverage.service"
 import { identifyThreats } from "./threat.service"
 import { calculateSynergy } from "./synergy.service"
@@ -27,16 +26,13 @@ const FULL_TEAM_SIZE = 6
  * Full team analysis orchestrator.
  */
 export async function analyzeTeam(teamId: string): Promise<TeamAnalysis> {
-  const team = await prisma.team.findUnique({
-    where: { id: teamId },
-    include: { slots: true },
-  })
+  const team = await getTeam(teamId)
 
   if (!team) {
     throw new Error(`Team not found: ${teamId}`)
   }
 
-  const slots: TeamSlotData[] = team.slots.map(dbSlotToDomain)
+  const slots = team.slots
 
   const coverage = analyzeTypeCoverage(slots)
   const threats = await identifyThreats(slots, team.formatId)

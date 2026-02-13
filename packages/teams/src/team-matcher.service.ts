@@ -31,7 +31,7 @@ export function fingerprintFromPaste(paste: string): TeamFingerprint {
   const slots = parsed
     .filter((slot) => slot.pokemonId)
     .map((slot) => ({
-      speciesId: slot.pokemonId!,
+      pokemonId: slot.pokemonId!,
       moves: (slot.moves ?? []).filter(Boolean) as string[],
     }))
   return buildFingerprint(slots)
@@ -41,7 +41,7 @@ export function fingerprintFromPaste(paste: string): TeamFingerprint {
 export function fingerprintFromSlots(slots: TeamSlotData[]): TeamFingerprint {
   return buildFingerprint(
     slots.map((slot) => ({
-      speciesId: slot.pokemonId,
+      pokemonId: slot.pokemonId,
       moves: slot.moves.filter(Boolean) as string[],
     })),
   )
@@ -49,18 +49,18 @@ export function fingerprintFromSlots(slots: TeamSlotData[]): TeamFingerprint {
 
 /** Build a fingerprint from extracted Pokemon data (replays) */
 export function fingerprintFromExtracted(
-  pokemon: { speciesId: string; moves: string[] }[],
+  pokemon: { pokemonId: string; moves: string[] }[],
 ): TeamFingerprint {
   return buildFingerprint(pokemon)
 }
 
-function buildFingerprint(pokemon: { speciesId: string; moves: string[] }[]): TeamFingerprint {
+function buildFingerprint(pokemon: { pokemonId: string; moves: string[] }[]): TeamFingerprint {
   const speciesIds: string[] = []
   const movesBySpecies: Record<string, string[]> = {}
 
   for (const p of pokemon) {
-    speciesIds.push(p.speciesId)
-    movesBySpecies[p.speciesId] = p.moves.map((m) => m.toLowerCase()).sort()
+    speciesIds.push(p.pokemonId)
+    movesBySpecies[p.pokemonId] = p.moves.map((m) => m.toLowerCase()).sort()
   }
 
   return {
@@ -131,7 +131,7 @@ function fingerprintFromDbSlots(
 ): TeamFingerprint {
   return buildFingerprint(
     slots.map((slot) => ({
-      speciesId: slot.pokemonId,
+      pokemonId: slot.pokemonId,
       moves: [slot.move1, slot.move2, slot.move3, slot.move4].filter(Boolean) as string[],
     })),
   )
@@ -145,7 +145,7 @@ const MOVE_MATCH_MAX_BONUS = 40
  * Returns matches sorted by confidence.
  */
 export async function findMatchingTeams(
-  extracted: { speciesId: string; moves: string[] }[],
+  extracted: { pokemonId: string; moves: string[] }[],
   formatId?: string,
 ): Promise<TeamMatchResult[]> {
   const where: Record<string, unknown> = { isArchived: false }

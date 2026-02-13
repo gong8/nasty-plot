@@ -8,11 +8,12 @@ import type { PokemonType } from "@nasty-plot/core"
 interface TypeBadgeProps {
   type: PokemonType
   size?: "sm" | "md"
+  label?: string
   className?: string
   onClick?: () => void
 }
 
-export function TypeBadge({ type, size = "md", className, onClick }: TypeBadgeProps) {
+export function TypeBadge({ type, size = "md", label, className, onClick }: TypeBadgeProps) {
   const color = TYPE_COLORS[type]
   const light = isLightTypeColor(color)
 
@@ -41,7 +42,7 @@ export function TypeBadge({ type, size = "md", className, onClick }: TypeBadgePr
           : undefined
       }
     >
-      {type}
+      {label ?? type}
     </span>
   )
 }

@@ -1,15 +1,12 @@
 import { NextRequest, NextResponse } from "next/server"
-import { prisma } from "@nasty-plot/db"
+import { getBattle, deleteBattle } from "@nasty-plot/battle-engine"
 
 export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ battleId: string }> },
 ) {
   const { battleId } = await params
-  const battle = await prisma.battle.findUnique({
-    where: { id: battleId },
-    include: { turns: { orderBy: { turnNumber: "asc" } } },
-  })
+  const battle = await getBattle(battleId)
 
   if (!battle) {
     return NextResponse.json({ error: "Battle not found" }, { status: 404 })
@@ -24,7 +21,7 @@ export async function DELETE(
 ) {
   const { battleId } = await params
   try {
-    await prisma.battle.delete({ where: { id: battleId } })
+    await deleteBattle(battleId)
     return NextResponse.json({ success: true })
   } catch {
     return NextResponse.json({ error: "Battle not found" }, { status: 404 })

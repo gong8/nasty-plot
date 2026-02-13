@@ -1,4 +1,7 @@
-import { formatShowdownLog, formatShowdownReplayJSON } from "@nasty-plot/battle-engine"
+import {
+  formatShowdownLog,
+  formatShowdownReplayJSON,
+} from "#battle-engine/export/battle-export.service"
 import type { BattleRecord } from "@nasty-plot/battle-engine"
 
 function makeBattle(overrides?: Partial<BattleRecord>): BattleRecord {
