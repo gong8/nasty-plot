@@ -1,4 +1,5 @@
 import { registerAnalysisTools } from "#mcp-server/tools/analysis"
+import { DEFAULT_LEVEL } from "@nasty-plot/core"
 
 // ---------------------------------------------------------------------------
 // Mocks
@@ -248,8 +249,8 @@ describe("registerAnalysisTools", () => {
       })
 
       expect(mockApiPost).toHaveBeenCalledWith("/damage-calc", {
-        attacker: { pokemonId: "greatTusk", level: 100 },
-        defender: { pokemonId: "ironValiant", level: 100 },
+        attacker: { pokemonId: "greatTusk", level: DEFAULT_LEVEL },
+        defender: { pokemonId: "ironValiant", level: DEFAULT_LEVEL },
         move: "Headlong Rush",
       })
     })

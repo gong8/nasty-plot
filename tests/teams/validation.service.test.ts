@@ -1,5 +1,5 @@
 import type { TeamData, StatsTable, PokemonType } from "@nasty-plot/core"
-import { DEFAULT_EVS, DEFAULT_IVS, DEFAULT_LEVEL } from "@nasty-plot/core"
+import { DEFAULT_EVS, DEFAULT_IVS, DEFAULT_LEVEL, MAX_SINGLE_EV } from "@nasty-plot/core"
 import { validateTeam } from "@nasty-plot/teams"
 
 // ---------------------------------------------------------------------------
@@ -170,7 +170,14 @@ describe("validateTeam", () => {
       slots: [
         makeSlot("garchomp", {
           position: 1,
-          evs: { hp: 252, atk: 252, def: 252, spa: 0, spd: 0, spe: 0 },
+          evs: {
+            hp: MAX_SINGLE_EV,
+            atk: MAX_SINGLE_EV,
+            def: MAX_SINGLE_EV,
+            spa: 0,
+            spd: 0,
+            spe: 0,
+          },
         }),
       ],
     })
@@ -278,7 +285,7 @@ describe("validateTeam", () => {
       slots: [
         makeSlot("garchomp", {
           position: 1,
-          evs: { hp: 252, atk: 252, def: 4, spa: 0, spd: 0, spe: 0 },
+          evs: { hp: MAX_SINGLE_EV, atk: MAX_SINGLE_EV, def: 4, spa: 0, spd: 0, spe: 0 },
         }),
       ],
     })
@@ -294,7 +301,7 @@ describe("validateTeam", () => {
       slots: [
         makeSlot("garchomp", {
           position: 1,
-          evs: { hp: 252, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 },
+          evs: { hp: MAX_SINGLE_EV, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 },
         }),
       ],
     })

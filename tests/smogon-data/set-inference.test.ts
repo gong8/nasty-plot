@@ -6,6 +6,7 @@ import {
 } from "@nasty-plot/smogon-data"
 import type { ExtractedPokemon } from "@nasty-plot/smogon-data"
 import type { SmogonSetData } from "@nasty-plot/core"
+import { DEFAULT_LEVEL, MAX_SINGLE_EV } from "@nasty-plot/core"
 
 // ---------------------------------------------------------------------------
 // Mocks
@@ -35,7 +36,7 @@ function makeSet(overrides?: Partial<SmogonSetData>): SmogonSetData {
     item: "Leftovers",
     nature: "Jolly",
     moves: ["Earthquake", "Dragon Claw", "Swords Dance", "Scale Shot"],
-    evs: { atk: 252, spe: 252, hp: 4 },
+    evs: { atk: MAX_SINGLE_EV, spe: MAX_SINGLE_EV, hp: 4 },
     ...overrides,
   }
 }
@@ -44,7 +45,7 @@ function makeExtracted(overrides?: Partial<ExtractedPokemon>): ExtractedPokemon 
   return {
     pokemonId: "garchomp",
     pokemonName: "Garchomp",
-    level: 100,
+    level: DEFAULT_LEVEL,
     moves: ["Earthquake"],
     ...overrides,
   }
@@ -59,7 +60,7 @@ function makeDbRow(overrides?: Record<string, unknown>) {
     nature: "Jolly",
     teraType: null,
     moves: JSON.stringify(["Earthquake", "Dragon Claw", "Swords Dance", "Scale Shot"]),
-    evs: JSON.stringify({ atk: 252, spe: 252, hp: 4 }),
+    evs: JSON.stringify({ atk: MAX_SINGLE_EV, spe: MAX_SINGLE_EV, hp: 4 }),
     ivs: null,
     ...overrides,
   }
@@ -274,13 +275,13 @@ describe("inferFromSets", () => {
     })
     const set = makeSet({
       nature: "Jolly",
-      evs: { atk: 252, spe: 252, hp: 4 },
+      evs: { atk: MAX_SINGLE_EV, spe: MAX_SINGLE_EV, hp: 4 },
     })
 
     const result = inferFromSets(extracted, [set])
 
     expect(result.nature).toBe("Jolly")
-    expect(result.evs).toEqual({ atk: 252, spe: 252, hp: 4 })
+    expect(result.evs).toEqual({ atk: MAX_SINGLE_EV, spe: MAX_SINGLE_EV, hp: 4 })
   })
 
   it("infers full moveset from the best set", () => {
@@ -317,7 +318,7 @@ describe("inferFromSets", () => {
     expect(result.setName).toBe("Swords Dance")
     expect(result.moves).toEqual(["Earthquake", "Dragon Claw", "Swords Dance", "Scale Shot"])
     expect(result.nature).toBe("Jolly")
-    expect(result.evs).toEqual({ atk: 252, spe: 252, hp: 4 })
+    expect(result.evs).toEqual({ atk: MAX_SINGLE_EV, spe: MAX_SINGLE_EV, hp: 4 })
   })
 })
 
@@ -401,7 +402,7 @@ describe("enrichExtractedTeam", () => {
         item: "Leftovers",
         nature: "Jolly",
         moves: JSON.stringify(["Earthquake", "Dragon Claw", "Swords Dance", "Scale Shot"]),
-        evs: JSON.stringify({ atk: 252, spe: 252, hp: 4 }),
+        evs: JSON.stringify({ atk: MAX_SINGLE_EV, spe: MAX_SINGLE_EV, hp: 4 }),
       }),
     ])
 
@@ -424,7 +425,7 @@ describe("enrichExtractedTeam", () => {
       "Scale Shot",
     ])
     expect(result.pokemon[0].nature).toBe("Jolly")
-    expect(result.pokemon[0].evs).toEqual({ atk: 252, spe: 252, hp: 4 })
+    expect(result.pokemon[0].evs).toEqual({ atk: MAX_SINGLE_EV, spe: MAX_SINGLE_EV, hp: 4 })
   })
 
   it("preserves revealed data over inferred data", async () => {
@@ -484,7 +485,7 @@ describe("enrichExtractedTeam", () => {
         item: "Leftovers",
         nature: "Calm",
         moves: JSON.stringify(["Lava Plume", "Earth Power", "Stealth Rock", "Toxic"]),
-        evs: JSON.stringify({ hp: 252, spd: 252, def: 4 }),
+        evs: JSON.stringify({ hp: MAX_SINGLE_EV, spd: MAX_SINGLE_EV, def: 4 }),
       }),
     ])
 
@@ -535,7 +536,7 @@ describe("enrichExtractedTeam", () => {
             item: "Choice Specs",
             nature: "Timid",
             moves: JSON.stringify(["Moonblast", "Shadow Ball", "Mystical Fire", "Dazzling Gleam"]),
-            evs: JSON.stringify({ spa: 252, spe: 252, hp: 4 }),
+            evs: JSON.stringify({ spa: MAX_SINGLE_EV, spe: MAX_SINGLE_EV, hp: 4 }),
           }),
         ])
       }
@@ -557,7 +558,7 @@ describe("enrichExtractedTeam", () => {
 
     // Should have enriched from the fallback format
     expect(result.pokemon[0].nature).toBe("Timid")
-    expect(result.pokemon[0].evs).toEqual({ spa: 252, spe: 252, hp: 4 })
+    expect(result.pokemon[0].evs).toEqual({ spa: MAX_SINGLE_EV, spe: MAX_SINGLE_EV, hp: 4 })
     expect(result.pokemon[0].moves).toEqual([
       "Moonblast",
       "Shadow Ball",

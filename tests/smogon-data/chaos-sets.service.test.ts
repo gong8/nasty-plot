@@ -1,5 +1,6 @@
 import { generateSetsFromChaos } from "#smogon-data/chaos-sets.service"
 import type { SmogonChaosData } from "#smogon-data/usage-stats.service"
+import { MAX_SINGLE_EV } from "@nasty-plot/core"
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -69,7 +70,7 @@ describe("generateSetsFromChaos", () => {
     expect(sets[0].ability).toBe("Protosynthesis")
     expect(sets[0].item).toBe("Booster Energy")
     expect(sets[0].nature).toBe("Jolly")
-    expect(sets[0].evs).toEqual({ atk: 252, spd: 4, spe: 252 })
+    expect(sets[0].evs).toEqual({ atk: MAX_SINGLE_EV, spd: 4, spe: MAX_SINGLE_EV })
     expect(sets[0].moves).toHaveLength(4)
     expect(sets[0].teraType).toBe("Steel")
   })
@@ -139,7 +140,7 @@ describe("generateSetsFromChaos", () => {
     const sets = generateSetsFromChaos(chaos)
 
     expect(sets[0].nature).toBe("Jolly")
-    expect(sets[0].evs).toEqual({ atk: 252, spd: 4, spe: 252 })
+    expect(sets[0].evs).toEqual({ atk: MAX_SINGLE_EV, spd: 4, spe: MAX_SINGLE_EV })
   })
 
   it("skips Pokemon below the minimum usage threshold", () => {
@@ -295,7 +296,7 @@ describe("generateSetsFromChaos", () => {
     const sets = generateSetsFromChaos(chaos)
 
     expect(sets[0].nature).toBe("Bold")
-    expect(sets[0].evs).toEqual({ hp: 252, def: 252, spe: 4 })
+    expect(sets[0].evs).toEqual({ hp: MAX_SINGLE_EV, def: MAX_SINGLE_EV, spe: 4 })
   })
 
   it("returns empty array for empty chaos data", () => {

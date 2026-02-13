@@ -1,7 +1,7 @@
 export * from "./types"
 
 // --- Core Battle Logic (Safe for Client) ---
-export { BattleManager } from "./battle-manager"
+export { BattleManager, createInitialState } from "./battle-manager"
 export * from "./team-packer"
 export {
   serializeBattleState,
@@ -43,7 +43,7 @@ export { type MCTSConfig, type MCTSResult, DEFAULT_MCTS_CONFIG } from "./ai/mcts
 export { ReplayEngine, type ReplayFrame } from "./replay/replay-engine"
 export {
   parseReplayUrl,
-  fetchShowdownReplay,
+  getShowdownReplay,
   parseProtocolLog,
   importFromReplayUrl,
   importFromRawLog,

@@ -1,4 +1,4 @@
-import type { SmogonSetData } from "@nasty-plot/core"
+import { normalizeMoveName, type SmogonSetData } from "@nasty-plot/core"
 
 /** Near-zero probability for sets that contradict observations */
 const MISMATCH_PROBABILITY_FACTOR = 0.01
@@ -92,10 +92,6 @@ export class SetPredictor {
   hasPredictions(pokemonId: string): boolean {
     return (this.predictions.get(pokemonId)?.length ?? 0) > 0
   }
-}
-
-function normalizeMoveName(s: string): string {
-  return s.toLowerCase().replace(/\s/g, "")
 }
 
 function matchesIgnoreCase(a: string, b: string): boolean {

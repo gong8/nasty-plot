@@ -1,7 +1,8 @@
-import { describe, it, expect, vi, beforeEach } from "vitest"
+import { describe, it, expect, beforeEach } from "vitest"
 import { MCTSAI } from "@nasty-plot/battle-engine"
 import type { BattleState, BattleActionSet, BattlePokemon } from "@nasty-plot/battle-engine"
 import { createInitialState } from "@nasty-plot/battle-engine"
+import { DEFAULT_LEVEL } from "@nasty-plot/core"
 
 // ---------------------------------------------------------------------------
 // Factories
@@ -12,7 +13,7 @@ function makePokemon(overrides: Partial<BattlePokemon> = {}): BattlePokemon {
     speciesId: "garchomp",
     name: "Garchomp",
     nickname: "Garchomp",
-    level: 100,
+    level: DEFAULT_LEVEL,
     types: ["Dragon", "Ground"],
     hp: 357,
     maxHp: 357,

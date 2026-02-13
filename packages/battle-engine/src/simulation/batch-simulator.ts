@@ -1,3 +1,4 @@
+import { toPercent } from "@nasty-plot/core"
 import { runAutomatedBattle, type SingleBattleResult } from "./automated-battle-manager"
 import { RandomAI } from "../ai/random-ai"
 import { GreedyAI } from "../ai/greedy-ai"
@@ -158,19 +159,15 @@ function computeAnalytics(
   }
 
   return {
-    team1WinRate: toPercentage(team1Wins, total),
-    team2WinRate: toPercentage(team2Wins, total),
-    drawRate: toPercentage(draws, total),
+    team1WinRate: toPercent(team1Wins, total),
+    team2WinRate: toPercent(team2Wins, total),
+    drawRate: toPercent(draws, total),
     avgTurnCount,
     minTurnCount: turnCounts.length > 0 ? Math.min(...turnCounts) : 0,
     maxTurnCount: turnCounts.length > 0 ? Math.max(...turnCounts) : 0,
     pokemonStats: [...pokemonStatsMap.values()],
     turnDistribution,
   }
-}
-
-function toPercentage(count: number, total: number): number {
-  return total > 0 ? Math.round((count / total) * 1000) / 10 : 0
 }
 
 function generateRandomSeed(): [number, number, number, number] {

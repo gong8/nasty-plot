@@ -3,6 +3,7 @@ import { parseRequest, parseRequestForSlot, createInitialState } from "@nasty-pl
 import { GreedyAI } from "#battle-engine/ai/greedy-ai"
 import { HeuristicAI } from "#battle-engine/ai/heuristic-ai"
 import type { BattleState, BattleActionSet, BattlePokemon } from "@nasty-plot/battle-engine"
+import { DEFAULT_LEVEL } from "@nasty-plot/core"
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -15,7 +16,7 @@ function makeDoublesState(): BattleState {
     speciesId: name.toLowerCase().replace(/[^a-z0-9]/g, ""),
     name,
     nickname: name,
-    level: 100,
+    level: DEFAULT_LEVEL,
     types: [],
     hp,
     maxHp,

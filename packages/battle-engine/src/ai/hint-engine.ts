@@ -1,10 +1,10 @@
 import { getRawMove } from "@nasty-plot/pokemon-data"
+import { getTypeEffectiveness } from "@nasty-plot/core"
 import type { BattleState, BattleActionSet, BattleAction, BattlePokemon, DexMove } from "../types"
 import { evaluatePosition, type EvalResult } from "./evaluator"
 import {
   calculateBattleDamage,
   getSpeciesTypes,
-  getTypeEffectiveness,
   HAZARD_SCORES,
   STATUS_INFLICTION_SCORES,
   SETUP_MOVE_SCORE,

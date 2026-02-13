@@ -1,9 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
-import {
-  getBattleForExport,
-  formatShowdownLog,
-  formatShowdownReplayJSON,
-} from "@nasty-plot/battle-engine"
+import { formatShowdownLog, formatShowdownReplayJSON } from "@nasty-plot/battle-engine"
+import { getBattleForExport } from "@nasty-plot/battle-engine/db"
 import { notFoundResponse } from "../../../../../lib/api-error"
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ battleId: string }> }) {

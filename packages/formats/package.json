@@ -4,7 +4,8 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./db": "./src/format-db.service.ts"
   },
   "scripts": {
     "lint": "eslint src/",
@@ -12,6 +13,7 @@
   },
   "dependencies": {
     "@nasty-plot/core": "workspace:*",
+    "@nasty-plot/db": "workspace:*",
     "@nasty-plot/pokemon-data": "workspace:*"
   }
 }

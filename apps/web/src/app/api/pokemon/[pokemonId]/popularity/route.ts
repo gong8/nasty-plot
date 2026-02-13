@@ -7,10 +7,13 @@ import {
 } from "@nasty-plot/smogon-data"
 import { badRequestResponse } from "../../../../../lib/api-error"
 
-export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
-  const { id: pokemonId } = await params
+export async function GET(
+  request: Request,
+  { params }: { params: Promise<{ pokemonId: string }> },
+) {
+  const { pokemonId } = await params
   const { searchParams } = new URL(request.url)
-  const formatId = searchParams.get("format")
+  const formatId = searchParams.get("formatId")
 
   if (!formatId) {
     return badRequestResponse("format query param is required")

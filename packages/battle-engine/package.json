@@ -5,7 +5,8 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./client": "./src/client.ts"
+    "./client": "./src/client.ts",
+    "./db": "./src/battle.service.ts"
   },
   "scripts": {
     "lint": "eslint src/",

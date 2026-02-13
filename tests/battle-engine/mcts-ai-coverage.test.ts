@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest"
 import { MCTSAI } from "@nasty-plot/battle-engine"
 import type { BattleState, BattleActionSet, BattlePokemon } from "@nasty-plot/battle-engine"
 import { createInitialState } from "@nasty-plot/battle-engine"
+import { DEFAULT_LEVEL } from "@nasty-plot/core"
 
 // ---------------------------------------------------------------------------
 // Mocks — control the MCTS internals via battle-cloner, evaluator, @pkmn/sim
@@ -36,7 +37,7 @@ const mockBattleInstance = {
         types: ["Dragon", "Ground"],
         hp: 357,
         maxhp: 357,
-        level: 100,
+        level: DEFAULT_LEVEL,
         status: "",
         fainted: false,
         item: "focussash",
@@ -55,7 +56,7 @@ const mockBattleInstance = {
         types: ["Dragon", "Ground"],
         hp: 357,
         maxhp: 357,
-        level: 100,
+        level: DEFAULT_LEVEL,
         status: "",
         fainted: false,
         item: "focussash",
@@ -77,7 +78,7 @@ const mockBattleInstance = {
         types: ["Fire", "Steel"],
         hp: 386,
         maxhp: 386,
-        level: 100,
+        level: DEFAULT_LEVEL,
         status: "",
         fainted: false,
         item: "leftovers",
@@ -96,7 +97,7 @@ const mockBattleInstance = {
         types: ["Fire", "Steel"],
         hp: 386,
         maxhp: 386,
-        level: 100,
+        level: DEFAULT_LEVEL,
         status: "",
         fainted: false,
         item: "leftovers",
@@ -154,7 +155,7 @@ function makePokemon(overrides: Partial<BattlePokemon> = {}): BattlePokemon {
     speciesId: "garchomp",
     name: "Garchomp",
     nickname: "Garchomp",
-    level: 100,
+    level: DEFAULT_LEVEL,
     types: ["Dragon", "Ground"],
     hp: 357,
     maxHp: 357,

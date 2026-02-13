@@ -1,4 +1,4 @@
-import { getGen9, getRawSpecies, getType } from "@nasty-plot/pokemon-data"
+import { getGen9, getRawSpecies } from "@nasty-plot/pokemon-data"
 import { calculate, Pokemon, Move, Field } from "@smogon/calc"
 import type { Result } from "@smogon/calc"
 import type { PokemonType } from "@nasty-plot/core"
@@ -39,25 +39,6 @@ export function getSpeciesTypes(name: string): PokemonType[] {
   const species = getRawSpecies(name)
   if (species?.exists) return species.types as PokemonType[]
   return ["Normal"]
-}
-
-/**
- * Look up type effectiveness using @pkmn/dex damageTaken encoding.
- * NOTE: This uses DEFENSIVE semantics (damageTaken) — returns how much damage
- * the defTypes deal TO atkType. This is different from core's getTypeEffectiveness
- * which uses offensive semantics (TYPE_CHART).
- */
-export function getTypeEffectiveness(atkType: string, defTypes: string[]): number {
-  let mult = 1
-  for (const defType of defTypes) {
-    const typeData = getType(atkType)
-    if (!typeData?.exists) continue
-    const eff = typeData.damageTaken?.[defType]
-    if (eff === 1) mult *= 2
-    else if (eff === 2) mult *= 0.5
-    else if (eff === 3) mult *= 0
-  }
-  return mult
 }
 
 /** Pick the first non-disabled move, or move 1 (Struggle) as a last resort. */

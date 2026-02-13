@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server"
 import { apiErrorResponse, badRequestResponse } from "../../../../lib/api-error"
+import { runBatchSimulation } from "@nasty-plot/battle-engine"
 import {
   createBatchSimulation,
   updateBatchProgress,
   completeBatchSimulation,
   failBatchSimulation,
-  runBatchSimulation,
-} from "@nasty-plot/battle-engine"
+} from "@nasty-plot/battle-engine/db"
 import type { AIDifficulty } from "@nasty-plot/battle-engine"
 import type { GameType } from "@nasty-plot/core"
 import { parseShowdownPaste } from "@nasty-plot/core"

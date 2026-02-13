@@ -1,5 +1,6 @@
 import type { BattleState, BattlePokemon, SideConditions, FieldState } from "../types"
-import { getSpeciesTypes, getTypeEffectiveness, getEffectiveSpeed } from "./shared"
+import { getTypeEffectiveness } from "@nasty-plot/core"
+import { getSpeciesTypes, getEffectiveSpeed } from "./shared"
 
 /**
  * Position evaluator for competitive Pokemon battles.

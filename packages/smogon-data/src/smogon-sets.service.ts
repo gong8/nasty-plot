@@ -52,7 +52,7 @@ async function upsertSyncLog(formatId: string, message: string): Promise<void> {
  * @param formatId - The app's format ID (used for DB storage)
  * @param options.pkmnSetsId - Override format ID for the pkmn.cc URL (e.g. "gen9doublesou")
  */
-export async function fetchSmogonSets(
+export async function syncSmogonSets(
   formatId: string,
   options?: { pkmnSetsId?: string; smogonStatsId?: string },
 ): Promise<void> {

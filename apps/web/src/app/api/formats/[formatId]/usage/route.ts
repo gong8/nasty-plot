@@ -4,8 +4,11 @@ import { getUsageStats, getUsageStatsCount } from "@nasty-plot/smogon-data"
 import { getSpecies } from "@nasty-plot/pokemon-data"
 import type { PaginatedResponse, UsageStatsEntry } from "@nasty-plot/core"
 
-export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const { id: formatId } = await params
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ formatId: string }> },
+) {
+  const { formatId } = await params
   const searchParams = request.nextUrl.searchParams
   const limit = Math.min(Math.max(parseInt(searchParams.get("limit") ?? "50", 10) || 50, 1), 200)
   const page = Math.max(parseInt(searchParams.get("page") ?? "1", 10) || 1, 1)

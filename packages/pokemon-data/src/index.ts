@@ -25,3 +25,6 @@ export {
 } from "./dex.service"
 
 export type * from "./types"
+
+export { getSpriteUrl, getIconUrl } from "./sprite.service"
+export type { SpriteOptions, IconData } from "./sprite.service"

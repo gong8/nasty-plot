@@ -99,9 +99,6 @@ importers:
       '@nasty-plot/ui':
         specifier: workspace:*
         version: link:../../packages/ui
-      '@pkmn/img':
-        specifier: ^0.3.3
-        version: 0.3.3
       '@tanstack/react-query':
         specifier: ^5.90.20
         version: 5.90.20(react@19.2.4)
@@ -304,6 +301,9 @@ importers:
       '@nasty-plot/core':
         specifier: workspace:*
         version: link:../core
+      '@nasty-plot/db':
+        specifier: workspace:*
+        version: link:../db
       '@nasty-plot/pokemon-data':
         specifier: workspace:*
         version: link:../pokemon-data
@@ -378,6 +378,9 @@ importers:
       '@pkmn/dex':
         specifier: ^0.10.6
         version: 0.10.6
+      '@pkmn/img':
+        specifier: ^0.3.3
+        version: 0.3.3
 
   packages/recommendations:
     dependencies:
@@ -430,6 +433,9 @@ importers:
       '@nasty-plot/db':
         specifier: workspace:*
         version: link:../db
+      '@nasty-plot/formats':
+        specifier: workspace:*
+        version: link:../formats
       '@nasty-plot/pokemon-data':
         specifier: workspace:*
         version: link:../pokemon-data
@@ -443,15 +449,24 @@ importers:
       '@nasty-plot/core':
         specifier: workspace:*
         version: link:../core
-      '@pkmn/img':
-        specifier: ^0.3.3
-        version: 0.3.3
+      '@nasty-plot/pokemon-data':
+        specifier: workspace:*
+        version: link:../pokemon-data
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
+      cmdk:
+        specifier: ^1.1.1
+        version: 1.1.1(@types/react-dom@19.2.3(@types/react@19.2.13))(@types/react@19.2.13)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      lucide-react:
+        specifier: ^0.563.0
+        version: 0.563.0(react@19.2.4)
+      radix-ui:
+        specifier: ^1.4.3
+        version: 1.4.3(@types/react-dom@19.2.3(@types/react@19.2.13))(@types/react@19.2.13)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       react:
         specifier: 19.2.4
         version: 19.2.4

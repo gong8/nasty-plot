@@ -1,5 +1,5 @@
 import {
-  fetchUsageStats,
+  syncUsageStats,
   getUsageStats,
   getUsageStatsCount,
   getTopPokemon,
@@ -199,7 +199,7 @@ describe("getTeammates", () => {
   })
 })
 
-describe("fetchUsageStats", () => {
+describe("syncUsageStats", () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.stubGlobal("fetch", vi.fn())
@@ -237,7 +237,7 @@ describe("fetchUsageStats", () => {
     mockTeammateCorrUpsert.mockResolvedValue({})
     mockSyncLogUpsert.mockResolvedValue({})
 
-    await fetchUsageStats("gen9ou", { year: 2024, month: 6 })
+    await syncUsageStats("gen9ou", { year: 2024, month: 6 })
 
     expect(mockUsageUpsert).toHaveBeenCalled()
     expect(mockSyncLogUpsert).toHaveBeenCalled()
@@ -251,7 +251,7 @@ describe("fetchUsageStats", () => {
     })
     vi.stubGlobal("fetch", mockFetch)
 
-    await expect(fetchUsageStats("gen9ou", { year: 2024, month: 6 })).rejects.toThrow(
+    await expect(syncUsageStats("gen9ou", { year: 2024, month: 6 })).rejects.toThrow(
       "Failed to fetch usage stats",
     )
   })
@@ -282,7 +282,7 @@ describe("fetchUsageStats", () => {
     mockTeammateCorrUpsert.mockResolvedValue({})
     mockSyncLogUpsert.mockResolvedValue({})
 
-    await fetchUsageStats("gen9ou", { year: 2024, month: 6 })
+    await syncUsageStats("gen9ou", { year: 2024, month: 6 })
 
     expect(mockTeammateCorrUpsert).toHaveBeenCalledTimes(2)
   })
@@ -315,7 +315,7 @@ describe("fetchUsageStats", () => {
     mockCheckCounterUpsert.mockResolvedValue({})
     mockSyncLogUpsert.mockResolvedValue({})
 
-    await fetchUsageStats("gen9ou", { year: 2024, month: 6 })
+    await syncUsageStats("gen9ou", { year: 2024, month: 6 })
 
     expect(mockCheckCounterUpsert).toHaveBeenCalled()
   })
@@ -346,7 +346,7 @@ describe("fetchUsageStats", () => {
     mockTeammateCorrUpsert.mockResolvedValue({})
     mockSyncLogUpsert.mockResolvedValue({})
 
-    await fetchUsageStats("gen9ou", { year: 2024, month: 6 })
+    await syncUsageStats("gen9ou", { year: 2024, month: 6 })
 
     // Only Landorus (0.1 > 0) should be saved
     expect(mockTeammateCorrUpsert).toHaveBeenCalledTimes(1)
@@ -386,7 +386,7 @@ describe("fetchUsageStats", () => {
     mockUsageUpsert.mockResolvedValue({})
     mockSyncLogUpsert.mockResolvedValue({})
 
-    await fetchUsageStats("gen9ou", { year: 2024, month: 6 })
+    await syncUsageStats("gen9ou", { year: 2024, month: 6 })
 
     // Garchomp (0.25) should be rank 1, Heatran (0.10) rank 2
     expect(mockUsageUpsert).toHaveBeenCalledTimes(2)
@@ -425,7 +425,7 @@ describe("fetchUsageStats", () => {
     mockUsageUpsert.mockResolvedValue({})
     mockSyncLogUpsert.mockResolvedValue({})
 
-    await fetchUsageStats("gen9ou", { year: 2024, month: 6 })
+    await syncUsageStats("gen9ou", { year: 2024, month: 6 })
 
     expect(mockUsageUpsert).toHaveBeenCalledTimes(1)
     expect(mockTeammateCorrUpsert).not.toHaveBeenCalled()
@@ -434,10 +434,10 @@ describe("fetchUsageStats", () => {
 })
 
 // ---------------------------------------------------------------------------
-// resolveYearMonth (tested indirectly through fetchUsageStats)
+// resolveYearMonth (tested indirectly through syncUsageStats)
 // ---------------------------------------------------------------------------
 
-describe("fetchUsageStats auto-detection (resolveYearMonth)", () => {
+describe("syncUsageStats auto-detection (resolveYearMonth)", () => {
   const mockChaosData = {
     info: { metagame: "gen9ou", cutoff: 1695 },
     data: {
@@ -481,7 +481,7 @@ describe("fetchUsageStats auto-detection (resolveYearMonth)", () => {
       })
     vi.stubGlobal("fetch", mockFetch)
 
-    await fetchUsageStats("gen9ou")
+    await syncUsageStats("gen9ou")
 
     // First call should be a HEAD request for May 2024 at 1695
     expect(mockFetch).toHaveBeenCalledWith(
@@ -508,7 +508,7 @@ describe("fetchUsageStats auto-detection (resolveYearMonth)", () => {
       })
     vi.stubGlobal("fetch", mockFetch)
 
-    await fetchUsageStats("gen9ou")
+    await syncUsageStats("gen9ou")
 
     expect(mockFetch).toHaveBeenNthCalledWith(
       1,
@@ -531,7 +531,7 @@ describe("fetchUsageStats auto-detection (resolveYearMonth)", () => {
     const mockFetch = vi.fn().mockResolvedValue({ ok: false })
     vi.stubGlobal("fetch", mockFetch)
 
-    await expect(fetchUsageStats("gen9ou")).rejects.toThrow("No Smogon stats found for gen9ou")
+    await expect(syncUsageStats("gen9ou")).rejects.toThrow("No Smogon stats found for gen9ou")
 
     // Should have tried all 24 combinations
     expect(mockFetch).toHaveBeenCalledTimes(24)
@@ -551,7 +551,7 @@ describe("fetchUsageStats auto-detection (resolveYearMonth)", () => {
       })
     vi.stubGlobal("fetch", mockFetch)
 
-    await fetchUsageStats("gen9ou")
+    await syncUsageStats("gen9ou")
 
     expect(mockFetch).toHaveBeenCalledTimes(3)
     expect(mockFetch).toHaveBeenNthCalledWith(
@@ -569,7 +569,7 @@ describe("fetchUsageStats auto-detection (resolveYearMonth)", () => {
     }
     vi.stubGlobal("fetch", mockFetch)
 
-    await expect(fetchUsageStats("gen9ou")).rejects.toThrow("No Smogon stats found for gen9ou")
+    await expect(syncUsageStats("gen9ou")).rejects.toThrow("No Smogon stats found for gen9ou")
 
     expect(mockFetch).toHaveBeenCalledTimes(24)
   })
@@ -589,7 +589,7 @@ describe("fetchUsageStats auto-detection (resolveYearMonth)", () => {
       })
     vi.stubGlobal("fetch", mockFetch)
 
-    await fetchUsageStats("gen9ou")
+    await syncUsageStats("gen9ou")
 
     // Should correctly wrap to December of previous year
     expect(mockFetch).toHaveBeenNthCalledWith(
@@ -614,7 +614,7 @@ describe("fetchUsageStats auto-detection (resolveYearMonth)", () => {
     }
     vi.stubGlobal("fetch", mockFetch)
 
-    await expect(fetchUsageStats("gen9ou")).rejects.toThrow(
+    await expect(syncUsageStats("gen9ou")).rejects.toThrow(
       "No Smogon stats found for gen9ou in the last 6 months",
     )
 
@@ -759,10 +759,10 @@ describe("getAbilityUsage", () => {
 })
 
 // ---------------------------------------------------------------------------
-// fetchUsageStats - move/item/ability usage saving
+// syncUsageStats - move/item/ability usage saving
 // ---------------------------------------------------------------------------
 
-describe("fetchUsageStats move/item/ability upserts", () => {
+describe("syncUsageStats move/item/ability upserts", () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.stubGlobal("fetch", vi.fn())
@@ -800,7 +800,7 @@ describe("fetchUsageStats move/item/ability upserts", () => {
     mockMoveUsageUpsert.mockResolvedValue({})
     mockSyncLogUpsert.mockResolvedValue({})
 
-    await fetchUsageStats("gen9ou", { year: 2024, month: 6 })
+    await syncUsageStats("gen9ou", { year: 2024, month: 6 })
 
     expect(mockMoveUsageUpsert).toHaveBeenCalledTimes(2)
     expect(mockMoveUsageUpsert).toHaveBeenCalledWith(
@@ -841,7 +841,7 @@ describe("fetchUsageStats move/item/ability upserts", () => {
     mockMoveUsageUpsert.mockResolvedValue({})
     mockSyncLogUpsert.mockResolvedValue({})
 
-    await fetchUsageStats("gen9ou", { year: 2024, month: 6 })
+    await syncUsageStats("gen9ou", { year: 2024, month: 6 })
 
     expect(mockMoveUsageUpsert).toHaveBeenCalledTimes(1)
   })
@@ -872,7 +872,7 @@ describe("fetchUsageStats move/item/ability upserts", () => {
     mockItemUsageUpsert.mockResolvedValue({})
     mockSyncLogUpsert.mockResolvedValue({})
 
-    await fetchUsageStats("gen9ou", { year: 2024, month: 6 })
+    await syncUsageStats("gen9ou", { year: 2024, month: 6 })
 
     expect(mockItemUsageUpsert).toHaveBeenCalledTimes(2)
     expect(mockItemUsageUpsert).toHaveBeenCalledWith(
@@ -913,7 +913,7 @@ describe("fetchUsageStats move/item/ability upserts", () => {
     mockItemUsageUpsert.mockResolvedValue({})
     mockSyncLogUpsert.mockResolvedValue({})
 
-    await fetchUsageStats("gen9ou", { year: 2024, month: 6 })
+    await syncUsageStats("gen9ou", { year: 2024, month: 6 })
 
     expect(mockItemUsageUpsert).toHaveBeenCalledTimes(1)
   })
@@ -944,7 +944,7 @@ describe("fetchUsageStats move/item/ability upserts", () => {
     mockAbilityUsageUpsert.mockResolvedValue({})
     mockSyncLogUpsert.mockResolvedValue({})
 
-    await fetchUsageStats("gen9ou", { year: 2024, month: 6 })
+    await syncUsageStats("gen9ou", { year: 2024, month: 6 })
 
     expect(mockAbilityUsageUpsert).toHaveBeenCalledTimes(2)
     expect(mockAbilityUsageUpsert).toHaveBeenCalledWith(
@@ -985,7 +985,7 @@ describe("fetchUsageStats move/item/ability upserts", () => {
     mockAbilityUsageUpsert.mockResolvedValue({})
     mockSyncLogUpsert.mockResolvedValue({})
 
-    await fetchUsageStats("gen9ou", { year: 2024, month: 6 })
+    await syncUsageStats("gen9ou", { year: 2024, month: 6 })
 
     expect(mockAbilityUsageUpsert).toHaveBeenCalledTimes(1)
   })
@@ -1009,7 +1009,7 @@ describe("fetchUsageStats move/item/ability upserts", () => {
 
     mockSyncLogUpsert.mockResolvedValue({})
 
-    await fetchUsageStats("gen9vgc2025", { smogonStatsId: "gen9vgc2026regf" })
+    await syncUsageStats("gen9vgc2025", { smogonStatsId: "gen9vgc2026regf" })
 
     // HEAD should use the override ID
     const firstCallUrl = mockFetch.mock.calls[0][0] as string

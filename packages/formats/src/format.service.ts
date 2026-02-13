@@ -14,7 +14,10 @@ function buildBanSet(format: FormatDefinition): Set<string> {
   return new Set(format.bans.map((b) => b.toLowerCase()))
 }
 
-function isPastGenExcluded(format: FormatDefinition, isNonstandard: string | null): boolean {
+function isPastGenExcluded(
+  format: FormatDefinition,
+  isNonstandard: string | null | undefined,
+): boolean {
   return format.dexScope === "sv" && isNonstandard === "Past"
 }
 
@@ -27,7 +30,7 @@ function isBanned(species: PokemonSpecies, format: FormatDefinition, banSet: Set
 }
 
 function isNameOrIdBanned(
-  entry: { name: string; id: string; isNonstandard: string | null },
+  entry: { name: string; id: string; isNonstandard?: string | null },
   format: FormatDefinition,
   banSet: Set<string>,
 ): boolean {

@@ -1,5 +1,5 @@
 import { parseShowdownPaste, serializeShowdownPaste, toId } from "@nasty-plot/core"
-import { DEFAULT_EVS, DEFAULT_IVS, DEFAULT_LEVEL } from "@nasty-plot/core"
+import { DEFAULT_EVS, DEFAULT_IVS, DEFAULT_LEVEL, MAX_SINGLE_EV, TEAM_SIZE } from "@nasty-plot/core"
 import type { NatureName, TeamSlotData } from "@nasty-plot/core"
 
 // ---------------------------------------------------------------------------
@@ -24,7 +24,7 @@ function makeSlot(overrides: Partial<TeamSlotData> = {}): TeamSlotData {
     nature: "Jolly" as NatureName,
     level: DEFAULT_LEVEL,
     moves: ["Earthquake", "Dragon Claw", "Swords Dance", "Scale Shot"],
-    evs: { hp: 0, atk: 252, def: 0, spa: 0, spd: 4, spe: 252 },
+    evs: { hp: 0, atk: MAX_SINGLE_EV, def: 0, spa: 0, spd: 4, spe: MAX_SINGLE_EV },
     ivs: DEFAULT_IVS,
     ...overrides,
   }
@@ -100,7 +100,14 @@ Jolly Nature
     expect(slot.level).toBe(DEFAULT_LEVEL)
     expect(slot.teraType).toBe("Steel")
     expect(slot.nature).toBe("Jolly")
-    expect(slot.evs).toEqual({ hp: 0, atk: 252, def: 0, spa: 0, spd: 4, spe: 252 })
+    expect(slot.evs).toEqual({
+      hp: 0,
+      atk: MAX_SINGLE_EV,
+      def: 0,
+      spa: 0,
+      spd: 4,
+      spe: MAX_SINGLE_EV,
+    })
     expect(slot.ivs).toEqual(DEFAULT_IVS)
     expect(slot.moves).toEqual(["Earthquake", "Dragon Claw", "Swords Dance", "Scale Shot"])
   })
@@ -333,9 +340,9 @@ Mewtwo
 - Psychic`
 
     const result = parseShowdownPaste(paste)
-    expect(result).toHaveLength(6)
+    expect(result).toHaveLength(TEAM_SIZE)
     expect(result[5].pokemonId).toBe("mewtwo")
-    expect(result[5].position).toBe(6)
+    expect(result[5].position).toBe(TEAM_SIZE)
   })
 })
 
@@ -396,7 +403,14 @@ IVs: 0 Atk
     expect(result[0].ability).toBe("Protosynthesis")
     expect(result[0].level).toBe(50)
     expect(result[0].teraType).toBe("Fairy")
-    expect(result[0].evs).toEqual({ hp: 0, atk: 0, def: 0, spa: 252, spd: 4, spe: 252 })
+    expect(result[0].evs).toEqual({
+      hp: 0,
+      atk: 0,
+      def: 0,
+      spa: MAX_SINGLE_EV,
+      spd: 4,
+      spe: MAX_SINGLE_EV,
+    })
     expect(result[0].ivs?.atk).toBe(0)
     expect(result[0].nature).toBe("Timid")
     expect(result[0].moves).toEqual(["Moonblast", "Shadow Ball", "Dazzling Gleam", "Protect"])
@@ -436,8 +450,8 @@ EVs: 252 Atk / badformat / 252 Spe
 - Earthquake`
 
     const result = parseShowdownPaste(paste)
-    expect(result[0].evs?.atk).toBe(252)
-    expect(result[0].evs?.spe).toBe(252)
+    expect(result[0].evs?.atk).toBe(MAX_SINGLE_EV)
+    expect(result[0].evs?.spe).toBe(MAX_SINGLE_EV)
     // Other EVs remain at default (0)
     expect(result[0].evs?.hp).toBe(0)
   })
@@ -505,7 +519,9 @@ describe("serializeShowdownPaste", () => {
   })
 
   it("serializes EVs that differ from defaults", () => {
-    const slot = makeSlot({ evs: { hp: 0, atk: 252, def: 0, spa: 0, spd: 4, spe: 252 } })
+    const slot = makeSlot({
+      evs: { hp: 0, atk: MAX_SINGLE_EV, def: 0, spa: 0, spd: 4, spe: MAX_SINGLE_EV },
+    })
     const output = serializeShowdownPaste([slot])
     expect(output).toContain("EVs: 252 Atk / 4 SpD / 252 Spe")
   })

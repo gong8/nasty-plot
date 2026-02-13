@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getBatchSimulation, deleteBatchSimulation } from "@nasty-plot/battle-engine"
+import { getBatchSimulation, deleteBatchSimulation } from "@nasty-plot/battle-engine/db"
 import { notFoundResponse } from "../../../../../lib/api-error"
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ batchId: string }> }) {

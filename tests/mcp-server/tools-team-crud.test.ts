@@ -1,5 +1,5 @@
 import { registerTeamCrudTools } from "#mcp-server/tools/team-crud"
-import { DEFAULT_EVS, DEFAULT_IVS, DEFAULT_LEVEL } from "@nasty-plot/core"
+import { DEFAULT_EVS, DEFAULT_IVS, DEFAULT_LEVEL, MAX_SINGLE_EV } from "@nasty-plot/core"
 
 // ---------------------------------------------------------------------------
 // Mocks
@@ -193,7 +193,7 @@ describe("registerTeamCrudTools", () => {
         teraType: "Ground",
         level: DEFAULT_LEVEL,
         moves: ["Headlong Rush", "Close Combat", "Knock Off", "Rapid Spin"],
-        evs: { hp: 0, atk: 252, def: 0, spa: 0, spd: 4, spe: 252 },
+        evs: { hp: 0, atk: MAX_SINGLE_EV, def: 0, spa: 0, spd: 4, spe: MAX_SINGLE_EV },
       })) as { content: Array<{ text: string }> }
 
       expect(mockApiPost).toHaveBeenCalledWith("/teams/team-1/slots", {
@@ -205,7 +205,7 @@ describe("registerTeamCrudTools", () => {
         teraType: "Ground",
         level: DEFAULT_LEVEL,
         moves: ["Headlong Rush", "Close Combat", "Knock Off", "Rapid Spin"],
-        evs: { hp: 0, atk: 252, def: 0, spa: 0, spd: 4, spe: 252 },
+        evs: { hp: 0, atk: MAX_SINGLE_EV, def: 0, spa: 0, spd: 4, spe: MAX_SINGLE_EV },
         ivs: DEFAULT_IVS,
       })
       expect(result).not.toHaveProperty("isError")
@@ -251,7 +251,7 @@ describe("registerTeamCrudTools", () => {
         item: "Choice Specs",
         nature: "Timid",
         moves: ["Fire Blast"],
-        evs: { spa: 252, spe: 252 },
+        evs: { spa: MAX_SINGLE_EV, spe: MAX_SINGLE_EV },
       })
 
       const body = mockApiPost.mock.calls[0][1] as { evs: Record<string, number> }
@@ -259,9 +259,9 @@ describe("registerTeamCrudTools", () => {
         hp: 0,
         atk: 0,
         def: 0,
-        spa: 252,
+        spa: MAX_SINGLE_EV,
         spd: 0,
-        spe: 252,
+        spe: MAX_SINGLE_EV,
       })
     })
 
@@ -362,12 +362,12 @@ describe("registerTeamCrudTools", () => {
         teamId: "team-1",
         position: 2,
         moves: ["Surf", "Ice Beam"],
-        evs: { spa: 252 },
+        evs: { spa: MAX_SINGLE_EV },
       })
 
       expect(mockApiPut).toHaveBeenCalledWith("/teams/team-1/slots/2", {
         moves: ["Surf", "Ice Beam"],
-        evs: { spa: 252 },
+        evs: { spa: MAX_SINGLE_EV },
       })
     })
 

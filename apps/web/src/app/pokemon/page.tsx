@@ -54,7 +54,7 @@ export default function PokemonBrowserPage() {
   const params = new URLSearchParams()
   if (debouncedSearch) params.set("search", debouncedSearch)
   if (typeFilter) params.set("type", typeFilter)
-  if (formatId) params.set("format", formatId)
+  if (formatId) params.set("formatId", formatId)
   params.set("sort", sortBy)
   params.set("page", String(page))
   params.set("pageSize", String(PAGE_SIZE))

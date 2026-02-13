@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getErrorMessage } from "../../../../lib/api-error"
-import { prisma } from "@nasty-plot/db"
-import { fetchUsageStats, fetchSmogonSets } from "@nasty-plot/smogon-data"
+import { syncUsageStats, syncSmogonSets } from "@nasty-plot/smogon-data"
 import { isStale } from "@nasty-plot/data-pipeline"
-import { FORMAT_DEFINITIONS } from "@nasty-plot/formats"
+import { FORMAT_DEFINITIONS, getActiveFormats } from "@nasty-plot/formats"
+import { ensureFormatExists } from "@nasty-plot/formats/db"
 
 interface SeedableFormat {
   id: string
@@ -14,7 +14,7 @@ interface SeedableFormat {
   pkmnSetsId?: string
 }
 
-const DEFAULT_FORMATS: SeedableFormat[] = FORMAT_DEFINITIONS.filter((f) => f.isActive)
+const DEFAULT_FORMATS: SeedableFormat[] = getActiveFormats()
   .slice(0, 6)
   .map((f) => ({
     id: f.id,
@@ -43,17 +43,7 @@ function resolveFormats(formatId?: string): SeedableFormat[] {
 
 async function seedFormat(format: SeedableFormat, force: boolean) {
   try {
-    await prisma.format.upsert({
-      where: { id: format.id },
-      update: {},
-      create: {
-        id: format.id,
-        name: format.name,
-        generation: format.generation,
-        gameType: format.gameType,
-        isActive: true,
-      },
-    })
+    await ensureFormatExists(format.id, format.generation, format.gameType)
   } catch {
     // Format may already exist, that's fine
   }
@@ -64,7 +54,7 @@ async function seedFormat(format: SeedableFormat, force: boolean) {
 
   try {
     if (force || (await isStale("smogon-stats", format.id))) {
-      await fetchUsageStats(format.id, { smogonStatsId: format.smogonStatsId })
+      await syncUsageStats(format.id, { smogonStatsId: format.smogonStatsId })
     }
   } catch (err) {
     statsOk = false
@@ -73,7 +63,7 @@ async function seedFormat(format: SeedableFormat, force: boolean) {
 
   try {
     if (force || (await isStale("smogon-sets", format.id))) {
-      await fetchSmogonSets(format.id, { pkmnSetsId: format.pkmnSetsId })
+      await syncSmogonSets(format.id, { pkmnSetsId: format.pkmnSetsId })
     }
   } catch (err) {
     setsOk = false

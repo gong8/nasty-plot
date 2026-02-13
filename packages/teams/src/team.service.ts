@@ -1,4 +1,5 @@
 import { prisma } from "@nasty-plot/db"
+import { ensureFormatExists } from "@nasty-plot/formats/db"
 import { getSpecies } from "@nasty-plot/pokemon-data"
 import type {
   NatureName,
@@ -173,32 +174,11 @@ export function dbTeamToDomain(dbTeam: DbTeamRow): TeamData {
 
 const MAX_TEAM_SLOTS = 6
 const REORDER_TEMP_OFFSET = 100
-const DEFAULT_GENERATION = 9
 
 // --- Service Functions ---
 
-function parseGeneration(formatId: string): number {
-  const firstDigit = formatId.match(/\d/)?.[0]
-  return firstDigit ? parseInt(firstDigit) : DEFAULT_GENERATION
-}
-
-function inferGameType(formatId: string): "singles" | "doubles" {
-  return formatId.includes("doubles") || formatId.includes("vgc") ? "doubles" : "singles"
-}
-
 export async function createTeam(input: TeamCreateInput): Promise<TeamData> {
-  // Auto-create Format record if it doesn't exist to avoid FK violations
-  await prisma.format.upsert({
-    where: { id: input.formatId },
-    update: {},
-    create: {
-      id: input.formatId,
-      name: input.formatId,
-      generation: parseGeneration(input.formatId),
-      gameType: inferGameType(input.formatId),
-      isActive: true,
-    },
-  })
+  await ensureFormatExists(input.formatId)
 
   const team = await prisma.team.create({
     data: {

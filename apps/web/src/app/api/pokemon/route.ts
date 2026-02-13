@@ -14,7 +14,7 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const search = searchParams.get("search") ?? ""
   const typeFilter = searchParams.get("type") as PokemonType | null
-  const formatId = searchParams.get("format")
+  const formatId = searchParams.get("formatId")
   const sort = (searchParams.get("sort") as SortMode) ?? "dex"
   const page = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10))
   const pageSize = Math.min(100, Math.max(1, parseInt(searchParams.get("pageSize") ?? "50", 10)))

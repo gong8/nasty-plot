@@ -1,4 +1,5 @@
 import { analyzeTeam } from "@nasty-plot/analysis"
+import { DEFAULT_LEVEL, DEFAULT_IVS, MAX_SINGLE_EV } from "@nasty-plot/core"
 
 // ---------------------------------------------------------------------------
 // Mocks
@@ -78,10 +79,10 @@ function makeSlot(overrides?: Record<string, unknown>) {
     item: "Leftovers",
     nature: "Jolly",
     teraType: undefined,
-    level: 100,
+    level: DEFAULT_LEVEL,
     moves: ["Earthquake", "Dragon Claw", undefined, undefined],
-    evs: { hp: 0, atk: 252, def: 0, spa: 0, spd: 4, spe: 252 },
-    ivs: { hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31 },
+    evs: { hp: 0, atk: MAX_SINGLE_EV, def: 0, spa: 0, spd: 4, spe: MAX_SINGLE_EV },
+    ivs: { ...DEFAULT_IVS },
     ...overrides,
   }
 }
@@ -343,7 +344,7 @@ describe("analyzeTeam", () => {
     )
     expect(benchmarks.length).toBe(2)
     expect(benchmarks[0].nature).toBe("Jolly")
-    expect(benchmarks[0].evs).toBe(252)
+    expect(benchmarks[0].evs).toBe(MAX_SINGLE_EV)
   })
 
   it("skips benchmark entries for Pokemon already on the team", async () => {

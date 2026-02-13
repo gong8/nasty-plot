@@ -1,5 +1,5 @@
 import { z } from "zod"
-import { DEFAULT_FORMAT_ID } from "@nasty-plot/core"
+import { DEFAULT_FORMAT_ID, DEFAULT_LEVEL } from "@nasty-plot/core"
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js"
 import { apiGet, apiPost } from "../api-client.js"
 import { handleTool } from "../tool-helpers.js"
@@ -105,11 +105,11 @@ export function registerAnalysisTools(server: McpServer): void {
           apiPost("/damage-calc", {
             attacker: {
               pokemonId: attackerPokemon,
-              level: attackerLevel ?? 100,
+              level: attackerLevel ?? DEFAULT_LEVEL,
             },
             defender: {
               pokemonId: defenderPokemon,
-              level: defenderLevel ?? 100,
+              level: defenderLevel ?? DEFAULT_LEVEL,
             },
             move: moveName,
           }),

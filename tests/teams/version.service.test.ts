@@ -5,7 +5,13 @@ import type {
   ForkOptions,
   MergeDecision,
 } from "@nasty-plot/core"
-import { DEFAULT_EVS, DEFAULT_IVS, DEFAULT_LEVEL } from "@nasty-plot/core"
+import {
+  DEFAULT_EVS,
+  DEFAULT_IVS,
+  DEFAULT_LEVEL,
+  MAX_SINGLE_EV,
+  PERFECT_IV,
+} from "@nasty-plot/core"
 import {
   compareTeams,
   forkTeam,
@@ -67,7 +73,7 @@ function makeSlotData(overrides?: Partial<TeamSlotData>): TeamSlotData {
     nature: "Jolly" as NatureName,
     level: DEFAULT_LEVEL,
     moves: ["Earthquake", "Dragon Claw", undefined, undefined],
-    evs: { ...DEFAULT_EVS, atk: 252, spe: 252 },
+    evs: { ...DEFAULT_EVS, atk: MAX_SINGLE_EV, spe: MAX_SINGLE_EV },
     ivs: DEFAULT_IVS,
     ...overrides,
   }
@@ -121,17 +127,17 @@ function makeDbSlot(overrides?: Record<string, unknown>) {
     move3: null,
     move4: null,
     evHp: 0,
-    evAtk: 252,
+    evAtk: MAX_SINGLE_EV,
     evDef: 0,
     evSpA: 0,
     evSpD: 0,
-    evSpe: 252,
-    ivHp: 31,
-    ivAtk: 31,
-    ivDef: 31,
-    ivSpA: 31,
-    ivSpD: 31,
-    ivSpe: 31,
+    evSpe: MAX_SINGLE_EV,
+    ivHp: PERFECT_IV,
+    ivAtk: PERFECT_IV,
+    ivDef: PERFECT_IV,
+    ivSpA: PERFECT_IV,
+    ivSpD: PERFECT_IV,
+    ivSpe: PERFECT_IV,
     ...overrides,
   }
 }
@@ -178,7 +184,7 @@ describe("compareTeams", () => {
           item: "Air Balloon",
           nature: "Timid" as NatureName,
           moves: ["Magma Storm", "Earth Power", undefined, undefined],
-          evs: { ...DEFAULT_EVS, spa: 252, spe: 252 },
+          evs: { ...DEFAULT_EVS, spa: MAX_SINGLE_EV, spe: MAX_SINGLE_EV },
         }),
       ],
     })
@@ -221,10 +227,10 @@ describe("compareTeams", () => {
 
   it("detects EV spread changes", () => {
     const slotA = makeSlotData({
-      evs: { ...DEFAULT_EVS, atk: 252, spe: 252 },
+      evs: { ...DEFAULT_EVS, atk: MAX_SINGLE_EV, spe: MAX_SINGLE_EV },
     })
     const slotB = makeSlotData({
-      evs: { ...DEFAULT_EVS, hp: 252, def: 252 },
+      evs: { ...DEFAULT_EVS, hp: MAX_SINGLE_EV, def: MAX_SINGLE_EV },
     })
     const teamA = makeTeamData({ id: "team-a", slots: [slotA] })
     const teamB = makeTeamData({ id: "team-b", slots: [slotB] })
@@ -237,10 +243,16 @@ describe("compareTeams", () => {
     expect(evChanges).toHaveLength(4)
 
     const fieldMap = Object.fromEntries(evChanges.map((c) => [c.field, c]))
-    expect(fieldMap["evs.hp"]).toEqual(expect.objectContaining({ before: 0, after: 252 }))
-    expect(fieldMap["evs.atk"]).toEqual(expect.objectContaining({ before: 252, after: 0 }))
-    expect(fieldMap["evs.def"]).toEqual(expect.objectContaining({ before: 0, after: 252 }))
-    expect(fieldMap["evs.spe"]).toEqual(expect.objectContaining({ before: 252, after: 0 }))
+    expect(fieldMap["evs.hp"]).toEqual(expect.objectContaining({ before: 0, after: MAX_SINGLE_EV }))
+    expect(fieldMap["evs.atk"]).toEqual(
+      expect.objectContaining({ before: MAX_SINGLE_EV, after: 0 }),
+    )
+    expect(fieldMap["evs.def"]).toEqual(
+      expect.objectContaining({ before: 0, after: MAX_SINGLE_EV }),
+    )
+    expect(fieldMap["evs.spe"]).toEqual(
+      expect.objectContaining({ before: MAX_SINGLE_EV, after: 0 }),
+    )
   })
 
   it("detects move changes per index", () => {
@@ -444,9 +456,9 @@ describe("forkTeam", () => {
         evHp: 0,
         evAtk: 0,
         evDef: 0,
-        evSpA: 252,
+        evSpA: MAX_SINGLE_EV,
         evSpD: 4,
-        evSpe: 252,
+        evSpe: MAX_SINGLE_EV,
       }),
     ]
     const sourceDb = makeDbTeam({
@@ -659,9 +671,9 @@ describe("mergeTeams", () => {
       evHp: 0,
       evAtk: 0,
       evDef: 0,
-      evSpA: 252,
+      evSpA: MAX_SINGLE_EV,
       evSpD: 4,
-      evSpe: 252,
+      evSpe: MAX_SINGLE_EV,
     })
     const slotLandorus = makeDbSlot({
       id: 3,

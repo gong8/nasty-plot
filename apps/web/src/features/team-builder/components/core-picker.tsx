@@ -1,8 +1,7 @@
 "use client"
 
 import { Check } from "lucide-react"
-import { Card, CardContent } from "@/components/ui/card"
-import { cn, TypeBadge, PokemonSprite } from "@nasty-plot/ui"
+import { TypeBadge, PokemonCard } from "@nasty-plot/ui"
 import type { PokemonType, UsageStatsEntry } from "@nasty-plot/core"
 import type { GuidedPokemonPick } from "../hooks/use-guided-builder"
 
@@ -47,16 +46,14 @@ export function CorePicker({ pokemon, selected, onToggle, maxPicks = 3 }: CorePi
           const types: PokemonType[] = p.types ?? ["Normal"]
 
           return (
-            <Card
+            <PokemonCard
               key={p.pokemonId}
-              className={cn(
-                "cursor-pointer transition-all",
-                isSelected && "ring-2 ring-primary bg-primary/5",
-                disabled && "opacity-50 cursor-not-allowed",
-                !isSelected && !disabled && "hover:shadow-md hover:border-primary/50",
-              )}
+              pokemonId={p.pokemonId}
+              name={displayName}
+              types={types}
+              selected={isSelected}
+              disabled={disabled}
               onClick={() => {
-                if (disabled) return
                 onToggle({
                   pokemonId: p.pokemonId,
                   pokemonName: displayName,
@@ -64,27 +61,17 @@ export function CorePicker({ pokemon, selected, onToggle, maxPicks = 3 }: CorePi
                   usagePercent: p.usagePercent,
                 })
               }}
+              className="relative"
             >
-              <CardContent className="relative flex flex-col items-center gap-1 p-3">
-                {isSelected && (
-                  <div className="absolute top-1.5 right-1.5 h-5 w-5 rounded-full bg-primary flex items-center justify-center">
-                    <Check className="h-3 w-3 text-primary-foreground" />
-                  </div>
-                )}
-                <PokemonSprite pokemonId={p.pokemonId} size={64} />
-                <span className="text-xs font-medium truncate w-full text-center">
-                  {displayName}
-                </span>
-                <div className="flex gap-0.5">
-                  {types.map((t) => (
-                    <TypeBadge key={t} type={t} size="sm" />
-                  ))}
+              {isSelected && (
+                <div className="absolute top-1.5 right-1.5 h-5 w-5 rounded-full bg-primary flex items-center justify-center">
+                  <Check className="h-3 w-3 text-primary-foreground" />
                 </div>
-                <span className="text-[10px] text-muted-foreground">
-                  {p.usagePercent.toFixed(1)}% usage
-                </span>
-              </CardContent>
-            </Card>
+              )}
+              <span className="text-[10px] text-muted-foreground">
+                {p.usagePercent.toFixed(1)}% usage
+              </span>
+            </PokemonCard>
           )
         })}
       </div>

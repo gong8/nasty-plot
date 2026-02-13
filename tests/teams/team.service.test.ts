@@ -1,5 +1,12 @@
 import type { TeamCreateInput, TeamSlotInput } from "@nasty-plot/core"
-import { DEFAULT_EVS, DEFAULT_IVS, DEFAULT_LEVEL } from "@nasty-plot/core"
+import {
+  DEFAULT_EVS,
+  DEFAULT_IVS,
+  DEFAULT_LEVEL,
+  MAX_SINGLE_EV,
+  PERFECT_IV,
+  TEAM_SIZE,
+} from "@nasty-plot/core"
 import {
   createTeam,
   getTeam,
@@ -97,17 +104,17 @@ function makeDbSlot(overrides?: Record<string, unknown>) {
     move3: null,
     move4: null,
     evHp: 0,
-    evAtk: 252,
+    evAtk: MAX_SINGLE_EV,
     evDef: 0,
     evSpA: 0,
     evSpD: 4,
-    evSpe: 252,
-    ivHp: 31,
-    ivAtk: 31,
-    ivDef: 31,
-    ivSpA: 31,
-    ivSpD: 31,
-    ivSpe: 31,
+    evSpe: MAX_SINGLE_EV,
+    ivHp: PERFECT_IV,
+    ivAtk: PERFECT_IV,
+    ivDef: PERFECT_IV,
+    ivSpA: PERFECT_IV,
+    ivSpD: PERFECT_IV,
+    ivSpe: PERFECT_IV,
     ...overrides,
   }
 }
@@ -121,7 +128,7 @@ function makeSlotInput(overrides?: Partial<TeamSlotInput>): TeamSlotInput {
     nature: "Jolly",
     level: DEFAULT_LEVEL,
     moves: ["Earthquake", "Dragon Claw", undefined, undefined],
-    evs: { ...DEFAULT_EVS, atk: 252, spe: 252 },
+    evs: { ...DEFAULT_EVS, atk: MAX_SINGLE_EV, spe: MAX_SINGLE_EV },
     ivs: DEFAULT_IVS,
     ...overrides,
   }
@@ -356,7 +363,7 @@ describe("addSlot", () => {
   })
 
   it("throws when team already has 6 slots", async () => {
-    mockSlotCount.mockResolvedValue(6)
+    mockSlotCount.mockResolvedValue(TEAM_SIZE)
 
     await expect(addSlot("team-1", makeSlotInput())).rejects.toThrow("Team already has 6 slots")
   })
@@ -413,26 +420,33 @@ describe("updateSlot", () => {
   })
 
   it("updates moves, evs, and ivs", async () => {
-    const evs = { hp: 252, atk: 0, def: 0, spa: 252, spd: 4, spe: 0 }
-    const ivs = { hp: 31, atk: 0, def: 31, spa: 31, spd: 31, spe: 31 }
+    const evs = { hp: MAX_SINGLE_EV, atk: 0, def: 0, spa: MAX_SINGLE_EV, spd: 4, spe: 0 }
+    const ivs = {
+      hp: PERFECT_IV,
+      atk: 0,
+      def: PERFECT_IV,
+      spa: PERFECT_IV,
+      spd: PERFECT_IV,
+      spe: PERFECT_IV,
+    }
     mockSlotUpdate.mockResolvedValue(
       makeDbSlot({
         move1: "Magma Storm",
         move2: "Earth Power",
         move3: "Taunt",
         move4: "Stealth Rock",
-        evHp: 252,
+        evHp: MAX_SINGLE_EV,
         evAtk: 0,
         evDef: 0,
-        evSpA: 252,
+        evSpA: MAX_SINGLE_EV,
         evSpD: 4,
         evSpe: 0,
-        ivHp: 31,
+        ivHp: PERFECT_IV,
         ivAtk: 0,
-        ivDef: 31,
-        ivSpA: 31,
-        ivSpD: 31,
-        ivSpe: 31,
+        ivDef: PERFECT_IV,
+        ivSpA: PERFECT_IV,
+        ivSpD: PERFECT_IV,
+        ivSpe: PERFECT_IV,
       }),
     )
 
@@ -449,7 +463,7 @@ describe("updateSlot", () => {
           move2: "Earth Power",
           move3: "Taunt",
           move4: "Stealth Rock",
-          evHp: 252,
+          evHp: MAX_SINGLE_EV,
           ivAtk: 0,
         }),
       }),

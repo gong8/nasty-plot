@@ -1,5 +1,5 @@
 export {
-  fetchUsageStats,
+  syncUsageStats,
   getUsageStats,
   getUsageStatsCount,
   getTopPokemon,
@@ -11,7 +11,7 @@ export {
 } from "./usage-stats.service"
 
 export {
-  fetchSmogonSets,
+  syncSmogonSets,
   getSetsForPokemon,
   getAllSetsForFormat,
   getNatureUsage,

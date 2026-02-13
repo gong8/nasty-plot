@@ -4,7 +4,7 @@ import {
   badRequestResponse,
   notFoundResponse,
 } from "../../../../../lib/api-error"
-import { getBattleCommentary, updateBattleCommentary } from "@nasty-plot/battle-engine"
+import { getBattleCommentary, updateBattleCommentary } from "@nasty-plot/battle-engine/db"
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ battleId: string }> }) {
   const { battleId } = await params

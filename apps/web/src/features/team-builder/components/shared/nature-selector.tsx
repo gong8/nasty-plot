@@ -1,16 +1,8 @@
 "use client"
 
 import { useMemo } from "react"
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { NATURE_DATA, STAT_LABELS, NATURES, type NatureName } from "@nasty-plot/core"
+import { GroupedSelector } from "@nasty-plot/ui"
 import type { PopularityData } from "../../hooks/use-popularity-data"
 
 interface NatureSelectorProps {
@@ -48,39 +40,33 @@ export function NatureSelector({
 }: NatureSelectorProps) {
   const { commonNatures, otherNatures } = useNaturesByPopularity(popularity)
 
+  const groups = useMemo(() => {
+    if (commonNatures.length > 0) {
+      return [
+        {
+          label: "Common",
+          items: commonNatures.map((n) => ({ value: n, label: formatNatureLabel(n) })),
+        },
+        {
+          label: "All Natures",
+          items: otherNatures.map((n) => ({ value: n, label: formatNatureLabel(n) })),
+        },
+      ]
+    }
+    return [
+      {
+        label: "All Natures",
+        items: NATURES.map((n) => ({ value: n, label: formatNatureLabel(n) })),
+      },
+    ]
+  }, [commonNatures, otherNatures])
+
   return (
-    <Select value={value} onValueChange={(v) => onChange(v as NatureName)}>
-      <SelectTrigger className={triggerClassName ?? "w-full"}>
-        <SelectValue />
-      </SelectTrigger>
-      <SelectContent>
-        {commonNatures.length > 0 ? (
-          <>
-            <SelectGroup>
-              <SelectLabel>Common</SelectLabel>
-              {commonNatures.map((n) => (
-                <SelectItem key={n} value={n}>
-                  {formatNatureLabel(n)}
-                </SelectItem>
-              ))}
-            </SelectGroup>
-            <SelectGroup>
-              <SelectLabel>All Natures</SelectLabel>
-              {otherNatures.map((n) => (
-                <SelectItem key={n} value={n}>
-                  {formatNatureLabel(n)}
-                </SelectItem>
-              ))}
-            </SelectGroup>
-          </>
-        ) : (
-          NATURES.map((n) => (
-            <SelectItem key={n} value={n}>
-              {formatNatureLabel(n)}
-            </SelectItem>
-          ))
-        )}
-      </SelectContent>
-    </Select>
+    <GroupedSelector
+      value={value}
+      onValueChange={(v) => onChange(v as NatureName)}
+      groups={groups}
+      triggerClassName={triggerClassName ?? "w-full"}
+    />
   )
 }

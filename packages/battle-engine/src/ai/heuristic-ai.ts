@@ -8,11 +8,10 @@ import type {
   PredictedSet,
   DexMove,
 } from "../types"
-import type { PokemonType, GameType } from "@nasty-plot/core"
+import { getTypeEffectiveness, type PokemonType, type GameType } from "@nasty-plot/core"
 import {
   calculateBattleDamage,
   getSpeciesTypes,
-  getTypeEffectiveness,
   fallbackMove,
   HAZARD_SCORES,
   STATUS_INFLICTION_SCORES,

@@ -5,7 +5,7 @@ import { STATUS_BADGE_CONFIG } from "@nasty-plot/core"
 import type { BattleActionSet, BattlePokemon } from "@nasty-plot/battle-engine"
 import { Button } from "@/components/ui/button"
 import { HealthBar } from "./HealthBar"
-import { BattleSprite } from "./PokemonSprite"
+import { PokemonSprite } from "@nasty-plot/ui"
 import { ArrowLeft } from "lucide-react"
 
 interface SwitchMenuProps {
@@ -57,7 +57,13 @@ export function SwitchMenu({ actions, onSwitch, onBack, team, className }: Switc
                 sw.fainted && "line-through",
               )}
             >
-              <BattleSprite speciesId={sw.speciesId} side="front" fainted={sw.fainted} size={36} />
+              <PokemonSprite
+                pokemonId={sw.speciesId}
+                side="front"
+                fainted={sw.fainted}
+                size={36}
+                animated
+              />
 
               <div className="flex-1 min-w-0 space-y-0.5">
                 {/* Name + status */}

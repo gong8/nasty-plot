@@ -17,6 +17,7 @@ import {
   type Recommendation,
   parseShowdownPaste,
 } from "@nasty-plot/core"
+import type { SampleTeamView } from "@nasty-plot/teams"
 import { fetchJson, fetchApiData, postApiData } from "@/lib/api-client"
 
 // --- Types ---
@@ -31,16 +32,12 @@ export interface GuidedPokemonPick {
   num?: number
 }
 
-export interface SampleTeamEntry {
-  id: string
-  name: string
-  formatId: string
-  archetype?: string
-  source?: string
-  sourceUrl?: string
-  paste: string
-  pokemonIds: string[]
-}
+/**
+ * Client-side sample team type. Derives from SampleTeamView but omits
+ * fields that don't survive JSON serialization cleanly (createdAt as Date)
+ * and fields the UI doesn't need (isActive).
+ */
+export type SampleTeamEntry = Omit<SampleTeamView, "isActive" | "createdAt">
 
 const STEP_ORDER: GuidedStep[] = ["start", "lead", "build", "sets", "review"]
 
@@ -66,7 +63,7 @@ async function fetchUsage(formatId: string, limit: number): Promise<UsageStatsEn
 
 async function fetchSets(pokemonId: string, format: string): Promise<SmogonSetData[]> {
   try {
-    return await fetchApiData<SmogonSetData[]>(`/api/pokemon/${pokemonId}/sets?format=${format}`)
+    return await fetchApiData<SmogonSetData[]>(`/api/pokemon/${pokemonId}/sets?formatId=${format}`)
   } catch {
     return []
   }

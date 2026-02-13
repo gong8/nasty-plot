@@ -3,7 +3,7 @@
 import { cn } from "@nasty-plot/ui"
 import { STATUS_BADGE_CONFIG } from "@nasty-plot/core"
 import type { BattleState, BattlePokemon } from "@nasty-plot/battle-engine"
-import { BattleSprite } from "./PokemonSprite"
+import { PokemonSprite } from "@nasty-plot/ui"
 import { HealthBar } from "./HealthBar"
 import { BattlePlatform } from "./BattlePlatform"
 import { PokeballIndicator } from "./PokeballIndicator"
@@ -100,11 +100,12 @@ function ActivePokemonSlot({
           variant={isPlayer ? "player" : "opponent"}
           className={cn("left-1/2 -translate-x-1/2 z-0", isPlayer ? "bottom-4" : "-bottom-1")}
         />
-        <BattleSprite
-          speciesId={pokemon.speciesId || pokemon.name}
+        <PokemonSprite
+          pokemonId={pokemon.speciesId || pokemon.name}
           side={isPlayer ? "back" : "front"}
           fainted={pokemon.fainted}
           size={isPlayer ? 128 : 96}
+          animated
           animationClass={animationClass}
           className="relative z-10"
         />

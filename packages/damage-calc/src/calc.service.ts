@@ -1,7 +1,11 @@
 import { calculate, Field, Move, Pokemon, State } from "@smogon/calc"
 import {
   DEFAULT_LEVEL,
+  PERFECT_IV,
+  STATUS_CALC_MAP,
   fillStats,
+  toPercent,
+  type CalcStatusName,
   type DamageCalcInput,
   type DamageCalcResult,
   type MatchupMatrixEntry,
@@ -25,20 +29,9 @@ function toCalcBoosts(boosts: Partial<StatsTable> | undefined): Partial<StatsTab
 // Helpers: status mapping
 // ---------------------------------------------------------------------------
 
-type CalcStatusName = "slp" | "psn" | "brn" | "frz" | "par" | "tox"
-
-const STATUS_MAP: Record<string, CalcStatusName> = {
-  Burned: "brn",
-  Paralyzed: "par",
-  Poisoned: "psn",
-  "Badly Poisoned": "tox",
-  Asleep: "slp",
-  Frozen: "frz",
-}
-
 function toCalcStatus(status?: string): CalcStatusName | undefined {
   if (!status || status === "None" || status === "Healthy") return undefined
-  return STATUS_MAP[status]
+  return STATUS_CALC_MAP[status]
 }
 
 // ---------------------------------------------------------------------------
@@ -51,11 +44,6 @@ export function flattenDamage(damage: number | number[] | number[][]): number[] 
   // number[][] (doubles spread moves) -- use first sub-array
   if (Array.isArray(damage[0])) return (damage as number[][])[0]
   return damage as number[]
-}
-
-function toPercent(value: number, total: number): number {
-  if (total <= 0) return 0
-  return Math.round((value / total) * 1000) / 10
 }
 
 const MAX_HKO_CALC = 4
@@ -87,7 +75,7 @@ function buildCalcPokemon(input: CalcPokemonInput): Pokemon {
     item: input.item || undefined,
     nature: input.nature || "Hardy",
     evs: fillStats(input.evs, 0),
-    ivs: fillStats(input.ivs, 31),
+    ivs: fillStats(input.ivs, PERFECT_IV),
     boosts: toCalcBoosts(input.boosts),
     teraType: input.teraType || undefined,
     status: toCalcStatus(input.status),

@@ -26,7 +26,6 @@
     "@nasty-plot/smogon-data": "workspace:*",
     "@nasty-plot/teams": "workspace:*",
     "@nasty-plot/ui": "workspace:*",
-    "@pkmn/img": "^0.3.3",
     "@tanstack/react-query": "^5.90.20",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

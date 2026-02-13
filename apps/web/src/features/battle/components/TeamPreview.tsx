@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { cn } from "@nasty-plot/ui"
 import { Button } from "@/components/ui/button"
-import { BattleSprite } from "./PokemonSprite"
+import { PokemonSprite } from "@nasty-plot/ui"
 import type { BattlePokemon } from "@nasty-plot/battle-engine"
 import type { GameType } from "@nasty-plot/core"
 import { Check } from "lucide-react"
@@ -58,7 +58,12 @@ export function TeamPreview({
       <div className="flex gap-3 justify-center flex-wrap">
         {opponentTeam.map((pokemon, i) => (
           <div key={i} className="flex flex-col items-center gap-1 p-2 rounded-lg bg-muted/50">
-            <BattleSprite speciesId={pokemon.speciesId || pokemon.name} side="front" size={64} />
+            <PokemonSprite
+              pokemonId={pokemon.speciesId || pokemon.name}
+              side="front"
+              size={64}
+              animated
+            />
             <span className="text-xs font-medium">{pokemon.name}</span>
           </div>
         ))}
@@ -102,10 +107,11 @@ export function TeamPreview({
                 )}
               >
                 <div className="relative">
-                  <BattleSprite
-                    speciesId={pokemon.speciesId || pokemon.name}
+                  <PokemonSprite
+                    pokemonId={pokemon.speciesId || pokemon.name}
                     side="back"
                     size={64}
+                    animated
                   />
                   {selectedLead === i && (
                     <div className="absolute -top-1 -right-1 bg-primary text-primary-foreground rounded-full p-0.5">
@@ -164,10 +170,11 @@ export function TeamPreview({
                 )}
               >
                 <div className="relative">
-                  <BattleSprite
-                    speciesId={pokemon.speciesId || pokemon.name}
+                  <PokemonSprite
+                    pokemonId={pokemon.speciesId || pokemon.name}
                     side="back"
                     size={64}
+                    animated
                   />
                   {isSelected && (
                     <div

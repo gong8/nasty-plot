@@ -81,7 +81,7 @@ export async function resolveYearMonth(
 }
 
 // ---------------------------------------------------------------------------
-// Upsert helpers for fetchUsageStats
+// Upsert helpers for syncUsageStats
 // ---------------------------------------------------------------------------
 
 async function saveTeammates(
@@ -180,7 +180,7 @@ function formatMonthStr(year: number, month: number): string {
  * @param options.year - Specific year to fetch
  * @param options.month - Specific month to fetch
  */
-export async function fetchUsageStats(
+export async function syncUsageStats(
   formatId: string,
   options?: { smogonStatsId?: string; year?: number; month?: number },
 ): Promise<void> {

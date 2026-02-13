@@ -44,7 +44,7 @@ export function parseReplayUrl(url: string): string | null {
 }
 
 /** Fetch replay JSON from Showdown */
-export async function fetchShowdownReplay(replayId: string): Promise<ShowdownReplayJson> {
+export async function getShowdownReplay(replayId: string): Promise<ShowdownReplayJson> {
   const res = await fetch(`https://replay.pokemonshowdown.com/${replayId}.json`)
   if (!res.ok) {
     throw new Error(`Failed to fetch replay: ${res.status} ${res.statusText}`)
@@ -278,7 +278,7 @@ export async function importFromReplayUrl(url: string): Promise<ParsedBattleImpo
     throw new Error("Invalid Showdown replay URL")
   }
 
-  const replay = await fetchShowdownReplay(replayId)
+  const replay = await getShowdownReplay(replayId)
   const parsed = parseProtocolLog(replay.log)
 
   return {

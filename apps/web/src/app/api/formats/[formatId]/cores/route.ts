@@ -3,8 +3,11 @@ import { apiErrorResponse } from "../../../../../lib/api-error"
 import { getTopCores } from "@nasty-plot/smogon-data"
 import { getSpecies } from "@nasty-plot/pokemon-data"
 
-export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const { id: formatId } = await params
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ formatId: string }> },
+) {
+  const { formatId } = await params
   const searchParams = request.nextUrl.searchParams
   const pokemonId = searchParams.get("pokemonId") ?? undefined
   const limit = Math.min(Math.max(parseInt(searchParams.get("limit") ?? "20", 10) || 20, 1), 100)

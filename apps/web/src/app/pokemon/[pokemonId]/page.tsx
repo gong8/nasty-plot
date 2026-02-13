@@ -12,17 +12,11 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { getSpecies, getLearnset, getMove } from "@nasty-plot/pokemon-data"
-import { prisma } from "@nasty-plot/db"
 import { getSetsForPokemon } from "@nasty-plot/smogon-data"
 import { StatBar, TypeBadge } from "@nasty-plot/ui"
 import { CompetitiveData } from "./competitive-data"
-import {
-  STATS,
-  getBaseStatTotal,
-  type MoveData,
-  type StatName,
-  type UsageStatsEntry,
-} from "@nasty-plot/core"
+import { getActiveFormatsFromDb, getUsageByFormat } from "./actions"
+import { STATS, getBaseStatTotal, type MoveData, type StatName } from "@nasty-plot/core"
 
 const CATEGORY_COLORS: Record<string, string> = {
   Physical: "text-red-500",
@@ -31,18 +25,18 @@ const CATEGORY_COLORS: Record<string, string> = {
 }
 
 interface Props {
-  params: Promise<{ id: string }>
+  params: Promise<{ pokemonId: string }>
 }
 
 export default async function PokemonDetailPage({ params }: Props) {
-  const { id } = await params
-  const species = getSpecies(id)
+  const { pokemonId } = await params
+  const species = getSpecies(pokemonId)
 
   if (!species) {
     notFound()
   }
 
-  const moveIds = await getLearnset(id)
+  const moveIds = await getLearnset(pokemonId)
   const moves = moveIds
     .map(getMove)
     .filter((m): m is MoveData => m != null)
@@ -52,23 +46,12 @@ export default async function PokemonDetailPage({ params }: Props) {
   const spriteUrl = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${species.num}.png`
 
   // Fetch competitive data from DB (non-blocking, graceful on empty DB)
-  const formats = await prisma.format.findMany({ where: { isActive: true } }).catch(() => [])
-
-  const usageByFormat = await Promise.all(
-    formats.map(async (f: { id: string; name: string }) => {
-      const row = await prisma.usageStats
-        .findFirst({ where: { formatId: f.id, pokemonId: id }, orderBy: { year: "desc" } })
-        .catch(() => null)
-      const stats: UsageStatsEntry | null = row
-        ? { pokemonId: row.pokemonId, usagePercent: row.usagePercent, rank: row.rank }
-        : null
-      return { formatId: f.id, formatName: f.name, stats }
-    }),
-  )
+  const formats = await getActiveFormatsFromDb()
+  const usageByFormat = await getUsageByFormat(formats, pokemonId)
 
   const setsByFormat = await Promise.all(
     formats.map(async (f: { id: string; name: string }) => {
-      const sets = await getSetsForPokemon(f.id, id).catch(() => [])
+      const sets = await getSetsForPokemon(f.id, pokemonId).catch(() => [])
       return { formatId: f.id, formatName: f.name, sets }
     }),
   )

@@ -3,10 +3,13 @@ import { apiErrorResponse, badRequestResponse } from "../../../../../lib/api-err
 import { getSetsForPokemon } from "@nasty-plot/smogon-data"
 import type { ApiResponse, SmogonSetData } from "@nasty-plot/core"
 
-export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const { id: pokemonId } = await params
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ pokemonId: string }> },
+) {
+  const { pokemonId } = await params
   const searchParams = request.nextUrl.searchParams
-  const format = searchParams.get("format")
+  const format = searchParams.get("formatId")
 
   if (!format) {
     return badRequestResponse("Missing required query parameter: format", "MISSING_FORMAT")

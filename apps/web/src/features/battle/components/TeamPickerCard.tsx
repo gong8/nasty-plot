@@ -1,6 +1,6 @@
 "use client"
 
-import { Sprites } from "@pkmn/img"
+import { getSpriteUrl } from "@nasty-plot/pokemon-data"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@nasty-plot/ui"
 
@@ -41,10 +41,7 @@ export function TeamPickerCard({ team, selected, onSelect }: TeamPickerCardProps
       </div>
       <div className="flex gap-0.5 justify-center">
         {team.pokemonIds.map((id) => {
-          const spriteData = Sprites.getPokemon(id, {
-            gen: "gen5ani",
-            side: "p2",
-          })
+          const url = getSpriteUrl(id, { gen: "gen5ani" })
           return (
             <div
               key={id}
@@ -53,7 +50,7 @@ export function TeamPickerCard({ team, selected, onSelect }: TeamPickerCardProps
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={spriteData.url}
+                src={url}
                 alt={id}
                 className="max-w-full max-h-full object-contain"
                 style={{ imageRendering: "pixelated" }}

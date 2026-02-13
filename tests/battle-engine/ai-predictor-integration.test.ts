@@ -1,6 +1,7 @@
-import { describe, it, expect, vi, beforeEach } from "vitest"
+import { describe, it, expect } from "vitest"
 import { HeuristicAI, MCTSAI, createInitialState } from "@nasty-plot/battle-engine"
 import type { BattleState, BattleActionSet, PredictedSet } from "@nasty-plot/battle-engine"
+import { DEFAULT_LEVEL } from "@nasty-plot/core"
 
 function makeState(): BattleState {
   const state = createInitialState("test-predictor", "singles")
@@ -10,7 +11,7 @@ function makeState(): BattleState {
       speciesId: "garchomp",
       name: "Garchomp",
       nickname: "Garchomp",
-      level: 100,
+      level: DEFAULT_LEVEL,
       types: ["Dragon", "Ground"],
       hp: 357,
       maxHp: 357,
@@ -40,7 +41,7 @@ function makeState(): BattleState {
       speciesId: "heatran",
       name: "Heatran",
       nickname: "Heatran",
-      level: 100,
+      level: DEFAULT_LEVEL,
       types: ["Fire", "Steel"],
       hp: 311,
       maxHp: 311,
@@ -173,7 +174,7 @@ describe("HeuristicAI with opponentPredictions", () => {
         speciesId: "weavile",
         name: "Weavile",
         nickname: "Weavile",
-        level: 100,
+        level: DEFAULT_LEVEL,
         types: ["Dark", "Ice"],
         hp: 281,
         maxHp: 281,
@@ -202,7 +203,7 @@ describe("HeuristicAI with opponentPredictions", () => {
         speciesId: "blaziken",
         name: "Blaziken",
         nickname: "Blaziken",
-        level: 100,
+        level: DEFAULT_LEVEL,
         types: ["Fire", "Fighting"],
         hp: 301,
         maxHp: 301,
@@ -245,7 +246,7 @@ describe("HeuristicAI with opponentPredictions", () => {
         speciesId: "dragonite",
         name: "Dragonite",
         nickname: "Dragonite",
-        level: 100,
+        level: DEFAULT_LEVEL,
         types: ["Dragon", "Flying"],
         hp: 323,
         maxHp: 323,
@@ -272,7 +273,7 @@ describe("HeuristicAI with opponentPredictions", () => {
         speciesId: "toxapex",
         name: "Toxapex",
         nickname: "Toxapex",
-        level: 100,
+        level: DEFAULT_LEVEL,
         types: ["Poison", "Water"],
         hp: 304,
         maxHp: 304,
@@ -364,13 +365,45 @@ describe("HeuristicAI with opponentPredictions", () => {
   it("penalizes switches into predicted SE coverage moves on force switch", async () => {
     const state = makeState()
 
-    // p1 active: Garchomp with predicted Ice Beam (4x SE vs Dragonite)
+    // Use Normal-type opponent so both switches have identical base matchup scores.
+    // The only scoring difference comes from prediction penalties.
+    state.sides.p1.active = [
+      {
+        speciesId: "snorlax",
+        name: "Snorlax",
+        nickname: "Snorlax",
+        level: DEFAULT_LEVEL,
+        types: ["Normal"],
+        hp: 524,
+        maxHp: 524,
+        hpPercent: 100,
+        status: "",
+        fainted: false,
+        item: "Leftovers",
+        ability: "Thick Fat",
+        isTerastallized: false,
+        moves: [],
+        stats: { hp: 524, atk: 318, def: 166, spa: 166, spd: 318, spe: 96 },
+        boosts: {
+          atk: 0,
+          def: 0,
+          spa: 0,
+          spd: 0,
+          spe: 0,
+          accuracy: 0,
+          evasion: 0,
+        },
+        volatiles: [],
+      },
+    ]
+
+    // Predicted Ice Punch is 4x SE vs Dragonite (Dragon/Flying) but 0.5x vs Toxapex (Poison/Water)
     state.opponentPredictions = {
-      garchomp: {
-        pokemonId: "garchomp",
-        predictedMoves: ["Earthquake", "Ice Beam", "Dragon Claw", "Stealth Rock"],
-        predictedItem: "Life Orb",
-        predictedAbility: "Rough Skin",
+      snorlax: {
+        pokemonId: "snorlax",
+        predictedMoves: ["Body Slam", "Crunch", "Ice Punch", "Rest"],
+        predictedItem: "Leftovers",
+        predictedAbility: "Thick Fat",
         confidence: 0.95,
       },
     }
@@ -381,7 +414,7 @@ describe("HeuristicAI with opponentPredictions", () => {
         speciesId: "dragonite",
         name: "Dragonite",
         nickname: "Dragonite",
-        level: 100,
+        level: DEFAULT_LEVEL,
         types: ["Dragon", "Flying"],
         hp: 323,
         maxHp: 323,
@@ -408,7 +441,7 @@ describe("HeuristicAI with opponentPredictions", () => {
         speciesId: "toxapex",
         name: "Toxapex",
         nickname: "Toxapex",
-        level: 100,
+        level: DEFAULT_LEVEL,
         types: ["Poison", "Water"],
         hp: 304,
         maxHp: 304,
@@ -459,8 +492,8 @@ describe("HeuristicAI with opponentPredictions", () => {
       forceSwitch: true,
     }
 
-    // Run multiple times to check the AI consistently prefers Toxapex
-    // (which resists both Earthquake and is not weak to Ice Beam)
+    // Both switches have identical base scores vs Normal-type Snorlax.
+    // Predicted Ice Punch penalizes Dragonite (4x SE) but not Toxapex (resists Ice).
     let toxapexCount = 0
     const iterations = 20
     for (let i = 0; i < iterations; i++) {
@@ -470,8 +503,6 @@ describe("HeuristicAI with opponentPredictions", () => {
         toxapexCount++
       }
     }
-    // Toxapex should be chosen most of the time since Dragonite is penalized
-    // for being weak to predicted Ice Beam (4x) and Dragon Claw (2x)
     expect(toxapexCount).toBeGreaterThan(iterations / 2)
   })
 })

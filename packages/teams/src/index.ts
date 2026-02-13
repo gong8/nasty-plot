@@ -37,8 +37,9 @@ export {
   deleteSampleTeam,
   importSampleTeamsFromPastes,
   extractPokemonIds,
+  toSampleTeamView,
 } from "./sample-team.service"
-export type { SampleTeamData } from "./sample-team.service"
+export type { SampleTeamData, SampleTeamView } from "./sample-team.service"
 export {
   forkTeam,
   compareTeams,

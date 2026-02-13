@@ -1,7 +1,7 @@
 "use client"
 
 import type { BattlePokemon } from "@nasty-plot/battle-engine"
-import { Icons } from "@pkmn/img"
+import { getIconUrl } from "@nasty-plot/pokemon-data"
 import { cn } from "@nasty-plot/ui"
 import { CircleHelp } from "lucide-react"
 
@@ -22,7 +22,7 @@ function PokemonIcon({ pokemon }: { pokemon?: BattlePokemon }) {
     )
   }
 
-  const icon = Icons.getPokemon(pokemon.speciesId || pokemon.name)
+  const icon = getIconUrl(pokemon.speciesId || pokemon.name)
 
   return (
     <div

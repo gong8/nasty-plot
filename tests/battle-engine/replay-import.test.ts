@@ -3,7 +3,7 @@ import {
   parseProtocolLog,
   importFromRawLog,
   importFromReplayUrl,
-  fetchShowdownReplay,
+  getShowdownReplay,
 } from "@nasty-plot/battle-engine"
 
 describe("replay-import", () => {
@@ -306,7 +306,7 @@ describe("replay-import", () => {
     })
   })
 
-  describe("fetchShowdownReplay", () => {
+  describe("getShowdownReplay", () => {
     it("throws when fetch returns non-ok response", async () => {
       const mockFetch = vi.fn().mockResolvedValue({
         ok: false,
@@ -315,7 +315,7 @@ describe("replay-import", () => {
       })
       vi.stubGlobal("fetch", mockFetch)
 
-      await expect(fetchShowdownReplay("nonexistent-12345")).rejects.toThrow(
+      await expect(getShowdownReplay("nonexistent-12345")).rejects.toThrow(
         "Failed to fetch replay: 404 Not Found",
       )
 

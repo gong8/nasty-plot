@@ -12,6 +12,7 @@
   "dependencies": {
     "@nasty-plot/core": "workspace:*",
     "@nasty-plot/db": "workspace:*",
+    "@nasty-plot/formats": "workspace:*",
     "@nasty-plot/pokemon-data": "workspace:*"
   },
   "devDependencies": {

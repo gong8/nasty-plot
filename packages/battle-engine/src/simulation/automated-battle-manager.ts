@@ -224,6 +224,14 @@ async function resolvePlayerChoice(
 
   if (!isDoubles || !slot2Actions) return choice1
 
+  // If slot1 chose a switch, remove that Pokemon from slot2's options
+  // to prevent "can only switch in once" errors when both slots faint
+  if (action1.type === "switch") {
+    slot2Actions = {
+      ...slot2Actions,
+      switches: slot2Actions.switches.filter((s) => s.index !== action1.pokemonIndex),
+    }
+  }
   const action2 = await ai.chooseAction(state, slot2Actions)
   return `${choice1}, ${actionToChoice(action2)}`
 }

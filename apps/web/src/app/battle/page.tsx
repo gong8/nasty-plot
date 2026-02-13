@@ -29,7 +29,7 @@ import {
   loadCheckpoint,
   clearCheckpoint,
 } from "@/features/battle/lib/checkpoint-store"
-import { BattleSprite } from "@/features/battle/components/PokemonSprite"
+import { PokemonSprite } from "@nasty-plot/ui"
 import { getHealthColorHex } from "@/features/battle/components/HealthBar"
 import type { BattleCheckpoint, BattlePokemon } from "@nasty-plot/battle-engine"
 import { timeAgo } from "@/lib/format-time"
@@ -52,11 +52,12 @@ function PokemonRow({ pokemon, side }: { pokemon: BattlePokemon[]; side: "p1" | 
     <div className="flex gap-2">
       {pokemon.map((p, i) => (
         <div key={i} className="flex flex-col items-center gap-1">
-          <BattleSprite
-            speciesId={p.speciesId}
+          <PokemonSprite
+            pokemonId={p.speciesId}
             side={side === "p1" ? "back" : "front"}
             size={48}
             fainted={p.fainted}
+            animated
           />
           <span className="text-[10px] text-muted-foreground leading-tight text-center max-w-[52px] truncate">
             {p.name}

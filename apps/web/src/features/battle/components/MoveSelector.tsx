@@ -15,7 +15,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog"
 import { ArrowLeftRight, Sparkles, Target, Swords, Wand2, Circle } from "lucide-react"
-import { BattleSprite } from "./PokemonSprite"
+import { PokemonSprite } from "@nasty-plot/ui"
 import { getHealthColor } from "./HealthBar"
 
 /** Move targets that require the player to pick a specific target slot in doubles */
@@ -52,7 +52,7 @@ function formatTargetType(target: string): string {
   }
 }
 
-const FALLBACK_TYPE_COLOR = FALLBACK_TYPE_COLOR
+const FALLBACK_TYPE_COLOR = "#A8A878"
 
 const CATEGORY_ICONS = {
   Physical: Swords,
@@ -438,10 +438,11 @@ function TargetCard({
         !isSelectable && "border-transparent opacity-40 cursor-not-allowed",
       )}
     >
-      <BattleSprite
-        speciesId={pokemon.speciesId || pokemon.name}
+      <PokemonSprite
+        pokemonId={pokemon.speciesId || pokemon.name}
         side={isFoe ? "front" : "back"}
         size={48}
+        animated
       />
 
       {/* Name + role badge */}

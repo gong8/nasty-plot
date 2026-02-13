@@ -1,6 +1,10 @@
 import {
   DEFAULT_IVS,
   DEFAULT_EVS,
+  DEFAULT_LEVEL,
+  MAX_SINGLE_EV,
+  PERFECT_IV,
+  TEAM_SIZE,
   calculateAllStats,
   calculateStat,
   type TeamSlotData,
@@ -14,13 +18,7 @@ import { getTeam } from "@nasty-plot/teams"
 import { analyzeTypeCoverage } from "./coverage.service"
 import { identifyThreats } from "./threat.service"
 import { calculateSynergy } from "./synergy.service"
-
-const TOP_USAGE_FOR_BENCHMARKS = 20
-const MAX_BENCHMARKS = 10
-const MAX_SPEED_EVS = 252
-const PERFECT_IV = 31
-const LOW_SYNERGY_THRESHOLD = 40
-const FULL_TEAM_SIZE = 6
+import { TOP_USAGE_FOR_BENCHMARKS, MAX_BENCHMARKS, LOW_SYNERGY_THRESHOLD } from "./constants"
 
 /**
  * Full team analysis orchestrator.
@@ -77,7 +75,7 @@ async function calculateSpeedTiers(
   }
 
   const format = getFormat(formatId)
-  const level = format?.defaultLevel ?? 100
+  const level = format?.defaultLevel ?? DEFAULT_LEVEL
   const teamPokemonIds = new Set(slots.map((s) => s.pokemonId))
 
   const usageEntries = await getUsageStats(formatId, { limit: TOP_USAGE_FOR_BENCHMARKS })
@@ -94,7 +92,7 @@ async function calculateSpeedTiers(
       "spe",
       species.baseStats.spe,
       PERFECT_IV,
-      MAX_SPEED_EVS,
+      MAX_SINGLE_EV,
       level,
       "Jolly",
     )
@@ -105,7 +103,7 @@ async function calculateSpeedTiers(
       pokemonNum: species.num,
       speed: maxSpeed,
       nature: "Jolly",
-      evs: MAX_SPEED_EVS,
+      evs: MAX_SINGLE_EV,
       isBenchmark: true,
     })
     benchmarkCount++
@@ -154,7 +152,7 @@ function generateSuggestions(
     )
   }
 
-  if (slots.length < FULL_TEAM_SIZE) {
+  if (slots.length < TEAM_SIZE) {
     suggestions.push(
       `Your team only has ${slots.length} Pokemon. Fill the remaining slots for a complete team.`,
     )

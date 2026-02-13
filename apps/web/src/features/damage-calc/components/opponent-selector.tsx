@@ -1,20 +1,11 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useCallback } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { X, Search, RotateCcw } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command"
-import { PokemonSprite } from "@nasty-plot/ui"
+import { PokemonSprite, PokemonSearchSelector } from "@nasty-plot/ui"
 import type { PaginatedResponse, PokemonSpecies } from "@nasty-plot/core"
 import { fetchJson, fetchApiData } from "@/lib/api-client"
 
@@ -32,25 +23,23 @@ export function OpponentSelector({
   formatId,
 }: OpponentSelectorProps) {
   const [open, setOpen] = useState(false)
-  const [search, setSearch] = useState("")
 
-  // Fetch search results for the popover
-  const { data: results = [] } = useQuery({
-    queryKey: ["pokemon-search", search],
-    queryFn: async () => {
-      if (!search || search.length < 2) return []
-      const formatParam = formatId ? `&format=${encodeURIComponent(formatId)}` : ""
+  const handleSearch = useCallback(
+    async (query: string): Promise<PokemonSpecies[]> => {
+      const formatParam = formatId ? `&formatId=${encodeURIComponent(formatId)}` : ""
       try {
         const json = await fetchJson<PaginatedResponse<PokemonSpecies>>(
-          `/api/pokemon?search=${encodeURIComponent(search)}&pageSize=20${formatParam}`,
+          `/api/pokemon?search=${encodeURIComponent(query)}&pageSize=20${formatParam}`,
         )
-        return json.data
+        // Filter out already-selected Pokemon
+        const selectedSet = new Set(selectedIds)
+        return (json.data ?? []).filter((r) => !selectedSet.has(r.id))
       } catch {
         return []
       }
     },
-    enabled: search.length >= 2,
-  })
+    [formatId, selectedIds],
+  )
 
   // Fetch details for all selected IDs so we can render chips with names and sprites
   const { data: selectedDetails = [] } = useQuery({
@@ -71,15 +60,11 @@ export function OpponentSelector({
     staleTime: Infinity,
   })
 
-  const selectedSet = new Set(selectedIds)
-
-  // Filter out already-selected Pokemon from search results
-  const filteredResults = results.filter((r) => !selectedSet.has(r.id))
-
-  function addOpponent(id: string) {
+  function addOpponent(pokemon: PokemonSpecies) {
     if (selectedIds.length >= MAX_OPPONENTS) return
-    if (selectedSet.has(id)) return
-    onSelectionChange([...selectedIds, id])
+    if (selectedIds.includes(pokemon.id)) return
+    onSelectionChange([...selectedIds, pokemon.id])
+    setOpen(false)
   }
 
   function removeOpponent(id: string) {
@@ -133,38 +118,13 @@ export function OpponentSelector({
               Add opponent...
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-[280px] p-0" align="start" side="bottom" avoidCollisions>
-            <Command shouldFilter={false}>
-              <CommandInput
-                placeholder="Search Pokemon..."
-                value={search}
-                onValueChange={setSearch}
-              />
-              <CommandList className="max-h-[200px] overflow-y-auto">
-                <CommandEmpty>
-                  {search.length < 2 ? "Type at least 2 characters..." : "No Pokemon found."}
-                </CommandEmpty>
-                <CommandGroup>
-                  {filteredResults.map((pokemon) => (
-                    <CommandItem
-                      key={pokemon.id}
-                      value={pokemon.id}
-                      onSelect={() => {
-                        addOpponent(pokemon.id)
-                        setSearch("")
-                        setOpen(false)
-                      }}
-                    >
-                      <PokemonSprite pokemonId={pokemon.id} size={24} className="mr-2" />
-                      <span>{pokemon.name}</span>
-                      <Badge variant="secondary" className="ml-auto text-[10px]">
-                        {pokemon.types.join("/")}
-                      </Badge>
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
-              </CommandList>
-            </Command>
+          <PopoverContent className="w-[300px] p-2" align="start" side="bottom" avoidCollisions>
+            <PokemonSearchSelector
+              onSelect={addOpponent}
+              onSearch={handleSearch}
+              placeholder="Search Pokemon..."
+              maxHeight="200px"
+            />
           </PopoverContent>
         </Popover>
 

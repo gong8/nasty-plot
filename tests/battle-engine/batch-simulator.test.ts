@@ -2,6 +2,7 @@ import { runBatchSimulation } from "@nasty-plot/battle-engine"
 import type { BatchSimConfig, BatchSimProgress } from "@nasty-plot/battle-engine"
 import type { SingleBattleResult } from "@nasty-plot/battle-engine"
 import type { BattleState } from "@nasty-plot/battle-engine"
+import { DEFAULT_LEVEL } from "@nasty-plot/core"
 
 // Mock the automated battle manager
 vi.mock("#battle-engine/simulation/automated-battle-manager", () => ({
@@ -54,7 +55,7 @@ function makeMockFinalState(overrides?: Partial<BattleState>): BattleState {
             speciesId: "garchomp",
             name: "Garchomp",
             nickname: "Garchomp",
-            level: 100,
+            level: DEFAULT_LEVEL,
             types: ["Dragon", "Ground"],
             hp: 200,
             maxHp: 319,
@@ -73,7 +74,7 @@ function makeMockFinalState(overrides?: Partial<BattleState>): BattleState {
             speciesId: "clefable",
             name: "Clefable",
             nickname: "Clefable",
-            level: 100,
+            level: DEFAULT_LEVEL,
             types: ["Fairy"],
             hp: 0,
             maxHp: 394,
@@ -109,7 +110,7 @@ function makeMockFinalState(overrides?: Partial<BattleState>): BattleState {
             speciesId: "heatran",
             name: "Heatran",
             nickname: "Heatran",
-            level: 100,
+            level: DEFAULT_LEVEL,
             types: ["Fire", "Steel"],
             hp: 0,
             maxHp: 311,

@@ -14,6 +14,28 @@ export interface SampleTeamData {
   createdAt: Date
 }
 
+/** Client-friendly view of a sample team with pokemonIds as an array instead of CSV string. */
+export interface SampleTeamView {
+  id: string
+  name: string
+  formatId: string
+  archetype: string | null
+  source: string | null
+  sourceUrl: string | null
+  paste: string
+  pokemonIds: string[]
+  isActive: boolean
+  createdAt: Date
+}
+
+/** Convert a DB-shaped SampleTeamData (CSV pokemonIds) to a SampleTeamView (array pokemonIds). */
+export function toSampleTeamView(data: SampleTeamData): SampleTeamView {
+  return {
+    ...data,
+    pokemonIds: data.pokemonIds ? data.pokemonIds.split(",").filter(Boolean) : [],
+  }
+}
+
 export function extractPokemonIds(paste: string): string[] {
   const parsed = parseShowdownPaste(paste)
   return parsed.map((p) => p.pokemonId).filter(Boolean) as string[]

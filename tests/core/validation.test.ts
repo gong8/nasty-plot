@@ -1,4 +1,10 @@
-import { validateTeam, DEFAULT_EVS, DEFAULT_IVS, DEFAULT_LEVEL } from "@nasty-plot/core"
+import {
+  validateTeam,
+  DEFAULT_EVS,
+  DEFAULT_IVS,
+  DEFAULT_LEVEL,
+  MAX_SINGLE_EV,
+} from "@nasty-plot/core"
 import type { TeamData, TeamSlotData, StatsTable } from "@nasty-plot/core"
 
 // ---------------------------------------------------------------------------
@@ -18,7 +24,7 @@ function makeSlot(overrides: Partial<TeamSlotData> = {}): TeamSlotData {
     nature: "Jolly",
     level: DEFAULT_LEVEL,
     moves: ["Headlong Rush", "Close Combat", "Knock Off", "Rapid Spin"],
-    evs: makeEvs({ atk: 252, spe: 252, hp: 4 }),
+    evs: makeEvs({ atk: MAX_SINGLE_EV, spe: MAX_SINGLE_EV, hp: 4 }),
     ivs: DEFAULT_IVS,
     ...overrides,
   }
@@ -189,7 +195,7 @@ describe("validateTeam", () => {
       const team = makeTeam([
         makeSlot({
           position: 1,
-          evs: makeEvs({ hp: 252, atk: 252, spe: 252 }), // 756 > 510
+          evs: makeEvs({ hp: MAX_SINGLE_EV, atk: MAX_SINGLE_EV, spe: MAX_SINGLE_EV }), // 756 > 510
         }),
       ])
       const result = validateTeam(team)
@@ -205,7 +211,7 @@ describe("validateTeam", () => {
       const team = makeTeam([
         makeSlot({
           position: 1,
-          evs: makeEvs({ hp: 252, atk: 252, def: 4, spe: 2 }), // 510
+          evs: makeEvs({ hp: MAX_SINGLE_EV, atk: MAX_SINGLE_EV, def: 4, spe: 2 }), // 510
         }),
       ])
       const evErrors = validateTeam(team).errors.filter((e) => e.message.includes("EV total"))
@@ -216,7 +222,7 @@ describe("validateTeam", () => {
       const team = makeTeam([
         makeSlot({
           position: 1,
-          evs: makeEvs({ hp: 4, atk: 252, spe: 252 }), // 508
+          evs: makeEvs({ hp: 4, atk: MAX_SINGLE_EV, spe: MAX_SINGLE_EV }), // 508
         }),
       ])
       const evErrors = validateTeam(team).errors.filter((e) => e.message.includes("EV total"))
@@ -271,7 +277,7 @@ describe("validateTeam", () => {
       const team = makeTeam([
         makeSlot({
           position: 1,
-          evs: makeEvs({ hp: 252 }),
+          evs: makeEvs({ hp: MAX_SINGLE_EV }),
         }),
       ])
       const evStatErrors = validateTeam(team).errors.filter(
@@ -429,7 +435,7 @@ describe("validateTeam", () => {
           pokemonId: "greatTusk",
           item: "Leftovers",
           moves: ["Earthquake"],
-          evs: makeEvs({ hp: 252, atk: 252, spe: 252 }), // EV total > 510
+          evs: makeEvs({ hp: MAX_SINGLE_EV, atk: MAX_SINGLE_EV, spe: MAX_SINGLE_EV }), // EV total > 510
         }),
         makeSlot({
           position: 2,

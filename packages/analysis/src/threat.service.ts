@@ -6,21 +6,22 @@ import {
 } from "@nasty-plot/core"
 import { getSpecies } from "@nasty-plot/pokemon-data"
 import { getUsageStats } from "@nasty-plot/smogon-data"
+import {
+  TOP_USAGE_LIMIT,
+  MAX_THREAT_RESULTS,
+  MULTI_WEAK_SCORE_PER_SLOT,
+  SINGLE_WEAK_SCORE,
+  MAX_USAGE_SCORE,
+  HIGH_THREAT_THRESHOLD,
+  MEDIUM_THREAT_THRESHOLD,
+  MIN_LOW_THREAT_SCORE,
+} from "./constants"
 
 const THREAT_LEVEL_ORDER: Record<ThreatEntry["threatLevel"], number> = {
   high: 0,
   medium: 1,
   low: 2,
 }
-
-const TOP_USAGE_LIMIT = 50
-const MAX_RESULTS = 20
-const MULTI_WEAK_SCORE_PER_SLOT = 15
-const SINGLE_WEAK_SCORE = 5
-const MAX_USAGE_SCORE = 30
-const HIGH_THREAT_THRESHOLD = 40
-const MEDIUM_THREAT_THRESHOLD = 20
-const MIN_LOW_THREAT_SCORE = 10
 
 /**
  * Identify threats to the team based on usage stats and type matchups.
@@ -101,5 +102,5 @@ export async function identifyThreats(
     return b.usagePercent - a.usagePercent
   })
 
-  return threats.slice(0, MAX_RESULTS)
+  return threats.slice(0, MAX_THREAT_RESULTS)
 }

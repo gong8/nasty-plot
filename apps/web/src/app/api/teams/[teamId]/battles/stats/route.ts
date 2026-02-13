@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getTeamBattleStats, computeTeamBattleAnalytics } from "@nasty-plot/battle-engine"
+import { computeTeamBattleAnalytics } from "@nasty-plot/battle-engine"
+import { getTeamBattleStats } from "@nasty-plot/battle-engine/db"
 import { notFoundResponse } from "../../../../../../lib/api-error"
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ teamId: string }> }) {

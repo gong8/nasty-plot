@@ -18,7 +18,7 @@ vi.mock("@nasty-plot/core", async () => {
   }
 })
 
-import { DEFAULT_IVS, DEFAULT_LEVEL } from "@nasty-plot/core"
+import { DEFAULT_IVS, DEFAULT_LEVEL, MAX_SINGLE_EV } from "@nasty-plot/core"
 
 vi.mock("#teams/team.service", () => ({
   createTeam: vi.fn(),
@@ -57,7 +57,7 @@ function makeParsedPokemon(overrides?: Record<string, unknown>) {
     teraType: undefined,
     level: DEFAULT_LEVEL,
     moves: ["Earthquake", "Dragon Claw", "Swords Dance", "Scale Shot"],
-    evs: { hp: 0, atk: 252, def: 0, spa: 0, spd: 4, spe: 252 },
+    evs: { hp: 0, atk: MAX_SINGLE_EV, def: 0, spa: 0, spd: 4, spe: MAX_SINGLE_EV },
     ivs: DEFAULT_IVS,
     ...overrides,
   }

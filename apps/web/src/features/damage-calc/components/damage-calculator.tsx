@@ -13,22 +13,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command"
 import { Badge } from "@/components/ui/badge"
 import { Slider } from "@/components/ui/slider"
 import { Switch } from "@/components/ui/switch"
 import { Separator } from "@/components/ui/separator"
 import { Progress } from "@/components/ui/progress"
-import { ArrowRight, Swords, Shield, Zap, ChevronsUpDown } from "lucide-react"
-import { cn, PokemonSprite } from "@nasty-plot/ui"
+import { ArrowRight, Swords, Shield, Zap } from "lucide-react"
+import { cn, PokemonSprite, SearchCombobox, MoveSelector } from "@nasty-plot/ui"
 import { useDamageCalc } from "../hooks/use-damage-calc"
 import {
   POKEMON_TYPES,
@@ -84,16 +75,6 @@ const DEFAULT_CONFIG: PokemonConfig = {
   status: "",
 }
 
-const MOVE_CATEGORY_COLORS: Record<string, string> = {
-  Physical: "text-red-500",
-  Special: "text-blue-500",
-}
-
-const MOVE_CATEGORY_ABBREV: Record<string, string> = {
-  Physical: "Phys",
-  Special: "Spec",
-}
-
 function toCalcPokemon(config: PokemonConfig): DamageCalcInput["attacker"] {
   return {
     pokemonId: config.pokemonId,
@@ -128,85 +109,52 @@ function PokemonCombobox({
   displayName: string
   onSelect: (id: string, name: string, species: PokemonSpecies) => void
 }) {
-  const [open, setOpen] = useState(false)
-  const [search, setSearch] = useState("")
-
-  const { data: results = [] } = useQuery({
-    queryKey: ["pokemon-search-calc", search],
-    queryFn: async () => {
-      if (!search || search.length < 2) return []
+  const fetchPokemon = useCallback(
+    async (query: string): Promise<(PokemonSpecies & { id: string })[]> => {
       try {
         const json = await fetchJson<PaginatedResponse<PokemonSpecies>>(
-          `/api/pokemon?search=${encodeURIComponent(search)}&pageSize=15`,
+          `/api/pokemon?search=${encodeURIComponent(query)}&pageSize=15`,
         )
         return json.data
       } catch {
         return []
       }
     },
-    enabled: search.length >= 2,
-  })
+    [],
+  )
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          role="combobox"
-          aria-expanded={open}
-          className="w-full justify-between h-8 text-xs font-normal"
-        >
-          {value ? (
-            <span className="flex items-center gap-1.5 truncate">
-              <PokemonSprite pokemonId={value} size={20} />
-              {displayName}
-            </span>
-          ) : (
-            <span className="text-muted-foreground">Search Pokemon...</span>
-          )}
-          <ChevronsUpDown className="ml-auto h-3.5 w-3.5 shrink-0 opacity-50" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-[240px] p-0" align="start">
-        <Command shouldFilter={false}>
-          <CommandInput
-            placeholder="Search Pokemon..."
-            value={search}
-            onValueChange={setSearch}
-            className="text-xs"
-          />
-          <CommandList className="max-h-[200px]">
-            <CommandEmpty>
-              {search.length < 2 ? "Type at least 2 characters..." : "No Pokemon found."}
-            </CommandEmpty>
-            <CommandGroup>
-              {results.map((pokemon) => (
-                <CommandItem
-                  key={pokemon.id}
-                  value={pokemon.id}
-                  onSelect={() => {
-                    onSelect(pokemon.id, pokemon.name, pokemon)
-                    setSearch("")
-                    setOpen(false)
-                  }}
-                  className="text-xs"
-                >
-                  <PokemonSprite pokemonId={pokemon.id} size={24} className="mr-1.5" />
-                  <span>{pokemon.name}</span>
-                  <Badge variant="secondary" className="ml-auto text-[10px]">
-                    {pokemon.types.join("/")}
-                  </Badge>
-                </CommandItem>
-              ))}
-            </CommandGroup>
-          </CommandList>
-        </Command>
-      </PopoverContent>
-    </Popover>
+    <SearchCombobox<PokemonSpecies & { id: string }>
+      value={value ? displayName : ""}
+      placeholder="Search Pokemon..."
+      fetchResults={fetchPokemon}
+      onSelect={(pokemon) => onSelect(pokemon.id, pokemon.name, pokemon)}
+      renderValue={
+        value
+          ? () => (
+              <span className="flex items-center gap-1.5 truncate">
+                <PokemonSprite pokemonId={value} size={20} />
+                {displayName}
+              </span>
+            )
+          : undefined
+      }
+      renderItem={(pokemon) => (
+        <>
+          <PokemonSprite pokemonId={pokemon.id} size={24} className="mr-1.5" />
+          <span>{pokemon.name}</span>
+          <Badge variant="secondary" className="ml-auto text-[10px]">
+            {pokemon.types.join("/")}
+          </Badge>
+        </>
+      )}
+      popoverWidth="w-[240px]"
+      emptyMessage="No Pokemon found."
+    />
   )
 }
 
-function MoveCombobox({
+function CalcMoveSelector({
   value,
   pokemonId,
   onSelect,
@@ -215,10 +163,7 @@ function MoveCombobox({
   pokemonId: string
   onSelect: (moveName: string) => void
 }) {
-  const [open, setOpen] = useState(false)
-  const [search, setSearch] = useState("")
-
-  const { data: moves = [], isLoading } = useQuery({
+  const { data: moves = [] } = useQuery({
     queryKey: ["pokemon-learnset-calc", pokemonId],
     queryFn: async () => {
       try {
@@ -233,154 +178,47 @@ function MoveCombobox({
     staleTime: 5 * 60 * 1000,
   })
 
-  const filtered = search
-    ? moves.filter((m) => m.name.toLowerCase().includes(search.toLowerCase()))
-    : moves
-
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          role="combobox"
-          aria-expanded={open}
-          disabled={!pokemonId}
-          className="w-full justify-between h-8 text-xs font-normal"
-        >
-          {value ? (
-            <span className="truncate">{value}</span>
-          ) : (
-            <span className="text-muted-foreground">
-              {pokemonId ? "Search move..." : "Select a Pokemon first"}
-            </span>
-          )}
-          <ChevronsUpDown className="ml-auto h-3.5 w-3.5 shrink-0 opacity-50" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-[280px] p-0" align="start">
-        <Command shouldFilter={false}>
-          <CommandInput
-            placeholder="Search moves..."
-            value={search}
-            onValueChange={setSearch}
-            className="text-xs"
-          />
-          <CommandList className="max-h-[240px]">
-            <CommandEmpty>{isLoading ? "Loading moves..." : "No moves found."}</CommandEmpty>
-            <CommandGroup>
-              {filtered.slice(0, 50).map((move) => (
-                <CommandItem
-                  key={move.id}
-                  value={move.id}
-                  onSelect={() => {
-                    onSelect(move.name)
-                    setSearch("")
-                    setOpen(false)
-                  }}
-                  className="text-xs"
-                >
-                  <span className="flex-1">{move.name}</span>
-                  <span
-                    className={cn(
-                      "text-[10px] w-7 text-right",
-                      MOVE_CATEGORY_COLORS[move.category] ?? "text-muted-foreground",
-                    )}
-                  >
-                    {MOVE_CATEGORY_ABBREV[move.category] ?? "Stat"}
-                  </span>
-                  <Badge variant="secondary" className="text-[10px] ml-1">
-                    {move.type}
-                  </Badge>
-                  {move.basePower > 0 && (
-                    <span className="text-[10px] text-muted-foreground w-6 text-right">
-                      {move.basePower}
-                    </span>
-                  )}
-                </CommandItem>
-              ))}
-            </CommandGroup>
-          </CommandList>
-        </Command>
-      </PopoverContent>
-    </Popover>
+    <MoveSelector
+      value={value}
+      onSelect={onSelect}
+      moves={moves}
+      placeholder={pokemonId ? "Search move..." : "Select a Pokemon first"}
+      disabled={!pokemonId}
+      showMetadata={true}
+      compact={true}
+    />
   )
 }
 
-function ItemCombobox({
+function CalcItemCombobox({
   value,
   onSelect,
 }: {
   value: string
   onSelect: (itemName: string) => void
 }) {
-  const [open, setOpen] = useState(false)
-  const [search, setSearch] = useState("")
-
-  const { data: items = [] } = useQuery({
-    queryKey: ["items-search-calc", search],
-    queryFn: async () => {
-      if (!search || search.length < 2) return []
-      try {
-        const json = await fetchJson<PaginatedResponse<ItemData>>(
-          `/api/items?search=${encodeURIComponent(search)}&pageSize=20`,
-        )
-        return json.data
-      } catch {
-        return []
-      }
-    },
-    enabled: search.length >= 2,
-  })
+  const fetchItems = useCallback(async (query: string): Promise<(ItemData & { id: string })[]> => {
+    try {
+      const json = await fetchJson<PaginatedResponse<ItemData>>(
+        `/api/items?search=${encodeURIComponent(query)}&pageSize=20`,
+      )
+      return json.data
+    } catch {
+      return []
+    }
+  }, [])
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          role="combobox"
-          aria-expanded={open}
-          className="w-full justify-between h-8 text-xs font-normal"
-        >
-          {value ? (
-            <span className="truncate">{value}</span>
-          ) : (
-            <span className="text-muted-foreground">Item</span>
-          )}
-          <ChevronsUpDown className="ml-auto h-3.5 w-3.5 shrink-0 opacity-50" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-[220px] p-0" align="start">
-        <Command shouldFilter={false}>
-          <CommandInput
-            placeholder="Search items..."
-            value={search}
-            onValueChange={setSearch}
-            className="text-xs"
-          />
-          <CommandList className="max-h-[200px]">
-            <CommandEmpty>
-              {search.length < 2 ? "Type at least 2 characters..." : "No items found."}
-            </CommandEmpty>
-            <CommandGroup>
-              {items.map((item) => (
-                <CommandItem
-                  key={item.id}
-                  value={item.id}
-                  onSelect={() => {
-                    onSelect(item.name)
-                    setSearch("")
-                    setOpen(false)
-                  }}
-                  className="text-xs"
-                >
-                  {item.name}
-                </CommandItem>
-              ))}
-            </CommandGroup>
-          </CommandList>
-        </Command>
-      </PopoverContent>
-    </Popover>
+    <SearchCombobox<ItemData & { id: string }>
+      value={value}
+      placeholder="Item"
+      fetchResults={fetchItems}
+      onSelect={(item) => onSelect(item.name)}
+      renderItem={(item) => <>{item.name}</>}
+      popoverWidth="w-[220px]"
+      emptyMessage="No items found."
+    />
   )
 }
 
@@ -485,7 +323,7 @@ function PokemonPanel({
           {/* Item */}
           <div className="space-y-1.5">
             <Label className="text-xs">Item</Label>
-            <ItemCombobox value={config.item} onSelect={(name) => updateField("item", name)} />
+            <CalcItemCombobox value={config.item} onSelect={(name) => updateField("item", name)} />
           </div>
         </div>
 
@@ -704,7 +542,7 @@ export function DamageCalculator() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <MoveCombobox
+              <CalcMoveSelector
                 value={moveName}
                 pokemonId={attacker.pokemonId}
                 onSelect={setMoveName}

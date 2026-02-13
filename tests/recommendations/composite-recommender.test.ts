@@ -1,4 +1,5 @@
 import { getRecommendations } from "@nasty-plot/recommendations"
+import { DEFAULT_LEVEL, DEFAULT_EVS, DEFAULT_IVS, MAX_SINGLE_EV } from "@nasty-plot/core"
 
 // ---------------------------------------------------------------------------
 // Mocks
@@ -56,10 +57,10 @@ function makeSlot(position: number, pokemonId: string, species?: ReturnType<type
     item: "Leftovers",
     nature: "Hardy",
     teraType: undefined,
-    level: 100,
+    level: DEFAULT_LEVEL,
     moves: ["tackle", undefined, undefined, undefined],
-    evs: { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 },
-    ivs: { hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31 },
+    evs: { ...DEFAULT_EVS },
+    ivs: { ...DEFAULT_IVS },
   }
 }
 
@@ -380,7 +381,7 @@ describe("getRecommendations", () => {
       item: "Choice Scarf",
       nature: "Jolly",
       teraType: "Fire",
-      evs: { hp: 4, atk: 252, def: 0, spa: 0, spd: 0, spe: 252 },
+      evs: { hp: 4, atk: MAX_SINGLE_EV, def: 0, spa: 0, spd: 0, spe: MAX_SINGLE_EV },
     }
 
     mockGetTeam.mockResolvedValue(makeTeamData([slot]))
@@ -398,8 +399,8 @@ describe("getRecommendations", () => {
     expect(mappedSlots[0].item).toBe("Choice Scarf")
     expect(mappedSlots[0].nature).toBe("Jolly")
     expect(mappedSlots[0].teraType).toBe("Fire")
-    expect(mappedSlots[0].evs.atk).toBe(252)
-    expect(mappedSlots[0].evs.spe).toBe(252)
+    expect(mappedSlots[0].evs.atk).toBe(MAX_SINGLE_EV)
+    expect(mappedSlots[0].evs.spe).toBe(MAX_SINGLE_EV)
   })
 
   it("returns correctly shaped Recommendation objects", async () => {

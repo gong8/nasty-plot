@@ -16,7 +16,7 @@ export function usePopularityData(pokemonId: string, formatId?: string) {
     queryFn: async () => {
       try {
         return await fetchApiData<PopularityData>(
-          `/api/pokemon/${pokemonId}/popularity?format=${encodeURIComponent(formatId!)}`,
+          `/api/pokemon/${pokemonId}/popularity?formatId=${encodeURIComponent(formatId!)}`,
         )
       } catch {
         return EMPTY_POPULARITY

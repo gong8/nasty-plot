@@ -6,7 +6,7 @@ import type { PaginatedResponse, ItemData } from "@nasty-plot/core"
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const search = searchParams.get("search") ?? ""
-  const formatId = searchParams.get("format")
+  const formatId = searchParams.get("formatId")
   const page = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10))
   const pageSize = Math.min(100, Math.max(1, parseInt(searchParams.get("pageSize") ?? "50", 10)))
 

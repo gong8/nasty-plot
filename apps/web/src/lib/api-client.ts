@@ -1,9 +1,8 @@
+import { createApiClient } from "@nasty-plot/core"
 import type { ApiResponse } from "@nasty-plot/core"
 
-/**
- * Fetch JSON from a URL, throwing on non-ok responses with the error message
- * extracted from the response body.
- */
+const client = createApiClient()
+
 export async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, init)
   if (!res.ok) {
@@ -13,43 +12,20 @@ export async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> 
   return res.json()
 }
 
-/**
- * Fetch from an API route that returns `ApiResponse<T>` and unwrap to `T`.
- */
 export async function fetchApiData<T>(url: string, init?: RequestInit): Promise<T> {
   const json = await fetchJson<ApiResponse<T>>(url, init)
   return json.data
 }
 
-/**
- * POST JSON to a URL and return the parsed response.
- */
 export async function postJson<T>(url: string, body: unknown): Promise<T> {
-  return fetchJson<T>(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  })
+  return client.post<T>(url, body)
 }
 
-/**
- * PUT JSON to a URL and return the parsed response.
- */
 export async function putJson<T>(url: string, body: unknown): Promise<T> {
-  return fetchJson<T>(url, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  })
+  return client.put<T>(url, body)
 }
 
-/**
- * POST JSON to an API route that returns `ApiResponse<T>` and unwrap to `T`.
- */
 export async function postApiData<T>(url: string, body: unknown): Promise<T> {
-  return fetchApiData<T>(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  })
+  const json = await client.post<ApiResponse<T>>(url, body)
+  return json.data
 }

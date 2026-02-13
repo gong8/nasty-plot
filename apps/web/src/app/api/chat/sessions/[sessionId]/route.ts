@@ -2,10 +2,13 @@ import { NextRequest } from "next/server"
 import { getSession, updateSession, deleteSession } from "@nasty-plot/llm"
 import { apiErrorResponse, notFoundResponse } from "../../../../../lib/api-error"
 
-export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(
+  _req: NextRequest,
+  { params }: { params: Promise<{ sessionId: string }> },
+) {
   try {
-    const { id } = await params
-    const session = await getSession(id)
+    const { sessionId } = await params
+    const session = await getSession(sessionId)
 
     if (!session) {
       return notFoundResponse("Session")
@@ -18,13 +21,16 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   }
 }
 
-export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function PUT(
+  req: NextRequest,
+  { params }: { params: Promise<{ sessionId: string }> },
+) {
   try {
-    const { id } = await params
+    const { sessionId } = await params
     const body = await req.json()
     const { title }: { title?: string } = body
 
-    const session = await updateSession(id, { title })
+    const session = await updateSession(sessionId, { title })
     if (!session) {
       return notFoundResponse("Session")
     }
@@ -36,10 +42,13 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   }
 }
 
-export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(
+  _req: NextRequest,
+  { params }: { params: Promise<{ sessionId: string }> },
+) {
   try {
-    const { id } = await params
-    await deleteSession(id)
+    const { sessionId } = await params
+    await deleteSession(sessionId)
     return Response.json({ success: true })
   } catch (error) {
     console.error("Delete session error:", error)

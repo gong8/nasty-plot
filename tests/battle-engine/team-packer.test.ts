@@ -1,6 +1,6 @@
 import { packOneSlot, packTeam, teamToShowdownPaste } from "@nasty-plot/battle-engine"
 import type { TeamSlotData, PokemonSpecies } from "@nasty-plot/core"
-import { DEFAULT_IVS, DEFAULT_LEVEL } from "@nasty-plot/core"
+import { DEFAULT_IVS, DEFAULT_LEVEL, MAX_SINGLE_EV, TEAM_SIZE } from "@nasty-plot/core"
 
 const minimalSpecies: Pick<
   PokemonSpecies,
@@ -25,7 +25,7 @@ const makeSlot = (overrides: Partial<TeamSlotData> = {}): TeamSlotData => ({
   level: DEFAULT_LEVEL,
   teraType: "Ground",
   moves: ["Earthquake", "Dragon Claw", "Swords Dance", "Scale Shot"],
-  evs: { hp: 0, atk: 252, def: 0, spa: 0, spd: 4, spe: 252 },
+  evs: { hp: 0, atk: MAX_SINGLE_EV, def: 0, spa: 0, spd: 4, spe: MAX_SINGLE_EV },
   ivs: DEFAULT_IVS,
   ...overrides,
 })
@@ -112,7 +112,7 @@ describe("team-packer", () => {
         makeSlot({ pokemonId: "dragapult", position: 6 }),
       ]
       const packed = packTeam(team)
-      expect(packed.split("]")).toHaveLength(6)
+      expect(packed.split("]")).toHaveLength(TEAM_SIZE)
     })
   })
 

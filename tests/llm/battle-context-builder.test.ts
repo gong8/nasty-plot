@@ -4,6 +4,7 @@ import {
   buildTurnAnalysisContext,
   buildAutoAnalyzePrompt,
 } from "@nasty-plot/llm"
+import { DEFAULT_LEVEL } from "@nasty-plot/core"
 import type {
   BattleState,
   BattlePokemon,
@@ -36,7 +37,7 @@ function makePokemon(overrides?: Partial<BattlePokemon>): BattlePokemon {
     speciesId: "garchomp",
     name: "Garchomp",
     nickname: "Garchomp",
-    level: 100,
+    level: DEFAULT_LEVEL,
     types: ["Dragon", "Ground"],
     hp: 357,
     maxHp: 357,

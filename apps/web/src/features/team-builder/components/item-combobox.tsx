@@ -32,7 +32,7 @@ export function ItemCombobox({ value, onChange, formatId, pokemonId }: ItemCombo
   const { data: items = [] } = useQuery<ItemData[]>({
     queryKey: ["all-items", formatId],
     queryFn: async () => {
-      const formatParam = formatId ? `&format=${encodeURIComponent(formatId)}` : ""
+      const formatParam = formatId ? `&formatId=${encodeURIComponent(formatId)}` : ""
       try {
         const json = await fetchJson<PaginatedResponse<ItemData>>(
           `/api/items?pageSize=100&page=1${formatParam}`,

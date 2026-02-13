@@ -1,6 +1,7 @@
 import {
   DEFAULT_EVS,
   DEFAULT_IVS,
+  DEFAULT_LEVEL,
   parseShowdownPaste,
   serializeShowdownPaste,
 } from "@nasty-plot/core"
@@ -45,7 +46,7 @@ function buildSlotInputs(paste: string): TeamSlotInput[] {
     item: p.item || "",
     nature: (p.nature || "Hardy") as NatureName,
     teraType: p.teraType,
-    level: p.level ?? 100,
+    level: p.level ?? DEFAULT_LEVEL,
     moves: [p.moves?.[0] || "", p.moves?.[1], p.moves?.[2], p.moves?.[3]] as TeamSlotInput["moves"],
     evs: p.evs || { ...DEFAULT_EVS },
     ivs: p.ivs || { ...DEFAULT_IVS },

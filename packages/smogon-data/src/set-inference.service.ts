@@ -1,9 +1,10 @@
-import type {
-  SmogonSetData,
-  NatureName,
-  StatsTable,
-  ExtractedPokemonData,
-  ExtractedTeamData,
+import {
+  normalizeMoveName,
+  type SmogonSetData,
+  type NatureName,
+  type StatsTable,
+  type ExtractedPokemonData,
+  type ExtractedTeamData,
 } from "@nasty-plot/core"
 import { getFormatFallbacks } from "@nasty-plot/formats"
 import { getAllSetsForFormat } from "./smogon-sets.service"
@@ -53,11 +54,6 @@ export interface EnrichedTeam {
 // Helpers
 // ---------------------------------------------------------------------------
 
-/** Normalize a name for comparison: lowercase, strip spaces. */
-function normalize(name: string): string {
-  return name.toLowerCase().replace(/\s/g, "")
-}
-
 /**
  * Find the best matching format that has sets.
  * Tries the format itself, then falls back to related formats (e.g. earlier VGC years).
@@ -84,9 +80,9 @@ async function resolveFormatWithSets(
  */
 function moveSlotContains(slot: string | string[], revealedNorm: string): boolean {
   if (Array.isArray(slot)) {
-    return slot.some((opt) => normalize(opt) === revealedNorm)
+    return slot.some((opt) => normalizeMoveName(opt) === revealedNorm)
   }
-  return normalize(slot) === revealedNorm
+  return normalizeMoveName(slot) === revealedNorm
 }
 
 // ---------------------------------------------------------------------------
@@ -109,7 +105,7 @@ export function scoreSetMatch(extracted: ExtractedPokemon, set: SmogonSetData): 
   let unmatchedMoves = 0
 
   for (const move of extracted.moves) {
-    const norm = normalize(move)
+    const norm = normalizeMoveName(move)
     if (set.moves.some((slot) => moveSlotContains(slot, norm))) {
       matchedMoves.push(move)
     } else {
@@ -126,14 +122,14 @@ export function scoreSetMatch(extracted: ExtractedPokemon, set: SmogonSetData): 
 
   if (extracted.ability) {
     maxScore += SCORE_WEIGHT_ABILITY
-    if (normalize(extracted.ability) === normalize(set.ability)) {
+    if (normalizeMoveName(extracted.ability) === normalizeMoveName(set.ability)) {
       score += SCORE_WEIGHT_ABILITY
     }
   }
 
   if (extracted.item) {
     maxScore += SCORE_WEIGHT_ITEM
-    if (normalize(extracted.item) === normalize(set.item)) {
+    if (normalizeMoveName(extracted.item) === normalizeMoveName(set.item)) {
       score += SCORE_WEIGHT_ITEM
     }
   }
@@ -165,7 +161,7 @@ export function scoreSetMatch(extracted: ExtractedPokemon, set: SmogonSetData): 
  * slash options), preferring revealed moves.
  */
 export function resolveMoves(revealedMoves: string[], setMoves: (string | string[])[]): string[] {
-  const revealedNorms = new Set(revealedMoves.map(normalize))
+  const revealedNorms = new Set(revealedMoves.map(normalizeMoveName))
   const resolved: string[] = []
   const usedNorms = new Set<string>()
 
@@ -173,15 +169,17 @@ export function resolveMoves(revealedMoves: string[], setMoves: (string | string
     if (Array.isArray(slot)) {
       // Slash option — pick revealed move if one matches and isn't already used
       const matchingRevealed = slot.find(
-        (opt) => revealedNorms.has(normalize(opt)) && !usedNorms.has(normalize(opt)),
+        (opt) =>
+          revealedNorms.has(normalizeMoveName(opt)) && !usedNorms.has(normalizeMoveName(opt)),
       )
       // Fall back to first non-duplicate option
-      const pick = matchingRevealed ?? slot.find((opt) => !usedNorms.has(normalize(opt))) ?? slot[0]
+      const pick =
+        matchingRevealed ?? slot.find((opt) => !usedNorms.has(normalizeMoveName(opt))) ?? slot[0]
       resolved.push(pick)
-      usedNorms.add(normalize(pick))
+      usedNorms.add(normalizeMoveName(pick))
     } else {
       resolved.push(slot)
-      usedNorms.add(normalize(slot))
+      usedNorms.add(normalizeMoveName(slot))
     }
   }
 

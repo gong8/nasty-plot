@@ -1,5 +1,11 @@
 import { resolveSpeciesName } from "@nasty-plot/pokemon-data"
-import { DEFAULT_IVS, STATS, serializeShowdownPaste } from "@nasty-plot/core"
+import {
+  DEFAULT_IVS,
+  DEFAULT_LEVEL,
+  PERFECT_IV,
+  STATS,
+  serializeShowdownPaste,
+} from "@nasty-plot/core"
 import type { TeamSlotData, StatsTable } from "@nasty-plot/core"
 
 /**
@@ -35,7 +41,7 @@ function formatEvs(evs: StatsTable): string {
 }
 
 function formatIvs(ivs: StatsTable): string {
-  const allMax = Object.values(ivs).every((v) => v === 31)
+  const allMax = Object.values(ivs).every((v) => v === PERFECT_IV)
   if (allMax) return ""
   return serializeStats(ivs)
 }
@@ -63,7 +69,7 @@ export function packOneSlot(slot: TeamSlotData): string {
     "", // 7: gender
     formatIvs(slot.ivs ?? DEFAULT_IVS), // 8: ivs
     "", // 9: shiny
-    slot.level === 100 ? "" : String(slot.level), // 10: level (omit if 100)
+    slot.level === DEFAULT_LEVEL ? "" : String(slot.level), // 10: level (omit if default)
     "", // 11: happiness
   ]
 

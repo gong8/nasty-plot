@@ -1,12 +1,13 @@
 #!/usr/bin/env tsx
 
 import { prisma } from "@nasty-plot/db"
-import { FORMAT_DEFINITIONS } from "@nasty-plot/formats"
-import { fetchUsageStats, fetchSmogonSets } from "@nasty-plot/smogon-data"
+import { FORMAT_DEFINITIONS, getActiveFormats } from "@nasty-plot/formats"
+import { ensureFormatExists } from "@nasty-plot/formats/db"
+import { syncUsageStats, syncSmogonSets } from "@nasty-plot/smogon-data"
 import { isStale } from "../staleness.service"
 import { seedSampleTeams } from "../seed-sample-teams"
 
-const FORMATS = FORMAT_DEFINITIONS.filter((f) => f.isActive).map((f) => ({
+const FORMATS = getActiveFormats().map((f) => ({
   id: f.id,
   name: f.name,
   generation: f.generation,
@@ -82,18 +83,7 @@ async function seedFormat(
 ): Promise<SeedResult> {
   console.log(`\n--- Seeding ${format.name} (${format.id}) ---`)
 
-  // Upsert Format record
-  await prisma.format.upsert({
-    where: { id: format.id },
-    update: { name: format.name, generation: format.generation, gameType: format.gameType },
-    create: {
-      id: format.id,
-      name: format.name,
-      generation: format.generation,
-      gameType: format.gameType,
-      isActive: true,
-    },
-  })
+  await ensureFormatExists(format.id, format.generation, format.gameType)
 
   const result: SeedResult = { format: format.id, statsOk: true, setsOk: true }
 
@@ -103,7 +93,7 @@ async function seedFormat(
     if (statsStale) {
       console.log(`[seed] Fetching usage stats for ${format.id}...`)
       try {
-        await fetchUsageStats(format.id, { smogonStatsId: format.smogonStatsId })
+        await syncUsageStats(format.id, { smogonStatsId: format.smogonStatsId })
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err)
         console.error(`[seed] Failed to fetch usage stats for ${format.id}: ${msg}`)
@@ -122,7 +112,7 @@ async function seedFormat(
     if (setsStale) {
       console.log(`[seed] Fetching Smogon sets for ${format.id}...`)
       try {
-        await fetchSmogonSets(format.id, {
+        await syncSmogonSets(format.id, {
           pkmnSetsId: format.pkmnSetsId,
           smogonStatsId: format.smogonStatsId,
         })

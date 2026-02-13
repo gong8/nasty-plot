@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getBattleReplay } from "@nasty-plot/battle-engine"
+import { getBattleReplay } from "@nasty-plot/battle-engine/db"
 import { notFoundResponse } from "../../../../../lib/api-error"
 
 export async function GET(

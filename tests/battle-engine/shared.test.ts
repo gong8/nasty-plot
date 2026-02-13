@@ -2,12 +2,12 @@ import { describe, it, expect } from "vitest"
 import {
   flattenDamage,
   getSpeciesTypes,
-  getTypeEffectiveness,
   fallbackMove,
   pickHealthiestSwitch,
   getEffectiveSpeed,
 } from "#battle-engine/ai/shared"
 import type { BattleActionSet, BattlePokemon, SideConditions } from "@nasty-plot/battle-engine"
+import { DEFAULT_LEVEL } from "@nasty-plot/core"
 
 // ---------------------------------------------------------------------------
 // flattenDamage
@@ -66,57 +66,6 @@ describe("getSpeciesTypes", () => {
     const types = getSpeciesTypes("Heatran")
     expect(types).toContain("Fire")
     expect(types).toContain("Steel")
-  })
-})
-
-// ---------------------------------------------------------------------------
-// getTypeEffectiveness
-// ---------------------------------------------------------------------------
-
-describe("getTypeEffectiveness", () => {
-  // NOTE: getTypeEffectiveness uses @pkmn/dex's damageTaken encoding, which
-  // checks atkType.damageTaken[defType]. This is the atkType's defensive
-  // interaction with defType, used as a proxy for offense.
-  // damageTaken: 0=neutral, 1=SE(x2), 2=resist(x0.5), 3=immune(x0)
-
-  it("returns 2 for super effective (Fire vs Grass)", () => {
-    // Dex.types.get("Fire").damageTaken["Grass"] = 2 (resist) -> 0.5
-    // Actually this reads atkType perspective. Let me verify with actual behavior.
-    // Fire.damageTaken["Grass"] would be 2 (Fire resists Grass).
-    // The function maps: 1->x2, 2->x0.5, 3->x0
-    // So getTypeEffectiveness("Fire", ["Grass"]) = 0.5
-    // For a truly SE result, we need the atkType to be weak to defType:
-    // e.g. getTypeEffectiveness("Grass", ["Fire"]) -> Grass.damageTaken["Fire"] = 1 -> x2
-    expect(getTypeEffectiveness("Grass", ["Fire"])).toBe(2)
-  })
-
-  it("returns 0.5 for resist (Fire vs Grass)", () => {
-    // Fire.damageTaken["Grass"] = 2 -> 0.5 (Fire resists Grass)
-    expect(getTypeEffectiveness("Fire", ["Grass"])).toBe(0.5)
-  })
-
-  it("returns 0 for immune (Normal vs Ghost)", () => {
-    // Normal.damageTaken["Ghost"] = 3 -> 0 (Normal is immune to Ghost)
-    expect(getTypeEffectiveness("Normal", ["Ghost"])).toBe(0)
-  })
-
-  it("returns 1 for neutral (Fire vs Normal)", () => {
-    // Fire.damageTaken["Normal"] = 0 -> 1 (neutral)
-    expect(getTypeEffectiveness("Fire", ["Normal"])).toBe(1)
-  })
-
-  it("stacks effectiveness for dual defending types", () => {
-    // Grass.damageTaken["Fire"] = 1 -> x2, Grass.damageTaken["Ice"] = 1 -> x2
-    // So getTypeEffectiveness("Grass", ["Fire", "Ice"]) = 4
-    expect(getTypeEffectiveness("Grass", ["Fire", "Ice"])).toBe(4)
-  })
-
-  it("handles unknown attack type gracefully", () => {
-    expect(getTypeEffectiveness("FakeType", ["Fire"])).toBe(1)
-  })
-
-  it("returns 1 for empty defending types", () => {
-    expect(getTypeEffectiveness("Fire", [])).toBe(1)
   })
 })
 
@@ -364,7 +313,7 @@ function makeSpeedPokemon(overrides: Partial<BattlePokemon> = {}): BattlePokemon
     speciesId: "garchomp",
     name: "Garchomp",
     nickname: "Garchomp",
-    level: 100,
+    level: DEFAULT_LEVEL,
     types: ["Dragon", "Ground"],
     hp: 357,
     maxHp: 357,

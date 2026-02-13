@@ -3,7 +3,7 @@
 import { type TeamAnalysis, POKEMON_TYPES, type PokemonType } from "@nasty-plot/core"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { cn, TypeBadge } from "@nasty-plot/ui"
+import { cn, TypeGrid } from "@nasty-plot/ui"
 import { SkeletonList } from "@/components/skeleton-list"
 import { EmptyState } from "@/components/empty-state"
 import { Progress } from "@/components/ui/progress"
@@ -108,24 +108,16 @@ export function SimplifiedAnalysis({
           </CardTitle>
         </CardHeader>
         <CardContent className="px-4 py-0">
-          <div className="grid grid-cols-6 gap-1.5">
-            {POKEMON_TYPES.map((type) => {
-              const status = getTypeCoverageStatus(type, analysis)
-              return (
-                <TypeBadge
-                  key={type}
-                  type={type}
-                  size="sm"
-                  className={cn(
-                    "text-[8px] min-w-0 px-1 py-0.5",
-                    status === "covered" && "opacity-100 ring-1 ring-green-400/50",
-                    status === "weakness" && "opacity-100 ring-1 ring-red-400/50",
-                    status === "neutral" && "opacity-40",
-                  )}
-                />
-              )
-            })}
-          </div>
+          <TypeGrid
+            types={POKEMON_TYPES}
+            statusMap={
+              Object.fromEntries(
+                POKEMON_TYPES.map((t) => [t, getTypeCoverageStatus(t, analysis)]),
+              ) as Record<PokemonType, "covered" | "weakness" | "neutral">
+            }
+            columns={6}
+            badgeClassName="text-[8px]"
+          />
           <div className="mt-2 flex items-center gap-3 text-[10px] text-muted-foreground">
             <span className="flex items-center gap-1">
               <span className="inline-block h-2 w-2 rounded-full ring-1 ring-green-400/50 bg-green-400/30" />

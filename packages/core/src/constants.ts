@@ -140,10 +140,15 @@ export const STAT_COLORS: Record<StatName, string> = {
   spe: "#FA92B2",
 }
 
+// --- Team Size ---
+
+export const TEAM_SIZE = 6
+
 // --- EV/IV Limits ---
 
 export const MAX_TOTAL_EVS = 510
 export const MAX_SINGLE_EV = 252
+export const PERFECT_IV = 31
 
 // --- Default IVs/EVs ---
 
@@ -203,12 +208,72 @@ export const ARCHETYPE_OPTIONS = [
   { value: "trick-room", label: "Trick Room" },
 ] as const
 
-// --- Status Badge Config (for battle UI) ---
-export const STATUS_BADGE_CONFIG: Record<string, { label: string; color: string }> = {
-  brn: { label: "BRN", color: "bg-red-500" },
-  par: { label: "PAR", color: "bg-yellow-500" },
-  slp: { label: "SLP", color: "bg-gray-500" },
-  frz: { label: "FRZ", color: "bg-cyan-400" },
-  psn: { label: "PSN", color: "bg-purple-500" },
-  tox: { label: "TOX", color: "bg-purple-600" },
+// --- Unified Status Data ---
+
+export type CalcStatusName = "slp" | "psn" | "brn" | "frz" | "par" | "tox"
+
+export interface StatusEntry {
+  label: string
+  displayName: string
+  calcName: CalcStatusName
+  color: string
+  protocolMessage: string
 }
+
+export const STATUS_DATA: Record<CalcStatusName, StatusEntry> = {
+  brn: {
+    label: "BRN",
+    displayName: "Burned",
+    calcName: "brn",
+    color: "bg-red-500",
+    protocolMessage: "burned",
+  },
+  par: {
+    label: "PAR",
+    displayName: "Paralyzed",
+    calcName: "par",
+    color: "bg-yellow-500",
+    protocolMessage: "paralyzed",
+  },
+  slp: {
+    label: "SLP",
+    displayName: "Asleep",
+    calcName: "slp",
+    color: "bg-gray-500",
+    protocolMessage: "fell asleep",
+  },
+  frz: {
+    label: "FRZ",
+    displayName: "Frozen",
+    calcName: "frz",
+    color: "bg-cyan-400",
+    protocolMessage: "was frozen",
+  },
+  psn: {
+    label: "PSN",
+    displayName: "Poisoned",
+    calcName: "psn",
+    color: "bg-purple-500",
+    protocolMessage: "was poisoned",
+  },
+  tox: {
+    label: "TOX",
+    displayName: "Badly Poisoned",
+    calcName: "tox",
+    color: "bg-purple-600",
+    protocolMessage: "was badly poisoned",
+  },
+}
+
+export const STATUS_CALC_MAP: Record<string, CalcStatusName> = Object.fromEntries(
+  Object.values(STATUS_DATA).map((s) => [s.displayName, s.calcName]),
+) as Record<string, CalcStatusName>
+
+export const STATUS_DISPLAY_MAP: Record<string, string> = Object.fromEntries(
+  Object.entries(STATUS_DATA).map(([abbr, s]) => [abbr, s.protocolMessage]),
+) as Record<string, string>
+
+export const STATUS_BADGE_CONFIG: Record<string, { label: string; color: string }> =
+  Object.fromEntries(
+    Object.entries(STATUS_DATA).map(([abbr, s]) => [abbr, { label: s.label, color: s.color }]),
+  ) as Record<string, { label: string; color: string }>

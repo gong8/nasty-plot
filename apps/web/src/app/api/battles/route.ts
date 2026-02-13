@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { apiErrorResponse, badRequestResponse } from "../../../lib/api-error"
-import { listBattles, createBattle } from "@nasty-plot/battle-engine"
+import { listBattles, createBattle } from "@nasty-plot/battle-engine/db"
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)

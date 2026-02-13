@@ -1,14 +1,7 @@
 "use client"
 
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+import { useMemo } from "react"
+import { GroupedSelector } from "@nasty-plot/ui"
 import { useFormats } from "../hooks/use-formats"
 
 interface FormatSelectorProps {
@@ -20,36 +13,22 @@ interface FormatSelectorProps {
 export function FormatSelector({ value, onChange, activeOnly = true }: FormatSelectorProps) {
   const { data: formats, isLoading } = useFormats(activeOnly)
 
-  const singles = formats.filter((f) => f.gameType === "singles")
-  const doubles = formats.filter((f) => f.gameType === "doubles")
+  const groups = useMemo(() => {
+    const singles = formats.filter((f) => f.gameType === "singles")
+    const doubles = formats.filter((f) => f.gameType === "doubles")
+    return [
+      { label: "Singles", items: singles.map((f) => ({ value: f.id, label: f.name })) },
+      { label: "Doubles", items: doubles.map((f) => ({ value: f.id, label: f.name })) },
+    ]
+  }, [formats])
 
   return (
-    <Select value={value} onValueChange={onChange} disabled={isLoading}>
-      <SelectTrigger>
-        <SelectValue placeholder="Select format..." />
-      </SelectTrigger>
-      <SelectContent>
-        {singles.length > 0 && (
-          <SelectGroup>
-            <SelectLabel>Singles</SelectLabel>
-            {singles.map((f) => (
-              <SelectItem key={f.id} value={f.id}>
-                {f.name}
-              </SelectItem>
-            ))}
-          </SelectGroup>
-        )}
-        {doubles.length > 0 && (
-          <SelectGroup>
-            <SelectLabel>Doubles</SelectLabel>
-            {doubles.map((f) => (
-              <SelectItem key={f.id} value={f.id}>
-                {f.name}
-              </SelectItem>
-            ))}
-          </SelectGroup>
-        )}
-      </SelectContent>
-    </Select>
+    <GroupedSelector
+      value={value}
+      onValueChange={onChange}
+      groups={groups}
+      placeholder="Select format..."
+      disabled={isLoading}
+    />
   )
 }

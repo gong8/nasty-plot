@@ -1,5 +1,11 @@
 import { getRawMove } from "@nasty-plot/pokemon-data"
-import { DEFAULT_EVS, DEFAULT_LEVEL, toId, type PokemonType } from "@nasty-plot/core"
+import {
+  DEFAULT_EVS,
+  DEFAULT_LEVEL,
+  STATUS_DISPLAY_MAP,
+  toId,
+  type PokemonType,
+} from "@nasty-plot/core"
 import {
   calcHpPercent,
   type BattleState,
@@ -32,15 +38,6 @@ const BOOST_STAT_NAMES: Record<string, string> = {
 }
 
 const STAT_BOOST_ABILITIES = ["quarkdrive", "protosynthesis"] as const
-
-const STATUS_NAMES: Record<string, string> = {
-  brn: "burned",
-  par: "paralyzed",
-  slp: "fell asleep",
-  frz: "was frozen",
-  psn: "was poisoned",
-  tox: "was badly poisoned",
-}
 
 const WEATHER_MAP: Record<string, Weather> = {
   Sandstorm: "Sand",
@@ -375,7 +372,7 @@ export function processLine(state: BattleState, line: string): BattleLogEntry | 
 
       return logEntry(
         "status",
-        `${ident.name} ${STATUS_NAMES[statusId] || `got ${statusId}`}!`,
+        `${ident.name} ${STATUS_DISPLAY_MAP[statusId] || `got ${statusId}`}!`,
         state.turn,
         ident.side,
       )

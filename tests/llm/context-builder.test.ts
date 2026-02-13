@@ -5,7 +5,7 @@ import type {
   PokemonType,
   PokemonSpecies,
 } from "@nasty-plot/core"
-import { DEFAULT_EVS, DEFAULT_IVS, DEFAULT_LEVEL } from "@nasty-plot/core"
+import { DEFAULT_EVS, DEFAULT_IVS, DEFAULT_LEVEL, MAX_SINGLE_EV } from "@nasty-plot/core"
 import {
   buildTeamContext,
   buildMetaContext,
@@ -57,7 +57,7 @@ function makeSlot(pokemonId: string, types: [PokemonType] | [PokemonType, Pokemo
       string | undefined,
       string | undefined,
     ],
-    evs: { ...DEFAULT_EVS, hp: 252, atk: 252 },
+    evs: { ...DEFAULT_EVS, hp: MAX_SINGLE_EV, atk: MAX_SINGLE_EV },
     ivs: DEFAULT_IVS,
   }
 }

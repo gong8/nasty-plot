@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
 import { apiErrorResponse, badRequestResponse } from "../../../../lib/api-error"
-import { prisma } from "@nasty-plot/db"
-import { importFromReplayUrl, importFromRawLog, createBattle } from "@nasty-plot/battle-engine"
+import { importFromReplayUrl, importFromRawLog } from "@nasty-plot/battle-engine"
+import { createBattle } from "@nasty-plot/battle-engine/db"
+import { ensureFormatExists } from "@nasty-plot/formats/db"
 import { findMatchingTeams, createTeamFromExtractedData } from "@nasty-plot/teams"
 import { enrichExtractedTeam } from "@nasty-plot/smogon-data"
 
@@ -95,7 +96,7 @@ export async function POST(req: NextRequest) {
     const team2Id = team2Match.id
     const teamMatching = { team1: team1Match.result, team2: team2Match.result }
 
-    await ensureFormatExists(parsed.formatId, parsed.gameType)
+    await ensureFormatExists(parsed.formatId)
 
     const pokemonNames = (team: typeof parsed.team1) =>
       team.pokemon.map((p) => p.pokemonName).join(", ")
@@ -138,18 +139,4 @@ export async function POST(req: NextRequest) {
     console.error("[POST /api/battles/import]", err)
     return apiErrorResponse(err, { fallback: "Failed to import battle" })
   }
-}
-
-async function ensureFormatExists(formatId: string, gameType: string) {
-  await prisma.format.upsert({
-    where: { id: formatId },
-    update: {},
-    create: {
-      id: formatId,
-      name: formatId,
-      generation: parseInt(formatId.replace(/[^0-9]/g, "").charAt(0) || "9"),
-      gameType,
-      isActive: true,
-    },
-  })
 }

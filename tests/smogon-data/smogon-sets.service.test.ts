@@ -1,9 +1,10 @@
 import {
-  fetchSmogonSets,
+  syncSmogonSets,
   getSetsForPokemon,
   getAllSetsForFormat,
   getNatureUsage,
 } from "@nasty-plot/smogon-data"
+import { MAX_SINGLE_EV } from "@nasty-plot/core"
 
 // ---------------------------------------------------------------------------
 // Mocks
@@ -54,7 +55,7 @@ function makeDbSetRow(overrides?: Record<string, unknown>) {
     nature: "Jolly",
     teraType: null,
     moves: JSON.stringify(["Earthquake", "Dragon Claw", "Swords Dance", "Scale Shot"]),
-    evs: JSON.stringify({ atk: 252, spe: 252, spd: 4 }),
+    evs: JSON.stringify({ atk: MAX_SINGLE_EV, spe: MAX_SINGLE_EV, spd: 4 }),
     ivs: null,
     ...overrides,
   }
@@ -111,7 +112,7 @@ describe("getSetsForPokemon", () => {
 
     const result = await getSetsForPokemon("gen9ou", "garchomp")
 
-    expect(result[0].evs).toEqual({ atk: 252, spe: 252, spd: 4 })
+    expect(result[0].evs).toEqual({ atk: MAX_SINGLE_EV, spe: MAX_SINGLE_EV, spd: 4 })
   })
 
   it("parses IVs from JSON when present", async () => {
@@ -166,7 +167,7 @@ describe("getAllSetsForFormat", () => {
   })
 })
 
-describe("fetchSmogonSets", () => {
+describe("syncSmogonSets", () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.stubGlobal("fetch", vi.fn())
@@ -186,7 +187,7 @@ describe("fetchSmogonSets", () => {
           item: "Leftovers",
           nature: "Jolly",
           moves: ["Earthquake", "Dragon Claw", "Swords Dance", "Scale Shot"],
-          evs: { atk: 252, spe: 252, spd: 4 },
+          evs: { atk: MAX_SINGLE_EV, spe: MAX_SINGLE_EV, spd: 4 },
         },
       },
     }
@@ -200,7 +201,7 @@ describe("fetchSmogonSets", () => {
     mockSetUpsert.mockResolvedValue({})
     mockSyncLogUpsert.mockResolvedValue({})
 
-    await fetchSmogonSets("gen9ou")
+    await syncSmogonSets("gen9ou")
 
     expect(mockSetUpsert).toHaveBeenCalledTimes(1)
     expect(mockSyncLogUpsert).toHaveBeenCalled()
@@ -214,7 +215,7 @@ describe("fetchSmogonSets", () => {
     })
     vi.stubGlobal("fetch", mockFetch)
 
-    await expect(fetchSmogonSets("gen9ou")).rejects.toThrow("Failed to fetch sets")
+    await expect(syncSmogonSets("gen9ou")).rejects.toThrow("Failed to fetch sets")
   })
 
   it("handles array fields (ability, item, nature)", async () => {
@@ -225,7 +226,7 @@ describe("fetchSmogonSets", () => {
           item: ["Life Orb", "Choice Scarf"],
           nature: ["Jolly", "Adamant"],
           moves: ["Earthquake", ["Dragon Claw", "Outrage"]],
-          evs: { atk: 252, spe: 252, spd: 4 },
+          evs: { atk: MAX_SINGLE_EV, spe: MAX_SINGLE_EV, spd: 4 },
         },
       },
     }
@@ -239,7 +240,7 @@ describe("fetchSmogonSets", () => {
     mockSetUpsert.mockResolvedValue({})
     mockSyncLogUpsert.mockResolvedValue({})
 
-    await fetchSmogonSets("gen9ou")
+    await syncSmogonSets("gen9ou")
 
     // Should take first element of arrays
     expect(mockSetUpsert).toHaveBeenCalledWith(
@@ -262,7 +263,7 @@ describe("fetchSmogonSets", () => {
           nature: "Jolly",
           teraType: "Fairy",
           moves: ["Earthquake"],
-          evs: { atk: 252 },
+          evs: { atk: MAX_SINGLE_EV },
         },
       },
     }
@@ -276,7 +277,7 @@ describe("fetchSmogonSets", () => {
     mockSetUpsert.mockResolvedValue({})
     mockSyncLogUpsert.mockResolvedValue({})
 
-    await fetchSmogonSets("gen9ou")
+    await syncSmogonSets("gen9ou")
 
     expect(mockSetUpsert).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -318,7 +319,7 @@ describe("fetchSmogonSets", () => {
     mockSetUpsert.mockResolvedValue({})
     mockSyncLogUpsert.mockResolvedValue({})
 
-    await fetchSmogonSets("gen9ou")
+    await syncSmogonSets("gen9ou")
 
     // Only Garchomp should be saved, empty name skipped
     expect(mockSetUpsert).toHaveBeenCalledTimes(1)
@@ -347,7 +348,7 @@ describe("fetchSmogonSets", () => {
     mockSetUpsert.mockResolvedValue({})
     mockSyncLogUpsert.mockResolvedValue({})
 
-    await fetchSmogonSets("gen9ou")
+    await syncSmogonSets("gen9ou")
 
     // Only "SD" should be saved, null entry skipped
     expect(mockSetUpsert).toHaveBeenCalledTimes(1)
@@ -362,8 +363,8 @@ describe("fetchSmogonSets", () => {
           nature: "Jolly",
           moves: ["Earthquake"],
           evs: [
-            { atk: 252, spe: 252 },
-            { hp: 252, def: 252 },
+            { atk: MAX_SINGLE_EV, spe: MAX_SINGLE_EV },
+            { hp: MAX_SINGLE_EV, def: MAX_SINGLE_EV },
           ],
         },
       },
@@ -378,12 +379,12 @@ describe("fetchSmogonSets", () => {
     mockSetUpsert.mockResolvedValue({})
     mockSyncLogUpsert.mockResolvedValue({})
 
-    await fetchSmogonSets("gen9ou")
+    await syncSmogonSets("gen9ou")
 
     expect(mockSetUpsert).toHaveBeenCalledWith(
       expect.objectContaining({
         create: expect.objectContaining({
-          evs: JSON.stringify({ atk: 252, spe: 252 }),
+          evs: JSON.stringify({ atk: MAX_SINGLE_EV, spe: MAX_SINGLE_EV }),
         }),
       }),
     )
@@ -397,7 +398,7 @@ describe("fetchSmogonSets", () => {
           item: "Leftovers",
           nature: "Jolly",
           moves: ["Earthquake"],
-          evs: { atk: 252 },
+          evs: { atk: MAX_SINGLE_EV },
           ivs: { atk: 0 },
         },
       },
@@ -412,7 +413,7 @@ describe("fetchSmogonSets", () => {
     mockSetUpsert.mockResolvedValue({})
     mockSyncLogUpsert.mockResolvedValue({})
 
-    await fetchSmogonSets("gen9ou")
+    await syncSmogonSets("gen9ou")
 
     expect(mockSetUpsert).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -431,7 +432,7 @@ describe("fetchSmogonSets", () => {
           item: "Leftovers",
           nature: "Jolly",
           moves: ["Earthquake"],
-          evs: { atk: 252 },
+          evs: { atk: MAX_SINGLE_EV },
           ivs: {},
         },
       },
@@ -446,7 +447,7 @@ describe("fetchSmogonSets", () => {
     mockSetUpsert.mockResolvedValue({})
     mockSyncLogUpsert.mockResolvedValue({})
 
-    await fetchSmogonSets("gen9ou")
+    await syncSmogonSets("gen9ou")
 
     expect(mockSetUpsert).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -465,7 +466,7 @@ describe("fetchSmogonSets", () => {
           item: "Leftovers",
           nature: "Jolly",
           moves: ["Earthquake"],
-          evs: { atk: 252 },
+          evs: { atk: MAX_SINGLE_EV },
           ivs: [{ atk: 0 }, { spa: 0 }],
         },
       },
@@ -480,7 +481,7 @@ describe("fetchSmogonSets", () => {
     mockSetUpsert.mockResolvedValue({})
     mockSyncLogUpsert.mockResolvedValue({})
 
-    await fetchSmogonSets("gen9ou")
+    await syncSmogonSets("gen9ou")
 
     expect(mockSetUpsert).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -514,7 +515,7 @@ describe("fetchSmogonSets", () => {
     mockSetUpsert.mockResolvedValue({})
     mockSyncLogUpsert.mockResolvedValue({})
 
-    await fetchSmogonSets("gen9ou")
+    await syncSmogonSets("gen9ou")
 
     expect(mockSetUpsert).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -563,7 +564,7 @@ describe("fetchSmogonSets", () => {
     mockSetUpsert.mockResolvedValue({})
     mockSyncLogUpsert.mockResolvedValue({})
 
-    await fetchSmogonSets("gen9ou")
+    await syncSmogonSets("gen9ou")
 
     expect(mockSetUpsert).toHaveBeenCalledTimes(3)
   })
@@ -590,7 +591,7 @@ describe("fetchSmogonSets", () => {
     mockSetUpsert.mockResolvedValue({})
     mockSyncLogUpsert.mockResolvedValue({})
 
-    await fetchSmogonSets("gen9vgc2025", { pkmnSetsId: "gen9doublesou" })
+    await syncSmogonSets("gen9vgc2025", { pkmnSetsId: "gen9doublesou" })
 
     // URL should use the override ID
     expect(mockFetch).toHaveBeenCalledWith("https://data.pkmn.cc/sets/gen9doublesou.json")
@@ -632,7 +633,7 @@ describe("fetchSmogonSets", () => {
         ability: "Protosynthesis",
         item: "Choice Specs",
         nature: "Timid",
-        evs: { spa: 252, spe: 252 },
+        evs: { spa: MAX_SINGLE_EV, spe: MAX_SINGLE_EV },
         moves: ["Moonblast", "Shadow Ball", "Mystical Fire", "Dazzling Gleam"],
         teraType: "Fairy",
       },
@@ -641,7 +642,7 @@ describe("fetchSmogonSets", () => {
     mockSetUpsert.mockResolvedValue({})
     mockSyncLogUpsert.mockResolvedValue({})
 
-    await fetchSmogonSets("gen9vgc2025")
+    await syncSmogonSets("gen9vgc2025")
 
     // Should have generated sets from chaos
     expect(mockGenerateSetsFromChaos).toHaveBeenCalled()
@@ -677,7 +678,7 @@ describe("fetchSmogonSets", () => {
     mockGenerateSetsFromChaos.mockReturnValue([])
     mockSyncLogUpsert.mockResolvedValue({})
 
-    await fetchSmogonSets("gen9vgc2025", { smogonStatsId: "gen9vgc2026regf" })
+    await syncSmogonSets("gen9vgc2025", { smogonStatsId: "gen9vgc2026regf" })
 
     // Should use the smogonStatsId for resolveYearMonth
     expect(mockResolveYearMonth).toHaveBeenCalledWith("gen9vgc2026regf")
@@ -700,7 +701,7 @@ describe("fetchSmogonSets", () => {
       url: "https://www.smogon.com/stats/2025-01/chaos/gen9vgc2025-1695.json",
     })
 
-    await expect(fetchSmogonSets("gen9vgc2025")).rejects.toThrow("Failed to fetch chaos stats")
+    await expect(syncSmogonSets("gen9vgc2025")).rejects.toThrow("Failed to fetch chaos stats")
   })
 
   it("handles missing ability, item, nature fields gracefully", async () => {
@@ -722,7 +723,7 @@ describe("fetchSmogonSets", () => {
     mockSetUpsert.mockResolvedValue({})
     mockSyncLogUpsert.mockResolvedValue({})
 
-    await fetchSmogonSets("gen9ou")
+    await syncSmogonSets("gen9ou")
 
     expect(mockSetUpsert).toHaveBeenCalledWith(
       expect.objectContaining({

@@ -19,7 +19,7 @@ import { GET, POST } from "../../apps/web/src/app/api/sample-teams/route"
 import {
   GET as GET_BY_ID,
   DELETE as DELETE_BY_ID,
-} from "../../apps/web/src/app/api/sample-teams/[id]/route"
+} from "../../apps/web/src/app/api/sample-teams/[sampleTeamId]/route"
 import { POST as POST_IMPORT } from "../../apps/web/src/app/api/sample-teams/import/route"
 
 const mockSampleTeam = {
@@ -168,7 +168,7 @@ describe("GET /api/sample-teams/[id]", () => {
 
     const req = new Request("http://localhost:3000/api/sample-teams/st-1")
     const response = await GET_BY_ID(req, {
-      params: Promise.resolve({ id: "st-1" }),
+      params: Promise.resolve({ sampleTeamId: "st-1" }),
     })
     const data = await response.json()
 
@@ -183,7 +183,7 @@ describe("GET /api/sample-teams/[id]", () => {
 
     const req = new Request("http://localhost:3000/api/sample-teams/nonexistent")
     const response = await GET_BY_ID(req, {
-      params: Promise.resolve({ id: "nonexistent" }),
+      params: Promise.resolve({ sampleTeamId: "nonexistent" }),
     })
     const data = await response.json()
 
@@ -204,7 +204,7 @@ describe("DELETE /api/sample-teams/[id]", () => {
       method: "DELETE",
     })
     const response = await DELETE_BY_ID(req, {
-      params: Promise.resolve({ id: "st-1" }),
+      params: Promise.resolve({ sampleTeamId: "st-1" }),
     })
     const data = await response.json()
 
@@ -220,7 +220,7 @@ describe("DELETE /api/sample-teams/[id]", () => {
       method: "DELETE",
     })
     const response = await DELETE_BY_ID(req, {
-      params: Promise.resolve({ id: "nonexistent" }),
+      params: Promise.resolve({ sampleTeamId: "nonexistent" }),
     })
     const data = await response.json()
 

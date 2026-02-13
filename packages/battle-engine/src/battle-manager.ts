@@ -793,6 +793,14 @@ export class BattleManager {
     const action1 = await this.ai.chooseAction(this.state, slot1Actions)
 
     if (slot2Actions) {
+      // If slot1 chose a switch, remove that Pokemon from slot2's options
+      // to prevent "can only switch in once" errors when both slots faint
+      if (action1.type === "switch") {
+        slot2Actions = {
+          ...slot2Actions,
+          switches: slot2Actions.switches.filter((s) => s.index !== action1.pokemonIndex),
+        }
+      }
       const action2 = await this.ai.chooseAction(this.state, slot2Actions)
       const choice = `${actionToChoice(action1)}, ${actionToChoice(action2)}`
       console.log("[BattleManager] p2 AI doubles forceSwitch:", choice)

@@ -15,7 +15,7 @@ export function useLearnsetQuery(pokemonId: string | null, formatId?: string) {
     queryKey: ["learnset", pokemonId, formatId],
     queryFn: async () => {
       let url = `/api/pokemon/${pokemonId}/learnset`
-      if (formatId) url += `?format=${encodeURIComponent(formatId)}`
+      if (formatId) url += `?formatId=${encodeURIComponent(formatId)}`
       try {
         const moves = await fetchApiData<{ name: string }[]>(url)
         return moves.map((m) => m.name)
