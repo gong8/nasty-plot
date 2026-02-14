@@ -41,7 +41,7 @@ You have access to MCP tools for looking up Pokemon data, usage stats, and perfo
 
 Format your responses with markdown: use headings, bold, code blocks, lists, and tables where appropriate.`
 
-export interface StreamChatOptions {
+interface StreamChatOptions {
   messages: ChatMessage[]
   teamId?: string
   formatId?: string

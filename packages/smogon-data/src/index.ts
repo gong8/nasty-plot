@@ -17,20 +17,8 @@ export {
   getNatureUsage,
 } from "./smogon-sets.service"
 
-export {
-  scoreSetMatch,
-  inferFromSets,
-  resolveMoves,
-  enrichExtractedTeam,
-} from "./set-inference.service"
+export { inferFromSets, enrichExtractedTeam } from "./set-inference.service"
 
 export { fetchSmogonData } from "./fetch-helper"
 export { upsertSyncLog } from "./sync-log.service"
-export type {
-  ExtractedPokemon,
-  ExtractedTeam,
-  SetMatchScore,
-  InferredSetResult,
-  EnrichedPokemon,
-  EnrichedTeam,
-} from "./set-inference.service"
+export type { ExtractedPokemon } from "./set-inference.service"

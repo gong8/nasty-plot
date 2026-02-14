@@ -1,4 +1,4 @@
-import { isStale, getDataStatus } from "@nasty-plot/data-pipeline"
+import { isStale } from "@nasty-plot/data-pipeline"
 
 // ---------------------------------------------------------------------------
 // Mocks
@@ -200,90 +200,5 @@ describe("isStale", () => {
     const result = await isStale("smogon-stats", "gen9ou")
 
     expect(result).toBe(true)
-  })
-})
-
-// ---------------------------------------------------------------------------
-// getDataStatus
-// ---------------------------------------------------------------------------
-
-describe("getDataStatus", () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-    nextId = 1
-  })
-
-  it("returns mapped sync logs from database", async () => {
-    const now = new Date()
-    const fakeRows = [
-      mockSyncLog({ source: "smogon-sets", lastSynced: now, message: "OK" }),
-      mockSyncLog({ source: "smogon-stats", lastSynced: now, message: "Fetched 200 Pokemon" }),
-    ]
-
-    mockedPrisma.dataSyncLog.findMany.mockResolvedValueOnce(fakeRows)
-
-    const result = await getDataStatus()
-
-    expect(mockedPrisma.dataSyncLog.findMany).toHaveBeenCalledWith({
-      orderBy: [{ source: "asc" }, { formatId: "asc" }],
-    })
-
-    expect(result).toEqual([
-      {
-        source: "smogon-sets",
-        formatId: "gen9ou",
-        lastSynced: now,
-        status: "success",
-      },
-      {
-        source: "smogon-stats",
-        formatId: "gen9ou",
-        lastSynced: now,
-        status: "success",
-      },
-    ])
-  })
-
-  it("returns empty array when no sync logs exist", async () => {
-    mockedPrisma.dataSyncLog.findMany.mockResolvedValueOnce([])
-
-    const result = await getDataStatus()
-
-    expect(result).toEqual([])
-  })
-
-  it("includes logs with error status", async () => {
-    const now = new Date()
-    const fakeRows = [mockSyncLog({ lastSynced: now, status: "error", message: "Network timeout" })]
-
-    mockedPrisma.dataSyncLog.findMany.mockResolvedValueOnce(fakeRows)
-
-    const result = await getDataStatus()
-
-    expect(result).toHaveLength(1)
-    expect(result[0].status).toBe("error")
-  })
-
-  it("maps only source, formatId, lastSynced, and status (excludes message)", async () => {
-    const now = new Date()
-    const fakeRows = [
-      {
-        ...mockSyncLog({ lastSynced: now, message: "Detailed message not in output" }),
-        extraField: "should not appear",
-      },
-    ]
-
-    mockedPrisma.dataSyncLog.findMany.mockResolvedValueOnce(fakeRows)
-
-    const result = await getDataStatus()
-
-    expect(result[0]).toEqual({
-      source: "smogon-stats",
-      formatId: "gen9ou",
-      lastSynced: now,
-      status: "success",
-    })
-    expect(result[0]).not.toHaveProperty("message")
-    expect(result[0]).not.toHaveProperty("extraField")
   })
 })

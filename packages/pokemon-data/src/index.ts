@@ -28,4 +28,4 @@ export {
 export type * from "./types"
 
 export { getSpriteUrl, getIconUrl } from "./sprite.service"
-export type { SpriteOptions, IconData } from "./sprite.service"
+export type { SpriteOptions } from "./sprite.service"

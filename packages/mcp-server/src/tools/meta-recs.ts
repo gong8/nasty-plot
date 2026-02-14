@@ -53,14 +53,10 @@ export function registerMetaRecsTools(server: McpServer): void {
       pokemonId: z.string().optional().describe("Optional: find cores containing this Pokemon"),
     },
     ({ formatId, pokemonId }) =>
-      handleTool(async () => {
-        const data = await apiGet(`/formats/${encodeURIComponent(formatId)}/usage`, { limit: "30" })
-        if (!pokemonId) return data
-        return {
-          note: `Showing usage data for ${formatId}. Filter for cores containing ${pokemonId}.`,
-          data,
-        }
-      }, `Could not fetch cores for "${formatId}".`),
+      handleTool(
+        () => apiGet(`/formats/${encodeURIComponent(formatId)}/cores`, buildParams({ pokemonId })),
+        `Could not fetch cores for "${formatId}".`,
+      ),
   )
 
   server.tool(
@@ -72,11 +68,7 @@ export function registerMetaRecsTools(server: McpServer): void {
     },
     ({ pokemonId, formatId }) =>
       handleTool(
-        () =>
-          apiGet(
-            `/pokemon/${encodeURIComponent(pokemonId)}/sets`,
-            buildParams({ format: formatId }),
-          ),
+        () => apiGet(`/pokemon/${encodeURIComponent(pokemonId)}/sets`, buildParams({ formatId })),
         `Could not fetch Smogon sets for "${pokemonId}". The Pokemon exists but set data may be unavailable for this format. Use get_pokemon for basic data instead.`,
       ),
   )

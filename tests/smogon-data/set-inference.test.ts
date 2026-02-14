@@ -1,9 +1,5 @@
-import {
-  scoreSetMatch,
-  inferFromSets,
-  resolveMoves,
-  enrichExtractedTeam,
-} from "@nasty-plot/smogon-data"
+import { inferFromSets, enrichExtractedTeam } from "@nasty-plot/smogon-data"
+import { scoreSetMatch, resolveMoves } from "#smogon-data/set-inference.service"
 import type { ExtractedPokemon } from "@nasty-plot/smogon-data"
 import type { SmogonSetData } from "@nasty-plot/core"
 import { DEFAULT_LEVEL, MAX_SINGLE_EV } from "@nasty-plot/core"

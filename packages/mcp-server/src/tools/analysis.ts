@@ -1,5 +1,5 @@
 import { z } from "zod"
-import { DEFAULT_FORMAT_ID, DEFAULT_LEVEL } from "@nasty-plot/core"
+import { DEFAULT_LEVEL } from "@nasty-plot/core"
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js"
 import { apiGet, apiPost } from "../api-client.js"
 import { handleTool } from "../tool-helpers.js"
@@ -43,20 +43,19 @@ export function registerAnalysisTools(server: McpServer): void {
 
   server.tool(
     "suggest_counters",
-    "Suggest counters or checks for a specific Pokemon or team threat",
+    "Suggest Pokemon that counter the current team's threats. Uses the recommendation engine to find Pokemon with good matchups against common threats to the team.",
     {
-      pokemonId: z.string().describe("The Pokemon to find counters for"),
-      formatId: z.string().optional().describe("Format context (e.g., 'gen9ou')"),
+      teamId: z.string().describe("Team UUID to find counters for"),
+      limit: z.number().optional().describe("Number of suggestions to return (default 10)"),
     },
-    ({ pokemonId, formatId }) =>
+    ({ teamId, limit }) =>
       handleTool(
         () =>
           apiPost("/recommend", {
-            targetPokemonId: pokemonId,
-            formatId: formatId ?? DEFAULT_FORMAT_ID,
-            type: "counters",
+            teamId,
+            limit: limit ?? 10,
           }),
-        `Could not suggest counters for "${pokemonId}".`,
+        `Could not suggest counters for team "${teamId}". Make sure the team exists and has Pokemon.`,
       ),
   )
 

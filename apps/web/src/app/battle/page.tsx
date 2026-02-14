@@ -168,8 +168,8 @@ export default function BattleHubPage() {
   const [showNewBattleWarning, setShowNewBattleWarning] = useState(false)
   const [filterTeamId, setFilterTeamId] = useState<string>("all")
 
-  const { data: teamsData } = useFetchData<{ teams?: { id: string; name: string }[] }>("/api/teams")
-  const teams = teamsData?.teams ?? []
+  const { data: teamsData } = useFetchData<{ id: string; name: string }[]>("/api/teams")
+  const teams = teamsData ?? []
 
   const battlesUrl = (() => {
     const params = new URLSearchParams({ limit: "10" })

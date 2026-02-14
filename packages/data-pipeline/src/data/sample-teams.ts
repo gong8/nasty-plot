@@ -1,4 +1,4 @@
-export interface SampleTeamSeedEntry {
+interface SampleTeamSeedEntry {
   name: string
   formatId: string
   archetype: string

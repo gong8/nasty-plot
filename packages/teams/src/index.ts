@@ -14,7 +14,6 @@ export {
   dbSlotToDomain,
   cleanupEmptyTeams,
 } from "./team.service"
-export type { DbSlotRow } from "./team.service"
 export { validateTeam } from "./validation.service"
 export {
   importShowdownPaste,
@@ -29,7 +28,6 @@ export {
   compareFingerprints,
   findMatchingTeams,
 } from "./team-matcher.service"
-export type { TeamFingerprint, MatchLevel, TeamMatchResult } from "./team-matcher.service"
 export {
   createSampleTeam,
   listSampleTeams,

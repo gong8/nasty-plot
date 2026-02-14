@@ -238,17 +238,6 @@ export interface BattleLogEntry {
   data?: Record<string, unknown>
 }
 
-export interface BattleSetupConfig {
-  formatId: string
-  gameType: GameType
-  playerTeamId: string
-  opponentTeamPaste: string
-  aiDifficulty: AIDifficulty
-  /** Player name */
-  playerName: string
-  opponentName: string
-}
-
 export interface AIPlayer {
   readonly difficulty: AIDifficulty
   chooseAction(state: BattleState, actions: BattleActionSet): Promise<BattleAction>

@@ -71,35 +71,3 @@ export interface MCTSResult {
   /** Time spent in ms */
   timeMs: number
 }
-
-/** Messages passed to/from MCTS web worker */
-export interface MCTSWorkerRequest {
-  type: "search"
-  /** Serialized @pkmn/sim Battle state via toJSON() */
-  battleJson: unknown
-  /** Which side is the "us" player */
-  perspective: "p1" | "p2"
-  /** MCTS configuration */
-  config: MCTSConfig
-  /** Format ID for the battle */
-  formatId: string
-}
-
-export interface MCTSWorkerProgress {
-  type: "progress"
-  iterations: number
-  bestAction: string
-  winProbability: number
-}
-
-export interface MCTSWorkerResult {
-  type: "result"
-  result: MCTSResult
-}
-
-export interface MCTSWorkerError {
-  type: "error"
-  message: string
-}
-
-export type MCTSWorkerMessage = MCTSWorkerProgress | MCTSWorkerResult | MCTSWorkerError

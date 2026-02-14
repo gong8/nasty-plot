@@ -166,8 +166,6 @@ export const DEFAULT_EVS: StatsTable = { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, 
 // --- Level Defaults ---
 
 export const DEFAULT_LEVEL = 100
-export const VGC_LEVEL = 50
-export const LC_LEVEL = 5
 
 // --- Format Defaults ---
 
@@ -201,26 +199,11 @@ export const STATUSES = [
 
 export const BOOST_VALUES = [-6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6] as const
 
-// --- Archetype Options ---
-
-export const ARCHETYPE_OPTIONS = [
-  { value: "all", label: "All Archetypes" },
-  { value: "hyper-offense", label: "Hyper Offense" },
-  { value: "offense", label: "Offense" },
-  { value: "balance", label: "Balance" },
-  { value: "bulky-offense", label: "Bulky Offense" },
-  { value: "stall", label: "Stall" },
-  { value: "rain", label: "Rain" },
-  { value: "sun", label: "Sun" },
-  { value: "sand", label: "Sand" },
-  { value: "trick-room", label: "Trick Room" },
-] as const
-
 // --- Unified Status Data ---
 
 export type CalcStatusName = "slp" | "psn" | "brn" | "frz" | "par" | "tox"
 
-export interface StatusEntry {
+interface StatusEntry {
   label: string
   displayName: string
   calcName: CalcStatusName

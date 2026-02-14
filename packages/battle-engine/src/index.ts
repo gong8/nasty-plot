@@ -20,7 +20,7 @@ export { GreedyAI } from "./ai/greedy-ai"
 export { HeuristicAI } from "./ai/heuristic-ai"
 export { MCTSAI } from "./ai/mcts-ai"
 export { SetPredictor } from "./ai/set-predictor"
-export { evaluatePosition, type EvalResult, type EvalFeature } from "./ai/evaluator.service"
+export { evaluatePosition } from "./ai/evaluator.service"
 export { getEffectiveSpeed } from "./ai/shared"
 export {
   estimateWinProbability,
@@ -34,7 +34,7 @@ export {
   type MoveClassification,
 } from "./ai/hint-engine.service"
 export { cloneBattle, getLegalChoices, isBattleOver, getBattleWinner } from "./ai/battle-cloner"
-export { type MCTSConfig, type MCTSResult, DEFAULT_MCTS_CONFIG } from "./ai/mcts-types"
+export { type MCTSResult, DEFAULT_MCTS_CONFIG } from "./ai/mcts-types"
 export { ReplayEngine, type ReplayFrame } from "./replay/replay-engine"
 export {
   parseReplayUrl,
@@ -43,21 +43,15 @@ export {
   importFromReplayUrl,
   importFromRawLog,
 } from "./replay/replay-import"
-export type {
-  ExtractedPokemonData,
-  ExtractedTeamData,
-  ParsedBattleImport,
-} from "./replay/replay-import"
+export type { ExtractedPokemonData, ExtractedTeamData } from "./replay/replay-import"
 export { formatShowdownLog, formatShowdownReplayJSON } from "./export/battle-export.service"
 export type { BattleRecord } from "./export/battle-export.service"
 export { computeTeamBattleAnalytics } from "./battle-history.service"
 export type { TeamBattleAnalytics } from "./battle-history.service"
-export type { ListBattlesOptions, CreateBattleData, CreateBatchData } from "./battle.service"
 export { runAutomatedBattle, type SingleBattleResult } from "./simulation/automated-battle-manager"
 export {
   runBatchSimulation,
   type BatchSimConfig,
   type BatchAnalytics,
   type BatchSimProgress,
-  type PokemonStats,
 } from "./simulation/batch-simulator"

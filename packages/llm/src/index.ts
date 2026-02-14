@@ -13,7 +13,6 @@ export {
   buildTurnAnalysisContext,
   buildAutoAnalyzePrompt,
 } from "./battle-context-builder.service"
-export type { BattleCommentaryContext } from "./battle-context-builder.service"
 export {
   createSession,
   getSession,
@@ -43,4 +42,3 @@ export {
 } from "./tool-context"
 export type { PageType } from "./tool-context"
 export type { SSEEvent } from "./sse-events"
-export type { CreateSessionOptions } from "./chat-session.service"

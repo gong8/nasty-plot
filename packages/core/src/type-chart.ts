@@ -38,7 +38,7 @@ export function getImmunities(types: PokemonType[]): PokemonType[] {
   return POKEMON_TYPES.filter((attackType) => getTypeEffectiveness(attackType, types) === 0)
 }
 
-export type EffectivenessBucket = "4x" | "2x" | "1x" | "0.5x" | "0.25x" | "0x"
+type EffectivenessBucket = "4x" | "2x" | "1x" | "0.5x" | "0.25x" | "0x"
 
 /**
  * Get full defensive profile for a type combination.

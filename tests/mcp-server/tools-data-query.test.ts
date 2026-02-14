@@ -170,7 +170,7 @@ describe("registerDataQueryTools", () => {
       await handler({ pokemonId: "greatTusk", formatId: "gen9ou" })
 
       expect(mockApiGet).toHaveBeenCalledWith("/pokemon/greatTusk/sets", {
-        format: "gen9ou",
+        formatId: "gen9ou",
       })
     })
 

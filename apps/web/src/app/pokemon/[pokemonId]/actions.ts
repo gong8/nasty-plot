@@ -2,6 +2,7 @@
 
 import { prisma } from "@nasty-plot/db"
 import type { UsageStatsEntry } from "@nasty-plot/core"
+import { getActiveFormats } from "@nasty-plot/formats"
 
 interface FormatRow {
   id: string
@@ -15,7 +16,7 @@ export interface FormatUsage {
 }
 
 export async function getActiveFormatsFromDb(): Promise<FormatRow[]> {
-  return prisma.format.findMany({ where: { isActive: true } }).catch(() => [])
+  return getActiveFormats().map(({ id, name }) => ({ id, name }))
 }
 
 export async function getUsageByFormat(

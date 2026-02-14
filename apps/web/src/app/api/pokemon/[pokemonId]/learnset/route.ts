@@ -21,9 +21,16 @@ export async function GET(
   const moveIds = formatId
     ? await getFormatLearnset(pokemonId, formatId)
     : await getLearnset(pokemonId)
+  const typeFilter = searchParams.get("type")
+  const categoryFilter = searchParams.get("category")
+
   const moves = moveIds
     .map(getMove)
     .filter((move): move is MoveData => move !== undefined)
+    .filter((move) => !typeFilter || move.type.toLowerCase() === typeFilter.toLowerCase())
+    .filter(
+      (move) => !categoryFilter || move.category.toLowerCase() === categoryFilter.toLowerCase(),
+    )
     .sort((a, b) => a.name.localeCompare(b.name))
 
   const response: ApiResponse<MoveData[]> = { data: moves }

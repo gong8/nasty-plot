@@ -272,13 +272,6 @@ export interface TeammateCorrelation {
   correlationPercent: number
 }
 
-export interface CheckCounterData {
-  counterId: string
-  counterName?: string
-  koPercent: number
-  switchPercent: number
-}
-
 // --- Damage Calc ---
 
 export interface DamageCalcInput {
@@ -464,12 +457,6 @@ export interface ExtractedTeamData {
 export interface ApiResponse<T> {
   data: T
   meta?: Record<string, unknown>
-}
-
-export interface ApiError {
-  error: string
-  code: string
-  suggestion?: string
 }
 
 export interface PaginatedResponse<T> {

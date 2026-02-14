@@ -29,21 +29,3 @@ export async function isStale(
 
   return ageDays > threshold
 }
-
-/**
- * Get the sync status for all data sources and formats.
- */
-export async function getDataStatus(): Promise<
-  { source: string; formatId: string; lastSynced: Date; status: string }[]
-> {
-  const logs = await prisma.dataSyncLog.findMany({
-    orderBy: [{ source: "asc" }, { formatId: "asc" }],
-  })
-
-  return logs.map((log) => ({
-    source: log.source,
-    formatId: log.formatId,
-    lastSynced: log.lastSynced,
-    status: log.status,
-  }))
-}

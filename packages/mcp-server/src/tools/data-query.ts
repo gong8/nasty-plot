@@ -54,11 +54,7 @@ export function registerDataQueryTools(server: McpServer): void {
     },
     ({ pokemonId, formatId }) =>
       handleTool(
-        () =>
-          apiGet(
-            `/pokemon/${encodeURIComponent(pokemonId)}/sets`,
-            buildParams({ format: formatId }),
-          ),
+        () => apiGet(`/pokemon/${encodeURIComponent(pokemonId)}/sets`, buildParams({ formatId })),
         `Could not fetch sets for "${pokemonId}". The Pokemon may not have Smogon sets available.`,
       ),
   )

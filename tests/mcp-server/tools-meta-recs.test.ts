@@ -164,25 +164,27 @@ describe("registerMetaRecsTools", () => {
   // -------------------------------------------------------------------------
 
   describe("get_common_cores", () => {
-    it("calls apiGet with limit 30 and no pokemonId filter", async () => {
-      const usageData = [{ pokemonId: "greatTusk", usagePercent: 25 }]
-      mockApiGet.mockResolvedValue(usageData)
+    it("calls apiGet with cores endpoint and no pokemonId filter", async () => {
+      const coresData = [
+        { pokemonAId: "greatTusk", pokemonBId: "ironValiant", correlationPercent: 15 },
+      ]
+      mockApiGet.mockResolvedValue(coresData)
 
       const handler = tools.get("get_common_cores")!
       const result = (await handler({ formatId: "gen9ou" })) as {
         content: Array<{ text: string }>
       }
 
-      expect(mockApiGet).toHaveBeenCalledWith("/formats/gen9ou/usage", {
-        limit: "30",
-      })
+      expect(mockApiGet).toHaveBeenCalledWith("/formats/gen9ou/cores", {})
       const parsed = JSON.parse(result.content[0].text)
-      expect(parsed).toEqual(usageData)
+      expect(parsed).toEqual(coresData)
     })
 
-    it("wraps with note when pokemonId is provided", async () => {
-      const usageData = [{ pokemonId: "greatTusk" }]
-      mockApiGet.mockResolvedValue(usageData)
+    it("passes pokemonId filter to cores endpoint", async () => {
+      const coresData = [
+        { pokemonAId: "greatTusk", pokemonBId: "ironValiant", correlationPercent: 15 },
+      ]
+      mockApiGet.mockResolvedValue(coresData)
 
       const handler = tools.get("get_common_cores")!
       const result = (await handler({
@@ -190,10 +192,11 @@ describe("registerMetaRecsTools", () => {
         pokemonId: "greatTusk",
       })) as { content: Array<{ text: string }> }
 
+      expect(mockApiGet).toHaveBeenCalledWith("/formats/gen9ou/cores", {
+        pokemonId: "greatTusk",
+      })
       const parsed = JSON.parse(result.content[0].text)
-      expect(parsed.note).toContain("greatTusk")
-      expect(parsed.note).toContain("gen9ou")
-      expect(parsed.data).toEqual(usageData)
+      expect(parsed).toEqual(coresData)
     })
 
     it("returns error on failure", async () => {
@@ -221,7 +224,7 @@ describe("registerMetaRecsTools", () => {
       await handler({ pokemonId: "greatTusk", formatId: "gen9ou" })
 
       expect(mockApiGet).toHaveBeenCalledWith("/pokemon/greatTusk/sets", {
-        format: "gen9ou",
+        formatId: "gen9ou",
       })
     })
 

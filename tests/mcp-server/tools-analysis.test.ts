@@ -152,29 +152,27 @@ describe("registerAnalysisTools", () => {
   // -------------------------------------------------------------------------
 
   describe("suggest_counters", () => {
-    it("posts counter request with default format", async () => {
-      mockApiPost.mockResolvedValue({ counters: [] })
+    it("posts counter request with teamId and default limit", async () => {
+      mockApiPost.mockResolvedValue({ recommendations: [] })
 
       const handler = tools.get("suggest_counters")!
-      await handler({ pokemonId: "greatTusk" })
+      await handler({ teamId: "team-uuid-1" })
 
       expect(mockApiPost).toHaveBeenCalledWith("/recommend", {
-        targetPokemonId: "greatTusk",
-        formatId: "gen9ou",
-        type: "counters",
+        teamId: "team-uuid-1",
+        limit: 10,
       })
     })
 
-    it("uses provided formatId", async () => {
-      mockApiPost.mockResolvedValue({ counters: [] })
+    it("uses provided limit", async () => {
+      mockApiPost.mockResolvedValue({ recommendations: [] })
 
       const handler = tools.get("suggest_counters")!
-      await handler({ pokemonId: "pikachu", formatId: "gen9uu" })
+      await handler({ teamId: "team-uuid-2", limit: 5 })
 
       expect(mockApiPost).toHaveBeenCalledWith("/recommend", {
-        targetPokemonId: "pikachu",
-        formatId: "gen9uu",
-        type: "counters",
+        teamId: "team-uuid-2",
+        limit: 5,
       })
     })
   })
