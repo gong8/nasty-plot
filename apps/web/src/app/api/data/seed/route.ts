@@ -2,8 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { getErrorMessage } from "../../../../lib/api-error"
 import { syncUsageStats, syncSmogonSets } from "@nasty-plot/smogon-data"
 import { isStale } from "@nasty-plot/data-pipeline"
-import { FORMAT_DEFINITIONS, getActiveFormats } from "@nasty-plot/formats"
-import { ensureFormatExists } from "@nasty-plot/formats/db"
+import { FORMAT_DEFINITIONS, getActiveFormats, ensureFormatExists } from "@nasty-plot/formats"
 import type { GameType } from "@nasty-plot/core"
 
 interface SeedableFormat {
