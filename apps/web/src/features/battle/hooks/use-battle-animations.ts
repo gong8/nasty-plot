@@ -119,6 +119,9 @@ function extractDamagePercent(message: string, isHeal: boolean): string {
  * Detects new battle log entries, maps them to animation events,
  * and queues them sequentially with appropriate timing.
  */
+const SAFETY_TIMEOUT_MIN_MS = 10_000
+const SAFETY_TIMEOUT_BUFFER_MS = 3_000
+
 export function useBattleAnimations(
   state: BattleState,
   options?: { speed?: number },
@@ -136,22 +139,19 @@ export function useBattleAnimations(
   speedRef.current = speed
 
   const processQueue = useCallback(() => {
-    if (isProcessingRef.current || queueRef.current.length === 0) {
-      // Queue empty — clear all animations
-      if (queueRef.current.length === 0) {
-        setAnimState(INITIAL_ANIMATION_STATE)
-      }
+    if (queueRef.current.length === 0) {
+      setAnimState(INITIAL_ANIMATION_STATE)
       return
     }
+    if (isProcessingRef.current) return
 
     isProcessingRef.current = true
     const event = queueRef.current.shift()!
 
-    // Apply this event's animation
     setAnimState((prev) => {
       const next: AnimationState = {
         slotAnimations: { ...prev.slotAnimations },
-        textMessage: event.textMessage || null,
+        textMessage: event.textMessage ?? null,
         damageNumbers: event.damageNumber ? [event.damageNumber] : [],
         isAnimating: true,
       }
@@ -163,21 +163,17 @@ export function useBattleAnimations(
       return next
     })
 
-    // After the animation duration, clear and process next
     timeoutRef.current = setTimeout(() => {
       isProcessingRef.current = false
 
-      // Clear the animation for this event's slot
       if (event.slotKey) {
         setAnimState((prev) => {
-          const next = { ...prev }
-          next.slotAnimations = { ...prev.slotAnimations }
-          delete next.slotAnimations[event.slotKey!]
-          return next
+          const { [event.slotKey!]: _, ...remainingSlots } = prev.slotAnimations
+          return { ...prev, slotAnimations: remainingSlots }
         })
       }
 
-      processQueue() // eslint-disable-line react-hooks/immutability -- deferred self-reference via setTimeout
+      processQueue()  
     }, event.duration)
   }, [])
 
@@ -207,7 +203,7 @@ export function useBattleAnimations(
       // Safety valve: force-clear if queue gets stuck.
       // Timeout scales with queue size so long turns don't get cut short.
       const totalDuration = queueRef.current.reduce((sum, e) => sum + e.duration, 0)
-      const safetyMs = Math.max(10000, totalDuration + 3000)
+      const safetyMs = Math.max(SAFETY_TIMEOUT_MIN_MS, totalDuration + SAFETY_TIMEOUT_BUFFER_MS)
       if (safetyTimeoutRef.current) clearTimeout(safetyTimeoutRef.current)
       safetyTimeoutRef.current = setTimeout(() => {
         if (isProcessingRef.current || queueRef.current.length > 0) {

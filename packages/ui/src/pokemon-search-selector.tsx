@@ -4,7 +4,7 @@ import { useState, useCallback, useEffect, useRef } from "react"
 import { cn } from "./utils"
 import { PokemonSprite } from "./pokemon-sprite"
 import { TypeBadge } from "./type-badge"
-import type { PokemonSpecies, PokemonType } from "@nasty-plot/core"
+import { getBaseStatTotal, type PokemonSpecies, type PokemonType } from "@nasty-plot/core"
 
 const MIN_SEARCH_LENGTH = 2
 const DEBOUNCE_MS = 250
@@ -124,7 +124,7 @@ export function PokemonSearchSelector({
         )}
         <div className="flex flex-col gap-1">
           {results.map((pokemon) => {
-            const bst = Object.values(pokemon.baseStats).reduce((a, b) => a + b, 0)
+            const bst = getBaseStatTotal(pokemon.baseStats)
             const isSelected = selectedId === pokemon.id
             return (
               <button

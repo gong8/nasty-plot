@@ -51,6 +51,7 @@ function formatTargetType(target: string): string {
 }
 
 const FALLBACK_TYPE_COLOR = "#A8A878"
+const DISABLED_MOVE_COLOR = "#666"
 
 const CATEGORY_ICONS = {
   Physical: Swords,
@@ -245,7 +246,7 @@ export function MoveSelector({
                           : "text-white border border-white/20",
                       )}
                       style={{
-                        backgroundColor: move.disabled ? "#666" : color,
+                        backgroundColor: move.disabled ? DISABLED_MOVE_COLOR : color,
                       }}
                     >
                       {/* Move name + PP */}

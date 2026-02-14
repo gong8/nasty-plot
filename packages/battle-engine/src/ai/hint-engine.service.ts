@@ -1,6 +1,13 @@
 import { getRawMove } from "@nasty-plot/pokemon-data"
 import { getTypeEffectiveness, type PokemonType } from "@nasty-plot/core"
-import type { BattleState, BattleActionSet, BattleAction, BattlePokemon, DexMove } from "../types"
+import type {
+  BattleState,
+  BattleActionSet,
+  BattleAction,
+  BattlePokemon,
+  DexMove,
+  SideConditions,
+} from "../types"
 import { evaluatePosition, type EvalResult } from "./evaluator.service"
 import {
   calculateBattleDamage,
@@ -105,7 +112,8 @@ function estimateMoveScore(
   move: BattleActionSet["moves"][0],
   myActive: BattlePokemon,
   oppActive: BattlePokemon,
-  state: BattleState,
+  oppSideConditions: SideConditions,
+  mySideConditions: SideConditions,
 ): { score: number; explanation: string } {
   const moveData = getRawMove(move.name)
   if (!moveData?.exists) {
@@ -113,7 +121,13 @@ function estimateMoveScore(
   }
 
   if (moveData.category === "Status") {
-    return estimateStatusMoveScore(moveData, myActive, oppActive, state)
+    return estimateStatusMoveScore(
+      moveData,
+      myActive,
+      oppActive,
+      oppSideConditions,
+      mySideConditions,
+    )
   }
 
   try {
@@ -164,40 +178,33 @@ function countHazards(sc: {
 type HazardKey = keyof typeof HAZARD_SCORES
 type StatusKey = keyof typeof STATUS_INFLICTION_SCORES
 
-function estimateStatusMoveScore(
-  moveData: DexMove,
-  myActive: BattlePokemon,
-  oppActive: BattlePokemon,
-  state: BattleState,
-): { score: number; explanation: string } {
-  const { id } = moveData
-  const oppSC = state.sides.p2.sideConditions
-
-  const singleHazard = SINGLE_HAZARDS[id]
+function scoreHazardMove(
+  moveId: string,
+  oppSideConditions: SideConditions,
+  mySideConditions: SideConditions,
+): { score: number; explanation: string } | null {
+  const singleHazard = SINGLE_HAZARDS[moveId]
   if (singleHazard) {
-    if (oppSC[singleHazard.key]) {
+    if (oppSideConditions[singleHazard.key]) {
       return { score: 0, explanation: `${singleHazard.label} already up` }
     }
-    return {
-      score: HAZARD_SCORES[id as HazardKey],
-      explanation: `Sets ${singleHazard.label}`,
-    }
+    return { score: HAZARD_SCORES[moveId as HazardKey], explanation: `Sets ${singleHazard.label}` }
   }
 
-  const layeredHazard = LAYERED_HAZARDS[id]
+  const layeredHazard = LAYERED_HAZARDS[moveId]
   if (layeredHazard) {
-    const currentLayers = oppSC[layeredHazard.key]
+    const currentLayers = oppSideConditions[layeredHazard.key]
     if (currentLayers >= layeredHazard.max) {
       return { score: 0, explanation: `Max ${layeredHazard.label} layers` }
     }
     return {
-      score: HAZARD_SCORES[id as HazardKey],
+      score: HAZARD_SCORES[moveId as HazardKey],
       explanation: `Sets ${layeredHazard.label} layer ${currentLayers + 1}`,
     }
   }
 
-  if (HAZARD_REMOVAL_IDS.has(id)) {
-    const hazardCount = countHazards(state.sides.p1.sideConditions)
+  if (HAZARD_REMOVAL_IDS.has(moveId)) {
+    const hazardCount = countHazards(mySideConditions)
     if (hazardCount === 0) {
       return { score: 2, explanation: "No hazards to remove" }
     }
@@ -206,6 +213,21 @@ function estimateStatusMoveScore(
       explanation: `Removes ${hazardCount} hazard(s)`,
     }
   }
+
+  return null
+}
+
+function estimateStatusMoveScore(
+  moveData: DexMove,
+  myActive: BattlePokemon,
+  oppActive: BattlePokemon,
+  oppSideConditions: SideConditions,
+  mySideConditions: SideConditions,
+): { score: number; explanation: string } {
+  const { id } = moveData
+
+  const hazardResult = scoreHazardMove(id, oppSideConditions, mySideConditions)
+  if (hazardResult) return hazardResult
 
   if (STATUS_MOVE_IDS.has(id)) {
     if (oppActive.status) {
@@ -226,15 +248,9 @@ function estimateStatusMoveScore(
       return { score: RECOVERY_SCORES.low, explanation: "Recover HP (low)" }
     }
     if (myActive.hpPercent < 75) {
-      return {
-        score: RECOVERY_SCORES.moderate,
-        explanation: "Recover HP (moderate)",
-      }
+      return { score: RECOVERY_SCORES.moderate, explanation: "Recover HP (moderate)" }
     }
-    return {
-      score: RECOVERY_SCORES.nearFull,
-      explanation: "Already near full HP",
-    }
+    return { score: RECOVERY_SCORES.nearFull, explanation: "Already near full HP" }
   }
 
   return { score: 5, explanation: "Status move" }
@@ -242,43 +258,41 @@ function estimateStatusMoveScore(
 
 function estimateSwitchScore(
   switchOption: BattleActionSet["switches"][0],
-  state: BattleState,
+  mySide: BattleState["sides"]["p1"],
+  oppSide: BattleState["sides"]["p1"],
 ): { score: number; explanation: string } {
-  const oppActive = state.sides.p2.active[0]
+  const oppActive = oppSide.active[0]
   if (!oppActive) return { score: 10, explanation: "Switch out" }
 
-  const switchPokemon = state.sides.p1.team.find(
+  const switchPokemon = mySide.team.find(
     (p) => p.name === switchOption.name || p.pokemonId === switchOption.pokemonId,
   )
   if (!switchPokemon) return { score: 5, explanation: "Switch to unknown" }
 
   let score = 0
   const oppTypes = getSpeciesTypes(oppActive.name)
-  const swTypes = getSpeciesTypes(switchPokemon.name)
+  const switchInTypes = getSpeciesTypes(switchPokemon.name)
 
-  // Defensive: does the switch-in resist opponent's STAB?
   for (const t of oppTypes) {
-    const eff = getTypeEffectiveness(t, swTypes)
+    const eff = getTypeEffectiveness(t, switchInTypes)
     if (eff < 1) score += SWITCH_SCORES.RESIST_BONUS
     if (eff === 0) score += SWITCH_SCORES.IMMUNITY_BONUS
   }
 
-  // Offensive: does switch-in have SE coverage?
-  for (const t of swTypes) {
+  for (const t of switchInTypes) {
     if (getTypeEffectiveness(t, oppTypes) > 1) {
       score += SWITCH_SCORES.SE_COVERAGE_BONUS
       break
     }
   }
 
-  // Health penalty
   score *= switchPokemon.hpPercent / 100
 
-  // Hazard penalty
-  const mySC = state.sides.p1.sideConditions
-  if (mySC.stealthRock) score -= SWITCH_SCORES.STEALTH_ROCK_PENALTY
-  if (mySC.spikes > 0) score -= SWITCH_SCORES.SPIKES_PENALTY_PER_LAYER * mySC.spikes
-  if (mySC.stickyWeb) score -= SWITCH_SCORES.STICKY_WEB_PENALTY
+  const mySideConditions = mySide.sideConditions
+  if (mySideConditions.stealthRock) score -= SWITCH_SCORES.STEALTH_ROCK_PENALTY
+  if (mySideConditions.spikes > 0)
+    score -= SWITCH_SCORES.SPIKES_PENALTY_PER_LAYER * mySideConditions.spikes
+  if (mySideConditions.stickyWeb) score -= SWITCH_SCORES.STICKY_WEB_PENALTY
 
   const explanation =
     score > 20 ? "Good defensive switch" : score > 0 ? "Reasonable switch" : "Risky switch"
@@ -291,7 +305,8 @@ function scoreMoveAgainstBestTarget(
   moveIndex: number,
   myActive: BattlePokemon,
   oppActives: BattlePokemon[],
-  state: BattleState,
+  oppSideConditions: SideConditions,
+  mySideConditions: SideConditions,
 ): { action: BattleAction; name: string; score: number; explanation: string } {
   let bestScore = -Infinity
   let bestExplanation = ""
@@ -299,7 +314,13 @@ function scoreMoveAgainstBestTarget(
 
   for (let targetIdx = 0; targetIdx < oppActives.length; targetIdx++) {
     const target = oppActives[targetIdx]
-    const { score, explanation } = estimateMoveScore(move, myActive, target, state)
+    const { score, explanation } = estimateMoveScore(
+      move,
+      myActive,
+      target,
+      oppSideConditions,
+      mySideConditions,
+    )
     if (score > bestScore) {
       bestScore = score
       bestExplanation = `${explanation} (-> ${target.name})`
@@ -330,13 +351,13 @@ export function generateHints(
   const currentEval = evaluatePosition(state, perspective)
   const scored: { action: BattleAction; name: string; score: number; explanation: string }[] = []
 
-  const myActive = state.sides[perspective].active[activeSlot]
-  const oppSide = perspective === "p1" ? "p2" : "p1"
+  const oppSideKey = perspective === "p1" ? "p2" : "p1"
+  const mySide = state.sides[perspective]
+  const oppSide = state.sides[oppSideKey]
+  const myActive = mySide.active[activeSlot]
   const isDoubles = state.gameType === "doubles"
 
-  const oppActives = state.sides[oppSide].active.filter(
-    (p): p is BattlePokemon => p != null && !p.fainted,
-  )
+  const oppActives = oppSide.active.filter((p): p is BattlePokemon => p != null && !p.fainted)
   const oppActive = oppActives[0] ?? null
 
   // Score moves
@@ -348,9 +369,24 @@ export function generateHints(
 
       const moveIndex = i + 1
       if (hasMultipleTargets) {
-        scored.push(scoreMoveAgainstBestTarget(move, moveIndex, myActive, oppActives, state))
+        scored.push(
+          scoreMoveAgainstBestTarget(
+            move,
+            moveIndex,
+            myActive,
+            oppActives,
+            oppSide.sideConditions,
+            mySide.sideConditions,
+          ),
+        )
       } else {
-        const { score, explanation } = estimateMoveScore(move, myActive, oppActive, state)
+        const { score, explanation } = estimateMoveScore(
+          move,
+          myActive,
+          oppActive,
+          oppSide.sideConditions,
+          mySide.sideConditions,
+        )
         scored.push({ action: { type: "move", moveIndex }, name: move.name, score, explanation })
       }
     }
@@ -359,7 +395,7 @@ export function generateHints(
   // Score switches
   for (const sw of actions.switches) {
     if (sw.fainted) continue
-    const { score, explanation } = estimateSwitchScore(sw, state)
+    const { score, explanation } = estimateSwitchScore(sw, mySide, oppSide)
     scored.push({
       action: { type: "switch", pokemonIndex: sw.index },
       name: `Switch to ${sw.name}`,

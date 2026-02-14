@@ -39,10 +39,8 @@ import { capitalize } from "@nasty-plot/core"
 
 function winnerLabel(winnerId: string | null, team1Name: string, team2Name: string): string {
   if (!winnerId) return "No result"
-  if (winnerId === "draw") return "Draw"
-  if (winnerId === "team1") return team1Name
-  if (winnerId === "team2") return team2Name
-  return winnerId
+  const winnerNames: Record<string, string> = { draw: "Draw", team1: team1Name, team2: team2Name }
+  return winnerNames[winnerId] ?? winnerId
 }
 
 function CheckpointCard({
@@ -171,11 +169,9 @@ export default function BattleHubPage() {
   const { data: teamsData } = useFetchData<{ id: string; name: string }[]>("/api/teams")
   const teams = teamsData ?? []
 
-  const battlesUrl = (() => {
-    const params = new URLSearchParams({ limit: "10" })
-    if (filterTeamId !== "all") params.set("teamId", filterTeamId)
-    return `/api/battles?${params}`
-  })()
+  const battlesParams = new URLSearchParams({ limit: "10" })
+  if (filterTeamId !== "all") battlesParams.set("teamId", filterTeamId)
+  const battlesUrl = `/api/battles?${battlesParams}`
   const { data: battlesData, loading: loadingBattles } = useFetchData<{
     battles?: BattleSummary[]
   }>(battlesUrl)

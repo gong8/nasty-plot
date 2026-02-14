@@ -1,9 +1,9 @@
 "use client"
 
-import { useCallback, useMemo } from "react"
+import { useCallback } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { Trash2 } from "lucide-react"
-import { usePokemonQuery, useLearnsetQuery } from "../hooks/use-pokemon-data"
+import { usePokemonQuery, useLearnsetQuery, useSpeciesDerived } from "../hooks/use-pokemon-data"
 import { useTeamSlotForm } from "../hooks/use-team-slot-form"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -14,7 +14,6 @@ import {
   STATS,
   STAT_LABELS,
   STAT_COLORS,
-  calculateAllStats,
   type PokemonSpecies,
   type PokemonType,
   type TeamSlotData,
@@ -102,16 +101,7 @@ export function SlotEditor({
   // Fetch popularity data for two-tier dropdowns
   const { data: popularity } = usePopularityData(pokemonId, formatId)
 
-  const abilities = useMemo(() => {
-    if (!speciesData?.abilities) return []
-    return Object.values(speciesData.abilities)
-  }, [speciesData])
-
-  // Calculated stats
-  const calculatedStats = useMemo(() => {
-    if (!speciesData?.baseStats) return null
-    return calculateAllStats(speciesData.baseStats, ivs, evs, level, nature)
-  }, [speciesData, ivs, evs, level, nature])
+  const { abilities, calculatedStats } = useSpeciesDerived(speciesData, ivs, evs, level, nature)
 
   const handlePokemonSelect = useCallback(
     (pokemon: PokemonSpecies) => {

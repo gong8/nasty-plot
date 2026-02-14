@@ -47,7 +47,7 @@ export function useReplayAnimations(
     setAnimState(() => {
       const next: AnimationState = {
         slotAnimations: {},
-        textMessage: event.textMessage || null,
+        textMessage: event.textMessage ?? null,
         damageNumbers: event.damageNumber ? [event.damageNumber] : [],
         isAnimating: true,
       }

@@ -72,7 +72,7 @@ export function MergeWizard({ open, onOpenChange, diff, onMerge, isLoading }: Me
     })
   }
 
-  const hasConflicts = diff.changed.length > 0 || diff.added.length > 0 || diff.removed.length > 0
+  const hasDifferences = diff.changed.length > 0 || diff.added.length > 0 || diff.removed.length > 0
 
   const nameA = truncateTeamName(diff.teamAName)
   const nameB = truncateTeamName(diff.teamBName)
@@ -84,9 +84,9 @@ export function MergeWizard({ open, onOpenChange, diff, onMerge, isLoading }: Me
           <DialogTitle className="truncate">Merge into {diff.teamAName}</DialogTitle>
           <DialogDescription>
             {step === 0 &&
-              (hasConflicts
+              (hasDifferences
                 ? `Pulling changes from ${diff.teamBName}. Choose which version to keep for each difference.`
-                : `No conflicts between ${diff.teamAName} and ${diff.teamBName}. The teams are identical.`)}
+                : `No differences between ${diff.teamAName} and ${diff.teamBName}. The teams are identical.`)}
             {step === 1 && "Name and finalize the merged team."}
           </DialogDescription>
         </DialogHeader>
@@ -211,7 +211,7 @@ export function MergeWizard({ open, onOpenChange, diff, onMerge, isLoading }: Me
             )}
 
             <DialogFooter>
-              <Button onClick={() => setStep(1)} disabled={!hasConflicts}>
+              <Button onClick={() => setStep(1)} disabled={!hasDifferences}>
                 Next
               </Button>
             </DialogFooter>

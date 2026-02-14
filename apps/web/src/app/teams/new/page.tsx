@@ -41,11 +41,8 @@ export default function NewTeamPage() {
         formatId,
         mode,
       })
-      if (mode === "guided") {
-        router.push(`/teams/${team.id}/guided`)
-      } else {
-        router.push(`/teams/${team.id}`)
-      }
+      const destination = mode === "guided" ? `/teams/${team.id}/guided` : `/teams/${team.id}`
+      router.push(destination)
     } catch {
       // Error handled by mutation state
     }

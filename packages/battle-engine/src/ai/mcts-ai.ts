@@ -72,7 +72,6 @@ function initActionStats(stats: Map<string, ActionStats>, choices: string[]): vo
   }
 }
 
-/** Map a @pkmn/sim Pokemon to a minimal BattlePokemon for the evaluator. */
 function mapSimPokemon(
   p: NonNullable<(typeof Battle.prototype.p1.active)[0]>,
   isActive: boolean,
@@ -166,16 +165,14 @@ export class MCTSAI implements AIPlayer {
   }
 
   async chooseAction(state: BattleState, actions: BattleActionSet): Promise<BattleAction> {
-    // Store predictions from state for use in rollouts
     this.predictions = state.opponentPredictions ?? {}
 
-    // If no battle state available, fall back to heuristic
     if (!this.battleState) {
       return this.fallback.chooseAction(state, actions)
     }
 
     try {
-      const result = this.runSearch("p2") // AI is always p2
+      const result = this.runSearch("p2")
       return this.convertChoiceToAction(result.bestAction, actions)
     } catch (err) {
       console.error("[MCTSAI] Search failed, falling back:", err)
@@ -184,32 +181,18 @@ export class MCTSAI implements AIPlayer {
   }
 
   chooseLeads(teamSize: number, _gameType: GameType): number[] {
-    // Use default ordering for now; could be improved with search
     return Array.from({ length: teamSize }, (_, i) => i + 1)
   }
 
-  /**
-   * Run the MCTS search loop.
-   */
   private runSearch(perspective: "p1" | "p2"): MCTSResult {
     const startTime = Date.now()
     const root = this.createNode()
-
-    let battle: Battle
-    try {
-      battle = Battle.fromJSON(this.battleState as string)
-    } catch {
-      throw new Error("Failed to deserialize battle state")
-    }
+    const battle = Battle.fromJSON(this.battleState as string)
+    const { maxIterations, maxTimeMs } = this.config
 
     let iterations = 0
-
-    while (
-      iterations < this.config.maxIterations &&
-      Date.now() - startTime < this.config.maxTimeMs
-    ) {
-      const cloned = cloneBattle(battle)
-      this.iterate(cloned, root, perspective)
+    while (iterations < maxIterations && Date.now() - startTime < maxTimeMs) {
+      this.iterate(cloneBattle(battle), root, perspective)
       iterations++
     }
 
@@ -223,24 +206,19 @@ export class MCTSAI implements AIPlayer {
     timeMs: number,
   ): MCTSResult {
     const myStats = perspective === "p1" ? root.p1Stats : root.p2Stats
-    const actionScores: MCTSResult["actionScores"] = Array.from(myStats, ([action, stats]) => ({
+    const actionScores = Array.from(myStats, ([action, stats]) => ({
       action,
       visits: stats.visits,
       avgValue: stats.avgValue,
     })).sort((a, b) => b.visits - a.visits)
 
     const bestAction = actionScores[0]?.action ?? "default"
-
-    // Estimate win probability from the best action's average value: map [-1,1] to [0,100]
     const bestAvgValue = myStats.get(bestAction)?.avgValue ?? 0
     const winProbability = Math.round(((bestAvgValue + 1) / 2) * 1000) / 10
 
     return { bestAction, actionScores, winProbability, iterations, timeMs }
   }
 
-  /**
-   * One MCTS iteration: select, expand, simulate, backpropagate.
-   */
   private iterate(battle: Battle, node: DUCTNode, perspective: "p1" | "p2"): number {
     if (isBattleOver(battle)) {
       return outcomeValue(getBattleWinner(battle), perspective)
@@ -248,44 +226,42 @@ export class MCTSAI implements AIPlayer {
 
     node.visits++
 
-    // Get legal choices for both sides
     const p1Choices = getLegalChoices(battle, "p1")
     const p2Choices = getLegalChoices(battle, "p2")
+    if (p1Choices.length === 0 || p2Choices.length === 0) return DRAW
 
-    if (p1Choices.length === 0 || p2Choices.length === 0) {
-      return DRAW
-    }
-
-    // Initialize stats for unseen actions
     initActionStats(node.p1Stats, p1Choices)
     initActionStats(node.p2Stats, p2Choices)
 
-    // UCB1 selection for each player independently
     const p1Choice = this.selectUCB1(node.p1Stats, p1Choices, node.visits, perspective === "p1")
     const p2Choice = this.selectUCB1(node.p2Stats, p2Choices, node.visits, perspective === "p2")
 
-    // Apply joint action
     try {
       applyChoices(battle, p1Choice, p2Choice)
     } catch {
       return DRAW
     }
 
-    // Rollout from this position
     const value = this.rollout(battle, perspective, this.config.rolloutDepth)
 
-    // Backpropagate
     this.backpropagateStats(node.p1Stats, p1Choice, value, perspective === "p1")
     this.backpropagateStats(node.p2Stats, p2Choice, value, perspective === "p2")
-
-    // Joint stats
-    const jointKey = `${p1Choice}|${p2Choice}`
-    const joint = node.jointStats.get(jointKey) || { visits: 0, totalValue: 0 }
-    joint.visits++
-    joint.totalValue += value
-    node.jointStats.set(jointKey, joint)
+    this.updateJointStats(node.jointStats, p1Choice, p2Choice, value)
 
     return value
+  }
+
+  private updateJointStats(
+    jointStats: Map<string, { visits: number; totalValue: number }>,
+    p1Choice: string,
+    p2Choice: string,
+    value: number,
+  ): void {
+    const key = `${p1Choice}|${p2Choice}`
+    const joint = jointStats.get(key) || { visits: 0, totalValue: 0 }
+    joint.visits++
+    joint.totalValue += value
+    jointStats.set(key, joint)
   }
 
   private backpropagateStats(
@@ -300,16 +276,12 @@ export class MCTSAI implements AIPlayer {
     stat.avgValue = stat.totalValue / stat.visits
   }
 
-  /**
-   * UCB1 action selection.
-   */
   private selectUCB1(
     stats: Map<string, ActionStats>,
     choices: string[],
     parentVisits: number,
     maximize: boolean,
   ): string {
-    // First, play any unvisited action
     for (const c of choices) {
       const s = stats.get(c)
       if (!s || s.visits === 0) return c
@@ -335,9 +307,6 @@ export class MCTSAI implements AIPlayer {
     return bestAction
   }
 
-  /**
-   * Random rollout for a fixed number of turns, then evaluate.
-   */
   private rollout(battle: Battle, perspective: "p1" | "p2", depth: number): number {
     for (let d = 0; d < depth; d++) {
       if (isBattleOver(battle)) {
@@ -346,36 +315,23 @@ export class MCTSAI implements AIPlayer {
 
       const p1Choices = getLegalChoices(battle, "p1")
       const p2Choices = getLegalChoices(battle, "p2")
-
       if (p1Choices.length === 0 || p2Choices.length === 0) break
 
-      const p1 = randomPick(p1Choices)
-      const p2 = this.weightedRolloutChoice(p2Choices, battle)
-
       try {
-        applyChoices(battle, p1, p2)
+        applyChoices(battle, randomPick(p1Choices), this.weightedRolloutChoice(p2Choices, battle))
       } catch {
         break
       }
     }
 
-    // Evaluate leaf position
     if (isBattleOver(battle)) {
       return outcomeValue(getBattleWinner(battle), perspective)
     }
 
-    // Use static evaluation
     const state = this.battleToState(battle)
-    if (state) {
-      return evaluatePosition(state, perspective).score
-    }
-
-    return DRAW
+    return state ? evaluatePosition(state, perspective).score : DRAW
   }
 
-  /**
-   * Convert a @pkmn/sim Battle to a minimal BattleState for the evaluator.
-   */
   private battleToState(battle: Battle): BattleState | null {
     try {
       return {
@@ -405,34 +361,28 @@ export class MCTSAI implements AIPlayer {
     }
   }
 
-  /**
-   * Convert an MCTS choice string back to a BattleAction.
-   * Choice strings may contain target slots like "move 1 1" (foe) or "move 1 -2" (ally).
-   */
   private convertChoiceToAction(choice: string, actions: BattleActionSet): BattleAction {
-    const parts = choice.split(" ")
-    const command = parts[0]
-    const index = parseInt(parts[1], 10)
+    const [command, rawIndex, rawTarget] = choice.split(" ")
+    const index = parseInt(rawIndex, 10)
 
-    if (command === "move" && !isNaN(index)) {
-      const targetSlot = parts[2] != null ? parseInt(parts[2], 10) : undefined
+    if (isNaN(index)) return fallbackMove(actions)
+
+    if (command === "move") {
+      const targetSlot = rawTarget != null ? parseInt(rawTarget, 10) : NaN
       return {
         type: "move",
         moveIndex: index,
-        targetSlot: targetSlot != null && !isNaN(targetSlot) ? targetSlot : undefined,
+        targetSlot: !isNaN(targetSlot) ? targetSlot : undefined,
       }
     }
 
-    if (command === "switch" && !isNaN(index)) {
+    if (command === "switch") {
       return { type: "switch", pokemonIndex: index }
     }
 
     return fallbackMove(actions)
   }
 
-  /**
-   * Pick a rollout choice for p2, weighting predicted moves higher.
-   */
   private weightedRolloutChoice(choices: string[], battle: Battle): string {
     if (choices.length <= 1) return choices[0]
 

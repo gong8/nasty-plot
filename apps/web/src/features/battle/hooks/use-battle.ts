@@ -184,7 +184,10 @@ export function useBattle() {
 
         if (newState.waitingForChoice && newState.phase === "battle") {
           const cp = manager.getCheckpoint(checkpoint.aiDifficulty)
-          if (cp) saveCheckpoint(cp)
+          if (cp) {
+            const extras = checkpointExtrasRef.current?.()
+            saveCheckpoint(extras ? { ...cp, ...extras } : cp)
+          }
         }
 
         if (newState.phase === "ended") {
@@ -228,8 +231,8 @@ export function useBattle() {
           team1Name: config.playerName || "Player",
           team2Paste: config.opponentTeamPaste,
           team2Name: config.opponentName || "Opponent",
-          team1Id: config.playerTeamId || null,
-          team2Id: config.opponentTeamId || null,
+          team1Id: config.playerTeamId ?? null,
+          team2Id: config.opponentTeamId ?? null,
           winnerId,
           turnCount: state.turn,
           protocolLog,

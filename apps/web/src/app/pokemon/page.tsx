@@ -38,11 +38,11 @@ export default function PokemonBrowserPage() {
   const [sortBy, setSortBy] = useState<SortMode>("dex")
   const [page, setPage] = useState(1)
 
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   function handleSearchChange(value: string) {
     setSearch(value)
-    if (timerRef.current) clearTimeout(timerRef.current)
-    timerRef.current = setTimeout(() => {
+    if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current)
+    debounceTimerRef.current = setTimeout(() => {
       setDebouncedSearch(value)
       setPage(1)
     }, DEBOUNCE_MS)

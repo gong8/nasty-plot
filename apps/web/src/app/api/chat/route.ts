@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server"
-import { apiErrorResponse, badRequestResponse, notFoundResponse } from "../../../lib/api-error"
+import { badRequestResponse, internalErrorResponse, notFoundResponse } from "../../../lib/api-error"
 import { readSSEEvents } from "../../../lib/sse"
 import {
   streamChat,
@@ -112,7 +112,7 @@ export async function POST(req: NextRequest) {
       },
     })
   } catch (error) {
-    return apiErrorResponse(error, { fallback: "Internal server error", code: "INTERNAL_ERROR" })
+    return internalErrorResponse(error)
   }
 }
 

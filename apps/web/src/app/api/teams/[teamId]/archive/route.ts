@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { archiveTeam } from "@nasty-plot/teams"
-import { apiErrorResponse } from "../../../../../lib/api-error"
+import { entityErrorResponse } from "../../../../../lib/api-error"
 
 export async function POST(_request: Request, { params }: { params: Promise<{ teamId: string }> }) {
   try {
@@ -8,6 +8,6 @@ export async function POST(_request: Request, { params }: { params: Promise<{ te
     await archiveTeam(teamId)
     return NextResponse.json({ success: true })
   } catch (error) {
-    return apiErrorResponse(error, { inferNotFound: true })
+    return entityErrorResponse(error)
   }
 }

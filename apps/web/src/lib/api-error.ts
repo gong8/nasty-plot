@@ -62,3 +62,13 @@ export function apiErrorResponse(
 
   return NextResponse.json(body, { status })
 }
+
+/** Shorthand for catch blocks in routes where a "not found" service error should map to 404. */
+export function entityErrorResponse(error: unknown): NextResponse {
+  return apiErrorResponse(error, { inferNotFound: true })
+}
+
+/** Shorthand for catch blocks in routes where the error is a generic internal failure. */
+export function internalErrorResponse(error: unknown): NextResponse {
+  return apiErrorResponse(error, { fallback: "Internal server error", code: "INTERNAL_ERROR" })
+}

@@ -4,6 +4,8 @@ import { useRef, useEffect, useState } from "react"
 import { cn } from "@nasty-plot/ui"
 import { calcHpPercent } from "@nasty-plot/battle-engine"
 
+const GLOW_DURATION_MS = 600
+
 interface HealthBarProps {
   hp: number
   maxHp: number
@@ -41,12 +43,9 @@ export function HealthBar({
 
     if (prev === percent || !animate) return
 
-    if (percent < prev) {
-      setGlowClass("animate-battle-damage-glow") // eslint-disable-line react-hooks/set-state-in-effect -- animation trigger on value change
-    } else {
-      setGlowClass("animate-battle-heal-glow")
-    }
-    const timeout = setTimeout(() => setGlowClass(""), 600)
+    const animation = percent < prev ? "animate-battle-damage-glow" : "animate-battle-heal-glow"
+    setGlowClass(animation) // eslint-disable-line react-hooks/set-state-in-effect -- animation trigger on value change
+    const timeout = setTimeout(() => setGlowClass(""), GLOW_DURATION_MS)
     return () => clearTimeout(timeout)
   }, [percent, animate])
 

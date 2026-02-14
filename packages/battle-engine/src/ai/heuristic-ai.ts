@@ -79,45 +79,32 @@ export class HeuristicAI implements AIPlayer {
   readonly difficulty = "heuristic" as const
 
   async chooseAction(state: BattleState, actions: BattleActionSet): Promise<BattleAction> {
-    if (actions.forceSwitch) {
-      return this.chooseBestSwitch(state, actions)
-    }
+    if (actions.forceSwitch) return this.chooseBestSwitch(state, actions)
 
-    const activeSlot = actions.activeSlot ?? 0
-    const myActive = state.sides.p2.active[activeSlot]
+    const myActive = state.sides.p2.active[actions.activeSlot ?? 0]
     const isDoubles = state.gameType === "doubles"
-
-    // Get opponent actives
     const oppActives = isDoubles
       ? state.sides.p1.active.filter((p): p is NonNullable<typeof p> => p != null && !p.fainted)
       : [state.sides.p1.active[0]].filter((p): p is NonNullable<typeof p> => p != null)
 
-    if (!myActive || oppActives.length === 0) {
-      return fallbackMove(actions)
-    }
+    if (!myActive || oppActives.length === 0) return fallbackMove(actions)
 
-    // Use first opponent active as primary target for matchup/switch evaluation
-    const oppActive = oppActives[0]
-
-    // Score each possible action
+    const primaryOpponent = oppActives[0]
     const scoredActions: { action: BattleAction; score: number }[] = []
 
-    // Score moves — in doubles, evaluate each move against each target
     for (let i = 0; i < actions.moves.length; i++) {
       const move = actions.moves[i]
       if (move.disabled) continue
 
       if (isDoubles) {
-        // Evaluate move against each opponent active, pick best target
         let bestScore = -Infinity
-        let bestTarget = 1 // 1 = left foe (p2a)
+        let bestTarget = 1
 
         for (let t = 0; t < oppActives.length; t++) {
           const score = this.scoreMove(move, myActive, oppActives[t], state)
-          const targetSlot = t + 1 // Foe slots are positive: 1 = p2a, 2 = p2b
           if (score > bestScore) {
             bestScore = score
-            bestTarget = targetSlot
+            bestTarget = t + 1
           }
         }
 
@@ -126,18 +113,16 @@ export class HeuristicAI implements AIPlayer {
           score: bestScore,
         })
       } else {
-        const score = this.scoreMove(move, myActive, oppActive, state)
         scoredActions.push({
           action: { type: "move", moveIndex: i + 1 },
-          score,
+          score: this.scoreMove(move, myActive, primaryOpponent, state),
         })
       }
     }
 
-    // Score switches only if we have a bad matchup
-    const matchupScore = this.evaluateMatchup(myActive, oppActive)
-    const oppPrediction = state.opponentPredictions?.[oppActive.pokemonId]
+    const matchupScore = this.evaluateMatchup(myActive, primaryOpponent)
     if (matchupScore < UNFAVORABLE_MATCHUP_THRESHOLD) {
+      const oppPrediction = state.opponentPredictions?.[primaryOpponent.pokemonId]
       for (const sw of actions.switches) {
         if (sw.fainted) continue
         const swPokemon = state.sides.p2.team.find(
@@ -145,33 +130,23 @@ export class HeuristicAI implements AIPlayer {
         )
         if (!swPokemon) continue
 
-        const switchScore = this.scoreSwitchTarget(swPokemon, oppActive, myActive, oppPrediction)
         scoredActions.push({
           action: { type: "switch", pokemonIndex: sw.index },
-          score: switchScore,
+          score: this.scoreSwitchTarget(swPokemon, primaryOpponent, myActive, oppPrediction),
         })
       }
     }
 
-    if (scoredActions.length === 0) {
-      return fallbackMove(actions)
-    }
+    if (scoredActions.length === 0) return fallbackMove(actions)
 
-    // Pick highest scored action, with some randomness among top choices
     scoredActions.sort((a, b) => b.score - a.score)
-    const bestScore = scoredActions[0].score
-    const topChoices = scoredActions.filter((a) => a.score >= bestScore * 0.85)
-
+    const topChoices = scoredActions.filter((a) => a.score >= scoredActions[0].score * 0.85)
     return topChoices[Math.floor(Math.random() * topChoices.length)].action
   }
 
   chooseLeads(teamSize: number, gameType: GameType): number[] {
     const order = Array.from({ length: teamSize }, (_, i) => i + 1)
     if (gameType !== "doubles") return order
-
-    // For doubles, prioritize Fake Out and speed control users as leads
-    // This is a simple heuristic — real VGC lead selection is much more nuanced
-    // For now, just return default order since we don't have team data here
     return order
   }
 
@@ -201,31 +176,17 @@ export class HeuristicAI implements AIPlayer {
 
     try {
       const { minPercent, maxPercent } = calculateBattleDamage(myPokemon, oppPokemon, moveName)
-      const avgPercent = (minPercent + maxPercent) / 2
+      score += (minPercent + maxPercent) / 2
 
-      // Base score from damage percentage
-      score += avgPercent
+      if (maxPercent >= oppPokemon.hpPercent) score += 50
 
-      // Bonus for KO potential
-      if (maxPercent >= oppPokemon.hpPercent) {
-        score += 50
-      }
-
-      // Slight preference for STAB moves
       const myTypes = getSpeciesTypes(myPokemon.name)
-      if (myTypes.includes(moveData.type as PokemonType)) {
-        score += 5
-      }
+      if (myTypes.includes(moveData.type as PokemonType)) score += 5
 
-      // Priority move bonus when opponent is low
-      if (moveData.priority > 0 && oppPokemon.hpPercent < 30) {
-        score += 20
-      }
+      if (moveData.priority > 0 && oppPokemon.hpPercent < 30) score += 20
     } catch {
-      // Calc failed, fall back to type effectiveness estimate
       const oppTypes = getSpeciesTypes(oppPokemon.name)
-      const eff = getTypeEffectiveness(moveData.type as PokemonType, oppTypes)
-      score += eff * 20
+      score += getTypeEffectiveness(moveData.type as PokemonType, oppTypes) * 20
     }
 
     return score
@@ -239,20 +200,12 @@ export class HeuristicAI implements AIPlayer {
   ): number {
     const moveName = moveData.id
 
-    if (HAZARD_MOVES.has(moveName)) {
-      return this.scoreHazardMove(moveName, state)
-    }
-
-    if (STATUS_MOVES.has(moveName)) {
-      return this.scoreStatusInfliction(moveName, oppPokemon)
-    }
+    if (HAZARD_MOVES.has(moveName)) return this.scoreHazardMove(moveName, state)
+    if (STATUS_MOVES.has(moveName)) return this.scoreStatusInfliction(moveName, oppPokemon)
 
     if (SETUP_MOVES.has(moveName)) {
       const matchup = this.evaluateMatchup(myPokemon, oppPokemon)
-      if (matchup > 0.2 && myPokemon.hpPercent > 70) {
-        return SETUP_MOVE_SCORE
-      }
-      return 0
+      return matchup > 0.2 && myPokemon.hpPercent > 70 ? SETUP_MOVE_SCORE : 0
     }
 
     if (RECOVERY_MOVES.has(moveName)) {
@@ -261,23 +214,17 @@ export class HeuristicAI implements AIPlayer {
       return 0
     }
 
-    if (HAZARD_REMOVAL_MOVES.has(moveName)) {
-      const mySide = state.sides.p2.sideConditions
-      const hazardCount =
-        (mySide.stealthRock ? 1 : 0) +
-        mySide.spikes +
-        mySide.toxicSpikes +
-        (mySide.stickyWeb ? 1 : 0)
-      if (hazardCount > 0) {
-        return (
-          HAZARD_REMOVAL_BASE + HAZARD_REMOVAL_PER_HAZARD + hazardCount * HAZARD_REMOVAL_PER_HAZARD
-        )
-      }
-      return 0
-    }
+    if (HAZARD_REMOVAL_MOVES.has(moveName)) return this.scoreHazardRemoval(state)
 
-    // Default: small score for unknown status moves
     return 5
+  }
+
+  private scoreHazardRemoval(state: BattleState): number {
+    const mySide = state.sides.p2.sideConditions
+    const hazardCount =
+      (mySide.stealthRock ? 1 : 0) + mySide.spikes + mySide.toxicSpikes + (mySide.stickyWeb ? 1 : 0)
+    if (hazardCount === 0) return 0
+    return HAZARD_REMOVAL_BASE + HAZARD_REMOVAL_PER_HAZARD + hazardCount * HAZARD_REMOVAL_PER_HAZARD
   }
 
   private scoreHazardMove(moveName: string, state: BattleState): number {
@@ -329,21 +276,11 @@ export class HeuristicAI implements AIPlayer {
     _current: BattlePokemon,
     prediction?: PredictedSet,
   ): number {
-    let score = 0
-
-    // Good type matchup against opponent
     const matchup = this.evaluateMatchup(switchTarget, opponent)
-    score += matchup * 40
+    let score = matchup * 40 + (switchTarget.hpPercent / 100) * 10
 
-    // Health factor
-    score += (switchTarget.hpPercent / 100) * 10
+    if (matchup < UNFAVORABLE_MATCHUP_THRESHOLD) score -= 30
 
-    // Penalty for switching into a bad matchup
-    if (matchup < UNFAVORABLE_MATCHUP_THRESHOLD) {
-      score -= 30
-    }
-
-    // Bonus for resisting the opponent's STAB types
     const oppTypes = getSpeciesTypes(opponent.name)
     const switchTypes = getSpeciesTypes(switchTarget.name)
     for (const t of oppTypes) {
@@ -352,15 +289,12 @@ export class HeuristicAI implements AIPlayer {
       if (eff === 0) score += 20
     }
 
-    // Penalize switching into predicted coverage moves
-    if (prediction && prediction.predictedMoves.length > 0) {
+    if (prediction?.predictedMoves.length) {
       for (const moveName of prediction.predictedMoves) {
         const moveData = getRawMove(moveName)
         if (!moveData?.exists || moveData.category === "Status") continue
         const eff = getTypeEffectiveness(moveData.type as PokemonType, switchTypes)
-        if (eff > 1) {
-          score -= 15 * prediction.confidence
-        }
+        if (eff > 1) score -= 15 * prediction.confidence
       }
     }
 
@@ -368,18 +302,15 @@ export class HeuristicAI implements AIPlayer {
   }
 
   private chooseBestSwitch(state: BattleState, actions: BattleActionSet): BattleAction {
-    const oppActive = state.sides.p1.active.find(
-      (p): p is NonNullable<typeof p> => p != null && !p.fainted,
-    )
     const available = actions.switches.filter((s) => !s.fainted)
-
     if (available.length === 0) {
       return { type: "switch", pokemonIndex: actions.switches[0]?.index || 1 }
     }
 
-    if (!oppActive) {
-      return pickHealthiestSwitch(actions)
-    }
+    const oppActive = state.sides.p1.active.find(
+      (p): p is NonNullable<typeof p> => p != null && !p.fainted,
+    )
+    if (!oppActive) return pickHealthiestSwitch(actions)
 
     const myActive = state.sides.p2.active[actions.activeSlot ?? 0]
     const oppPrediction = state.opponentPredictions?.[oppActive.pokemonId]

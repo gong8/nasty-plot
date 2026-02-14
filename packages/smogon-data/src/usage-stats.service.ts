@@ -91,15 +91,24 @@ async function saveTeammates(
   pokemonId: string,
   teammates: Record<string, number> | undefined,
 ): Promise<void> {
-  for (const [tmName, corrValue] of Object.entries(teammates ?? {})) {
-    const tmId = toId(tmName)
-    if (!tmId || corrValue <= 0) continue
+  for (const [teammateName, correlation] of Object.entries(teammates ?? {})) {
+    const teammateId = toId(teammateName)
+    if (!teammateId || correlation <= 0) continue
     await prisma.teammateCorr.upsert({
       where: {
-        formatId_pokemonAId_pokemonBId: { formatId, pokemonAId: pokemonId, pokemonBId: tmId },
+        formatId_pokemonAId_pokemonBId: {
+          formatId,
+          pokemonAId: pokemonId,
+          pokemonBId: teammateId,
+        },
       },
-      update: { correlationPercent: corrValue },
-      create: { formatId, pokemonAId: pokemonId, pokemonBId: tmId, correlationPercent: corrValue },
+      update: { correlationPercent: correlation },
+      create: {
+        formatId,
+        pokemonAId: pokemonId,
+        pokemonBId: teammateId,
+        correlationPercent: correlation,
+      },
     })
   }
 }
@@ -227,11 +236,15 @@ export async function syncUsageStats(
   console.log(`[usage-stats] Done: ${entries.length} Pokemon saved for ${formatId}`)
 }
 
-function rowToEntry(r: { pokemonId: string; usagePercent: number; rank: number }): UsageStatsEntry {
+function rowToEntry(row: {
+  pokemonId: string
+  usagePercent: number
+  rank: number
+}): UsageStatsEntry {
   return {
-    pokemonId: r.pokemonId,
-    usagePercent: r.usagePercent,
-    rank: r.rank,
+    pokemonId: row.pokemonId,
+    usagePercent: row.usagePercent,
+    rank: row.rank,
   }
 }
 
@@ -301,9 +314,9 @@ export async function getTeammates(
     take: limit,
   })
 
-  return rows.map((r) => ({
-    pokemonId: r.pokemonBId,
-    correlationPercent: r.correlationPercent,
+  return rows.map((row) => ({
+    pokemonId: row.pokemonBId,
+    correlationPercent: row.correlationPercent,
   }))
 }
 
@@ -324,10 +337,10 @@ export async function getTopCores(
     take: limit,
   })
 
-  return rows.map((r) => ({
-    pokemonAId: r.pokemonAId,
-    pokemonBId: r.pokemonBId,
-    correlationPercent: r.correlationPercent,
+  return rows.map((row) => ({
+    pokemonAId: row.pokemonAId,
+    pokemonBId: row.pokemonBId,
+    correlationPercent: row.correlationPercent,
   }))
 }
 
@@ -342,7 +355,7 @@ export async function getMoveUsage(
     where: { formatId, pokemonId },
     orderBy: { usagePercent: "desc" },
   })
-  return rows.map((r) => ({ moveName: r.moveName, usagePercent: r.usagePercent }))
+  return rows.map((row) => ({ moveName: row.moveName, usagePercent: row.usagePercent }))
 }
 
 /**
@@ -356,7 +369,7 @@ export async function getItemUsage(
     where: { formatId, pokemonId },
     orderBy: { usagePercent: "desc" },
   })
-  return rows.map((r) => ({ itemName: r.itemName, usagePercent: r.usagePercent }))
+  return rows.map((row) => ({ itemName: row.itemName, usagePercent: row.usagePercent }))
 }
 
 /**
@@ -370,5 +383,5 @@ export async function getAbilityUsage(
     where: { formatId, pokemonId },
     orderBy: { usagePercent: "desc" },
   })
-  return rows.map((r) => ({ abilityName: r.abilityName, usagePercent: r.usagePercent }))
+  return rows.map((row) => ({ abilityName: row.abilityName, usagePercent: row.usagePercent }))
 }

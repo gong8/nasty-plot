@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { mergeTeams } from "@nasty-plot/teams"
-import { apiErrorResponse, badRequestResponse } from "../../../../lib/api-error"
+import { badRequestResponse, entityErrorResponse } from "../../../../lib/api-error"
 
 export async function POST(request: Request) {
   try {
@@ -18,6 +18,6 @@ export async function POST(request: Request) {
     })
     return NextResponse.json(result, { status: 201 })
   } catch (error) {
-    return apiErrorResponse(error, { inferNotFound: true })
+    return entityErrorResponse(error)
   }
 }

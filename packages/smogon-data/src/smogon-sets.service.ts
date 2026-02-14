@@ -35,6 +35,31 @@ function firstRecord(
   return Array.isArray(val) ? val[0] : val
 }
 
+interface SetDbFields {
+  ability: string
+  item: string
+  nature: string
+  teraType: string | null
+  moves: string
+  evs: string
+  ivs: string | null
+}
+
+async function upsertSet(
+  formatId: string,
+  pokemonId: string,
+  setName: string,
+  fields: SetDbFields,
+): Promise<void> {
+  await prisma.smogonSet.upsert({
+    where: {
+      formatId_pokemonId_setName: { formatId, pokemonId, setName },
+    },
+    update: fields,
+    create: { formatId, pokemonId, setName, ...fields },
+  })
+}
+
 /**
  * Fetch Smogon recommended sets from data.pkmn.cc and persist to DB.
  * @param formatId - The app's format ID (used for DB storage)
@@ -78,7 +103,8 @@ export async function syncSmogonSets(
 
       const normalizedIvs = setData.ivs ? firstRecord(setData.ivs) : null
       const hasCustomIvs = normalizedIvs && Object.keys(normalizedIvs).length > 0
-      const fields = {
+
+      await upsertSet(formatId, pokemonId, setName, {
         ability: firstOf(setData.ability ?? ""),
         item: firstOf(setData.item ?? ""),
         nature: firstOf(setData.nature ?? "Serious"),
@@ -86,14 +112,6 @@ export async function syncSmogonSets(
         moves: JSON.stringify(setData.moves ?? []),
         evs: JSON.stringify(firstRecord(setData.evs ?? {})),
         ivs: hasCustomIvs ? JSON.stringify(normalizedIvs) : null,
-      }
-
-      await prisma.smogonSet.upsert({
-        where: {
-          formatId_pokemonId_setName: { formatId, pokemonId, setName },
-        },
-        update: fields,
-        create: { formatId, pokemonId, setName, ...fields },
       })
 
       totalSets++
@@ -122,7 +140,7 @@ async function fetchAndSaveChaosSets(formatId: string, smogonStatsId: string): P
   console.log(`[smogon-sets] Generated ${sets.length} sets from usage stats. Saving to DB...`)
 
   for (const set of sets) {
-    const fields = {
+    await upsertSet(formatId, set.pokemonId, set.setName, {
       ability: set.ability,
       item: set.item,
       nature: set.nature,
@@ -130,13 +148,6 @@ async function fetchAndSaveChaosSets(formatId: string, smogonStatsId: string): P
       moves: JSON.stringify(set.moves),
       evs: JSON.stringify(set.evs),
       ivs: null,
-    }
-    await prisma.smogonSet.upsert({
-      where: {
-        formatId_pokemonId_setName: { formatId, pokemonId: set.pokemonId, setName: set.setName },
-      },
-      update: fields,
-      create: { formatId, pokemonId: set.pokemonId, setName: set.setName, ...fields },
     })
   }
 

@@ -60,6 +60,19 @@ const TERRAIN_MAP: Record<string, Terrain> = {
   "Psychic Terrain": "Psychic",
 }
 
+const EFFECTIVENESS_MESSAGES: Record<string, { type: BattleLogType; msg: string }> = {
+  "-crit": { type: "crit", msg: "A critical hit!" },
+  "-supereffective": { type: "supereffective", msg: "It's super effective!" },
+  "-resisted": { type: "resisted", msg: "It's not very effective..." },
+  "-immune": { type: "immune", msg: "It had no effect!" },
+}
+
+const SWITCH_VERBS: Record<string, string> = {
+  switch: "sent out",
+  drag: "was dragged out",
+  replace: "appeared",
+}
+
 const SIDE_CONDITION_HANDLERS: Record<
   string,
   { set: (sc: SideConditions) => void; clear: (sc: SideConditions) => void }
@@ -130,7 +143,7 @@ const SIDE_CONDITION_HANDLERS: Record<
   },
 }
 
-/** Parse "quarkdrivespe" → { ability: "Quark Drive", stat: "Speed" } or null */
+/** Parse "quarkdrivespe" -> { ability: "Quark Drive", stat: "Speed" } or null */
 function parseStatBoostCondition(condition: string): { ability: string; stat: string } | null {
   const lower = condition.toLowerCase()
   for (const prefix of STAT_BOOST_ABILITIES) {
@@ -146,7 +159,7 @@ function parseStatBoostCondition(condition: string): { ability: string; stat: st
   return null
 }
 
-/** Parse "p1a: Garchomp" → { side: "p1", slot: "a", name: "Garchomp" } */
+/** Parse "p1a: Garchomp" -> { side: "p1", slot: "a", name: "Garchomp" } */
 function parsePokemonIdent(ident: string): { side: Side; slot: string; name: string } | null {
   const match = ident.match(/^(p[12])([a-d]?):\s*(.+)$/)
   if (!match) return null
@@ -157,7 +170,7 @@ function parsePokemonIdent(ident: string): { side: Side; slot: string; name: str
   }
 }
 
-/** Parse "100/319" → { hp: 100, maxHp: 319 } or percentage like "78/100" */
+/** Parse "100/319" -> { hp: 100, maxHp: 319 } or percentage like "78/100" */
 function parseHp(hpStr: string): { hp: number; maxHp: number } {
   if (hpStr === "0 fnt") return { hp: 0, maxHp: 0 }
   const parts = hpStr.split(" ")[0] // Strip conditions like "100/319 par"
@@ -177,7 +190,7 @@ function parseStatusFromHp(hpStr: string): StatusCondition {
   return ""
 }
 
-/** Parse "Garchomp, L100, M" → species details */
+/** Parse "Garchomp, L100, M" -> species details */
 function parseDetails(details: string): { species: string; level: number; gender: string } {
   const parts = details.split(",").map((s) => s.trim())
   const species = parts[0]
@@ -254,13 +267,217 @@ function findPokemon(state: BattleState, side: Side, name: string): BattlePokemo
   return null
 }
 
+// --- Protocol command handlers (extracted from processLine for readability) ---
+
+function handleSwitch(state: BattleState, cmd: string, args: string[]): BattleLogEntry | null {
+  const ident = parsePokemonIdent(args[0])
+  if (!ident) return null
+  const details = parseDetails(args[1])
+  const hpData = args[2] ? parseHp(args[2]) : { hp: 100, maxHp: 100 }
+  const status = args[2] ? parseStatusFromHp(args[2]) : ""
+
+  const side = state.sides[ident.side]
+  const idx = slotIndex(ident.slot)
+
+  let pokemon = side.team.find((p) => p.name === details.species || p.nickname === ident.name)
+  if (!pokemon) {
+    pokemon = makeEmptyPokemon()
+    pokemon.name = details.species
+    pokemon.pokemonId = toId(details.species)
+    pokemon.nickname = ident.name
+    pokemon.level = details.level
+    side.team.push(pokemon)
+  }
+
+  applyHpUpdate(pokemon, hpData, status || undefined)
+  pokemon.boosts = defaultBoosts()
+  pokemon.volatiles = []
+  side.active[idx] = pokemon
+
+  const verb = SWITCH_VERBS[cmd] ?? "appeared"
+  return logEntry("switch", `${side.name} ${verb} ${ident.name}!`, state.turn, ident.side)
+}
+
+function handleDamageOrHeal(
+  state: BattleState,
+  cmd: string,
+  args: string[],
+): BattleLogEntry | null {
+  const ident = parsePokemonIdent(args[0])
+  if (!ident) return null
+  const hpData = parseHp(args[1])
+  const status = parseStatusFromHp(args[1])
+  const pokemon = findPokemon(state, ident.side, ident.name)
+  const prevPercent = pokemon?.hpPercent ?? 100
+
+  if (pokemon) {
+    applyHpUpdate(pokemon, hpData, status || undefined)
+  }
+
+  const isHeal = cmd === "-heal"
+  const newPercent = pokemon?.hpPercent ?? 0
+  const delta = Math.abs(newPercent - prevPercent)
+  const source = args[2] ? ` (${args[2].replace("[from] ", "")})` : ""
+  const hpDetail =
+    delta > 0 ? ` (${newPercent}%, ${isHeal ? "+" : "-"}${delta}%)` : ` (${newPercent}%)`
+  return logEntry(
+    isHeal ? "heal" : "damage",
+    `${ident.name} ${isHeal ? "restored" : "lost"} HP!${hpDetail}${source}`,
+    state.turn,
+    ident.side,
+  )
+}
+
+function handleBoostChange(state: BattleState, cmd: string, args: string[]): BattleLogEntry | null {
+  const isBoost = cmd === "-boost"
+  const ident = parsePokemonIdent(args[0])
+  if (!ident) return null
+  const stat = args[1] as keyof BoostTable
+  const amount = parseInt(args[2], 10)
+  const pokemon = findPokemon(state, ident.side, ident.name)
+  if (pokemon && stat in pokemon.boosts) {
+    pokemon.boosts[stat] = isBoost
+      ? Math.min(6, pokemon.boosts[stat] + amount)
+      : Math.max(-6, pokemon.boosts[stat] - amount)
+  }
+
+  const stages = amount === 1 ? "" : amount === 2 ? " sharply" : " drastically"
+  const verb = isBoost ? "rose" : "fell"
+  return logEntry(
+    isBoost ? "boost" : "unboost",
+    `${ident.name}'s ${stat} ${verb}${stages}!`,
+    state.turn,
+    ident.side,
+  )
+}
+
+function handleWeather(state: BattleState, args: string[]): BattleLogEntry {
+  const weather = args[0]
+  if (weather === "none") {
+    state.field.weather = ""
+    state.field.weatherTurns = 0
+    return logEntry("weather", "The weather cleared!", state.turn)
+  }
+  state.field.weather = WEATHER_MAP[weather] || (weather as Weather)
+  if (args[1] === "[upkeep]") {
+    state.field.weatherTurns = Math.max(0, state.field.weatherTurns - 1)
+  } else {
+    state.field.weatherTurns = 5
+  }
+  return logEntry("weather", `The weather is ${weather}!`, state.turn)
+}
+
+function handleFieldChange(state: BattleState, cmd: string, args: string[]): BattleLogEntry {
+  const fieldName = args[0]?.replace("move: ", "")
+  const isStart = cmd === "-fieldstart"
+
+  if (isStart) {
+    if (fieldName in TERRAIN_MAP) {
+      state.field.terrain = TERRAIN_MAP[fieldName]
+      state.field.terrainTurns = 5
+    }
+    if (fieldName === "Trick Room") state.field.trickRoom = 5
+    return logEntry("terrain", `${fieldName} started!`, state.turn)
+  }
+
+  if (fieldName?.endsWith("Terrain")) {
+    state.field.terrain = ""
+    state.field.terrainTurns = 0
+  }
+  if (fieldName === "Trick Room") state.field.trickRoom = 0
+  return logEntry("terrain", `${fieldName} ended!`, state.turn)
+}
+
+function handleSideCondition(
+  state: BattleState,
+  cmd: string,
+  args: string[],
+): BattleLogEntry | null {
+  const isSideStart = cmd === "-sidestart"
+  const sideMatch = args[0]?.match(/^(p[12])/)
+  if (!sideMatch) return null
+  const side = sideMatch[1] as Side
+  const hazard = args[1]?.replace("move: ", "")
+  const handler = hazard ? SIDE_CONDITION_HANDLERS[hazard] : undefined
+  if (handler) {
+    if (isSideStart) handler.set(state.sides[side].sideConditions)
+    else handler.clear(state.sides[side].sideConditions)
+  }
+  const verb = isSideStart ? "was set on" : "ended on"
+  return logEntry("hazard", `${hazard} ${verb} ${side}'s side!`, state.turn, side)
+}
+
+function handleVolatileStart(state: BattleState, args: string[]): BattleLogEntry | null {
+  const ident = parsePokemonIdent(args[0])
+  if (!ident) return null
+  const condition = args[1]?.replace("move: ", "")
+  const pokemon = findPokemon(state, ident.side, ident.name)
+
+  if (condition === "typechange" && args[2] && pokemon) {
+    pokemon.types = args[2].split("/").map((t) => t.trim()) as PokemonType[]
+  }
+
+  if (pokemon && condition && !pokemon.volatiles.includes(condition)) {
+    pokemon.volatiles.push(condition)
+  }
+
+  const boost = condition ? parseStatBoostCondition(condition) : null
+  if (boost) {
+    return logEntry(
+      "ability",
+      `${ident.name}'s ${boost.ability} boosted its ${boost.stat}!`,
+      state.turn,
+      ident.side,
+    )
+  }
+  return logEntry("start", `${ident.name}: ${condition} started!`, state.turn, ident.side)
+}
+
+function handleVolatileEnd(state: BattleState, args: string[]): BattleLogEntry | null {
+  const ident = parsePokemonIdent(args[0])
+  if (!ident) return null
+  const condition = args[1]?.replace("move: ", "")
+  const pokemon = findPokemon(state, ident.side, ident.name)
+  if (pokemon && condition) {
+    pokemon.volatiles = pokemon.volatiles.filter((v) => v !== condition)
+  }
+  const endBoost = condition ? parseStatBoostCondition(condition) : null
+  if (endBoost) {
+    return logEntry(
+      "ability",
+      `${ident.name}'s ${endBoost.ability} ${endBoost.stat} boost ended!`,
+      state.turn,
+      ident.side,
+    )
+  }
+  return logEntry("end", `${ident.name}: ${condition} ended!`, state.turn, ident.side)
+}
+
+function handleActivate(state: BattleState, args: string[]): BattleLogEntry | null {
+  const ident = parsePokemonIdent(args[0] || "")
+  if (!ident) return null
+  const effect = args[1] || ""
+
+  if (effect === "item: Air Balloon") {
+    const pokemon = findPokemon(state, ident.side, ident.name)
+    if (pokemon) pokemon.item = ""
+    return logEntry("item", `${ident.name}'s Air Balloon popped!`, state.turn, ident.side)
+  }
+
+  if (effect === "ability: Disguise" || effect === "Disguise") {
+    return logEntry("ability", `${ident.name}'s Disguise was busted!`, state.turn, ident.side)
+  }
+
+  const cleanEffect = effect.replace(/^(ability|item|move): /, "")
+  return logEntry("info", `${ident.name}'s ${cleanEffect} activated!`, state.turn, ident.side)
+}
+
 /**
  * Process a single protocol line and mutate the battle state.
  * Returns a BattleLogEntry if the line produces a log message.
  */
 export function processLine(state: BattleState, line: string): BattleLogEntry | null {
   const parts = line.split("|")
-  // Protocol lines start with |, so parts[0] is empty
   if (parts.length < 2) return null
   const cmd = parts[1]
   const args = parts.slice(2)
@@ -275,81 +492,20 @@ export function processLine(state: BattleState, line: string): BattleLogEntry | 
 
     case "switch":
     case "drag":
-    case "replace": {
-      // |switch|p1a: Garchomp|Garchomp, L100, M|319/319
-      const ident = parsePokemonIdent(args[0])
-      if (!ident) return null
-      const details = parseDetails(args[1])
-      const hpData = args[2] ? parseHp(args[2]) : { hp: 100, maxHp: 100 }
-      const status = args[2] ? parseStatusFromHp(args[2]) : ""
-
-      const side = state.sides[ident.side]
-      const idx = slotIndex(ident.slot)
-
-      // Find or create the pokemon in team
-      let pokemon = side.team.find((p) => p.name === details.species || p.nickname === ident.name)
-
-      if (!pokemon) {
-        // New pokemon we haven't seen
-        pokemon = makeEmptyPokemon()
-        pokemon.name = details.species
-        pokemon.pokemonId = toId(details.species)
-        pokemon.nickname = ident.name
-        pokemon.level = details.level
-        side.team.push(pokemon)
-      }
-
-      applyHpUpdate(pokemon, hpData, status || undefined)
-      pokemon.boosts = defaultBoosts()
-      pokemon.volatiles = []
-
-      // Set as active
-      side.active[idx] = pokemon
-
-      const verb = cmd === "switch" ? "sent out" : cmd === "drag" ? "was dragged out" : "appeared"
-      return logEntry("switch", `${side.name} ${verb} ${ident.name}!`, state.turn, ident.side)
-    }
+    case "replace":
+      return handleSwitch(state, cmd, args)
 
     case "move": {
-      // |move|p1a: Garchomp|Earthquake|p2a: Heatran
       const ident = parsePokemonIdent(args[0])
       if (!ident) return null
-      const moveName = args[1]
-
-      return logEntry("move", `${ident.name} used ${moveName}!`, state.turn, ident.side)
+      return logEntry("move", `${ident.name} used ${args[1]}!`, state.turn, ident.side)
     }
 
     case "-damage":
-    case "-heal": {
-      // |-damage|p1a: Garchomp|219/319
-      const ident = parsePokemonIdent(args[0])
-      if (!ident) return null
-      const hpData = parseHp(args[1])
-      const status = parseStatusFromHp(args[1])
-      const pokemon = findPokemon(state, ident.side, ident.name)
-
-      const prevPercent = pokemon?.hpPercent ?? 100
-
-      if (pokemon) {
-        applyHpUpdate(pokemon, hpData, status || undefined)
-      }
-
-      const isHeal = cmd === "-heal"
-      const newPercent = pokemon?.hpPercent ?? 0
-      const delta = Math.abs(newPercent - prevPercent)
-      const source = args[2] ? ` (${args[2].replace("[from] ", "")})` : ""
-      const hpDetail =
-        delta > 0 ? ` (${newPercent}%, ${isHeal ? "+" : "-"}${delta}%)` : ` (${newPercent}%)`
-      return logEntry(
-        isHeal ? "heal" : "damage",
-        `${ident.name} ${isHeal ? "restored" : "lost"} HP!${hpDetail}${source}`,
-        state.turn,
-        ident.side,
-      )
-    }
+    case "-heal":
+      return handleDamageOrHeal(state, cmd, args)
 
     case "faint": {
-      // |faint|p1a: Garchomp
       const ident = parsePokemonIdent(args[0])
       if (!ident) return null
       const pokemon = findPokemon(state, ident.side, ident.name)
@@ -362,13 +518,11 @@ export function processLine(state: BattleState, line: string): BattleLogEntry | 
     }
 
     case "-status": {
-      // |-status|p1a: Garchomp|brn
       const ident = parsePokemonIdent(args[0])
       if (!ident) return null
       const statusId = args[1] as StatusCondition
       const pokemon = findPokemon(state, ident.side, ident.name)
       if (pokemon) pokemon.status = statusId
-
       return logEntry(
         "status",
         `${ident.name} ${STATUS_DISPLAY_MAP[statusId] || `got ${statusId}`}!`,
@@ -386,87 +540,19 @@ export function processLine(state: BattleState, line: string): BattleLogEntry | 
     }
 
     case "-boost":
-    case "-unboost": {
-      const isBoost = cmd === "-boost"
-      const ident = parsePokemonIdent(args[0])
-      if (!ident) return null
-      const stat = args[1] as keyof BoostTable
-      const amount = parseInt(args[2], 10)
-      const pokemon = findPokemon(state, ident.side, ident.name)
-      if (pokemon && stat in pokemon.boosts) {
-        pokemon.boosts[stat] = isBoost
-          ? Math.min(6, pokemon.boosts[stat] + amount)
-          : Math.max(-6, pokemon.boosts[stat] - amount)
-      }
+    case "-unboost":
+      return handleBoostChange(state, cmd, args)
 
-      const stages = amount === 1 ? "" : amount === 2 ? " sharply" : " drastically"
-      const verb = isBoost ? "rose" : "fell"
-      return logEntry(
-        isBoost ? "boost" : "unboost",
-        `${ident.name}'s ${stat} ${verb}${stages}!`,
-        state.turn,
-        ident.side,
-      )
-    }
+    case "-weather":
+      return handleWeather(state, args)
 
-    case "-weather": {
-      // |-weather|Sandstorm|[from] ability: Sand Stream|[of] p1a: Tyranitar
-      const weather = args[0]
-      if (weather === "none") {
-        state.field.weather = ""
-        state.field.weatherTurns = 0
-        return logEntry("weather", "The weather cleared!", state.turn)
-      }
-      state.field.weather = WEATHER_MAP[weather] || (weather as Weather)
-      if (args[1] !== "[upkeep]") {
-        state.field.weatherTurns = 5 // Default, abilities may modify
-      } else {
-        state.field.weatherTurns = Math.max(0, state.field.weatherTurns - 1)
-      }
-      return logEntry("weather", `The weather is ${weather}!`, state.turn)
-    }
-
-    case "-fieldstart": {
-      // |-fieldstart|move: Electric Terrain
-      const fieldName = args[0]?.replace("move: ", "")
-      if (fieldName in TERRAIN_MAP) {
-        state.field.terrain = TERRAIN_MAP[fieldName]
-        state.field.terrainTurns = 5
-      }
-      if (fieldName === "Trick Room") {
-        state.field.trickRoom = 5
-      }
-      return logEntry("terrain", `${fieldName} started!`, state.turn)
-    }
-
-    case "-fieldend": {
-      const fieldName = args[0]?.replace("move: ", "")
-      if (fieldName?.endsWith("Terrain")) {
-        state.field.terrain = ""
-        state.field.terrainTurns = 0
-      }
-      if (fieldName === "Trick Room") {
-        state.field.trickRoom = 0
-      }
-      return logEntry("terrain", `${fieldName} ended!`, state.turn)
-    }
+    case "-fieldstart":
+    case "-fieldend":
+      return handleFieldChange(state, cmd, args)
 
     case "-sidestart":
-    case "-sideend": {
-      const isSideStart = cmd === "-sidestart"
-      const sideMatch = args[0]?.match(/^(p[12])/)
-      if (!sideMatch) return null
-      const side = sideMatch[1] as Side
-      const hazard = args[1]?.replace("move: ", "")
-      const handler = hazard ? SIDE_CONDITION_HANDLERS[hazard] : undefined
-      if (handler) {
-        if (isSideStart) handler.set(state.sides[side].sideConditions)
-        else handler.clear(state.sides[side].sideConditions)
-      }
-
-      const verb = isSideStart ? "was set on" : "ended on"
-      return logEntry("hazard", `${hazard} ${verb} ${side}'s side!`, state.turn, side)
-    }
+    case "-sideend":
+      return handleSideCondition(state, cmd, args)
 
     case "-item":
     case "-enditem": {
@@ -494,61 +580,13 @@ export function processLine(state: BattleState, line: string): BattleLogEntry | 
       )
     }
 
-    case "-start": {
-      // Volatile status: |-start|p1a: Garchomp|Substitute
-      const ident = parsePokemonIdent(args[0])
-      if (!ident) return null
-      const condition = args[1]?.replace("move: ", "")
-      const pokemon = findPokemon(state, ident.side, ident.name)
+    case "-start":
+      return handleVolatileStart(state, args)
 
-      if (condition === "typechange" && args[2]) {
-        // Terastallization or Protean/Libero type change
-        if (pokemon) {
-          const newTypes = args[2].split("/").map((t) => t.trim()) as PokemonType[]
-          pokemon.types = newTypes
-        }
-      }
-
-      if (pokemon && condition) {
-        if (!pokemon.volatiles.includes(condition)) {
-          pokemon.volatiles.push(condition)
-        }
-      }
-
-      const boost = condition ? parseStatBoostCondition(condition) : null
-      if (boost) {
-        return logEntry(
-          "ability",
-          `${ident.name}'s ${boost.ability} boosted its ${boost.stat}!`,
-          state.turn,
-          ident.side,
-        )
-      }
-      return logEntry("start", `${ident.name}: ${condition} started!`, state.turn, ident.side)
-    }
-
-    case "-end": {
-      const ident = parsePokemonIdent(args[0])
-      if (!ident) return null
-      const condition = args[1]?.replace("move: ", "")
-      const pokemon = findPokemon(state, ident.side, ident.name)
-      if (pokemon && condition) {
-        pokemon.volatiles = pokemon.volatiles.filter((v) => v !== condition)
-      }
-      const endBoost = condition ? parseStatBoostCondition(condition) : null
-      if (endBoost) {
-        return logEntry(
-          "ability",
-          `${ident.name}'s ${endBoost.ability} ${endBoost.stat} boost ended!`,
-          state.turn,
-          ident.side,
-        )
-      }
-      return logEntry("end", `${ident.name}: ${condition} ended!`, state.turn, ident.side)
-    }
+    case "-end":
+      return handleVolatileEnd(state, args)
 
     case "-terastallize": {
-      // |-terastallize|p1a: Garchomp|Ground
       const ident = parsePokemonIdent(args[0])
       if (!ident) return null
       const teraType = args[1] as PokemonType
@@ -572,70 +610,41 @@ export function processLine(state: BattleState, line: string): BattleLogEntry | 
     case "-resisted":
     case "-immune": {
       const ident = parsePokemonIdent(args[0])
-      const effectMessages: Record<string, { type: BattleLogType; msg: string }> = {
-        "-crit": { type: "crit", msg: "A critical hit!" },
-        "-supereffective": { type: "supereffective", msg: "It's super effective!" },
-        "-resisted": { type: "resisted", msg: "It's not very effective..." },
-        "-immune": { type: "immune", msg: "It had no effect!" },
-      }
-      const { type, msg } = effectMessages[cmd]
+      const { type, msg } = EFFECTIVENESS_MESSAGES[cmd]
       return logEntry(type, msg, state.turn, ident?.side)
     }
 
     case "cant": {
       const ident = parsePokemonIdent(args[0])
       if (!ident) return null
-      const reason = args[1] || "unknown"
-      return logEntry("cant", `${ident.name} can't move! (${reason})`, state.turn, ident.side)
+      return logEntry(
+        "cant",
+        `${ident.name} can't move! (${args[1] || "unknown"})`,
+        state.turn,
+        ident.side,
+      )
     }
 
     case "win": {
-      const winnerName = args[0]
-      state.winner = state.sides.p1.name === winnerName ? "p1" : "p2"
+      state.winner = state.sides.p1.name === args[0] ? "p1" : "p2"
       state.phase = "ended"
-      return logEntry("win", `${winnerName} won the battle!`, state.turn)
+      return logEntry("win", `${args[0]} won the battle!`, state.turn)
     }
 
-    case "tie": {
+    case "tie":
       state.phase = "ended"
       return logEntry("win", "The battle ended in a tie!", state.turn)
-    }
 
     case "player": {
-      // |player|p1|PlayerName|avatar|rating
       const playerId = args[0] as Side
-      const playerName = args[1]
       if (playerId === "p1" || playerId === "p2") {
-        state.sides[playerId].name = playerName || playerId
+        state.sides[playerId].name = args[1] || playerId
       }
       return null
     }
 
-    case "teamsize": {
-      // We'll learn about team via switches
-      return null
-    }
-
-    case "gametype": {
-      if (args[0] === "doubles") {
-        state.gameType = "doubles"
-      }
-      return null
-    }
-
-    case "gen": {
-      return null
-    }
-
-    case "tier":
-    case "rule":
-    case "rated":
-    case "clearpoke":
-    case "teampreview":
-    case "start":
-    case "upkeep":
-    case "":
-    case "t:":
+    case "gametype":
+      if (args[0] === "doubles") state.gameType = "doubles"
       return null
 
     case "-fail":
@@ -646,33 +655,18 @@ export function processLine(state: BattleState, line: string): BattleLogEntry | 
       return logEntry("info", `${ident.name}'s ${verb}!`, state.turn, ident.side)
     }
 
-    case "-activate": {
-      const ident = parsePokemonIdent(args[0] || "")
-      if (!ident) return null
-      const effect = args[1] || ""
-
-      // Air Balloon pop
-      if (effect === "item: Air Balloon") {
-        const pokemon = findPokemon(state, ident.side, ident.name)
-        if (pokemon) pokemon.item = ""
-        return logEntry("item", `${ident.name}'s Air Balloon popped!`, state.turn, ident.side)
-      }
-
-      // Disguise
-      if (effect === "ability: Disguise" || effect === "Disguise") {
-        return logEntry("ability", `${ident.name}'s Disguise was busted!`, state.turn, ident.side)
-      }
-
-      // Generic activate
-      const cleanEffect = effect.replace(/^(ability|item|move): /, "")
-      return logEntry("info", `${ident.name}'s ${cleanEffect} activated!`, state.turn, ident.side)
-    }
+    case "-activate":
+      return handleActivate(state, args)
 
     case "-prepare": {
       const ident = parsePokemonIdent(args[0] || "")
       if (!ident) return null
-      const moveName = args[1] || "a move"
-      return logEntry("move", `${ident.name} is preparing ${moveName}!`, state.turn, ident.side)
+      return logEntry(
+        "move",
+        `${ident.name} is preparing ${args[1] || "a move"}!`,
+        state.turn,
+        ident.side,
+      )
     }
 
     case "-ohko":
@@ -680,10 +674,21 @@ export function processLine(state: BattleState, line: string): BattleLogEntry | 
 
     case "-hitcount": {
       const ident = parsePokemonIdent(args[0] || "")
-      const count = args[1] || "?"
-      return logEntry("info", `Hit ${count} time(s)!`, state.turn, ident?.side)
+      return logEntry("info", `Hit ${args[1] || "?"} time(s)!`, state.turn, ident?.side)
     }
 
+    // No-op protocol commands
+    case "teamsize":
+    case "gen":
+    case "tier":
+    case "rule":
+    case "rated":
+    case "clearpoke":
+    case "teampreview":
+    case "start":
+    case "upkeep":
+    case "":
+    case "t:":
     case "-hint":
     case "-combine":
     case "-waiting":
@@ -794,7 +799,7 @@ export function parseRequest(requestJson: string): {
         side: req.side,
       }
     }
-    // Slot 0 doesn't need to switch — fall through to normal move extraction
+    // Slot 0 doesn't need to switch -- fall through to normal move extraction
   }
 
   // Normal turn: extract moves and switches
@@ -957,7 +962,7 @@ export function updateSideFromRequest(
       state.sides[side].team.push(pokemon)
     }
 
-    // Request data is authoritative, but "0 fnt" returns maxHp=0 — preserve
+    // Request data is authoritative, but "0 fnt" returns maxHp=0 -- preserve
     // existing maxHp so fainted Pokemon show 0/maxHp instead of 0/0.
     const effectiveMaxHp = hpData.maxHp > 0 ? hpData.maxHp : pokemon.maxHp
     applyHpUpdate(pokemon, { hp: hpData.hp, maxHp: effectiveMaxHp }, status)

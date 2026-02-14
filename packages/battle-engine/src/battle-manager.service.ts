@@ -399,7 +399,18 @@ export class BattleManager {
     manager.state = structuredClone(checkpoint.battleState)
     manager.protocolLog = checkpoint.protocolLog
 
-    // Re-extract pending actions from the restored battle's active requests
+    BattleManager.restorePendingActions(manager, restored)
+
+    // Re-enable output processing and emit current state
+    manager.suppressingOutput = false
+    manager.eventHandler = eventHandler
+    eventHandler(manager.state, [])
+
+    return manager
+  }
+
+  /** Re-extract pending actions from a restored battle's active requests. */
+  private static restorePendingActions(manager: BattleManager, restored: Battle) {
     const p1Request = restored.sides[0]?.activeRequest
     const p2Request = restored.sides[1]?.activeRequest
 
@@ -429,13 +440,6 @@ export class BattleManager {
         // Non-critical
       }
     }
-
-    // Re-enable output processing and emit current state
-    manager.suppressingOutput = false
-    manager.eventHandler = eventHandler
-    eventHandler(manager.state, [])
-
-    return manager
   }
 
   /** Destroy the battle stream. */

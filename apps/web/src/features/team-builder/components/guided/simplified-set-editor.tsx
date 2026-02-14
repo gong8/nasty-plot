@@ -1,15 +1,14 @@
 "use client"
 
-import { useState, useCallback, useMemo } from "react"
+import { useState, useCallback } from "react"
 import { ChevronDown, ChevronUp, Info } from "lucide-react"
-import { usePokemonQuery, useLearnsetQuery } from "../../hooks/use-pokemon-data"
+import { usePokemonQuery, useLearnsetQuery, useSpeciesDerived } from "../../hooks/use-pokemon-data"
 import { useTeamSlotForm, clampEv, clampIv, updateMove } from "../../hooks/use-team-slot-form"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 import {
   MAX_TOTAL_EVS,
   DEFAULT_LEVEL,
-  calculateAllStats,
   getTotalEvs,
   type NatureName,
   type StatName,
@@ -58,17 +57,15 @@ export function SimplifiedSetEditor({
   // Fetch popularity data for two-tier dropdowns
   const { data: popularity } = usePopularityData(pokemonId, formatId)
 
-  const abilities = useMemo(() => {
-    if (!speciesData?.abilities) return []
-    return Object.values(speciesData.abilities)
-  }, [speciesData])
+  const { abilities, calculatedStats } = useSpeciesDerived(
+    speciesData,
+    ivs,
+    evs,
+    slot.level ?? DEFAULT_LEVEL,
+    nature,
+  )
 
   const evTotal = getTotalEvs(evs)
-
-  const calculatedStats = useMemo(() => {
-    if (!speciesData?.baseStats) return null
-    return calculateAllStats(speciesData.baseStats, ivs, evs, slot.level ?? DEFAULT_LEVEL, nature)
-  }, [speciesData, ivs, evs, slot.level, nature])
 
   const handleEvChange = useCallback(
     (stat: StatName, value: number) => {

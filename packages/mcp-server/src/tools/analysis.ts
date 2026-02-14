@@ -1,5 +1,5 @@
 import { z } from "zod"
-import { DEFAULT_LEVEL, getTotalEvs, type PokemonType, type StatName } from "@nasty-plot/core"
+import { DEFAULT_LEVEL, getBaseStatTotal, type PokemonType, type StatName } from "@nasty-plot/core"
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js"
 import { apiGet, apiPost } from "../api-client.service.js"
 import { handleTool } from "../tool-helpers.js"
@@ -75,8 +75,8 @@ export function registerAnalysisTools(server: McpServer): void {
 
         const a = (dataA as { data: PokemonData }).data
         const b = (dataB as { data: PokemonData }).data
-        const bstA = getTotalEvs(a.baseStats)
-        const bstB = getTotalEvs(b.baseStats)
+        const bstA = getBaseStatTotal(a.baseStats)
+        const bstB = getBaseStatTotal(b.baseStats)
 
         return {
           pokemonA: { ...a, bst: bstA },

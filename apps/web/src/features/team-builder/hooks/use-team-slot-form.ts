@@ -39,8 +39,7 @@ export function updateMove(
   value: string,
 ): [string, string?, string?, string?] {
   const next = [...moves] as [string, string?, string?, string?]
-  next[index] = value || undefined
-  if (index === 0 && !value) next[0] = ""
+  next[index] = index === 0 ? value : value || undefined
   return next
 }
 

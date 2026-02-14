@@ -1,5 +1,5 @@
 import type { BattleState, BattlePokemon, SideConditions, FieldState } from "../types"
-import { getTypeEffectiveness } from "@nasty-plot/core"
+import { getTypeEffectiveness, type PokemonType } from "@nasty-plot/core"
 import { getSpeciesTypes, getEffectiveSpeed } from "./shared"
 
 /**
@@ -117,6 +117,34 @@ function evalStatus(team: BattlePokemon[]): number {
   return score
 }
 
+function hasSuperEffectiveCoverage(
+  attackerTypes: PokemonType[],
+  defenderTypes: PokemonType[],
+): boolean {
+  return attackerTypes.some((t) => getTypeEffectiveness(t, defenderTypes) > 1)
+}
+
+function countUnresistedStabs(attackerTypes: PokemonType[], defenderTypes: PokemonType[]): number {
+  return attackerTypes.filter((t) => getTypeEffectiveness(t, defenderTypes) >= 1).length
+}
+
+function evalSpeedMatchup(
+  myActive: BattlePokemon,
+  oppActive: BattlePokemon,
+  field: FieldState,
+  mySideConditions: SideConditions,
+  oppSideConditions: SideConditions,
+): number {
+  const mySpeed = getEffectiveSpeed(myActive, mySideConditions)
+  const oppSpeed = getEffectiveSpeed(oppActive, oppSideConditions)
+  const isTrickRoom = field.trickRoom > 0
+  const isFaster = isTrickRoom ? mySpeed < oppSpeed : mySpeed > oppSpeed
+  const isSlower = isTrickRoom ? mySpeed > oppSpeed : mySpeed < oppSpeed
+  if (isFaster) return WEIGHT.SPEED_ADVANTAGE
+  if (isSlower) return -WEIGHT.SPEED_ADVANTAGE
+  return 0
+}
+
 function evalActiveMatchup(
   myActive: BattlePokemon | null,
   oppActive: BattlePokemon | null,
@@ -130,35 +158,21 @@ function evalActiveMatchup(
   const myTypes = getSpeciesTypes(myActive.name)
   const oppTypes = getSpeciesTypes(oppActive.name)
 
-  // Check if we have SE coverage
-  for (const t of myTypes) {
-    if (getTypeEffectiveness(t, oppTypes) > 1) {
-      score += WEIGHT.SE_COVERAGE
-      break
-    }
+  if (hasSuperEffectiveCoverage(myTypes, oppTypes)) {
+    score += WEIGHT.SE_COVERAGE
   }
 
-  // STAB advantage: our STAB resisted by fewer of opponent's types
-  let stabCount = 0
-  for (const t of myTypes) {
-    if (getTypeEffectiveness(t, oppTypes) >= 1) stabCount++
+  const unresistedStabs = countUnresistedStabs(myTypes, oppTypes)
+  if (unresistedStabs > 0) {
+    score += WEIGHT.STAB_ADVANTAGE * (unresistedStabs / myTypes.length)
   }
-  if (stabCount > 0) score += WEIGHT.STAB_ADVANTAGE * (stabCount / myTypes.length)
 
-  // Speed advantage — account for boosts, paralysis, tailwind, Trick Room
-  const mySpe = getEffectiveSpeed(myActive, mySideConditions)
-  const oppSpe = getEffectiveSpeed(oppActive, oppSideConditions)
-  const isFaster = field.trickRoom > 0 ? mySpe < oppSpe : mySpe > oppSpe
-  const isSlower = field.trickRoom > 0 ? mySpe > oppSpe : mySpe < oppSpe
-  if (isFaster) score += WEIGHT.SPEED_ADVANTAGE
-  else if (isSlower) score -= WEIGHT.SPEED_ADVANTAGE
+  score += evalSpeedMatchup(myActive, oppActive, field, mySideConditions, oppSideConditions)
 
-  // Stat boosts
   const myBoostTotal = Object.values(myActive.boosts).reduce((sum, val) => sum + val, 0)
   const oppBoostTotal = Object.values(oppActive.boosts).reduce((sum, val) => sum + val, 0)
   score += (myBoostTotal - oppBoostTotal) * WEIGHT.BOOST_PER_STAGE
 
-  // Substitute
   if (myActive.volatiles.includes("Substitute")) score += WEIGHT.SUBSTITUTE
   if (oppActive.volatiles.includes("Substitute")) score -= WEIGHT.SUBSTITUTE
 
@@ -167,25 +181,31 @@ function evalActiveMatchup(
 
 function evalActiveMatchupScore(
   state: BattleState,
-  my: BattleState["sides"]["p1"],
-  opp: BattleState["sides"]["p1"],
+  mySide: BattleState["sides"]["p1"],
+  oppSide: BattleState["sides"]["p1"],
 ): number {
   if (state.gameType !== "doubles") {
     return evalActiveMatchup(
-      my.active[0],
-      opp.active[0],
+      mySide.active[0],
+      oppSide.active[0],
       state.field,
-      my.sideConditions,
-      opp.sideConditions,
+      mySide.sideConditions,
+      oppSide.sideConditions,
     )
   }
 
-  const myActives = my.active.filter((p): p is BattlePokemon => p != null && isAlive(p))
-  const oppActives = opp.active.filter((p): p is BattlePokemon => p != null && isAlive(p))
+  const myActives = mySide.active.filter((p): p is BattlePokemon => p != null && isAlive(p))
+  const oppActives = oppSide.active.filter((p): p is BattlePokemon => p != null && isAlive(p))
   let total = 0
-  for (const myA of myActives) {
-    for (const oppA of oppActives) {
-      total += evalActiveMatchup(myA, oppA, state.field, my.sideConditions, opp.sideConditions)
+  for (const myMon of myActives) {
+    for (const oppMon of oppActives) {
+      total += evalActiveMatchup(
+        myMon,
+        oppMon,
+        state.field,
+        mySide.sideConditions,
+        oppSide.sideConditions,
+      )
     }
   }
   const pairCount = myActives.length * oppActives.length
@@ -198,10 +218,10 @@ function evalActiveMatchupScore(
  * Returns a score in [-1, +1] where positive favors the perspective side.
  */
 export function evaluatePosition(state: BattleState, perspective: "p1" | "p2" = "p1"): EvalResult {
-  const my = state.sides[perspective]
-  const opp = state.sides[perspective === "p1" ? "p2" : "p1"]
-  const myTotal = my.team.length || 1
-  const oppTotal = opp.team.length || 1
+  const mySide = state.sides[perspective]
+  const oppSide = state.sides[perspective === "p1" ? "p2" : "p1"]
+  const myTeamSize = mySide.team.length || 1
+  const oppTeamSize = oppSide.team.length || 1
 
   const features: EvalFeature[] = []
   let rawScore = 0
@@ -211,35 +231,35 @@ export function evaluatePosition(state: BattleState, perspective: "p1" | "p2" = 
     rawScore += contribution
   }
 
-  const hpDiff = hpFraction(my.team) - hpFraction(opp.team)
+  const hpDiff = hpFraction(mySide.team) - hpFraction(oppSide.team)
   addFeature("HP remaining", hpDiff, WEIGHT.HP_REMAINING, hpDiff * WEIGHT.HP_REMAINING)
 
-  const aliveFrac = aliveCount(my.team) / myTotal - aliveCount(opp.team) / oppTotal
+  const aliveFrac = aliveCount(mySide.team) / myTeamSize - aliveCount(oppSide.team) / oppTeamSize
   addFeature(
     "Pokemon alive",
-    aliveCount(my.team) - aliveCount(opp.team),
+    aliveCount(mySide.team) - aliveCount(oppSide.team),
     WEIGHT.POKEMON_ALIVE,
     aliveFrac * WEIGHT.POKEMON_ALIVE,
   )
 
-  const fastDiff = fastAliveCount(my.team) - fastAliveCount(opp.team)
+  const fastDiff = fastAliveCount(mySide.team) - fastAliveCount(oppSide.team)
   addFeature(
     "Fast mons alive",
     fastDiff,
     WEIGHT.FAST_POKEMON_ALIVE,
-    (fastDiff / Math.max(myTotal, 1)) * WEIGHT.FAST_POKEMON_ALIVE,
+    (fastDiff / Math.max(myTeamSize, 1)) * WEIGHT.FAST_POKEMON_ALIVE,
   )
 
-  const hazardDiff = evalHazards(opp.sideConditions) - evalHazards(my.sideConditions)
+  const hazardDiff = evalHazards(oppSide.sideConditions) - evalHazards(mySide.sideConditions)
   addFeature("Hazards", hazardDiff, 1, hazardDiff)
 
-  const screenDiff = evalScreens(my.sideConditions) - evalScreens(opp.sideConditions)
+  const screenDiff = evalScreens(mySide.sideConditions) - evalScreens(oppSide.sideConditions)
   addFeature("Screens/Tailwind", screenDiff, 1, screenDiff)
 
-  const statusDiff = evalStatus(opp.team) - evalStatus(my.team)
+  const statusDiff = evalStatus(oppSide.team) - evalStatus(mySide.team)
   addFeature("Status conditions", statusDiff, 1, statusDiff)
 
-  const matchupScore = evalActiveMatchupScore(state, my, opp)
+  const matchupScore = evalActiveMatchupScore(state, mySide, oppSide)
   addFeature("Active matchup", matchupScore, 1, matchupScore)
 
   const score = Math.tanh(rawScore / NORMALIZATION_FACTOR)

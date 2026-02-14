@@ -1,5 +1,11 @@
+import { useMemo } from "react"
 import { useQuery } from "@tanstack/react-query"
-import type { PokemonSpecies } from "@nasty-plot/core"
+import {
+  calculateAllStats,
+  type PokemonSpecies,
+  type StatsTable,
+  type NatureName,
+} from "@nasty-plot/core"
 import { fetchApiData } from "@/lib/api-client"
 
 export function usePokemonQuery(pokemonId: string | null) {
@@ -25,4 +31,25 @@ export function useLearnsetQuery(pokemonId: string | null, formatId?: string) {
     },
     enabled: !!pokemonId,
   })
+}
+
+/** Derives abilities list and calculated stats from species data + current set. */
+export function useSpeciesDerived(
+  speciesData: PokemonSpecies | undefined,
+  ivs: StatsTable,
+  evs: StatsTable,
+  level: number,
+  nature: NatureName,
+) {
+  const abilities = useMemo(() => {
+    if (!speciesData?.abilities) return []
+    return Object.values(speciesData.abilities)
+  }, [speciesData])
+
+  const calculatedStats = useMemo(() => {
+    if (!speciesData?.baseStats) return null
+    return calculateAllStats(speciesData.baseStats, ivs, evs, level, nature)
+  }, [speciesData, ivs, evs, level, nature])
+
+  return { abilities, calculatedStats }
 }

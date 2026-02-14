@@ -53,13 +53,13 @@ const MAX_HKO_CALC = 4
 
 function deriveKoChance(damageArr: number[], defenderHp: number): string {
   if (defenderHp <= 0) return "N/A"
-  const minDmg = Math.min(...damageArr)
-  const maxDmg = Math.max(...damageArr)
+  const minDamage = Math.min(...damageArr)
+  const maxDamage = Math.max(...damageArr)
 
   for (let hits = 1; hits <= MAX_HKO_CALC; hits++) {
     const label = hits === 1 ? "OHKO" : `${hits}HKO`
-    if (minDmg * hits >= defenderHp) return `guaranteed ${label}`
-    if (maxDmg * hits >= defenderHp) return `possible ${label}`
+    if (minDamage * hits >= defenderHp) return `guaranteed ${label}`
+    if (maxDamage * hits >= defenderHp) return `possible ${label}`
   }
 
   return `${MAX_HKO_CALC + 1}+ hits to KO`

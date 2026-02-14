@@ -50,7 +50,7 @@ export default async function PokemonDetailPage({ params }: Props) {
   const usageByFormat = await getUsageByFormat(formats, pokemonId)
 
   const setsByFormat = await Promise.all(
-    formats.map(async (f: { id: string; name: string }) => {
+    formats.map(async (f) => {
       const sets = await getSetsForPokemon(f.id, pokemonId).catch(() => [])
       return { formatId: f.id, formatName: f.name, sets }
     }),

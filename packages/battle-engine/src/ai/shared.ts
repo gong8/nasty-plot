@@ -106,12 +106,11 @@ export const HAZARD_REMOVAL_PER_HAZARD = 5
 export function getEffectiveSpeed(pokemon: BattlePokemon, sideConditions: SideConditions): number {
   let speed = pokemon.stats.spe || 1
 
-  // Apply boost stages
-  const boost = pokemon.boosts.spe
-  if (boost > 0) {
-    speed = Math.floor((speed * (2 + boost)) / 2)
-  } else if (boost < 0) {
-    speed = Math.floor((speed * 2) / (2 + Math.abs(boost)))
+  const boostStages = pokemon.boosts.spe
+  if (boostStages > 0) {
+    speed = Math.floor((speed * (2 + boostStages)) / 2)
+  } else if (boostStages < 0) {
+    speed = Math.floor((speed * 2) / (2 + Math.abs(boostStages)))
   }
 
   // Paralysis halves speed in Gen 9

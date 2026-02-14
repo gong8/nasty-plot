@@ -48,13 +48,11 @@ export default function SampleTeamsPage() {
   const [archetype, setArchetype] = useState("all")
   const [search, setSearch] = useState("")
 
-  const sampleTeamsUrl = (() => {
-    const params = new URLSearchParams()
-    if (formatId && formatId !== "all") params.set("formatId", formatId)
-    if (archetype && archetype !== "all") params.set("archetype", archetype)
-    if (search) params.set("search", search)
-    return `/api/sample-teams?${params}`
-  })()
+  const sampleTeamsParams = new URLSearchParams()
+  if (formatId !== "all") sampleTeamsParams.set("formatId", formatId)
+  if (archetype !== "all") sampleTeamsParams.set("archetype", archetype)
+  if (search) sampleTeamsParams.set("search", search)
+  const sampleTeamsUrl = `/api/sample-teams?${sampleTeamsParams}`
   const { data: teams, loading } = useFetchData<SampleTeam[]>(sampleTeamsUrl)
 
   const handleUseInBattle = (paste: string) => {

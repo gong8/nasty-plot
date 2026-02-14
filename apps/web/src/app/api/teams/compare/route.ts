@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server"
 import { getTeam, compareTeams } from "@nasty-plot/teams"
-import { apiErrorResponse, badRequestResponse, notFoundResponse } from "../../../../lib/api-error"
+import {
+  badRequestResponse,
+  entityErrorResponse,
+  notFoundResponse,
+} from "../../../../lib/api-error"
 
 export async function GET(request: Request) {
   try {
@@ -20,6 +24,6 @@ export async function GET(request: Request) {
     const result = await compareTeams(teamA, teamB)
     return NextResponse.json(result)
   } catch (error) {
-    return apiErrorResponse(error, { inferNotFound: true })
+    return entityErrorResponse(error)
   }
 }
