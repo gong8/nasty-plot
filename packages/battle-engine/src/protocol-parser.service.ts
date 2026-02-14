@@ -10,6 +10,7 @@ import {
 } from "@nasty-plot/core"
 import {
   calcHpPercent,
+  defaultBoosts,
   type BattleState,
   type BattlePokemon,
   type BattleLogEntry,
@@ -197,10 +198,6 @@ function parseDetails(details: string): { species: string; level: number; gender
 /** Slot letter to 0-based index */
 function slotIndex(slot: string): number {
   return slot.charCodeAt(0) - "a".charCodeAt(0)
-}
-
-function defaultBoosts(): BoostTable {
-  return { atk: 0, def: 0, spa: 0, spd: 0, spe: 0, accuracy: 0, evasion: 0 }
 }
 
 function makeEmptyPokemon(): BattlePokemon {

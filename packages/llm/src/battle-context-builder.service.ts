@@ -51,14 +51,6 @@ function describePokemon(pokemon: BattlePokemon | null): string {
   return parts.join(" | ")
 }
 
-function describeField(field: BattleState["field"]): string {
-  return formatFieldState(field) || "No field effects"
-}
-
-function describeSideConditions(sc: SideConditions): string {
-  return formatSideConditions(sc) || "none"
-}
-
 function describeSide(side: {
   active: (BattlePokemon | null)[]
   team: BattlePokemon[]
@@ -70,7 +62,7 @@ function describeSide(side: {
   const active = side.active.map(describePokemon).join("\n  ")
   const alive = side.team.filter((p) => !p.fainted).length
   const total = side.team.length
-  const conditions = describeSideConditions(side.sideConditions)
+  const conditions = formatSideConditions(side.sideConditions) || "none"
   const bench = side.team
     .filter((p) => !side.active.includes(p) && !p.fainted)
     .map(
@@ -117,7 +109,7 @@ function describeBattleState(state: BattleState): string {
   return `## Battle State (Turn ${state.turn})
 ${describeSide(state.sides.p1)}
 ${describeSide(state.sides.p2)}
-Field: ${describeField(state.field)}`
+Field: ${formatFieldState(state.field) || "No field effects"}`
 }
 
 export function buildTurnCommentaryContext(

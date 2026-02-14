@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { MessageSquare, Loader2 } from "lucide-react"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import type { BattleState, BattleLogEntry } from "@nasty-plot/battle-engine/client"
+import { readSSEEvents } from "@/lib/sse"
 
 interface CommentaryPanelProps {
   state: BattleState
@@ -26,7 +27,6 @@ interface CommentaryPanelProps {
 }
 
 const AUTO_COMMENTARY_DELAY_MS = 500
-const SSE_DATA_PREFIX = "data: "
 
 async function streamCommentary(
   request: {
@@ -47,28 +47,11 @@ async function streamCommentary(
 
   if (!res.ok || !res.body) throw new Error("Failed to fetch commentary")
 
-  const reader = res.body.getReader()
-  const decoder = new TextDecoder()
   let text = ""
-
-  while (true) {
-    const { done, value } = await reader.read()
-    if (done) break
-
-    const chunk = decoder.decode(value, { stream: true })
-    for (const line of chunk.split("\n")) {
-      if (!line.startsWith(SSE_DATA_PREFIX)) continue
-      const data = line.slice(SSE_DATA_PREFIX.length)
-      if (data === "[DONE]") break
-      try {
-        const parsed = JSON.parse(data)
-        if (parsed.content) {
-          text += parsed.content
-          onChunk(text)
-        }
-      } catch {
-        // Skip invalid JSON chunks
-      }
+  for await (const event of readSSEEvents<{ content?: string }>(res.body)) {
+    if (event.content) {
+      text += event.content
+      onChunk(text)
     }
   }
 

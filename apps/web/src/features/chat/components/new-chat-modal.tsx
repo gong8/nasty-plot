@@ -14,9 +14,10 @@ import {
   CONTEXT_MODE_LABELS,
 } from "@/features/chat/hooks/use-build-context-data"
 import { ContextModeBadge } from "./context-mode-badge"
-import { MessageCircle, Lock, Globe, Loader2 } from "lucide-react"
+import { MessageCircle, Lock, Globe } from "lucide-react"
 import type { ChatSessionData } from "@nasty-plot/core"
 import { PECHARUNT_SPRITE_URL } from "@/lib/constants"
+import { LoadingSpinner } from "@/components/loading-spinner"
 import { fetchJson } from "@/lib/api-client"
 import { useDialogAsyncData } from "@/lib/hooks/use-dialog-async-data"
 
@@ -139,11 +140,7 @@ export function NewChatModal() {
             </div>
           )}
 
-          {hasContextOption && loading && (
-            <div className="flex items-center justify-center py-2">
-              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-            </div>
-          )}
+          {hasContextOption && loading && <LoadingSpinner size="sm" className="py-2" />}
 
           {/* New context-locked chat */}
           {hasContextOption && (

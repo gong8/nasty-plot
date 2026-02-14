@@ -11,6 +11,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
+import { LoadingSpinner } from "@/components/loading-spinner"
 import { LineageTree } from "./lineage-tree"
 import { TeamDiffView } from "./team-diff-view"
 
@@ -58,7 +59,7 @@ export function VersionPanel({
           <div className="space-y-3">
             <h3 className="text-sm font-medium text-muted-foreground">History</h3>
             {lineageLoading ? (
-              <p className="text-sm text-muted-foreground">Loading lineage...</p>
+              <LoadingSpinner size="sm" label="Loading lineage..." />
             ) : lineageData ? (
               <LineageTree tree={lineageData} currentTeamId={teamId} />
             ) : (
@@ -91,7 +92,7 @@ export function VersionPanel({
                   ))}
             </select>
 
-            {compareLoading && <p className="text-sm text-muted-foreground">Comparing teams...</p>}
+            {compareLoading && <LoadingSpinner size="sm" label="Comparing teams..." />}
 
             {compareData && <TeamDiffView diff={compareData} />}
 

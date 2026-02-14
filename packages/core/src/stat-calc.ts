@@ -45,11 +45,15 @@ export function calculateAllStats(
   return stats
 }
 
+function sumStats(stats: StatsTable): number {
+  return STATS.reduce((sum, stat) => sum + stats[stat], 0)
+}
+
 /**
  * Get total EVs from a stats table.
  */
 export function getTotalEvs(evs: StatsTable): number {
-  return evs.hp + evs.atk + evs.def + evs.spa + evs.spd + evs.spe
+  return sumStats(evs)
 }
 
 /**
@@ -72,7 +76,7 @@ export function validateEvs(evs: StatsTable): { valid: boolean; reason?: string 
 }
 
 export function getBaseStatTotal(stats: StatsTable): number {
-  return stats.hp + stats.atk + stats.def + stats.spa + stats.spd + stats.spe
+  return sumStats(stats)
 }
 
 /**

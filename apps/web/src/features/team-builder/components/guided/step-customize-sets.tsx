@@ -2,10 +2,11 @@
 
 import { useEffect, useState } from "react"
 import { useQueries } from "@tanstack/react-query"
-import { Sparkles, ChevronDown, ChevronUp, Loader2 } from "lucide-react"
+import { Sparkles, ChevronDown, ChevronUp } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { cn } from "@nasty-plot/ui"
 import { EmptyState } from "@/components/empty-state"
+import { LoadingSpinner } from "@/components/loading-spinner"
 import type { TeamSlotData, PokemonSpecies } from "@nasty-plot/core"
 import { fetchApiData } from "@/lib/api-client"
 import { SimplifiedSetEditor } from "./simplified-set-editor"
@@ -83,12 +84,7 @@ export function StepCustomizeSets({
       </div>
 
       {/* Loading state while applying sets */}
-      {isApplying && (
-        <div className="flex items-center justify-center gap-2 py-8 text-muted-foreground">
-          <Loader2 className="h-4 w-4 animate-spin" />
-          <span className="text-sm">Loading recommended sets...</span>
-        </div>
-      )}
+      {isApplying && <LoadingSpinner label="Loading recommended sets..." />}
 
       {/* Slot accordions */}
       {!isApplying && (

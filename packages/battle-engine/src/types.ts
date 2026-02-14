@@ -273,6 +273,25 @@ export function calcHpPercent(hp: number, maxHp: number): number {
   return maxHp > 0 ? Math.round((hp / maxHp) * 100) : 0
 }
 
+/** Create a zeroed BoostTable. */
+export function defaultBoosts(): BoostTable {
+  return { atk: 0, def: 0, spa: 0, spd: 0, spe: 0, accuracy: 0, evasion: 0 }
+}
+
+/** Create an empty SideConditions with all hazards/screens inactive. */
+export function defaultSideConditions(): SideConditions {
+  return {
+    stealthRock: false,
+    spikes: 0,
+    toxicSpikes: 0,
+    stickyWeb: false,
+    reflect: 0,
+    lightScreen: 0,
+    auroraVeil: 0,
+    tailwind: 0,
+  }
+}
+
 // --- Batch Simulation Types ---
 
 export interface BatchSimConfig {

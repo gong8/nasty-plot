@@ -7,35 +7,22 @@ import {
 } from "./protocol-parser.service"
 import type { SetPredictor } from "./ai/set-predictor"
 import { DEFAULT_FORMAT_ID, toId, type GameType } from "@nasty-plot/core"
-import type {
-  BattleState,
-  BattleAction,
-  BattleActionSet,
-  BattleLogEntry,
-  SideConditions,
-  AIPlayer,
-  AIDifficulty,
-  BattleCheckpoint,
-  PredictedSet,
+import {
+  defaultSideConditions,
+  type BattleState,
+  type BattleAction,
+  type BattleActionSet,
+  type BattleLogEntry,
+  type AIPlayer,
+  type AIDifficulty,
+  type BattleCheckpoint,
+  type PredictedSet,
 } from "./types"
 
 const START_TIMEOUT_MS = 10_000
 const UPDATE_TIMEOUT_MS = 15_000
 const RESUME_INIT_DELAY_MS = 50
 const PLAYER_ID_PATTERN = /^p[1-4]$/
-
-function defaultSideConditions(): SideConditions {
-  return {
-    stealthRock: false,
-    spikes: 0,
-    toxicSpikes: 0,
-    stickyWeb: false,
-    reflect: 0,
-    lightScreen: 0,
-    auroraVeil: 0,
-    tailwind: 0,
-  }
-}
 
 export function createInitialState(id: string, format: GameType): BattleState {
   function makeEmptySide(name: string) {

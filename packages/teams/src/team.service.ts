@@ -1,8 +1,10 @@
 import { prisma } from "@nasty-plot/db"
 import { ensureFormatExists } from "@nasty-plot/formats/db"
 import { getSpecies } from "@nasty-plot/pokemon-data"
+import { STATS } from "@nasty-plot/core"
 import type {
   NatureName,
+  StatName,
   StatsTable,
   TeamCreateInput,
   TeamData,
@@ -60,26 +62,29 @@ type DbTeamRow = {
 
 // --- DB <-> Domain Mapping ---
 
-function evsToDb(evs: StatsTable) {
-  return {
-    evHp: evs.hp,
-    evAtk: evs.atk,
-    evDef: evs.def,
-    evSpa: evs.spa,
-    evSpd: evs.spd,
-    evSpe: evs.spe,
-  }
+const STAT_CAPITALIZED: Record<StatName, string> = {
+  hp: "Hp",
+  atk: "Atk",
+  def: "Def",
+  spa: "Spa",
+  spd: "Spd",
+  spe: "Spe",
 }
 
-function ivsToDb(ivs: StatsTable) {
-  return {
-    ivHp: ivs.hp,
-    ivAtk: ivs.atk,
-    ivDef: ivs.def,
-    ivSpa: ivs.spa,
-    ivSpd: ivs.spd,
-    ivSpe: ivs.spe,
+function statsToDbColumns(stats: StatsTable, prefix: "ev" | "iv"): Record<string, number> {
+  const result: Record<string, number> = {}
+  for (const stat of STATS) {
+    result[`${prefix}${STAT_CAPITALIZED[stat]}`] = stats[stat]
   }
+  return result
+}
+
+function dbColumnsToStats(row: Record<string, number>, prefix: "ev" | "iv"): StatsTable {
+  const result = {} as StatsTable
+  for (const stat of STATS) {
+    result[stat] = row[`${prefix}${STAT_CAPITALIZED[stat]}`]
+  }
+  return result
 }
 
 function validateNoDuplicateMoves(moves: TeamSlotInput["moves"]) {
@@ -122,22 +127,8 @@ export function dbSlotToDomain(dbSlot: DbSlotRow): TeamSlotData {
       dbSlot.move3 ?? undefined,
       dbSlot.move4 ?? undefined,
     ],
-    evs: {
-      hp: dbSlot.evHp,
-      atk: dbSlot.evAtk,
-      def: dbSlot.evDef,
-      spa: dbSlot.evSpa,
-      spd: dbSlot.evSpd,
-      spe: dbSlot.evSpe,
-    },
-    ivs: {
-      hp: dbSlot.ivHp,
-      atk: dbSlot.ivAtk,
-      def: dbSlot.ivDef,
-      spa: dbSlot.ivSpa,
-      spd: dbSlot.ivSpd,
-      spe: dbSlot.ivSpe,
-    },
+    evs: dbColumnsToStats(dbSlot, "ev"),
+    ivs: dbColumnsToStats(dbSlot, "iv"),
   }
 }
 
@@ -152,8 +143,8 @@ export function domainSlotToDb(slot: TeamSlotInput) {
     teraType: slot.teraType ?? null,
     level: slot.level,
     ...movesToDb(slot.moves),
-    ...evsToDb(slot.evs),
-    ...ivsToDb(slot.ivs),
+    ...statsToDbColumns(slot.evs, "ev"),
+    ...statsToDbColumns(slot.ivs, "iv"),
   }
 }
 
@@ -292,8 +283,8 @@ export async function updateSlot(
   }
 
   if (data.moves !== undefined) Object.assign(updateData, movesToDb(data.moves))
-  if (data.evs !== undefined) Object.assign(updateData, evsToDb(data.evs))
-  if (data.ivs !== undefined) Object.assign(updateData, ivsToDb(data.ivs))
+  if (data.evs !== undefined) Object.assign(updateData, statsToDbColumns(data.evs, "ev"))
+  if (data.ivs !== undefined) Object.assign(updateData, statsToDbColumns(data.ivs, "iv"))
 
   const updated = await prisma.teamSlot.update({
     where: { teamId_position: { teamId, position } },
