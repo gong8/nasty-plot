@@ -3,6 +3,7 @@
 import {
   formatUsagePercent,
   type TeamAnalysis,
+  type ThreatLevel,
   POKEMON_TYPES,
   type PokemonType,
 } from "@nasty-plot/core"
@@ -14,16 +15,15 @@ import { EmptyState } from "@/components/empty-state"
 import { Progress } from "@/components/ui/progress"
 import { Shield, Swords, Gauge, AlertTriangle } from "lucide-react"
 
+type CoverageStatus = "covered" | "weakness" | "neutral"
+
 interface SimplifiedAnalysisProps {
   analysis: TeamAnalysis | null
   isLoading: boolean
   filledSlotCount: number
 }
 
-function getTypeCoverageStatus(
-  type: PokemonType,
-  analysis: TeamAnalysis,
-): "covered" | "weakness" | "neutral" {
+function getTypeCoverageStatus(type: PokemonType, analysis: TeamAnalysis): CoverageStatus {
   const isCovered = analysis.coverage.offensive[type] > 0
   const isWeakness = analysis.coverage.sharedWeaknesses.includes(type)
 
@@ -32,7 +32,7 @@ function getTypeCoverageStatus(
   return "neutral"
 }
 
-const THREAT_LEVEL_COLORS: Record<"high" | "medium" | "low", string> = {
+const THREAT_LEVEL_COLORS: Record<ThreatLevel, string> = {
   high: "bg-red-500/15 text-red-400 border-red-500/30",
   medium: "bg-yellow-500/15 text-yellow-400 border-yellow-500/30",
   low: "bg-green-500/15 text-green-400 border-green-500/30",
@@ -113,7 +113,7 @@ export function SimplifiedAnalysis({
             statusMap={
               Object.fromEntries(
                 POKEMON_TYPES.map((t) => [t, getTypeCoverageStatus(t, analysis)]),
-              ) as Record<PokemonType, "covered" | "weakness" | "neutral">
+              ) as Record<PokemonType, CoverageStatus>
             }
             columns={6}
             badgeClassName="text-[8px]"

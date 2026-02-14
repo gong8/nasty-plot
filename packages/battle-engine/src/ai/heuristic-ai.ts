@@ -224,7 +224,7 @@ export class HeuristicAI implements AIPlayer {
     } catch {
       // Calc failed, fall back to type effectiveness estimate
       const oppTypes = getSpeciesTypes(oppPokemon.name)
-      const eff = getTypeEffectiveness(moveData.type, oppTypes)
+      const eff = getTypeEffectiveness(moveData.type as PokemonType, oppTypes)
       score += eff * 20
     }
 
@@ -357,7 +357,7 @@ export class HeuristicAI implements AIPlayer {
       for (const moveName of prediction.predictedMoves) {
         const moveData = getRawMove(moveName)
         if (!moveData?.exists || moveData.category === "Status") continue
-        const eff = getTypeEffectiveness(moveData.type, switchTypes)
+        const eff = getTypeEffectiveness(moveData.type as PokemonType, switchTypes)
         if (eff > 1) {
           score -= 15 * prediction.confidence
         }

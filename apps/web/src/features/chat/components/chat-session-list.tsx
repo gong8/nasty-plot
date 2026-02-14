@@ -12,6 +12,8 @@ import { LoadingSpinner } from "@/components/loading-spinner"
 import { timeAgo } from "@/lib/format-time"
 import type { ChatSessionData, PageType } from "@nasty-plot/core"
 
+export type ChatLayoutMode = "sidebar" | "fullpage"
+
 const PREVIEW_MAX_LENGTH = 50
 
 function truncatePreview(content?: string): string | undefined {
@@ -65,7 +67,7 @@ function sessionMatchesPage(
 }
 
 interface ChatSessionListProps {
-  mode: "sidebar" | "fullpage"
+  mode: ChatLayoutMode
   onSelect?: () => void
 }
 

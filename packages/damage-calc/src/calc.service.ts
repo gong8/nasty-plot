@@ -10,6 +10,8 @@ import {
   type DamageCalcInput,
   type DamageCalcResult,
   type MatchupMatrixEntry,
+  type NatureName,
+  type StatusName,
   type StatsTable,
   type TeamSlotData,
 } from "@nasty-plot/core"
@@ -30,7 +32,7 @@ function toCalcBoosts(boosts: Partial<StatsTable> | undefined): Partial<StatsTab
 // Helpers: status mapping
 // ---------------------------------------------------------------------------
 
-function toCalcStatus(status?: string): CalcStatusName | undefined {
+function toCalcStatus(status?: StatusName): CalcStatusName | undefined {
   if (!status || status === "None" || status === "Healthy") return undefined
   return STATUS_CALC_MAP[status]
 }
@@ -191,8 +193,8 @@ export function calculateQuickDamage(
     defenderLevel?: number
     attackerEvs?: Partial<StatsTable>
     defenderEvs?: Partial<StatsTable>
-    attackerNature?: string
-    defenderNature?: string
+    attackerNature?: NatureName
+    defenderNature?: NatureName
   },
 ): { minPercent: number; maxPercent: number } {
   try {

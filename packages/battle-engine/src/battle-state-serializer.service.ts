@@ -1,3 +1,4 @@
+import type { PokemonType, MoveCategory } from "@nasty-plot/core"
 import {
   calcHpPercent,
   type BattleState,
@@ -165,8 +166,8 @@ function serializePokemon(p: BattlePokemon, full: boolean): string {
  */
 export function formatMoveStats(m: {
   name: string
-  type: string
-  category: string
+  type: PokemonType
+  category: MoveCategory
   basePower: number
   accuracy: number | true
   pp: number

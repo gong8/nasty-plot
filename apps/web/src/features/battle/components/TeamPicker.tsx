@@ -15,10 +15,12 @@ import { TeamPickerCard } from "./TeamPickerCard"
 import type { GameType } from "@nasty-plot/core"
 import type { TeamValidation } from "../types"
 
+export type TeamPickerSource = "saved" | "sample" | "paste"
+
 export interface TeamSelection {
   teamId: string | null
   paste: string
-  source: "saved" | "sample" | "paste"
+  source: TeamPickerSource
 }
 
 interface TeamPickerProps {

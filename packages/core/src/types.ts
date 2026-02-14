@@ -1,3 +1,5 @@
+import type { StatusName, TerrainName, WeatherName } from "./constants"
+
 // ============================
 // Core Domain Types - The Backbone
 // ============================
@@ -44,11 +46,13 @@ export interface PokemonSpecies {
   isNonstandard?: string | null // null = SV-native, "Past" = old-gen
 }
 
+export type MoveCategory = "Physical" | "Special" | "Status"
+
 export interface MoveData {
   id: string
   name: string
   type: PokemonType
-  category: "Physical" | "Special" | "Status"
+  category: MoveCategory
   basePower: number
   accuracy: number | true // true = never misses
   pp: number
@@ -136,6 +140,9 @@ export interface FormatDefinition {
 
 // --- Team Building ---
 
+export type TeamMode = "freeform" | "guided"
+export type TeamSource = "manual" | "imported"
+
 export interface TeamSlotData {
   position: number // 1-6
   pokemonId: string
@@ -157,8 +164,8 @@ export interface TeamData {
   name: string
   formatId: string
   format?: FormatDefinition
-  mode: "freeform" | "guided"
-  source?: "manual" | "imported"
+  mode: TeamMode
+  source?: TeamSource
   notes?: string
   parentId?: string
   branchName?: string
@@ -171,8 +178,8 @@ export interface TeamData {
 export type TeamCreateInput = {
   name: string
   formatId: string
-  mode?: "freeform" | "guided"
-  source?: "manual" | "imported"
+  mode?: TeamMode
+  source?: TeamSource
   notes?: string
 }
 
@@ -285,7 +292,7 @@ export interface DamageCalcInput {
     ivs?: Partial<StatsTable>
     boosts?: Partial<StatsTable>
     teraType?: PokemonType
-    status?: string
+    status?: StatusName
   }
   defender: {
     pokemonId: string
@@ -297,12 +304,12 @@ export interface DamageCalcInput {
     ivs?: Partial<StatsTable>
     boosts?: Partial<StatsTable>
     teraType?: PokemonType
-    status?: string
+    status?: StatusName
   }
   move: string
   field?: {
-    weather?: string
-    terrain?: string
+    weather?: WeatherName
+    terrain?: TerrainName
     isReflect?: boolean
     isLightScreen?: boolean
     isAuroraVeil?: boolean
@@ -334,6 +341,8 @@ export interface MatchupMatrixEntry {
 
 // --- Analysis ---
 
+export type ThreatLevel = "high" | "medium" | "low"
+
 export interface TypeCoverage {
   offensive: Record<PokemonType, number> // How many types we can hit super-effectively
   defensive: Record<PokemonType, number> // How many resists/immunities we have
@@ -355,7 +364,7 @@ export interface ThreatEntry {
   pokemonNum?: number
   types?: PokemonType[]
   usagePercent: number
-  threatLevel: "high" | "medium" | "low"
+  threatLevel: ThreatLevel
   reason: string
   threatenedSlots?: string[]
 }
@@ -365,13 +374,15 @@ export interface SpeedTierEntry {
   pokemonName: string
   pokemonNum?: number
   speed: number
-  nature: string
+  nature: NatureName
   evs: number
   boosted?: boolean
   isBenchmark?: boolean
 }
 
 // --- Recommendations ---
+
+export type RecommendationType = "usage" | "coverage" | "synergy" | "meta"
 
 export interface Recommendation {
   pokemonId: string
@@ -382,7 +393,7 @@ export interface Recommendation {
 }
 
 export interface RecommendationReason {
-  type: "usage" | "coverage" | "synergy" | "meta"
+  type: RecommendationType
   description: string
   weight: number
 }
@@ -444,7 +455,7 @@ export interface ExtractedPokemonData {
   moves: string[]
   ability?: string
   item?: string
-  teraType?: string
+  teraType?: PokemonType
 }
 
 export interface ExtractedTeamData {

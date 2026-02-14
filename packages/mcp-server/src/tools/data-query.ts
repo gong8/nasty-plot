@@ -1,4 +1,5 @@
 import { z } from "zod"
+import { POKEMON_TYPES, type PokemonType } from "@nasty-plot/core"
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js"
 import { apiGet } from "../api-client.js"
 import { buildParams, handleTool } from "../tool-helpers.js"
@@ -68,7 +69,7 @@ export function registerDataQueryTools(server: McpServer): void {
     ({ pokemonId }) =>
       handleTool(async () => {
         const data = (await apiGet(`/pokemon/${encodeURIComponent(pokemonId)}`)) as {
-          data: { types: string[] }
+          data: { types: PokemonType[] }
         }
         return {
           pokemonId,
@@ -83,9 +84,12 @@ export function registerDataQueryTools(server: McpServer): void {
     "Get moves a Pokemon can learn, optionally filtered by type or category",
     {
       pokemonId: z.string().describe("Pokemon ID (e.g., 'greatTusk')"),
-      moveType: z.string().optional().describe("Filter by move type (e.g., 'Ground', 'Fire')"),
+      moveType: z
+        .enum(POKEMON_TYPES)
+        .optional()
+        .describe("Filter by move type (e.g., 'Ground', 'Fire')"),
       category: z
-        .string()
+        .enum(["Physical", "Special", "Status"])
         .optional()
         .describe("Filter by category: 'Physical', 'Special', or 'Status'"),
     },

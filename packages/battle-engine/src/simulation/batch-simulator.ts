@@ -68,7 +68,9 @@ export async function runBatchSimulation(
   }
 
   for (let i = 0; i < config.totalGames; i++) {
-    const p = runSingleGame(i).then(() => inflight.delete(p))
+    const p: Promise<void> = runSingleGame(i).then(() => {
+      inflight.delete(p)
+    })
     inflight.add(p)
 
     if (inflight.size >= concurrency) {

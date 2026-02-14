@@ -1,5 +1,5 @@
 import { getRawMove } from "@nasty-plot/pokemon-data"
-import type { PokemonType, StatsTable, GameType } from "@nasty-plot/core"
+import type { PokemonType, StatsTable, GameType, MoveCategory } from "@nasty-plot/core"
 
 export interface PredictedSet {
   pokemonId: string
@@ -11,6 +11,7 @@ export interface PredictedSet {
 
 export type BattlePhase = "setup" | "preview" | "battle" | "ended"
 export type AIDifficulty = "random" | "greedy" | "heuristic" | "expert"
+export type BattleMode = "play" | "analyze" | "batch" | "imported"
 
 /** Move data from @pkmn/dex. Defined once to avoid duplication across AI modules. */
 export type DexMove = ReturnType<typeof getRawMove>
@@ -179,7 +180,7 @@ export interface BattleActionSet {
     disabled: boolean
     target: string
     basePower: number
-    category: "Physical" | "Special" | "Status"
+    category: MoveCategory
     accuracy: number | true
     description: string
   }[]

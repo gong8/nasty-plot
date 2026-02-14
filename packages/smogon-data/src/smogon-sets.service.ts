@@ -206,7 +206,7 @@ export async function getSetsForPokemon(
 export async function getNatureUsage(
   formatId: string,
   pokemonId: string,
-): Promise<{ natureName: string; count: number }[]> {
+): Promise<{ natureName: NatureName; count: number }[]> {
   const rows = await prisma.smogonSet.findMany({
     where: { formatId, pokemonId },
     select: { nature: true },
@@ -218,7 +218,7 @@ export async function getNatureUsage(
   }
 
   return Array.from(counts.entries())
-    .map(([natureName, count]) => ({ natureName, count }))
+    .map(([natureName, count]) => ({ natureName: natureName as NatureName, count }))
     .sort((a, b) => b.count - a.count)
 }
 

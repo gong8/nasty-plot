@@ -60,7 +60,7 @@ function makeSlot(
   }
 }
 
-function makeSpecies(id: string, types: string[]) {
+function makeSpecies(id: string, types: PokemonType[]) {
   return {
     id,
     name: id.charAt(0).toUpperCase() + id.slice(1),

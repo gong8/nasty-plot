@@ -174,22 +174,22 @@ export async function runAutomatedBattle(
       pendingP1Slot2Actions = null
       pendingP2Slot2Actions = null
       turns++
-    } else if (pendingP1Actions?.forceSwitch) {
+    } else if ((pendingP1Actions as BattleActionSet | null)?.forceSwitch) {
       const choice = await resolvePlayerChoice(
         config.ai1,
         state,
-        pendingP1Actions,
+        pendingP1Actions!,
         pendingP1Slot2Actions,
         isDoubles,
       )
       stream.write(`>p1 ${choice}`)
       pendingP1Actions = null
       pendingP1Slot2Actions = null
-    } else if (pendingP2Actions?.forceSwitch) {
+    } else if ((pendingP2Actions as BattleActionSet | null)?.forceSwitch) {
       const choice = await resolvePlayerChoice(
         config.ai2,
         state,
-        pendingP2Actions,
+        pendingP2Actions!,
         pendingP2Slot2Actions,
         isDoubles,
       )

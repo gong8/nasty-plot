@@ -4,12 +4,13 @@ import { syncUsageStats, syncSmogonSets } from "@nasty-plot/smogon-data"
 import { isStale } from "@nasty-plot/data-pipeline"
 import { FORMAT_DEFINITIONS, getActiveFormats } from "@nasty-plot/formats"
 import { ensureFormatExists } from "@nasty-plot/formats/db"
+import type { GameType } from "@nasty-plot/core"
 
 interface SeedableFormat {
   id: string
   name: string
   generation: number
-  gameType: string
+  gameType: GameType
   smogonStatsId?: string
   pkmnSetsId?: string
 }

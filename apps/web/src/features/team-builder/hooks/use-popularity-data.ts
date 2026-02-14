@@ -1,11 +1,12 @@
 import { useQuery } from "@tanstack/react-query"
+import type { NatureName } from "@nasty-plot/core"
 import { fetchApiData } from "@/lib/api-client"
 
 export interface PopularityData {
   moves: { name: string; usagePercent: number }[]
   items: { name: string; usagePercent: number }[]
   abilities: { name: string; usagePercent: number }[]
-  natures: { name: string; count: number }[]
+  natures: { name: NatureName; count: number }[]
 }
 
 const EMPTY_POPULARITY: PopularityData = { moves: [], items: [], abilities: [], natures: [] }

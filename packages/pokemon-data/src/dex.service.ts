@@ -12,9 +12,9 @@ export function getDex() {
   return dex
 }
 
-function mapTypes(types: readonly string[]): [PokemonType] | [PokemonType, PokemonType] {
-  if (types.length === 1) return [types[0] as PokemonType]
-  return [types[0] as PokemonType, types[1] as PokemonType]
+function mapTypes(types: readonly PokemonType[]): [PokemonType] | [PokemonType, PokemonType] {
+  if (types.length === 1) return [types[0]]
+  return [types[0], types[1]]
 }
 
 function toSpecies(species: ReturnType<typeof dex.species.get>): PokemonSpecies {
@@ -22,7 +22,7 @@ function toSpecies(species: ReturnType<typeof dex.species.get>): PokemonSpecies 
     id: species.id,
     name: species.name,
     num: species.num,
-    types: mapTypes(species.types),
+    types: mapTypes(species.types as unknown as readonly PokemonType[]),
     baseStats: { ...species.baseStats },
     abilities: { ...species.abilities } as Record<string, string>,
     weightkg: species.weightkg,

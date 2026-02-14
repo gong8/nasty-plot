@@ -1,4 +1,6 @@
 import { prisma } from "@nasty-plot/db"
+import type { GameType } from "@nasty-plot/core"
+import type { AIDifficulty, BattleMode } from "./types"
 
 // --- Battle CRUD ---
 
@@ -45,9 +47,9 @@ export async function listBattles(options: ListBattlesOptions = {}) {
 
 export interface CreateBattleData {
   formatId: string
-  gameType?: string
-  mode?: string
-  aiDifficulty?: string | null
+  gameType?: GameType
+  mode?: BattleMode
+  aiDifficulty?: AIDifficulty | null
   team1Paste: string
   team1Name?: string
   team2Paste: string
@@ -171,8 +173,8 @@ export async function updateBattleCommentary(battleId: string, commentary: strin
 
 export interface CreateBatchData {
   formatId: string
-  gameType: string
-  aiDifficulty: string
+  gameType: GameType
+  aiDifficulty: AIDifficulty
   team1Paste: string
   team1Name: string
   team2Paste: string

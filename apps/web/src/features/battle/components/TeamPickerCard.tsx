@@ -3,12 +3,13 @@
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@nasty-plot/ui"
 import { PokemonSpriteRow } from "@/components/pokemon-sprite-row"
+import type { TeamPickerSource } from "./TeamPicker"
 
 interface TeamPickerCardProps {
   team: {
     id: string
     name: string
-    source: "saved" | "sample"
+    source: TeamPickerSource
     archetype?: string | null
     pokemonIds: string[]
   }

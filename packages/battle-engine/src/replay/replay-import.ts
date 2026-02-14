@@ -9,6 +9,7 @@ import {
   DEFAULT_FORMAT_ID,
   DEFAULT_LEVEL,
   toId,
+  type PokemonType,
   type ExtractedPokemonData,
   type ExtractedTeamData,
 } from "@nasty-plot/core"
@@ -224,7 +225,7 @@ export function parseProtocolLog(log: string): ParsedBattleImport {
         if (!ident) break
 
         const pokemon = resolvePokemon(ident.side, ident.nickname)
-        if (pokemon && args[1]) pokemon.teraType = args[1]
+        if (pokemon && args[1]) pokemon.teraType = args[1] as PokemonType
         break
       }
 

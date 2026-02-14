@@ -4,13 +4,14 @@
  * Formats battles for export in Showdown log and JSON formats.
  */
 
-import type { ShowdownReplayJSON } from "../types"
+import type { GameType } from "@nasty-plot/core"
+import type { BattleMode, ShowdownReplayJSON } from "../types"
 
 export interface BattleRecord {
   id: string
   formatId: string
-  gameType: string
-  mode: string
+  gameType: GameType
+  mode: BattleMode
   team1Name: string
   team2Name: string
   team1Paste: string

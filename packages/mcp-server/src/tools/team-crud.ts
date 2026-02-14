@@ -1,6 +1,6 @@
 import { z } from "zod"
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js"
-import { DEFAULT_IVS, DEFAULT_LEVEL, fillStats } from "@nasty-plot/core"
+import { DEFAULT_IVS, DEFAULT_LEVEL, NATURES, POKEMON_TYPES, fillStats } from "@nasty-plot/core"
 import { apiDelete, apiGet, apiPost, apiPut } from "../api-client.js"
 import { buildParams, handleTool, toolError, toolSuccess } from "../tool-helpers.js"
 
@@ -71,8 +71,8 @@ export function registerTeamCrudTools(server: McpServer): void {
       pokemonId: z.string().describe("Pokemon ID (e.g., 'greatTusk')"),
       ability: z.string().describe("Ability name (e.g., 'Protosynthesis')"),
       item: z.string().describe("Held item (e.g., 'Booster Energy')"),
-      nature: z.string().describe("Nature (e.g., 'Jolly', 'Timid')"),
-      teraType: z.string().optional().describe("Tera type (e.g., 'Ground', 'Steel')"),
+      nature: z.enum(NATURES).describe("Nature (e.g., 'Jolly', 'Timid')"),
+      teraType: z.enum(POKEMON_TYPES).optional().describe("Tera type (e.g., 'Ground', 'Steel')"),
       level: z.number().optional().describe("Level (default 100)"),
       moves: z.array(z.string()).describe("Array of 1-4 move names"),
       evs: evsSchema,
@@ -121,8 +121,8 @@ export function registerTeamCrudTools(server: McpServer): void {
       position: z.number().describe("Slot position (1-6)"),
       ability: z.string().optional().describe("New ability"),
       item: z.string().optional().describe("New held item"),
-      nature: z.string().optional().describe("New nature"),
-      teraType: z.string().optional().describe("New Tera type"),
+      nature: z.enum(NATURES).optional().describe("New nature"),
+      teraType: z.enum(POKEMON_TYPES).optional().describe("New Tera type"),
       moves: z.array(z.string()).optional().describe("New move list"),
       evs: evsSchema,
     },

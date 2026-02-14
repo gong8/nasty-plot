@@ -1,4 +1,5 @@
 import { analyzeTeam } from "@nasty-plot/analysis"
+import type { PokemonType } from "@nasty-plot/core"
 import { DEFAULT_LEVEL, DEFAULT_IVS, MAX_SINGLE_EV } from "@nasty-plot/core"
 
 // ---------------------------------------------------------------------------
@@ -87,7 +88,7 @@ function makeSlot(overrides?: Record<string, unknown>) {
   }
 }
 
-function makeSpecies(id: string, types: string[], baseStatsOverride?: Record<string, number>) {
+function makeSpecies(id: string, types: PokemonType[], baseStatsOverride?: Record<string, number>) {
   return {
     id,
     name: id.charAt(0).toUpperCase() + id.slice(1),

@@ -1,5 +1,5 @@
 import { getRawMove } from "@nasty-plot/pokemon-data"
-import { getTypeEffectiveness } from "@nasty-plot/core"
+import { getTypeEffectiveness, type PokemonType } from "@nasty-plot/core"
 import type { BattleState, BattleActionSet, BattleAction, BattlePokemon, DexMove } from "../types"
 import { evaluatePosition, type EvalResult } from "./evaluator.service"
 import {
@@ -146,7 +146,7 @@ function estimateMoveScore(
     return { score, explanation }
   } catch {
     const oppTypes = getSpeciesTypes(oppActive.name)
-    const eff = getTypeEffectiveness(moveData.type, oppTypes as string[])
+    const eff = getTypeEffectiveness(moveData.type as PokemonType, oppTypes)
     const score = eff * 20
     return { score, explanation: `Type effectiveness: ${eff}x` }
   }
@@ -258,14 +258,14 @@ function estimateSwitchScore(
 
   // Defensive: does the switch-in resist opponent's STAB?
   for (const t of oppTypes) {
-    const eff = getTypeEffectiveness(t, swTypes as string[])
+    const eff = getTypeEffectiveness(t, swTypes)
     if (eff < 1) score += SWITCH_SCORES.RESIST_BONUS
     if (eff === 0) score += SWITCH_SCORES.IMMUNITY_BONUS
   }
 
   // Offensive: does switch-in have SE coverage?
   for (const t of swTypes) {
-    if (getTypeEffectiveness(t, oppTypes as string[]) > 1) {
+    if (getTypeEffectiveness(t, oppTypes) > 1) {
       score += SWITCH_SCORES.SE_COVERAGE_BONUS
       break
     }

@@ -22,6 +22,7 @@ import {
   type TeamSlotData,
   type NatureName,
   type StatsTable,
+  type PokemonType,
 } from "@nasty-plot/core"
 import {
   useGuidedBuilder,
@@ -121,11 +122,11 @@ export interface GuidedBuilderChatContext {
     position: number
     pokemonId: string
     pokemonName?: string
-    types?: string[]
+    types?: PokemonType[]
     ability?: string
     item?: string
-    nature?: string
-    teraType?: string
+    nature?: NatureName
+    teraType?: PokemonType
     moves?: string[]
     evs?: Record<string, number>
   }>
@@ -365,7 +366,7 @@ export function GuidedBuilderProvider({ teamId, formatId, children }: GuidedBuil
         position: s.position!,
         pokemonId: s.pokemonId!,
         pokemonName: usage?.pokemonName,
-        types: usage?.types as string[] | undefined,
+        types: usage?.types as PokemonType[] | undefined,
         ability: s.ability || undefined,
         item: s.item || undefined,
         nature: s.nature || undefined,

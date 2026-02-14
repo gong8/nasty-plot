@@ -4,12 +4,12 @@ import { POKEMON_TYPES, type PokemonType } from "./types"
 /**
  * Get effectiveness multiplier of an attacking type against defending type(s).
  */
-export function getTypeEffectiveness(attackType: string, defenseTypes: string[]): number {
+export function getTypeEffectiveness(attackType: PokemonType, defenseTypes: PokemonType[]): number {
   let multiplier = 1
-  const chart = TYPE_CHART[attackType as PokemonType]
+  const chart = TYPE_CHART[attackType]
   if (!chart) return multiplier
   for (const defType of defenseTypes) {
-    multiplier *= chart[defType as PokemonType] ?? 1
+    multiplier *= chart[defType] ?? 1
   }
   return multiplier
 }

@@ -21,9 +21,11 @@ import { RoleSuggestionBanner } from "./role-suggestion-banner"
 import { SimplifiedAnalysis } from "./simplified-analysis"
 import type { GuidedPokemonPick } from "../../hooks/use-guided-builder"
 
+type PickMode = "lead" | "build"
+
 interface StepPickPokemonProps {
   /** "lead" for slot 1, "build" for slots 2-6 */
-  mode: "lead" | "build"
+  mode: PickMode
   slotNumber: number // 1-6
   recommendations: Recommendation[]
   isLoadingRecommendations: boolean

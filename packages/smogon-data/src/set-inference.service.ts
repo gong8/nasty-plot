@@ -1,5 +1,6 @@
 import {
   normalizeMoveName,
+  type PokemonType,
   type SmogonSetData,
   type NatureName,
   type StatsTable,
@@ -35,7 +36,7 @@ export interface InferredSetResult {
   moves: string[] | null
   ability: string | null
   item: string | null
-  teraType: string | null
+  teraType: PokemonType | null
 }
 
 /** Enriched pokemon — original fields plus inferred nature/evs/ivs. */

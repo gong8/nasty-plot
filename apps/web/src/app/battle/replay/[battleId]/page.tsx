@@ -21,7 +21,7 @@ import type { GameType } from "@nasty-plot/core"
 interface BattleData {
   id: string
   formatId: string
-  gameType: string
+  gameType: GameType
   team1Name: string
   team2Name: string
   winnerId: string | null

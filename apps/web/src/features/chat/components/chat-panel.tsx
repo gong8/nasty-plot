@@ -16,6 +16,7 @@ import { TurnAnalysisCard } from "./turn-analysis-card"
 import { ChatGuidedPrompts } from "./chat-guided-prompts"
 import { ArrowDown, Zap, Search } from "lucide-react"
 import type { ChatStreamOptions } from "@/features/chat/hooks/use-chat-stream"
+import type { ChatLayoutMode } from "./chat-session-list"
 import { cn } from "@nasty-plot/ui"
 import { PECHARUNT_SPRITE_URL } from "@/lib/constants"
 
@@ -25,7 +26,7 @@ interface ChatPanelProps {
   teamId?: string
   formatId?: string
   sessionId?: string
-  mode?: "sidebar" | "fullpage"
+  mode?: ChatLayoutMode
 }
 
 export function ChatPanel({ sessionId }: ChatPanelProps) {

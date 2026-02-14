@@ -9,6 +9,8 @@ import { AnalysisCard } from "@/components/analysis-card"
 import { POKEMON_TYPES, type TypeCoverage } from "@nasty-plot/core"
 import { cn, TypeBadge } from "@nasty-plot/ui"
 
+type CoverageMode = "offensive" | "defensive"
+
 interface CoverageChartProps {
   coverage: TypeCoverage | undefined
   compact?: boolean
@@ -44,7 +46,7 @@ function getCoverageLevel(count: number): {
 }
 
 export function CoverageChart({ coverage, compact }: CoverageChartProps) {
-  const [mode, setMode] = useState<"offensive" | "defensive">("offensive")
+  const [mode, setMode] = useState<CoverageMode>("offensive")
 
   if (!coverage) {
     if (compact) {
@@ -69,7 +71,7 @@ export function CoverageChart({ coverage, compact }: CoverageChartProps) {
     <>
       <div className={compact ? "flex items-center justify-between mb-3" : ""}>
         {compact && <h4 className="text-sm font-medium">Type Coverage</h4>}
-        <Tabs value={mode} onValueChange={(v) => setMode(v as "offensive" | "defensive")}>
+        <Tabs value={mode} onValueChange={(v) => setMode(v as CoverageMode)}>
           <TabsList className="h-7">
             <TabsTrigger value="offensive" className="text-xs h-6 px-2">
               Offensive

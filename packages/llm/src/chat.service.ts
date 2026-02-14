@@ -13,7 +13,7 @@ import {
   type PageType,
 } from "./tool-context"
 import { streamCliChat } from "./cli-chat"
-import type { ChatMessage } from "@nasty-plot/core"
+import type { ChatMessage, ChatRole } from "@nasty-plot/core"
 import { getTeam } from "@nasty-plot/teams"
 import { getUsageStats } from "@nasty-plot/smogon-data"
 import { MODEL } from "./config"
@@ -181,7 +181,7 @@ export async function streamChat(options: StreamChatOptions): Promise<ReadableSt
 
   const stream = streamCliChat({
     messages: messages.map((m) => ({
-      role: m.role as "user" | "assistant" | "system",
+      role: m.role as ChatRole,
       content: m.content,
     })),
     systemPrompt,

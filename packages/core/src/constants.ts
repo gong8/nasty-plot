@@ -199,6 +199,12 @@ export const STATUSES = [
 
 export const BOOST_VALUES = [-6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6] as const
 
+// --- Derived Types from as-const arrays ---
+
+export type WeatherName = (typeof WEATHERS)[number]
+export type TerrainName = (typeof TERRAINS)[number]
+export type StatusName = (typeof STATUSES)[number]
+
 // --- Unified Status Data ---
 
 export type CalcStatusName = "slp" | "psn" | "brn" | "frz" | "par" | "tox"

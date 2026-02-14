@@ -5,6 +5,7 @@ import {
   STATUS_DISPLAY_MAP,
   camelCaseToDisplayName,
   toId,
+  type MoveCategory,
   type PokemonType,
 } from "@nasty-plot/core"
 import {
@@ -904,7 +905,7 @@ function extractMoves(active: RequestActive | undefined): BattleActionSet["moves
       disabled: m.disabled || false,
       target: m.target || "normal",
       basePower: moveData?.basePower ?? 0,
-      category: (moveData?.category ?? "Status") as "Physical" | "Special" | "Status",
+      category: (moveData?.category ?? "Status") as MoveCategory,
       accuracy: moveData?.accuracy === true ? true : (moveData?.accuracy ?? 100),
       description: moveData?.shortDesc || moveData?.desc || "",
     }

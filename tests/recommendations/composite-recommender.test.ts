@@ -1,4 +1,5 @@
 import { getRecommendations } from "@nasty-plot/recommendations"
+import type { PokemonType } from "@nasty-plot/core"
 import { DEFAULT_LEVEL, DEFAULT_EVS, DEFAULT_IVS, MAX_SINGLE_EV } from "@nasty-plot/core"
 
 // ---------------------------------------------------------------------------
@@ -36,7 +37,7 @@ const mockCoverageRecs = getCoverageBasedRecommendations as ReturnType<typeof vi
 // Helpers
 // ---------------------------------------------------------------------------
 
-function makeSpecies(id: string, name: string, types: string[]) {
+function makeSpecies(id: string, name: string, types: PokemonType[]) {
   return {
     id,
     name,

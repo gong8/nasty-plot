@@ -5,6 +5,7 @@ import { tmpdir } from "os"
 import { getToolLabel, isWriteTool } from "./tool-labels"
 import { StreamParser } from "./stream-parser"
 import type { SSEEvent } from "./sse-events"
+import type { ChatRole } from "@nasty-plot/core"
 import type { PageContextData } from "./context-builder.service"
 import { MCP_URL, MODEL } from "./config"
 
@@ -71,7 +72,7 @@ function writeSystemPrompt(content: string): string {
 }
 
 interface CliMessage {
-  role: "user" | "assistant" | "system"
+  role: ChatRole
   content: string
 }
 

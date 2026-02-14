@@ -5,7 +5,7 @@ import {
   parseShowdownPaste,
   serializeShowdownPaste,
 } from "@nasty-plot/core"
-import type { NatureName, TeamData, TeamSlotInput } from "@nasty-plot/core"
+import type { NatureName, PokemonType, TeamData, TeamSlotInput } from "@nasty-plot/core"
 import { getSpecies } from "@nasty-plot/pokemon-data"
 import { addSlot, clearSlots, createTeam, getTeam } from "./team.service"
 
@@ -95,8 +95,8 @@ export async function createTeamFromExtractedData(
       moves: string[]
       ability?: string
       item?: string
-      teraType?: string
-      nature?: string
+      teraType?: PokemonType
+      nature?: NatureName
       evs?: Partial<Record<string, number>>
       ivs?: Partial<Record<string, number>>
     }[]

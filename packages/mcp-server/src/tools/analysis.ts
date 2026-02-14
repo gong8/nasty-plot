@@ -1,5 +1,5 @@
 import { z } from "zod"
-import { DEFAULT_LEVEL } from "@nasty-plot/core"
+import { DEFAULT_LEVEL, type PokemonType, type StatName } from "@nasty-plot/core"
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js"
 import { apiGet, apiPost } from "../api-client.js"
 import { handleTool } from "../tool-helpers.js"
@@ -82,7 +82,10 @@ export function registerAnalysisTools(server: McpServer): void {
           pokemonA: { ...a, bst: bstA },
           pokemonB: { ...b, bst: bstB },
           statDifferences: Object.fromEntries(
-            Object.keys(a.baseStats).map((stat) => [stat, a.baseStats[stat] - b.baseStats[stat]]),
+            (Object.keys(a.baseStats) as StatName[]).map((stat) => [
+              stat,
+              a.baseStats[stat] - b.baseStats[stat],
+            ]),
           ),
         }
       }, `Could not compare "${pokemonA}" and "${pokemonB}". Check that both names are correct.`),
@@ -134,12 +137,12 @@ export function registerAnalysisTools(server: McpServer): void {
 
 interface PokemonData {
   name: string
-  types: string[]
-  baseStats: Record<string, number>
+  types: PokemonType[]
+  baseStats: Record<StatName, number>
   abilities: Record<string, string>
   tier?: string
 }
 
-function sumStats(stats: Record<string, number>): number {
+function sumStats(stats: Record<StatName, number>): number {
   return Object.values(stats).reduce((sum, v) => sum + v, 0)
 }

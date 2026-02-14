@@ -37,6 +37,9 @@ import {
   type NatureName,
   type StatsTable,
   type DamageCalcInput,
+  type StatusName,
+  type WeatherName,
+  type TerrainName,
   type PaginatedResponse,
   type PokemonSpecies,
   type MoveData,
@@ -55,7 +58,7 @@ interface PokemonConfig {
   ivs: StatsTable
   boosts: StatsTable
   teraType: PokemonType | ""
-  status: string
+  status: StatusName | ""
 }
 
 const DEFAULT_CONFIG: PokemonConfig = {
@@ -83,7 +86,7 @@ function toCalcPokemon(config: PokemonConfig): DamageCalcInput["attacker"] {
     ivs: config.ivs,
     boosts: config.boosts,
     teraType: config.teraType || undefined,
-    status: config.status || undefined,
+    status: (config.status || undefined) as StatusName | undefined,
   }
 }
 
@@ -346,7 +349,7 @@ function PokemonPanel({
           <Label className="text-xs">Status</Label>
           <Select
             value={config.status || "None"}
-            onValueChange={(v) => updateField("status", v === "None" ? "" : v)}
+            onValueChange={(v) => updateField("status", v === "None" ? "" : (v as StatusName))}
           >
             <SelectTrigger className="h-8 text-xs">
               <SelectValue />
@@ -405,8 +408,8 @@ export function DamageCalculator() {
   const [attacker, setAttackerRaw] = useState<PokemonConfig>({ ...DEFAULT_CONFIG })
   const [defender, setDefender] = useState<PokemonConfig>({ ...DEFAULT_CONFIG })
   const [moveName, setMoveName] = useState("")
-  const [weather, setWeather] = useState("None")
-  const [terrain, setTerrain] = useState("None")
+  const [weather, setWeather] = useState<WeatherName>("None")
+  const [terrain, setTerrain] = useState<TerrainName>("None")
   const [fieldToggles, setFieldToggles] = useState({
     isReflect: false,
     isLightScreen: false,
@@ -474,7 +477,7 @@ export function DamageCalculator() {
                 <div className="grid grid-cols-2 gap-2">
                   <div className="space-y-1">
                     <Label className="text-[10px]">Weather</Label>
-                    <Select value={weather} onValueChange={setWeather}>
+                    <Select value={weather} onValueChange={(v) => setWeather(v as WeatherName)}>
                       <SelectTrigger className="h-7 text-xs">
                         <SelectValue />
                       </SelectTrigger>
@@ -490,7 +493,7 @@ export function DamageCalculator() {
 
                   <div className="space-y-1">
                     <Label className="text-[10px]">Terrain</Label>
-                    <Select value={terrain} onValueChange={setTerrain}>
+                    <Select value={terrain} onValueChange={(v) => setTerrain(v as TerrainName)}>
                       <SelectTrigger className="h-7 text-xs">
                         <SelectValue />
                       </SelectTrigger>

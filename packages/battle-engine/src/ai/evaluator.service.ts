@@ -132,7 +132,7 @@ function evalActiveMatchup(
 
   // Check if we have SE coverage
   for (const t of myTypes) {
-    if (getTypeEffectiveness(t, oppTypes as string[]) > 1) {
+    if (getTypeEffectiveness(t, oppTypes) > 1) {
       score += WEIGHT.SE_COVERAGE
       break
     }
@@ -141,7 +141,7 @@ function evalActiveMatchup(
   // STAB advantage: our STAB resisted by fewer of opponent's types
   let stabCount = 0
   for (const t of myTypes) {
-    if (getTypeEffectiveness(t, oppTypes as string[]) >= 1) stabCount++
+    if (getTypeEffectiveness(t, oppTypes) >= 1) stabCount++
   }
   if (stabCount > 0) score += WEIGHT.STAB_ADVANTAGE * (stabCount / myTypes.length)
 
