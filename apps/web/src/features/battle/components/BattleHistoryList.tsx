@@ -4,7 +4,8 @@ import Link from "next/link"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Download, ChevronLeft, ChevronRight } from "lucide-react"
+import { Download } from "lucide-react"
+import { Pagination } from "@/components/pagination"
 import { EmptyState } from "@/components/empty-state"
 import { timeAgo } from "@/lib/format-time"
 import type { BattleSummary } from "../hooks/use-team-battles"
@@ -91,29 +92,12 @@ export function BattleHistoryList({
       })}
 
       {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-2 pt-2">
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={page <= 1}
-            onClick={() => onPageChange(page - 1)}
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <span className="text-sm text-muted-foreground">
-            Page {page} of {totalPages}
-          </span>
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={page >= totalPages}
-            onClick={() => onPageChange(page + 1)}
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-        </div>
-      )}
+      <Pagination
+        page={page}
+        totalPages={totalPages}
+        onPageChange={onPageChange}
+        className="pt-2"
+      />
     </div>
   )
 }

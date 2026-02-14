@@ -95,8 +95,8 @@ export async function POST(req: NextRequest) {
       },
       { status: 201 },
     )
-  } catch (err) {
-    return apiErrorResponse(err, {
+  } catch (error) {
+    return apiErrorResponse(error, {
       fallback: "Failed to import battle",
     })
   }

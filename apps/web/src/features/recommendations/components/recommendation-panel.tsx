@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { AnalysisCard } from "@/components/analysis-card"
 import { Plus, Sparkles } from "lucide-react"
+import { PokemonAvatar } from "@/components/pokemon-avatar"
 import { useAddSlot } from "@/features/teams/hooks/use-teams"
 import {
   DEFAULT_LEVEL,
@@ -101,9 +102,7 @@ export function RecommendationPanel({
             className="flex items-start gap-3 p-2.5 rounded-lg border hover:bg-muted/50 transition-colors"
           >
             {/* Avatar */}
-            <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center text-xs font-medium shrink-0">
-              {rec.pokemonName.slice(0, 2)}
-            </div>
+            <PokemonAvatar name={rec.pokemonName} size="lg" />
 
             {/* Info */}
             <div className="flex-1 min-w-0">

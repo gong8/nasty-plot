@@ -191,15 +191,10 @@ export default function TeamEditorPage({ params }: { params: Promise<{ teamId: s
   )
 
   const dialogOpen = selectedSlot !== null || addingNew
-  const handleDialogClose = useCallback(
-    (open: boolean) => {
-      if (!open) {
-        selectSlot(null)
-        setAddingNew(false)
-      }
-    },
-    [selectSlot],
-  )
+  const closeDialog = useCallback(() => {
+    selectSlot(null)
+    setAddingNew(false)
+  }, [selectSlot])
 
   if (isLoading) {
     return (
@@ -457,7 +452,7 @@ export default function TeamEditorPage({ params }: { params: Promise<{ teamId: s
           mergeDisabled={!compareTargetId || !compareQuery.data}
         />
 
-        <Dialog open={dialogOpen} onOpenChange={handleDialogClose}>
+        <Dialog open={dialogOpen} onOpenChange={(open) => !open && closeDialog()}>
           <DialogContent className="sm:max-w-[90vw] sm:h-[90vh] flex flex-col overflow-y-auto bg-card border-primary/20">
             <DialogHeader>
               <DialogTitle className="text-2xl font-display text-primary">

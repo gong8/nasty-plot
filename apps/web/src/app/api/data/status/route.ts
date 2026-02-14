@@ -7,7 +7,7 @@ export async function GET() {
     const status = await getSyncLogs()
 
     return NextResponse.json({ data: status })
-  } catch (err) {
-    return apiErrorResponse(err, { code: "STATUS_ERROR" })
+  } catch (error) {
+    return apiErrorResponse(error, { code: "STATUS_ERROR" })
   }
 }

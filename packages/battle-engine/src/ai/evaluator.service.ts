@@ -1,4 +1,11 @@
-import type { BattleState, BattlePokemon, SideConditions, FieldState } from "../types"
+import {
+  isAlive,
+  aliveCount,
+  type BattleState,
+  type BattlePokemon,
+  type SideConditions,
+  type FieldState,
+} from "../types"
 import { getTypeEffectiveness, type PokemonType } from "@nasty-plot/core"
 import { getSpeciesTypes, getEffectiveSpeed } from "./shared"
 
@@ -64,10 +71,6 @@ const STATUS_WEIGHTS: Record<string, number> = {
   frz: WEIGHT.STATUS_FRZ,
 }
 
-function isAlive(p: BattlePokemon): boolean {
-  return !p.fainted && p.hp > 0
-}
-
 function isFast(p: BattlePokemon): boolean {
   return p.stats.spe >= FAST_SPEED_THRESHOLD
 }
@@ -80,10 +83,6 @@ function hpFraction(team: BattlePokemon[]): number {
     totalHp += p.hp
   }
   return totalMaxHp > 0 ? totalHp / totalMaxHp : 0
-}
-
-function aliveCount(team: BattlePokemon[]): number {
-  return team.filter(isAlive).length
 }
 
 function fastAliveCount(team: BattlePokemon[]): number {

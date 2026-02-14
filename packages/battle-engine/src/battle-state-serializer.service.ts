@@ -1,6 +1,7 @@
 import type { PokemonType, MoveCategory } from "@nasty-plot/core"
 import {
   calcHpPercent,
+  getBenchPokemon,
   type BattleState,
   type BattlePokemon,
   type BattleSide,
@@ -104,9 +105,7 @@ function serializeSide(side: BattleSide, label: string, isPlayer: boolean): stri
   }
 
   // Bench Pokemon (summary)
-  const bench = side.team.filter(
-    (p) => !side.active.some((a) => a && a.pokemonId === p.pokemonId && a.hp === p.hp),
-  )
+  const bench = getBenchPokemon(side)
   if (bench.length > 0) {
     lines.push("Bench:")
     for (const p of bench) {

@@ -33,8 +33,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ batt
     return NextResponse.json({
       commentary: JSON.parse(updated.commentary!),
     })
-  } catch (err) {
-    return apiErrorResponse(err, {
+  } catch (error) {
+    return apiErrorResponse(error, {
       fallback: "Failed to save commentary",
     })
   }

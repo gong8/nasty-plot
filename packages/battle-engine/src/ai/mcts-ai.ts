@@ -72,11 +72,22 @@ function initActionStats(stats: Map<string, ActionStats>, choices: string[]): vo
   }
 }
 
+function mapStoredStats(p: NonNullable<(typeof Battle.prototype.p1.active)[0]>) {
+  const stored = p.storedStats
+  return {
+    hp: p.maxhp,
+    atk: stored?.atk || 0,
+    def: stored?.def || 0,
+    spa: stored?.spa || 0,
+    spd: stored?.spd || 0,
+    spe: stored?.spe || 0,
+  }
+}
+
 function mapSimPokemon(
   p: NonNullable<(typeof Battle.prototype.p1.active)[0]>,
   isActive: boolean,
 ): BattlePokemon {
-  const stored = p.storedStats
   return {
     pokemonId: p.species.id,
     name: p.species.name,
@@ -92,14 +103,7 @@ function mapSimPokemon(
     ability: p.ability || "",
     isTerastallized: false,
     moves: [],
-    stats: {
-      hp: p.maxhp,
-      atk: stored?.atk || 0,
-      def: stored?.def || 0,
-      spa: stored?.spa || 0,
-      spd: stored?.spd || 0,
-      spe: stored?.spe || 0,
-    },
+    stats: mapStoredStats(p),
     boosts: isActive ? ({ ...p.boosts, accuracy: 0, evasion: 0 } as never) : ZERO_BOOSTS,
     volatiles: isActive ? Object.keys(p.volatiles) : [],
   } as BattlePokemon
@@ -146,7 +150,7 @@ function extractSideConditions(sc: Record<string, { layers?: number; duration?: 
 export class MCTSAI implements AIPlayer {
   readonly difficulty = "expert" as const
   private config: MCTSConfig
-  private battleState: unknown | null = null
+  private battleState: unknown = null
   private fallback = new HeuristicAI()
   private formatId = DEFAULT_FORMAT_ID
   private predictions: Record<string, PredictedSet> = {}
@@ -364,7 +368,6 @@ export class MCTSAI implements AIPlayer {
   private convertChoiceToAction(choice: string, actions: BattleActionSet): BattleAction {
     const [command, rawIndex, rawTarget] = choice.split(" ")
     const index = parseInt(rawIndex, 10)
-
     if (isNaN(index)) return fallbackMove(actions)
 
     if (command === "move") {
@@ -372,13 +375,11 @@ export class MCTSAI implements AIPlayer {
       return {
         type: "move",
         moveIndex: index,
-        targetSlot: !isNaN(targetSlot) ? targetSlot : undefined,
+        targetSlot: isNaN(targetSlot) ? undefined : targetSlot,
       }
     }
 
-    if (command === "switch") {
-      return { type: "switch", pokemonIndex: index }
-    }
+    if (command === "switch") return { type: "switch", pokemonIndex: index }
 
     return fallbackMove(actions)
   }

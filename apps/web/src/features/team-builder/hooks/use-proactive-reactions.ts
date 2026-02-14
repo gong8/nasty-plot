@@ -7,6 +7,10 @@ import type { GuidedStep } from "./use-guided-builder"
 const REACTION_COOLDOWN_MS = 10_000
 const REACTION_DEBOUNCE_MS = 1500
 
+function getFilledPokemonIds(slots: Partial<TeamSlotData>[]): string[] {
+  return slots.filter((s) => s.pokemonId).map((s) => s.pokemonId!)
+}
+
 interface UseProactiveReactionsOptions {
   slots: Partial<TeamSlotData>[]
   step: GuidedStep
@@ -45,7 +49,7 @@ export function useProactiveReactions({
         step === "lead"
           ? "as my lead"
           : step === "build"
-            ? `to slot ${slots.filter((s) => s.pokemonId).length}`
+            ? `to slot ${getFilledPokemonIds(slots).length}`
             : ""
 
       const message = `[WIZARD_EVENT] I just added ${names} to my team${stepLabel ? ` ${stepLabel}` : ""}.`
@@ -57,11 +61,11 @@ export function useProactiveReactions({
   useEffect(() => {
     // Only trigger in pick steps
     if (step !== "lead" && step !== "build") {
-      prevSlotsRef.current = slots.filter((s) => s.pokemonId).map((s) => s.pokemonId!)
+      prevSlotsRef.current = getFilledPokemonIds(slots)
       return
     }
 
-    const currentIds = slots.filter((s) => s.pokemonId).map((s) => s.pokemonId!)
+    const currentIds = getFilledPokemonIds(slots)
     const prevIds = prevSlotsRef.current
 
     // Find newly added Pokemon

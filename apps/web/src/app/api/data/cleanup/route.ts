@@ -8,7 +8,7 @@ export async function POST() {
     return NextResponse.json({
       data: { deletedTeams: deletedCount },
     })
-  } catch (err) {
-    return apiErrorResponse(err)
+  } catch (error) {
+    return apiErrorResponse(error)
   }
 }

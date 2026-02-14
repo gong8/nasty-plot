@@ -4,6 +4,7 @@
  * Computes analytics for a team's battle history.
  */
 
+import { toPercent } from "@nasty-plot/core"
 import type { BattleRecord } from "./export/battle-export.service"
 
 export interface TeamBattleAnalytics {
@@ -99,7 +100,7 @@ export function computeTeamBattleAnalytics(
     wins,
     losses,
     draws,
-    winRate: totalBattles > 0 ? Math.round((wins / totalBattles) * 1000) / 10 : 0,
+    winRate: toPercent(wins, totalBattles),
     avgTurnCount: totalBattles > 0 ? Math.round((totalTurns / totalBattles) * 10) / 10 : 0,
     battlesByFormat,
     recentTrend,

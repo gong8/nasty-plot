@@ -292,6 +292,24 @@ export function defaultSideConditions(): SideConditions {
   }
 }
 
+/** Whether a Pokemon is alive (not fainted and has HP). */
+export function isAlive(p: BattlePokemon): boolean {
+  return !p.fainted && p.hp > 0
+}
+
+/** Count non-fainted Pokemon in a team. */
+export function aliveCount(team: BattlePokemon[]): number {
+  return team.filter(isAlive).length
+}
+
+/** Get bench (non-active) Pokemon from a side, optionally excluding fainted. */
+export function getBenchPokemon(side: BattleSide, excludeFainted = false): BattlePokemon[] {
+  const activeIds = new Set(
+    side.active.filter((a): a is BattlePokemon => a != null).map((a) => a.pokemonId),
+  )
+  return side.team.filter((p) => !activeIds.has(p.pokemonId) && (!excludeFainted || !p.fainted))
+}
+
 // --- Batch Simulation Types ---
 
 export interface BatchSimConfig {

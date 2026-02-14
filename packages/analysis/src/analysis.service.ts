@@ -50,28 +50,25 @@ async function calculateSpeedTiers(
   slots: TeamSlotData[],
   formatId: string,
 ): Promise<SpeedTierEntry[]> {
-  const teamEntries = slots.flatMap((slot) => {
-    if (!slot.species?.baseStats) return []
-
-    const stats = calculateAllStats(
-      slot.species.baseStats,
-      fillStats(slot.ivs, PERFECT_IV),
-      fillStats(slot.evs, 0),
-      slot.level,
-      slot.nature,
-    )
-
-    return [
-      {
+  const teamEntries = slots
+    .filter((slot) => slot.species?.baseStats)
+    .map((slot) => {
+      const stats = calculateAllStats(
+        slot.species!.baseStats,
+        fillStats(slot.ivs, PERFECT_IV),
+        fillStats(slot.evs, 0),
+        slot.level,
+        slot.nature,
+      )
+      return {
         pokemonId: slot.pokemonId,
-        pokemonName: slot.species.name,
-        pokemonNum: slot.species.num,
+        pokemonName: slot.species!.name,
+        pokemonNum: slot.species!.num,
         speed: stats.spe,
         nature: slot.nature,
         evs: slot.evs.spe,
-      },
-    ]
-  })
+      }
+    })
 
   const benchmarkEntries = await buildSpeedBenchmarks(slots, formatId)
   const entries = [...teamEntries, ...benchmarkEntries]

@@ -6,7 +6,6 @@ import {
   getTypeEffectiveness,
   getWeaknesses,
   getOffensiveCoverage,
-  type PokemonType,
   type TeamSlotData,
 } from "@nasty-plot/core"
 
@@ -69,16 +68,9 @@ function calculateDefensiveComplementarity(slots: TeamSlotData[]): number {
 
 /** Max 25 points. How many types can the team hit super-effectively? */
 function calculateOffensiveBreadth(slots: TeamSlotData[]): number {
-  const coveredTypes = new Set<PokemonType>()
-
-  for (const slot of slots) {
-    const types = slot.species?.types ?? []
-    for (const pkType of types) {
-      for (const covered of getOffensiveCoverage(pkType)) {
-        coveredTypes.add(covered)
-      }
-    }
-  }
+  const coveredTypes = new Set(
+    slots.flatMap((slot) => (slot.species?.types ?? []).flatMap(getOffensiveCoverage)),
+  )
 
   return Math.round((coveredTypes.size / POKEMON_TYPES.length) * MAX_OFFENSIVE_POINTS)
 }

@@ -90,8 +90,8 @@ export async function POST(req: NextRequest) {
       })
 
     return NextResponse.json({ id: batch.id, status: "running" }, { status: 201 })
-  } catch (err) {
-    return apiErrorResponse(err, {
+  } catch (error) {
+    return apiErrorResponse(error, {
       fallback: "Failed to start batch simulation",
     })
   }

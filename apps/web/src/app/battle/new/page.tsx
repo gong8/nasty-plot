@@ -23,7 +23,6 @@ function NewBattleContent() {
     gameType: GameType
     aiDifficulty: AIDifficulty
   }) => {
-    // Encode config in URL search params to pass to battle page
     const params = new URLSearchParams({
       format: config.formatId,
       gameType: config.gameType,
@@ -35,7 +34,7 @@ function NewBattleContent() {
     if (config.playerTeamId) params.set("t1id", config.playerTeamId)
     if (config.opponentTeamId) params.set("t2id", config.opponentTeamId)
 
-    router.push(`/battle/live?${params.toString()}`)
+    router.push(`/battle/live?${params}`)
   }
 
   return (

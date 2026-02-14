@@ -95,3 +95,30 @@ export function fillStats(
     spe: partial?.spe ?? defaultValue,
   }
 }
+
+// --- StatsTable <-> DB Column Mapping ---
+
+const STAT_CAPITALIZED: Record<StatName, string> = {
+  hp: "Hp",
+  atk: "Atk",
+  def: "Def",
+  spa: "Spa",
+  spd: "Spd",
+  spe: "Spe",
+}
+
+export function statsToDbColumns(stats: StatsTable, prefix: "ev" | "iv"): Record<string, number> {
+  const result: Record<string, number> = {}
+  for (const stat of STATS) {
+    result[`${prefix}${STAT_CAPITALIZED[stat]}`] = stats[stat]
+  }
+  return result
+}
+
+export function dbColumnsToStats(row: Record<string, number>, prefix: "ev" | "iv"): StatsTable {
+  const result = {} as StatsTable
+  for (const stat of STATS) {
+    result[stat] = row[`${prefix}${STAT_CAPITALIZED[stat]}`]
+  }
+  return result
+}

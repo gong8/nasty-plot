@@ -29,7 +29,7 @@ export async function GET(
     })
 
     return NextResponse.json({ data: enriched })
-  } catch (err) {
-    return apiErrorResponse(err, { code: "CORES_ERROR" })
+  } catch (error) {
+    return apiErrorResponse(error, { code: "CORES_ERROR" })
   }
 }

@@ -267,27 +267,29 @@ export function GuidedBuilderProvider({ teamId, formatId, children }: GuidedBuil
 
   const handleSkipSlot = advanceBuildOrFinish
 
-  const handleSave = useCallback(async () => {
-    setIsSaving(true)
-    try {
-      await saveAllSlots()
-      guided.clearDraft()
-      router.push(`/teams/${teamId}`)
-    } catch {
-      setIsSaving(false)
-    }
-  }, [saveAllSlots, guided, router, teamId])
+  const saveAndNavigate = useCallback(
+    async (path: string) => {
+      setIsSaving(true)
+      try {
+        await saveAllSlots()
+        guided.clearDraft()
+        router.push(path)
+      } catch {
+        setIsSaving(false)
+      }
+    },
+    [saveAllSlots, guided, router],
+  )
 
-  const handleTestTeam = useCallback(async () => {
-    setIsSaving(true)
-    try {
-      await saveAllSlots()
-      guided.clearDraft()
-      router.push(`/battle/new?teamId=${teamId}`)
-    } catch {
-      setIsSaving(false)
-    }
-  }, [saveAllSlots, guided, router, teamId])
+  const handleSave = useCallback(
+    () => saveAndNavigate(`/teams/${teamId}`),
+    [saveAndNavigate, teamId],
+  )
+
+  const handleTestTeam = useCallback(
+    () => saveAndNavigate(`/battle/new?teamId=${teamId}`),
+    [saveAndNavigate, teamId],
+  )
 
   const handleImportSample = useCallback(
     async (sample: SampleTeamEntry) => {
@@ -376,13 +378,14 @@ export function GuidedBuilderProvider({ teamId, formatId, children }: GuidedBuil
       }
     })
 
-    const analysisSummary = guided.analysis
+    const { coverage } = guided.analysis ?? {}
+    const analysisSummary = coverage
       ? [
-          guided.analysis.coverage?.sharedWeaknesses?.length
-            ? `Shared weaknesses: ${guided.analysis.coverage.sharedWeaknesses.join(", ")}`
+          coverage.sharedWeaknesses?.length
+            ? `Shared weaknesses: ${coverage.sharedWeaknesses.join(", ")}`
             : null,
-          guided.analysis.coverage?.uncoveredTypes?.length
-            ? `Missing coverage: ${guided.analysis.coverage.uncoveredTypes.join(", ")}`
+          coverage.uncoveredTypes?.length
+            ? `Missing coverage: ${coverage.uncoveredTypes.join(", ")}`
             : null,
         ]
           .filter(Boolean)
@@ -548,7 +551,6 @@ export function GuidedBuilderProvider({ teamId, formatId, children }: GuidedBuil
       handleLeadPick,
       handleBuildPick,
       handleSkipSlot,
-      advanceBuildOrFinish,
       handleSave,
       handleTestTeam,
       handleImportSample,

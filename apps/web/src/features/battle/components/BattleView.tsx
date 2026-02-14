@@ -45,7 +45,7 @@ function BattleEnded({
   className,
 }: BattleEndedProps) {
   const playerWon = state.winner === "p1"
-  const winnerName = state.winner === "p1" ? state.sides.p1.name : state.sides.p2.name
+  const winnerName = playerWon ? state.sides.p1.name : state.sides.p2.name
 
   return (
     <div className={cn("space-y-3", className)}>

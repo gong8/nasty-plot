@@ -70,8 +70,8 @@ export async function POST(req: NextRequest) {
           }
           controller.enqueue(encoder.encode("data: [DONE]\n\n"))
           controller.close()
-        } catch (err) {
-          controller.error(err)
+        } catch (error) {
+          controller.error(error)
         }
       },
     })
@@ -83,8 +83,8 @@ export async function POST(req: NextRequest) {
         Connection: "keep-alive",
       },
     })
-  } catch (err) {
-    return apiErrorResponse(err, { fallback: "Commentary failed" })
+  } catch (error) {
+    return apiErrorResponse(error, { fallback: "Commentary failed" })
   }
 }
 

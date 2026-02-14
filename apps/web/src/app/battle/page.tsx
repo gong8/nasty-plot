@@ -32,15 +32,17 @@ import {
 } from "@/features/battle/lib/checkpoint-store"
 import { PokemonSprite } from "@nasty-plot/ui"
 import { getHealthColorHex } from "@/features/battle/components/HealthBar"
-import type { BattleCheckpoint, BattlePokemon } from "@nasty-plot/battle-engine"
+import { aliveCount, type BattleCheckpoint, type BattlePokemon } from "@nasty-plot/battle-engine"
 import { timeAgo } from "@/lib/format-time"
 import type { BattleSummary } from "@/features/battle/types"
 import { capitalize } from "@nasty-plot/core"
 
 function winnerLabel(winnerId: string | null, team1Name: string, team2Name: string): string {
   if (!winnerId) return "No result"
-  const winnerNames: Record<string, string> = { draw: "Draw", team1: team1Name, team2: team2Name }
-  return winnerNames[winnerId] ?? winnerId
+  if (winnerId === "draw") return "Draw"
+  if (winnerId === "team1") return team1Name
+  if (winnerId === "team2") return team2Name
+  return winnerId
 }
 
 function CheckpointCard({
@@ -72,7 +74,7 @@ function CheckpointCard({
             <div className="flex items-center justify-between">
               <span className="text-sm font-medium">{checkpoint.config.playerName}</span>
               <span className="text-xs text-muted-foreground">
-                {p1Team.filter((p) => !p.fainted).length}/{p1Team.length} remaining
+                {aliveCount(p1Team)}/{p1Team.length} remaining
               </span>
             </div>
             <PokemonRow pokemon={p1Team} side="p1" />
@@ -84,7 +86,7 @@ function CheckpointCard({
             <div className="flex items-center justify-between">
               <span className="text-sm font-medium">{checkpoint.config.opponentName}</span>
               <span className="text-xs text-muted-foreground">
-                {p2Team.filter((p) => !p.fainted).length}/{p2Team.length} remaining
+                {aliveCount(p2Team)}/{p2Team.length} remaining
               </span>
             </div>
             <PokemonRow pokemon={p2Team} side="p2" />

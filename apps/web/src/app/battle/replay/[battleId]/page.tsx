@@ -81,11 +81,9 @@ function ReplayViewerContent({ battleData }: { battleData: BattleData }) {
 
   useBattleStatePublisher(replay.currentFrame?.state ?? null)
 
-  // Parse persisted commentary
   const [commentary, setCommentary] = useState<Record<number, string>>(() => {
-    if (!battleData.commentary) return {}
     try {
-      return JSON.parse(battleData.commentary)
+      return battleData.commentary ? JSON.parse(battleData.commentary) : {}
     } catch {
       return {}
     }

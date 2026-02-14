@@ -88,13 +88,9 @@ export default function BattleImportPage() {
               <div>
                 <span className="text-muted-foreground">Winner</span>
                 <p className="font-medium">
-                  {battle.winnerId === "p1"
-                    ? battle.team1Name
-                    : battle.winnerId === "p2"
-                      ? battle.team2Name
-                      : battle.winnerId === "draw"
-                        ? "Draw"
-                        : "Unknown"}
+                  {{ p1: battle.team1Name, p2: battle.team2Name, draw: "Draw" }[
+                    battle.winnerId ?? ""
+                  ] ?? "Unknown"}
                 </p>
               </div>
             </div>

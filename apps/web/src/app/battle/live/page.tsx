@@ -48,30 +48,20 @@ function BattleLiveContent() {
   const paramsKey = searchParams.toString()
 
   useEffect(() => {
-    const formatId = searchParams.get("format") || DEFAULT_FORMAT_ID
-    const simFormatId = searchParams.get("simFormat") || undefined
-    const gameType = (searchParams.get("gameType") || "singles") as GameType
-    const aiDifficulty = (searchParams.get("ai") || "greedy") as AIDifficulty
     const p1Encoded = searchParams.get("p1")
     const p2Encoded = searchParams.get("p2")
-    const playerTeamId = searchParams.get("t1id") || null
-    const opponentTeamId = searchParams.get("t2id") || null
 
     if (p1Encoded && p2Encoded) {
-      // New battle from URL params
       try {
-        const playerTeamPaste = decodeURIComponent(atob(p1Encoded))
-        const opponentTeamPaste = decodeURIComponent(atob(p2Encoded))
-
         startBattle({
-          playerTeamPaste,
-          opponentTeamPaste,
-          formatId,
-          simFormatId,
-          gameType,
-          aiDifficulty,
-          playerTeamId,
-          opponentTeamId,
+          playerTeamPaste: decodeURIComponent(atob(p1Encoded)),
+          opponentTeamPaste: decodeURIComponent(atob(p2Encoded)),
+          formatId: searchParams.get("format") || DEFAULT_FORMAT_ID,
+          simFormatId: searchParams.get("simFormat") || undefined,
+          gameType: (searchParams.get("gameType") || "singles") as GameType,
+          aiDifficulty: (searchParams.get("ai") || "greedy") as AIDifficulty,
+          playerTeamId: searchParams.get("t1id") || null,
+          opponentTeamId: searchParams.get("t2id") || null,
         })
       } catch (err) {
         console.error("Failed to decode teams:", err)
@@ -81,15 +71,14 @@ function BattleLiveContent() {
 
     // No URL params — check for a checkpoint to resume immediately
     const checkpoint = loadCheckpoint()
-    if (checkpoint) {
-      resumeBattle(checkpoint)
-      // Restore auto-analyze state from checkpoint
-      if (checkpoint.autoAnalyze) {
-        setAutoAnalyzeEnabled(checkpoint.autoAnalyze.enabled)
-        setAutoAnalyzeDepth(checkpoint.autoAnalyze.depth)
-        if (checkpoint.autoAnalyze.chatSessionId) {
-          switchSession(checkpoint.autoAnalyze.chatSessionId)
-        }
+    if (!checkpoint) return
+
+    resumeBattle(checkpoint)
+    if (checkpoint.autoAnalyze) {
+      setAutoAnalyzeEnabled(checkpoint.autoAnalyze.enabled)
+      setAutoAnalyzeDepth(checkpoint.autoAnalyze.depth)
+      if (checkpoint.autoAnalyze.chatSessionId) {
+        switchSession(checkpoint.autoAnalyze.chatSessionId)
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps

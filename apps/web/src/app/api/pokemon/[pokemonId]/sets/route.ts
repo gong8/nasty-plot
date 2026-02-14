@@ -20,7 +20,7 @@ export async function GET(
 
     const response: ApiResponse<SmogonSetData[]> = { data: sets }
     return NextResponse.json(response)
-  } catch (err) {
-    return apiErrorResponse(err, { code: "SETS_ERROR" })
+  } catch (error) {
+    return apiErrorResponse(error, { code: "SETS_ERROR" })
   }
 }

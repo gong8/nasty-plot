@@ -1,11 +1,9 @@
 import { prisma } from "@nasty-plot/db"
 import { ensureFormatExists } from "@nasty-plot/formats"
 import { getSpecies } from "@nasty-plot/pokemon-data"
-import { STATS } from "@nasty-plot/core"
+import { statsToDbColumns, dbColumnsToStats } from "@nasty-plot/core"
 import type {
   NatureName,
-  StatName,
-  StatsTable,
   TeamCreateInput,
   TeamData,
   TeamMode,
@@ -61,31 +59,6 @@ type DbTeamRow = {
 }
 
 // --- DB <-> Domain Mapping ---
-
-const STAT_CAPITALIZED: Record<StatName, string> = {
-  hp: "Hp",
-  atk: "Atk",
-  def: "Def",
-  spa: "Spa",
-  spd: "Spd",
-  spe: "Spe",
-}
-
-function statsToDbColumns(stats: StatsTable, prefix: "ev" | "iv"): Record<string, number> {
-  const result: Record<string, number> = {}
-  for (const stat of STATS) {
-    result[`${prefix}${STAT_CAPITALIZED[stat]}`] = stats[stat]
-  }
-  return result
-}
-
-function dbColumnsToStats(row: Record<string, number>, prefix: "ev" | "iv"): StatsTable {
-  const result = {} as StatsTable
-  for (const stat of STATS) {
-    result[stat] = row[`${prefix}${STAT_CAPITALIZED[stat]}`]
-  }
-  return result
-}
 
 function validateNoDuplicateMoves(moves: TeamSlotInput["moves"]) {
   const seen = new Set<string>()

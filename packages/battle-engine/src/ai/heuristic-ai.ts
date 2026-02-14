@@ -60,6 +60,13 @@ const HAZARD_LIMITS: Record<
   stickyweb: { maxLayers: 1, earlyTurnCutoff: 2, latePenalty: 15 },
 }
 
+function findTeamPokemon(
+  team: BattlePokemon[],
+  sw: { name: string; pokemonId?: string },
+): BattlePokemon | undefined {
+  return team.find((p) => p.name === sw.name || p.pokemonId === sw.pokemonId)
+}
+
 /** Sum offensive type advantage for attackerTypes vs defenderTypes. Returns -1 to 1 range. */
 function typeOffenseScore(attackerTypes: PokemonType[], defenderTypes: PokemonType[]): number {
   let score = 0
@@ -125,9 +132,7 @@ export class HeuristicAI implements AIPlayer {
       const oppPrediction = state.opponentPredictions?.[primaryOpponent.pokemonId]
       for (const sw of actions.switches) {
         if (sw.fainted) continue
-        const swPokemon = state.sides.p2.team.find(
-          (p) => p.name === sw.name || p.pokemonId === sw.pokemonId,
-        )
+        const swPokemon = findTeamPokemon(state.sides.p2.team, sw)
         if (!swPokemon) continue
 
         scoredActions.push({
@@ -144,10 +149,8 @@ export class HeuristicAI implements AIPlayer {
     return topChoices[Math.floor(Math.random() * topChoices.length)].action
   }
 
-  chooseLeads(teamSize: number, gameType: GameType): number[] {
-    const order = Array.from({ length: teamSize }, (_, i) => i + 1)
-    if (gameType !== "doubles") return order
-    return order
+  chooseLeads(teamSize: number, _gameType: GameType): number[] {
+    return Array.from({ length: teamSize }, (_, i) => i + 1)
   }
 
   private scoreMove(
@@ -319,9 +322,7 @@ export class HeuristicAI implements AIPlayer {
     let bestIndex = available[0].index
 
     for (const sw of available) {
-      const pokemon = state.sides.p2.team.find(
-        (p) => p.name === sw.name || p.pokemonId === sw.pokemonId,
-      )
+      const pokemon = findTeamPokemon(state.sides.p2.team, sw)
       if (!pokemon) continue
 
       const score = this.scoreSwitchTarget(pokemon, oppActive, myActive || pokemon, oppPrediction)

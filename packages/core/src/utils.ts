@@ -28,3 +28,15 @@ export function parseIntQueryParam(
   const parsed = parseInt(value ?? String(fallback), 10)
   return Math.min(max, Math.max(min, isNaN(parsed) ? fallback : parsed))
 }
+
+export function buildParams(
+  entries: Record<string, string | number | undefined>,
+): Record<string, string> {
+  const params: Record<string, string> = {}
+  for (const [key, value] of Object.entries(entries)) {
+    if (value !== undefined) {
+      params[key] = String(value)
+    }
+  }
+  return params
+}

@@ -12,24 +12,15 @@ import {
  * Analyze type coverage for a team: offensive and defensive profiles.
  */
 export function analyzeTypeCoverage(slots: TeamSlotData[]): TypeCoverage {
-  const offensive = {} as Record<PokemonType, number>
-  const defensive = {} as Record<PokemonType, number>
-
-  for (const type of POKEMON_TYPES) {
-    offensive[type] = 0
-    defensive[type] = 0
-  }
+  const initCounts = () =>
+    Object.fromEntries(POKEMON_TYPES.map((t) => [t, 0])) as Record<PokemonType, number>
+  const offensive = initCounts()
+  const defensive = initCounts()
 
   // Offensive: count how many team members can hit each type super-effectively
   for (const slot of slots) {
-    const coveredTypes = new Set<PokemonType>()
     const pokemonTypes = slot.species?.types ?? []
-
-    for (const stabType of pokemonTypes) {
-      for (const coveredType of getOffensiveCoverage(stabType)) {
-        coveredTypes.add(coveredType)
-      }
-    }
+    const coveredTypes = new Set(pokemonTypes.flatMap(getOffensiveCoverage))
 
     for (const coveredType of coveredTypes) {
       offensive[coveredType]++

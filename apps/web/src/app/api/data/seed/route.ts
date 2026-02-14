@@ -56,18 +56,18 @@ async function seedFormat(format: SeedableFormat, force: boolean) {
     if (force || (await isStale("smogon-stats", format.id))) {
       await syncUsageStats(format.id, { smogonStatsId: format.smogonStatsId })
     }
-  } catch (err) {
+  } catch (error) {
     statsOk = false
-    errors.push(`stats: ${getErrorMessage(err)}`)
+    errors.push(`stats: ${getErrorMessage(error)}`)
   }
 
   try {
     if (force || (await isStale("smogon-sets", format.id))) {
       await syncSmogonSets(format.id, { pkmnSetsId: format.pkmnSetsId })
     }
-  } catch (err) {
+  } catch (error) {
     setsOk = false
-    errors.push(`sets: ${getErrorMessage(err)}`)
+    errors.push(`sets: ${getErrorMessage(error)}`)
   }
 
   return { format: format.id, statsOk, setsOk, errors }

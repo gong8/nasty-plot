@@ -10,6 +10,7 @@ import {
   type TeamSlotData,
 } from "@nasty-plot/core"
 import { cn, TypeBadge } from "@nasty-plot/ui"
+import { PokemonAvatar } from "@/components/pokemon-avatar"
 
 interface WeaknessHeatmapProps {
   slots: TeamSlotData[]
@@ -75,9 +76,7 @@ export function WeaknessHeatmap({ slots }: WeaknessHeatmapProps) {
                   <tr key={slot.position} className="border-t">
                     <td className="p-1.5 font-medium sticky left-0 bg-card z-10">
                       <div className="flex items-center gap-1.5">
-                        <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-[9px]">
-                          {pokemonName.slice(0, 2)}
-                        </div>
+                        <PokemonAvatar name={pokemonName} size="sm" />
                         <span className="truncate max-w-[80px]">{pokemonName}</span>
                       </div>
                     </td>

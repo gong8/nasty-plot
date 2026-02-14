@@ -37,7 +37,7 @@ export async function GET(
     }
 
     return NextResponse.json(response)
-  } catch (err) {
-    return apiErrorResponse(err, { code: "USAGE_STATS_ERROR" })
+  } catch (error) {
+    return apiErrorResponse(error, { code: "USAGE_STATS_ERROR" })
   }
 }

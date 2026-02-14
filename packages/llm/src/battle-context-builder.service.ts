@@ -1,13 +1,15 @@
 import {
   calcHpPercent,
+  aliveCount,
+  getBenchPokemon,
   formatMoveStats,
   formatBoosts,
   formatFieldState,
   formatSideConditions,
   type BattleState,
   type BattlePokemon,
+  type BattleSide,
   type BattleLogEntry,
-  type SideConditions,
 } from "@nasty-plot/battle-engine"
 import type { AutoAnalyzeDepth } from "@nasty-plot/core"
 
@@ -51,20 +53,12 @@ function describePokemon(pokemon: BattlePokemon | null): string {
   return parts.join(" | ")
 }
 
-function describeSide(side: {
-  active: (BattlePokemon | null)[]
-  team: BattlePokemon[]
-  name: string
-  sideConditions: SideConditions
-  canTera?: boolean
-  hasTerastallized?: boolean
-}): string {
+function describeSide(side: BattleSide): string {
   const active = side.active.map(describePokemon).join("\n  ")
-  const alive = side.team.filter((p) => !p.fainted).length
+  const alive = aliveCount(side.team)
   const total = side.team.length
   const conditions = formatSideConditions(side.sideConditions) || "none"
-  const bench = side.team
-    .filter((p) => !side.active.includes(p) && !p.fainted)
+  const bench = getBenchPokemon(side, true)
     .map(
       (p) =>
         `${p.name} (${p.types.join("/")}${p.status ? `, ${p.status}` : ""}, ${p.hpPercent}% HP)`,

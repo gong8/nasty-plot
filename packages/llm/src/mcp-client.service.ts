@@ -77,10 +77,9 @@ export async function getMcpTools(): Promise<OpenAI.ChatCompletionTool[]> {
  * Execute a tool via the MCP server. Retries once on connection failure.
  */
 export async function executeMcpTool(name: string, args: Record<string, unknown>): Promise<string> {
-  const argsSummary = JSON.stringify(args).slice(0, 200)
-  console.log(`${LOG_PREFIX} ▶ Tool call: ${name}(${argsSummary})`)
+  console.log(`${LOG_PREFIX} ▶ Tool call: ${name}(${JSON.stringify(args).slice(0, 200)})`)
 
-  async function call(): Promise<string> {
+  async function callTool(): Promise<string> {
     const t0 = performance.now()
     const client = await getClient()
     const result = await client.callTool({ name, arguments: args })
@@ -95,17 +94,18 @@ export async function executeMcpTool(name: string, args: Record<string, unknown>
   }
 
   try {
-    return await call()
+    return await callTool()
   } catch (firstError) {
     console.warn(`${LOG_PREFIX} Tool call "${name}" failed, retrying: ${errorMessage(firstError)}`)
     resetClient()
-    try {
-      return await call()
-    } catch (retryError) {
-      const msg = errorMessage(retryError)
-      console.error(`${LOG_PREFIX} Tool call "${name}" failed after retry: ${msg}`)
-      return JSON.stringify({ error: `MCP tool "${name}" failed: ${msg}` })
-    }
+  }
+
+  try {
+    return await callTool()
+  } catch (retryError) {
+    const msg = errorMessage(retryError)
+    console.error(`${LOG_PREFIX} Tool call "${name}" failed after retry: ${msg}`)
+    return JSON.stringify({ error: `MCP tool "${name}" failed: ${msg}` })
   }
 }
 

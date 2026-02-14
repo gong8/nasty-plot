@@ -25,29 +25,20 @@ const TARGETABLE_MOVE_TARGETS = new Set([
   "adjacentAllyOrSelf", // Can hit self or ally
 ])
 
+const TARGET_TYPE_LABELS: Record<string, string> = {
+  normal: "One adjacent",
+  any: "Any Pokemon",
+  adjacentFoe: "One opponent",
+  adjacentAlly: "Ally",
+  adjacentAllyOrSelf: "Self or ally",
+  allAdjacent: "All adjacent (including ally)",
+  allAdjacentFoes: "All opponents",
+  self: "Self",
+  all: "All Pokemon",
+}
+
 function formatTargetType(target: string): string {
-  switch (target) {
-    case "normal":
-      return "One adjacent"
-    case "any":
-      return "Any Pokemon"
-    case "adjacentFoe":
-      return "One opponent"
-    case "adjacentAlly":
-      return "Ally"
-    case "adjacentAllyOrSelf":
-      return "Self or ally"
-    case "allAdjacent":
-      return "All adjacent (including ally)"
-    case "allAdjacentFoes":
-      return "All opponents"
-    case "self":
-      return "Self"
-    case "all":
-      return "All Pokemon"
-    default:
-      return target
-  }
+  return TARGET_TYPE_LABELS[target] ?? target
 }
 
 const FALLBACK_TYPE_COLOR = "#A8A878"
@@ -168,22 +159,14 @@ export function MoveSelector({
   const pendingMove = pendingMoveIndex !== null ? actions.moves[pendingMoveIndex] : null
   const pendingTarget = pendingMove?.target ?? ""
 
-  // Determine which slots are selectable based on the move's target type
-  const isSlotSelectable = (isFoe: boolean, isSelf: boolean): boolean => {
-    if (!pendingMove) return false
-    switch (pendingTarget) {
-      case "normal":
-        return !isSelf // foes + ally
-      case "adjacentFoe":
-        return isFoe
-      case "any":
-        return true // all slots
-      case "adjacentAllyOrSelf":
-        return !isFoe // self + ally
-      default:
-        return false
-    }
+  // Which positions (foe/self/ally) are selectable per move target type
+  const TARGET_SELECTABILITY: Record<string, { foe: boolean; self: boolean; ally: boolean }> = {
+    normal: { foe: true, self: false, ally: true },
+    adjacentFoe: { foe: true, self: false, ally: false },
+    any: { foe: true, self: true, ally: true },
+    adjacentAllyOrSelf: { foe: false, self: true, ally: true },
   }
+  const selectability = pendingMove ? TARGET_SELECTABILITY[pendingTarget] : null
 
   const gridSlots: [TargetSlotInfo, TargetSlotInfo, TargetSlotInfo, TargetSlotInfo] = [
     // Top row: opponent side (p2a, p2b)
@@ -191,30 +174,29 @@ export function MoveSelector({
       pokemon: opponentActive?.[0] ?? null,
       slot: 1,
       isFoe: true,
-      isSelectable: isSlotSelectable(true, false),
+      isSelectable: selectability?.foe ?? false,
       isSelf: false,
     },
     {
       pokemon: opponentActive?.[1] ?? null,
       slot: 2,
       isFoe: true,
-      isSelectable: isSlotSelectable(true, false),
+      isSelectable: selectability?.foe ?? false,
       isSelf: false,
     },
-    // Bottom row: player side — ordered so self is on left, ally on right
-    // (from player perspective, slot 0 = left, slot 1 = right)
+    // Bottom row: player side — self on left, ally on right
     {
       pokemon: playerActive?.[mySlotIndex] ?? null,
       slot: selfSlot,
       isFoe: false,
-      isSelectable: isSlotSelectable(false, true),
+      isSelectable: selectability?.self ?? false,
       isSelf: true,
     },
     {
       pokemon: playerActive?.[allySlotIndex] ?? null,
       slot: allySlot,
       isFoe: false,
-      isSelectable: isSlotSelectable(false, false),
+      isSelectable: selectability?.ally ?? false,
       isSelf: false,
     },
   ]

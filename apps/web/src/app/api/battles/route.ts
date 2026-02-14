@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
     })
 
     return NextResponse.json(battle, { status: 201 })
-  } catch (err) {
-    return apiErrorResponse(err, { fallback: "Failed to save battle" })
+  } catch (error) {
+    return apiErrorResponse(error, { fallback: "Failed to save battle" })
   }
 }

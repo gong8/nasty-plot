@@ -4,7 +4,6 @@ import { useState, useRef } from "react"
 import Link from "next/link"
 import { useQuery } from "@tanstack/react-query"
 import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import {
   Select,
@@ -15,6 +14,7 @@ import {
 } from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
 import { DataStateRenderer } from "@/components/data-state-renderer"
+import { Pagination } from "@/components/pagination"
 import { PokemonSprite, TypeBadge } from "@nasty-plot/ui"
 import {
   getBaseStatTotal,
@@ -228,29 +228,7 @@ export default function PokemonBrowserPage() {
         </DataStateRenderer>
 
         {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="flex items-center justify-center gap-2 mt-8">
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={page <= 1}
-              onClick={() => setPage(page - 1)}
-            >
-              Previous
-            </Button>
-            <span className="text-sm text-muted-foreground">
-              Page {page} of {totalPages}
-            </span>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={page >= totalPages}
-              onClick={() => setPage(page + 1)}
-            >
-              Next
-            </Button>
-          </div>
-        )}
+        <Pagination page={page} totalPages={totalPages} onPageChange={setPage} className="mt-8" />
       </main>
     </div>
   )

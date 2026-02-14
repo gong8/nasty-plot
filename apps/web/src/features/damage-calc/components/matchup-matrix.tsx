@@ -4,6 +4,7 @@ import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { AnalysisCard } from "@/components/analysis-card"
 import { cn } from "@nasty-plot/ui"
+import { PokemonAvatar } from "@/components/pokemon-avatar"
 import type { MatchupMatrixEntry } from "@nasty-plot/core"
 
 interface MatchupMatrixProps {
@@ -40,9 +41,7 @@ export function MatchupMatrix({ matrix, isLoading }: MatchupMatrixProps) {
                 {defenderNames.map((name) => (
                   <th key={name} className="p-2 font-medium text-center min-w-[100px]">
                     <div className="flex flex-col items-center gap-1">
-                      <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-[10px]">
-                        {name.slice(0, 2)}
-                      </div>
+                      <PokemonAvatar name={name} />
                       <span className="truncate max-w-[90px]">{name}</span>
                     </div>
                   </th>
@@ -56,9 +55,7 @@ export function MatchupMatrix({ matrix, isLoading }: MatchupMatrixProps) {
                   <tr key={rowIdx} className="border-t">
                     <td className="p-2 font-medium sticky left-0 bg-card z-10">
                       <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-[10px]">
-                          {attackerName.slice(0, 2)}
-                        </div>
+                        <PokemonAvatar name={attackerName} />
                         <span className="truncate max-w-[90px]">{attackerName}</span>
                       </div>
                     </td>

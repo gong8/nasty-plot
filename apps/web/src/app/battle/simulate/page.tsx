@@ -55,6 +55,33 @@ function validatePaste(paste: string): { valid: boolean; errors: string[] } {
   return { valid: errors.length === 0, errors }
 }
 
+function TurnDistributionChart({ distribution }: { distribution: Record<string, number> }) {
+  const entries = Object.entries(distribution).sort(([a], [b]) => Number(a) - Number(b))
+  const maxCount = Math.max(...Object.values(distribution))
+  return (
+    <>
+      <div className="flex items-end gap-1 h-[120px]">
+        {entries.map(([bucket, count]) => {
+          const height = maxCount > 0 ? (count / maxCount) * 100 : 0
+          return (
+            <div key={bucket} className="flex flex-col items-center flex-1 min-w-0">
+              <div
+                className="w-full bg-primary/60 rounded-t-sm min-h-[2px]"
+                style={{ height: `${height}%` }}
+                title={`${bucket}-${Number(bucket) + 4} turns: ${count} games`}
+              />
+              <span className="text-[9px] text-muted-foreground mt-1 truncate w-full text-center">
+                {bucket}
+              </span>
+            </div>
+          )
+        })}
+      </div>
+      <p className="text-[10px] text-muted-foreground text-center mt-1">Turns (bucketed by 5)</p>
+    </>
+  )
+}
+
 export default function SimulatePage() {
   const [phase, setPhase] = useState<Phase>("setup")
   const [team1Selection, setTeam1Selection] = useState<TeamSelection>(emptySelection(""))
@@ -379,31 +406,7 @@ export default function SimulatePage() {
                     <CardTitle className="text-sm font-medium">Game Length Distribution</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="flex items-end gap-1 h-[120px]">
-                      {Object.entries(batchState.analytics.turnDistribution)
-                        .sort(([a], [b]) => Number(a) - Number(b))
-                        .map(([bucket, count]) => {
-                          const maxCount = Math.max(
-                            ...Object.values(batchState.analytics!.turnDistribution),
-                          )
-                          const height = maxCount > 0 ? (count / maxCount) * 100 : 0
-                          return (
-                            <div key={bucket} className="flex flex-col items-center flex-1 min-w-0">
-                              <div
-                                className="w-full bg-primary/60 rounded-t-sm min-h-[2px]"
-                                style={{ height: `${height}%` }}
-                                title={`${bucket}-${Number(bucket) + 4} turns: ${count} games`}
-                              />
-                              <span className="text-[9px] text-muted-foreground mt-1 truncate w-full text-center">
-                                {bucket}
-                              </span>
-                            </div>
-                          )
-                        })}
-                    </div>
-                    <p className="text-[10px] text-muted-foreground text-center mt-1">
-                      Turns (bucketed by 5)
-                    </p>
+                    <TurnDistributionChart distribution={batchState.analytics.turnDistribution} />
                   </CardContent>
                 </Card>
               )}

@@ -50,18 +50,4 @@ export async function handleTool(
   }
 }
 
-/**
- * Build a query params object from optional key-value pairs,
- * omitting entries where the value is undefined.
- */
-export function buildParams(
-  entries: Record<string, string | number | undefined>,
-): Record<string, string> {
-  const params: Record<string, string> = {}
-  for (const [key, value] of Object.entries(entries)) {
-    if (value !== undefined) {
-      params[key] = String(value)
-    }
-  }
-  return params
-}
+export { buildParams } from "@nasty-plot/core"

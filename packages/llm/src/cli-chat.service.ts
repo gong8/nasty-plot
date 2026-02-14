@@ -204,6 +204,45 @@ function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : "Unknown spawn error"
 }
 
+function processJsonLine(
+  line: string,
+  emit: Emitter,
+  parser: StreamParser,
+  activeTools: Map<string, Record<string, unknown>>,
+  flushActiveTools: () => void,
+  startMs: number,
+): void {
+  const trimmed = line.trim()
+  if (!trimmed) return
+
+  let msg: Record<string, unknown>
+  try {
+    msg = JSON.parse(trimmed)
+  } catch {
+    return
+  }
+
+  const text = extractTextDelta(msg)
+  if (text) {
+    flushActiveTools()
+    emitParsedContent(emit, parser.process(text))
+    return
+  }
+
+  const blocks = extractToolBlocks(msg)
+  if (blocks) {
+    for (const block of blocks) {
+      processToolBlock(block, activeTools, emit, flushActiveTools)
+    }
+    return
+  }
+
+  if (logResult(msg, startMs)) {
+    emitParsedContent(emit, parser.flush())
+    flushActiveTools()
+  }
+}
+
 /**
  * Spawn the Claude CLI directly with MCP tools and stream the response.
  *
@@ -282,35 +321,7 @@ export function streamCliChat(options: CliChatOptions): ReadableStream<Uint8Arra
         buffer = lines.pop() || ""
 
         for (const line of lines) {
-          const trimmed = line.trim()
-          if (!trimmed) continue
-
-          let msg: Record<string, unknown>
-          try {
-            msg = JSON.parse(trimmed)
-          } catch {
-            continue
-          }
-
-          const text = extractTextDelta(msg)
-          if (text) {
-            flushActiveTools()
-            emitParsedContent(emit, streamParser.process(text))
-            continue
-          }
-
-          const blocks = extractToolBlocks(msg)
-          if (blocks) {
-            for (const block of blocks) {
-              processToolBlock(block, activeTools, emit, flushActiveTools)
-            }
-            continue
-          }
-
-          if (logResult(msg, startMs)) {
-            emitParsedContent(emit, streamParser.flush())
-            flushActiveTools()
-          }
+          processJsonLine(line, emit, streamParser, activeTools, flushActiveTools, startMs)
         }
       })
 
