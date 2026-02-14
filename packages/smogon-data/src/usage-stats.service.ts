@@ -235,6 +235,17 @@ function rowToEntry(r: { pokemonId: string; usagePercent: number; rank: number }
   }
 }
 
+export async function getUsageForPokemon(
+  formatId: string,
+  pokemonId: string,
+): Promise<UsageStatsEntry | null> {
+  const row = await prisma.usageStats.findFirst({
+    where: { formatId, pokemonId },
+    orderBy: { year: "desc" },
+  })
+  return row ? rowToEntry(row) : null
+}
+
 /**
  * Query usage stats from the DB, ordered by rank.
  */

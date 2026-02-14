@@ -332,7 +332,7 @@ export function generateHints(
 
   const myActive = state.sides[perspective].active[activeSlot]
   const oppSide = perspective === "p1" ? "p2" : "p1"
-  const isDoubles = state.format === "doubles"
+  const isDoubles = state.gameType === "doubles"
 
   const oppActives = state.sides[oppSide].active.filter(
     (p): p is BattlePokemon => p != null && !p.fainted,

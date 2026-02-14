@@ -58,7 +58,7 @@ function defaultSideConditions() {
 function makeBattleState(overrides: Partial<BattleState> = {}): BattleState {
   return {
     phase: "setup",
-    format: "singles",
+    gameType: "singles",
     turn: 0,
     sides: {
       p1: {
@@ -98,7 +98,7 @@ let mockStateRef: BattleState
 vi.mock("#battle-engine/battle-manager.service", () => ({
   createInitialState: vi.fn((_id: string, format: string) => {
     const state = makeBattleState({
-      format: format as "singles" | "doubles",
+      gameType: format as "singles" | "doubles",
     })
     mockStateRef = state
     return state
@@ -348,7 +348,7 @@ describe("runAutomatedBattle - deep coverage", () => {
 
       // Create state that transitions from battle to ended after one action
       vi.mocked(createInitialState).mockImplementation((_id, fmt) => {
-        const s = makeBattleState({ format: fmt as "singles" | "doubles" })
+        const s = makeBattleState({ gameType: fmt as "singles" | "doubles" })
         // Override phase getter-like behavior
         Object.defineProperty(s, "phase", {
           get() {
@@ -649,7 +649,7 @@ describe("runAutomatedBattle - deep coverage", () => {
       let actionCallCount = 0
 
       vi.mocked(createInitialState).mockImplementation((_id, fmt) => {
-        const s = makeBattleState({ format: fmt as "singles" | "doubles" })
+        const s = makeBattleState({ gameType: fmt as "singles" | "doubles" })
         Object.defineProperty(s, "phase", {
           get() {
             return actionCallCount >= 2 ? "ended" : "battle"
@@ -748,7 +748,7 @@ describe("runAutomatedBattle - deep coverage", () => {
       let actionCallCount = 0
 
       vi.mocked(createInitialState).mockImplementation((_id, fmt) => {
-        const s = makeBattleState({ format: fmt as "singles" | "doubles" })
+        const s = makeBattleState({ gameType: fmt as "singles" | "doubles" })
         Object.defineProperty(s, "phase", {
           get() {
             return actionCallCount >= 4 ? "ended" : "battle"
@@ -884,7 +884,7 @@ describe("runAutomatedBattle - deep coverage", () => {
       let switchCount = 0
 
       vi.mocked(createInitialState).mockImplementation((_id, fmt) => {
-        const s = makeBattleState({ format: fmt as "singles" | "doubles" })
+        const s = makeBattleState({ gameType: fmt as "singles" | "doubles" })
         Object.defineProperty(s, "phase", {
           get() {
             return switchCount >= 1 ? "ended" : "battle"
@@ -956,7 +956,7 @@ describe("runAutomatedBattle - deep coverage", () => {
       let switchCount = 0
 
       vi.mocked(createInitialState).mockImplementation((_id, fmt) => {
-        const s = makeBattleState({ format: fmt as "singles" | "doubles" })
+        const s = makeBattleState({ gameType: fmt as "singles" | "doubles" })
         Object.defineProperty(s, "phase", {
           get() {
             return switchCount >= 1 ? "ended" : "battle"
@@ -1028,7 +1028,7 @@ describe("runAutomatedBattle - deep coverage", () => {
       let switchCount = 0
 
       vi.mocked(createInitialState).mockImplementation((_id, fmt) => {
-        const s = makeBattleState({ format: fmt as "singles" | "doubles" })
+        const s = makeBattleState({ gameType: fmt as "singles" | "doubles" })
         Object.defineProperty(s, "phase", {
           get() {
             return switchCount >= 2 ? "ended" : "battle"
@@ -1125,7 +1125,7 @@ describe("runAutomatedBattle - deep coverage", () => {
       let switchCount = 0
 
       vi.mocked(createInitialState).mockImplementation((_id, fmt) => {
-        const s = makeBattleState({ format: fmt as "singles" | "doubles" })
+        const s = makeBattleState({ gameType: fmt as "singles" | "doubles" })
         Object.defineProperty(s, "phase", {
           get() {
             return switchCount >= 2 ? "ended" : "battle"
@@ -1227,7 +1227,7 @@ describe("runAutomatedBattle - deep coverage", () => {
       let actionCallCount = 0
 
       vi.mocked(createInitialState).mockImplementation((_id, fmt) => {
-        const s = makeBattleState({ format: fmt as "singles" | "doubles" })
+        const s = makeBattleState({ gameType: fmt as "singles" | "doubles" })
         Object.defineProperty(s, "phase", {
           get() {
             return actionCallCount >= 2 ? "ended" : "battle"
@@ -1326,7 +1326,7 @@ describe("runAutomatedBattle - deep coverage", () => {
       let actionCallCount = 0
 
       vi.mocked(createInitialState).mockImplementation((_id, fmt) => {
-        const s = makeBattleState({ format: fmt as "singles" | "doubles" })
+        const s = makeBattleState({ gameType: fmt as "singles" | "doubles" })
         Object.defineProperty(s, "phase", {
           get() {
             return actionCallCount >= 2 ? "ended" : "battle"
@@ -1413,7 +1413,7 @@ describe("runAutomatedBattle - deep coverage", () => {
       let actionCallCount = 0
 
       vi.mocked(createInitialState).mockImplementation((_id, fmt) => {
-        const s = makeBattleState({ format: fmt as "singles" | "doubles" })
+        const s = makeBattleState({ gameType: fmt as "singles" | "doubles" })
         Object.defineProperty(s, "phase", {
           get() {
             return actionCallCount >= 2 ? "ended" : "battle"
@@ -1500,7 +1500,7 @@ describe("runAutomatedBattle - deep coverage", () => {
       let actionCallCount = 0
 
       vi.mocked(createInitialState).mockImplementation((_id, fmt) => {
-        const s = makeBattleState({ format: fmt as "singles" | "doubles" })
+        const s = makeBattleState({ gameType: fmt as "singles" | "doubles" })
         Object.defineProperty(s, "phase", {
           get() {
             return actionCallCount >= 2 ? "ended" : "battle"

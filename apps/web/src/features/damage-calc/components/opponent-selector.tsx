@@ -6,8 +6,9 @@ import { X, Search, RotateCcw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { PokemonSprite, PokemonSearchSelector } from "@nasty-plot/ui"
-import type { PaginatedResponse, PokemonSpecies } from "@nasty-plot/core"
-import { fetchJson, fetchApiData } from "@/lib/api-client"
+import type { PokemonSpecies } from "@nasty-plot/core"
+import { fetchApiData } from "@/lib/api-client"
+import { usePokemonSearch } from "@/hooks/use-pokemon-search"
 
 const MAX_OPPONENTS = 15
 
@@ -24,21 +25,14 @@ export function OpponentSelector({
 }: OpponentSelectorProps) {
   const [open, setOpen] = useState(false)
 
+  const searchPokemon = usePokemonSearch(formatId, 20)
   const handleSearch = useCallback(
     async (query: string): Promise<PokemonSpecies[]> => {
-      const formatParam = formatId ? `&formatId=${encodeURIComponent(formatId)}` : ""
-      try {
-        const json = await fetchJson<PaginatedResponse<PokemonSpecies>>(
-          `/api/pokemon?search=${encodeURIComponent(query)}&pageSize=20${formatParam}`,
-        )
-        // Filter out already-selected Pokemon
-        const selectedSet = new Set(selectedIds)
-        return (json.data ?? []).filter((r) => !selectedSet.has(r.id))
-      } catch {
-        return []
-      }
+      const results = await searchPokemon(query)
+      const selectedSet = new Set(selectedIds)
+      return results.filter((r) => !selectedSet.has(r.id))
     },
-    [formatId, selectedIds],
+    [searchPokemon, selectedIds],
   )
 
   // Fetch details for all selected IDs so we can render chips with names and sprites

@@ -127,7 +127,7 @@ export interface BattleSide {
 
 export interface BattleState {
   phase: BattlePhase
-  format: GameType
+  gameType: GameType
   turn: number
   /** p1 = player, p2 = opponent (AI) */
   sides: {

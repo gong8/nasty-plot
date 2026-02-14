@@ -3,20 +3,16 @@
 import { useState, useCallback, useMemo } from "react"
 import { ChevronDown, ChevronUp, Info } from "lucide-react"
 import { usePokemonQuery, useLearnsetQuery } from "../../hooks/use-pokemon-data"
+import { useTeamSlotForm, clampEv, clampIv, updateMove } from "../../hooks/use-team-slot-form"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 import {
   MAX_TOTAL_EVS,
-  MAX_SINGLE_EV,
-  DEFAULT_EVS,
-  DEFAULT_IVS,
   DEFAULT_LEVEL,
-  DEFAULT_NATURE,
   calculateAllStats,
   getTotalEvs,
   type NatureName,
   type StatName,
-  type StatsTable,
   type TeamSlotData,
 } from "@nasty-plot/core"
 import { AbilitySelector, EvEditor, IvEditor, CalculatedStatsDisplay } from "@nasty-plot/ui"
@@ -34,8 +30,6 @@ interface SimplifiedSetEditorProps {
   onUpdate: (updates: Partial<TeamSlotData>) => void
 }
 
-const MAX_IV = 31
-
 export function SimplifiedSetEditor({
   slot,
   formatId,
@@ -44,7 +38,16 @@ export function SimplifiedSetEditor({
 }: SimplifiedSetEditorProps) {
   const [showEvs, setShowEvs] = useState(false)
 
-  const pokemonId = slot.pokemonId ?? ""
+  const {
+    pokemonId,
+    evs,
+    ivs,
+    nature,
+    moves,
+    handleEvChange: baseHandleEvChange,
+    handleIvChange: baseHandleIvChange,
+    handleMoveChange: baseHandleMoveChange,
+  } = useTeamSlotForm(slot)
 
   // Fetch species data
   const { data: speciesData } = usePokemonQuery(pokemonId || null)
@@ -60,10 +63,6 @@ export function SimplifiedSetEditor({
     return Object.values(speciesData.abilities)
   }, [speciesData])
 
-  const evs = useMemo(() => (slot.evs ?? { ...DEFAULT_EVS }) as StatsTable, [slot.evs])
-  const ivs = useMemo(() => (slot.ivs ?? { ...DEFAULT_IVS }) as StatsTable, [slot.ivs])
-  const nature = slot.nature ?? DEFAULT_NATURE
-
   const evTotal = getTotalEvs(evs)
 
   const calculatedStats = useMemo(() => {
@@ -73,29 +72,26 @@ export function SimplifiedSetEditor({
 
   const handleEvChange = useCallback(
     (stat: StatName, value: number) => {
-      const currentOther = getTotalEvs(evs) - evs[stat]
-      const maxForStat = Math.min(MAX_SINGLE_EV, MAX_TOTAL_EVS - currentOther)
-      const clamped = Math.min(value, maxForStat)
-      onUpdate({ evs: { ...evs, [stat]: clamped } as StatsTable })
+      baseHandleEvChange(stat, value)
+      onUpdate({ evs: clampEv(evs, stat, value) })
     },
-    [evs, onUpdate],
+    [baseHandleEvChange, evs, onUpdate],
   )
 
   const handleIvChange = useCallback(
     (stat: StatName, value: number) => {
-      const clamped = Math.max(0, Math.min(MAX_IV, value))
-      onUpdate({ ivs: { ...ivs, [stat]: clamped } as StatsTable })
+      baseHandleIvChange(stat, value)
+      onUpdate({ ivs: clampIv(ivs, stat, value) })
     },
-    [ivs, onUpdate],
+    [baseHandleIvChange, ivs, onUpdate],
   )
 
   const handleMoveChange = useCallback(
     (index: number, value: string) => {
-      const newMoves = [...(slot.moves ?? [""])] as [string, string?, string?, string?]
-      newMoves[index] = value || (index === 0 ? "" : undefined)
-      onUpdate({ moves: newMoves })
+      baseHandleMoveChange(index, value)
+      onUpdate({ moves: updateMove(moves, index, value) })
     },
-    [slot.moves, onUpdate],
+    [baseHandleMoveChange, moves, onUpdate],
   )
 
   return (
@@ -161,9 +157,9 @@ export function SimplifiedSetEditor({
             <MoveInput
               key={i}
               index={i}
-              value={slot.moves?.[i] ?? ""}
+              value={moves[i] ?? ""}
               learnset={learnset}
-              selectedMoves={slot.moves ?? ["", undefined, undefined, undefined]}
+              selectedMoves={moves}
               onChange={(val) => handleMoveChange(i, val)}
               popularity={popularity}
               compact

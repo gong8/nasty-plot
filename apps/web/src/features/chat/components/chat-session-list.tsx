@@ -108,8 +108,8 @@ export function ChatSessionList({ mode, onSelect }: ChatSessionListProps) {
   return (
     <div
       className={cn(
-        "flex flex-col border-r border-border bg-background/50",
-        mode === "fullpage" ? "w-64 shrink-0" : "w-full",
+        "flex flex-col min-h-0 border-r border-border bg-background/50",
+        mode === "fullpage" ? "w-64 shrink-0" : "w-full flex-1",
       )}
     >
       <div className="flex-1 overflow-y-auto overscroll-contain">

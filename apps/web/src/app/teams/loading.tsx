@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
+import { SkeletonGrid } from "@/components/skeleton-grid"
 
 export default function TeamsLoading() {
   return (
@@ -13,8 +14,8 @@ export default function TeamsLoading() {
           </div>
           <Skeleton className="h-10 w-28" />
         </div>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {Array.from({ length: 6 }).map((_, i) => (
+        <SkeletonGrid count={6} columns="sm:grid-cols-2 lg:grid-cols-3">
+          {(i) => (
             <Card key={i}>
               <CardHeader>
                 <Skeleton className="h-5 w-32" />
@@ -29,8 +30,8 @@ export default function TeamsLoading() {
                 </div>
               </CardContent>
             </Card>
-          ))}
-        </div>
+          )}
+        </SkeletonGrid>
       </div>
     </div>
   )

@@ -1,4 +1,5 @@
 import { Skeleton } from "@/components/ui/skeleton"
+import { SkeletonGrid } from "@/components/skeleton-grid"
 
 export default function ChatLoading() {
   return (
@@ -9,13 +10,13 @@ export default function ChatLoading() {
           <Skeleton className="h-7 w-40" />
           <Skeleton className="h-10 w-44" />
         </div>
-        <div className="flex-1 space-y-4">
-          {Array.from({ length: 4 }).map((_, i) => (
+        <SkeletonGrid count={4} columns="" className="flex-1">
+          {(i) => (
             <div key={i} className={`flex ${i % 2 === 0 ? "justify-start" : "justify-end"}`}>
               <Skeleton className={`h-16 rounded-lg ${i % 2 === 0 ? "w-3/4" : "w-1/2"}`} />
             </div>
-          ))}
-        </div>
+          )}
+        </SkeletonGrid>
         <Skeleton className="h-12 w-full mt-4" />
       </div>
     </div>

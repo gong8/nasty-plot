@@ -45,7 +45,7 @@ vi.mock("#battle-engine/ai/mcts-ai", () => ({
 function makeMockFinalState(overrides?: Partial<BattleState>): BattleState {
   return {
     phase: "ended",
-    format: "singles",
+    gameType: "singles",
     turn: 20,
     sides: {
       p1: {

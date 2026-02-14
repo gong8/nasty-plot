@@ -16,7 +16,7 @@ export function serializeBattleState(state: BattleState): string {
   const lines: string[] = []
 
   // --- Header ---
-  const fieldParts = [`Turn ${state.turn}`, state.format]
+  const fieldParts = [`Turn ${state.turn}`, state.gameType]
   const fieldStr = formatFieldState(state.field)
   if (fieldStr) fieldParts.push(fieldStr)
   lines.push(fieldParts.join(" | "))

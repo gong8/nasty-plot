@@ -24,10 +24,10 @@ const UPDATE_TIMEOUT_MS = 15_000
 const RESUME_INIT_DELAY_MS = 50
 const PLAYER_ID_PATTERN = /^p[1-4]$/
 
-export function createInitialState(id: string, format: GameType): BattleState {
+export function createInitialState(id: string, gameType: GameType): BattleState {
   function makeEmptySide(name: string) {
     return {
-      active: format === "doubles" ? [null, null] : [null],
+      active: gameType === "doubles" ? [null, null] : [null],
       team: [] as never[],
       name,
       sideConditions: defaultSideConditions(),
@@ -38,7 +38,7 @@ export function createInitialState(id: string, format: GameType): BattleState {
 
   return {
     phase: "setup",
-    format,
+    gameType,
     turn: 0,
     sides: {
       p1: makeEmptySide("Player"),
@@ -201,7 +201,10 @@ export class BattleManager {
 
       // AI chooses leads
       if (this.ai) {
-        const aiLeads = this.ai.chooseLeads(this.state.sides.p2.team.length || 6, this.state.format)
+        const aiLeads = this.ai.chooseLeads(
+          this.state.sides.p2.team.length || 6,
+          this.state.gameType,
+        )
         const aiChoice = `team ${aiLeads.join("")}`
         this.stream.write(`>p2 ${aiChoice}`)
       }
@@ -221,7 +224,7 @@ export class BattleManager {
    * The second call combines both and sends to the sim.
    */
   async submitAction(action: BattleAction): Promise<void> {
-    const isDoubles = this.state.format === "doubles"
+    const isDoubles = this.state.gameType === "doubles"
 
     // Doubles: first slot action — store it and show slot 2's options
     if (isDoubles && this.pendingP1Slot1Action === null && this.pendingP1Slot2Actions) {
@@ -409,7 +412,7 @@ export class BattleManager {
             manager.pendingP2Actions.canTera = false
           }
         }
-        if (manager.state.format === "doubles") {
+        if (manager.state.gameType === "doubles") {
           const slot2 = parseRequestForSlot(JSON.stringify(p2Request), 1)
           manager.pendingP2Slot2Actions = slot2.actions
         }
@@ -418,7 +421,7 @@ export class BattleManager {
       }
     }
 
-    if (p1Request && !p1Request.wait && manager.state.format === "doubles") {
+    if (p1Request && !p1Request.wait && manager.state.gameType === "doubles") {
       try {
         const slot2 = parseRequestForSlot(JSON.stringify(p1Request), 1)
         manager.pendingP1Slot2Actions = slot2.actions
@@ -589,7 +592,7 @@ export class BattleManager {
       const parsed = parseRequest(requestJson)
       const rawReq = JSON.parse(requestJson)
       const sideId = rawReq.side?.id as "p1" | "p2" | undefined
-      const isDoubles = this.state.format === "doubles"
+      const isDoubles = this.state.gameType === "doubles"
 
       if (sideId === "p1") {
         this.handleP1Request(parsed, requestJson, isDoubles)
@@ -743,7 +746,7 @@ export class BattleManager {
     const action1 = await this.ai.chooseAction(this.state, this.pendingP2Actions)
     let choice: string
 
-    if (this.state.format === "doubles" && this.pendingP2Slot2Actions) {
+    if (this.state.gameType === "doubles" && this.pendingP2Slot2Actions) {
       const action2 = await this.ai.chooseAction(this.state, this.pendingP2Slot2Actions)
       choice = `${actionToChoice(action1)}, ${actionToChoice(action2)}`
       console.log("[BattleManager] p2 AI doubles choice:", choice)

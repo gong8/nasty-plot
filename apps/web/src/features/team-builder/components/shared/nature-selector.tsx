@@ -1,9 +1,10 @@
 "use client"
 
-import { useMemo } from "react"
+import { useCallback, useMemo } from "react"
 import { NATURE_DATA, STAT_LABELS, NATURES, type NatureName } from "@nasty-plot/core"
 import { GroupedSelector } from "@nasty-plot/ui"
 import type { PopularityData } from "../../hooks/use-popularity-data"
+import { usePopularityGroups } from "@/hooks/use-popularity-groups"
 
 interface NatureSelectorProps {
   value: NatureName
@@ -13,15 +14,17 @@ interface NatureSelectorProps {
 }
 
 export function useNaturesByPopularity(popularity?: PopularityData) {
-  return useMemo(() => {
-    if (!popularity?.natures?.length) {
-      return { commonNatures: [] as string[], otherNatures: NATURES as readonly NatureName[] }
-    }
-    const commonSet = new Set(popularity.natures.map((n) => n.name))
-    const common = popularity.natures.map((n) => n.name)
-    const other = NATURES.filter((n) => !commonSet.has(n))
-    return { commonNatures: common, otherNatures: other }
-  }, [popularity])
+  const popularNatures = useMemo(
+    () => popularity?.natures?.map((n) => ({ name: n.name, usagePercent: n.count })),
+    [popularity],
+  )
+  const getNatureKey = useCallback((n: NatureName) => n, [])
+  const { common, other } = usePopularityGroups(
+    NATURES as unknown as NatureName[],
+    popularNatures,
+    getNatureKey,
+  )
+  return { commonNatures: common, otherNatures: other }
 }
 
 function formatNatureLabel(name: string): string {

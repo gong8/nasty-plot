@@ -242,7 +242,7 @@ export function BattleView({
         <TeamPreview
           playerTeam={state.sides.p1.team}
           opponentTeam={state.sides.p2.team}
-          format={state.format}
+          format={state.gameType}
           onSubmit={onLeadSelect}
         />
       </div>
@@ -292,7 +292,7 @@ export function BattleView({
               onSwitchClick={() => setShowSwitchMenu(true)}
               canTera={state.availableActions.canTera && state.sides.p1.canTera}
               teraType={activePokemon?.teraType}
-              format={state.format}
+              format={state.gameType}
               activeSlot={state.availableActions.activeSlot}
               opponentActive={state.sides.p2.active}
               playerActive={state.sides.p1.active}

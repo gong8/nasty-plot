@@ -380,7 +380,7 @@ export class MCTSAI implements AIPlayer {
     try {
       return {
         phase: "battle",
-        format: battle.gameType === "doubles" ? "doubles" : "singles",
+        gameType: battle.gameType === "doubles" ? "doubles" : "singles",
         turn: battle.turn,
         sides: {
           p1: mapSimSide(battle.p1),

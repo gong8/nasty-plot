@@ -8,7 +8,7 @@ const mockStreamCliChat = vi.fn()
 const mockGetTeam = vi.fn()
 const mockGetUsageStats = vi.fn()
 
-vi.mock("#llm/cli-chat", () => ({
+vi.mock("#llm/cli-chat.service", () => ({
   streamCliChat: (...args: unknown[]) => mockStreamCliChat(...args),
 }))
 

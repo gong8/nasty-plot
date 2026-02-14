@@ -1,8 +1,8 @@
 "use server"
 
-import { prisma } from "@nasty-plot/db"
 import type { UsageStatsEntry } from "@nasty-plot/core"
 import { getActiveFormats } from "@nasty-plot/formats"
+import { getUsageForPokemon } from "@nasty-plot/smogon-data"
 
 interface FormatRow {
   id: string
@@ -25,12 +25,7 @@ export async function getUsageByFormat(
 ): Promise<FormatUsage[]> {
   return Promise.all(
     formats.map(async (f) => {
-      const row = await prisma.usageStats
-        .findFirst({ where: { formatId: f.id, pokemonId }, orderBy: { year: "desc" } })
-        .catch(() => null)
-      const stats: UsageStatsEntry | null = row
-        ? { pokemonId: row.pokemonId, usagePercent: row.usagePercent, rank: row.rank }
-        : null
+      const stats = await getUsageForPokemon(f.id, pokemonId).catch(() => null)
       return { formatId: f.id, formatName: f.name, stats }
     }),
   )

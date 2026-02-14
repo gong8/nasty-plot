@@ -10,4 +10,5 @@ export {
   getFormatMoves,
   getFormatLearnset,
 } from "./format.service"
+export { ensureFormatExists } from "./format-db.service"
 export type * from "./types"

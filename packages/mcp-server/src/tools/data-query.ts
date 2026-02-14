@@ -1,7 +1,7 @@
 import { z } from "zod"
 import { POKEMON_TYPES, type PokemonType } from "@nasty-plot/core"
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js"
-import { apiGet } from "../api-client.js"
+import { apiGet } from "../api-client.service.js"
 import { buildParams, handleTool } from "../tool-helpers.js"
 
 export function registerDataQueryTools(server: McpServer): void {

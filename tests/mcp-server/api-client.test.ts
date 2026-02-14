@@ -1,4 +1,4 @@
-import { apiGet, apiPost, apiPut, apiDelete } from "#mcp-server/api-client"
+import { apiGet, apiPost, apiPut, apiDelete } from "#mcp-server/api-client.service"
 
 // ---------------------------------------------------------------------------
 // Mocks

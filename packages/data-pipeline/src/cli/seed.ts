@@ -2,8 +2,7 @@
 
 import type { FormatDefinition } from "@nasty-plot/core"
 import { prisma } from "@nasty-plot/db"
-import { FORMAT_DEFINITIONS, getActiveFormats } from "@nasty-plot/formats"
-import { ensureFormatExists } from "@nasty-plot/formats/db"
+import { FORMAT_DEFINITIONS, getActiveFormats, ensureFormatExists } from "@nasty-plot/formats"
 import { syncUsageStats, syncSmogonSets } from "@nasty-plot/smogon-data"
 import { isStale } from "../staleness.service"
 import { seedSampleTeams } from "../seed-sample-teams"

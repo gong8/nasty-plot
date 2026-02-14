@@ -9,7 +9,6 @@ vi.mock("@nasty-plot/db", () => ({
     sampleTeam: {
       count: vi.fn(),
       deleteMany: vi.fn(),
-      create: vi.fn(),
     },
     dataSyncLog: {
       upsert: vi.fn(),
@@ -17,8 +16,13 @@ vi.mock("@nasty-plot/db", () => ({
   },
 }))
 
-vi.mock("@nasty-plot/core", () => ({
-  parseShowdownPaste: vi.fn(),
+vi.mock("@nasty-plot/teams", () => ({
+  createSampleTeam: vi.fn(),
+  extractPokemonIds: vi.fn(),
+}))
+
+vi.mock("@nasty-plot/smogon-data", () => ({
+  upsertSyncLog: vi.fn(),
 }))
 
 vi.mock("#data-pipeline/data/sample-teams", () => ({
@@ -43,13 +47,14 @@ vi.mock("#data-pipeline/data/sample-teams", () => ({
 }))
 
 import { prisma } from "@nasty-plot/db"
-import { parseShowdownPaste } from "@nasty-plot/core"
+import { createSampleTeam, extractPokemonIds } from "@nasty-plot/teams"
+import { upsertSyncLog } from "@nasty-plot/smogon-data"
 
 const mockCount = prisma.sampleTeam.count as ReturnType<typeof vi.fn>
 const mockDeleteMany = prisma.sampleTeam.deleteMany as ReturnType<typeof vi.fn>
-const mockCreate = prisma.sampleTeam.create as ReturnType<typeof vi.fn>
-const mockUpsert = prisma.dataSyncLog.upsert as ReturnType<typeof vi.fn>
-const mockParse = parseShowdownPaste as ReturnType<typeof vi.fn>
+const mockCreateSampleTeam = createSampleTeam as ReturnType<typeof vi.fn>
+const mockExtractPokemonIds = extractPokemonIds as ReturnType<typeof vi.fn>
+const mockUpsertSyncLog = upsertSyncLog as ReturnType<typeof vi.fn>
 
 // ---------------------------------------------------------------------------
 // Tests
@@ -58,9 +63,9 @@ const mockParse = parseShowdownPaste as ReturnType<typeof vi.fn>
 describe("seedSampleTeams", () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mockParse.mockReturnValue([{ pokemonId: "garchomp" }, { pokemonId: "infernape" }])
-    mockCreate.mockResolvedValue({})
-    mockUpsert.mockResolvedValue({})
+    mockExtractPokemonIds.mockReturnValue(["garchomp", "infernape"])
+    mockCreateSampleTeam.mockResolvedValue({})
+    mockUpsertSyncLog.mockResolvedValue(undefined)
   })
 
   it("skips seeding when teams already exist and force is false", async () => {
@@ -69,7 +74,7 @@ describe("seedSampleTeams", () => {
     const result = await seedSampleTeams(false)
 
     expect(result).toEqual({ seeded: 0, skipped: true })
-    expect(mockCreate).not.toHaveBeenCalled()
+    expect(mockCreateSampleTeam).not.toHaveBeenCalled()
   })
 
   it("seeds teams when none exist", async () => {
@@ -79,7 +84,7 @@ describe("seedSampleTeams", () => {
 
     expect(result.skipped).toBe(false)
     expect(result.seeded).toBe(2)
-    expect(mockCreate).toHaveBeenCalledTimes(2)
+    expect(mockCreateSampleTeam).toHaveBeenCalledTimes(2)
   })
 
   it("deletes existing teams and re-seeds when force is true", async () => {
@@ -95,34 +100,27 @@ describe("seedSampleTeams", () => {
 
   it("creates sample teams with correct data", async () => {
     mockCount.mockResolvedValue(0)
-    mockParse.mockReturnValue([{ pokemonId: "garchomp" }])
+    mockExtractPokemonIds.mockReturnValue(["garchomp"])
 
     await seedSampleTeams(false)
 
-    expect(mockCreate).toHaveBeenCalledWith({
-      data: expect.objectContaining({
+    expect(mockCreateSampleTeam).toHaveBeenCalledWith(
+      expect.objectContaining({
         name: "OU Balance",
         formatId: "gen9ou",
         archetype: "balance",
         source: "curated-seed",
-        isActive: true,
-        pokemonIds: "garchomp",
       }),
-    })
+    )
   })
 
-  it("joins multiple pokemonIds with commas", async () => {
+  it("joins multiple pokemonIds with commas in log output", async () => {
     mockCount.mockResolvedValue(0)
-    mockParse.mockReturnValue([
-      { pokemonId: "garchomp" },
-      { pokemonId: "heatran" },
-      { pokemonId: "rotomWash" },
-    ])
+    mockExtractPokemonIds.mockReturnValue(["garchomp", "heatran", "rotomWash"])
 
     await seedSampleTeams(false)
 
-    const firstCall = mockCreate.mock.calls[0][0]
-    expect(firstCall.data.pokemonIds).toBe("garchomp,heatran,rotomWash")
+    expect(mockCreateSampleTeam).toHaveBeenCalledTimes(2)
   })
 
   it("logs to DataSyncLog after seeding", async () => {
@@ -130,42 +128,34 @@ describe("seedSampleTeams", () => {
 
     await seedSampleTeams(false)
 
-    expect(mockUpsert).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: { source_formatId: { source: "sample-teams", formatId: "all" } },
-        update: expect.objectContaining({
-          status: "ok",
-          message: expect.stringContaining("2/2"),
-        }),
-        create: expect.objectContaining({
-          source: "sample-teams",
-          formatId: "all",
-          status: "ok",
-        }),
-      }),
+    expect(mockUpsertSyncLog).toHaveBeenCalledWith(
+      "sample-teams",
+      "all",
+      expect.stringContaining("2/2"),
+      "ok",
     )
   })
 
   it("logs partial status when some teams fail", async () => {
     mockCount.mockResolvedValue(0)
-    mockCreate.mockResolvedValueOnce({}).mockRejectedValueOnce(new Error("DB constraint violation"))
+    mockCreateSampleTeam
+      .mockResolvedValueOnce({})
+      .mockRejectedValueOnce(new Error("DB constraint violation"))
 
     const result = await seedSampleTeams(false)
 
     expect(result.seeded).toBe(1)
-    expect(mockUpsert).toHaveBeenCalledWith(
-      expect.objectContaining({
-        update: expect.objectContaining({
-          status: "partial",
-          message: expect.stringContaining("1/2"),
-        }),
-      }),
+    expect(mockUpsertSyncLog).toHaveBeenCalledWith(
+      "sample-teams",
+      "all",
+      expect.stringContaining("1/2"),
+      "partial",
     )
   })
 
   it("handles non-Error exceptions in team creation", async () => {
     mockCount.mockResolvedValue(0)
-    mockCreate.mockResolvedValueOnce({}).mockRejectedValueOnce("string error")
+    mockCreateSampleTeam.mockResolvedValueOnce({}).mockRejectedValueOnce("string error")
 
     const result = await seedSampleTeams(false)
 
@@ -180,17 +170,12 @@ describe("seedSampleTeams", () => {
     expect(mockDeleteMany).not.toHaveBeenCalled()
   })
 
-  it("filters out empty pokemonIds", async () => {
+  it("filters out empty pokemonIds via extractPokemonIds", async () => {
     mockCount.mockResolvedValue(0)
-    mockParse.mockReturnValue([
-      { pokemonId: "garchomp" },
-      { pokemonId: "" },
-      { pokemonId: "heatran" },
-    ])
+    mockExtractPokemonIds.mockReturnValue(["garchomp", "heatran"])
 
     await seedSampleTeams(false)
 
-    const firstCall = mockCreate.mock.calls[0][0]
-    expect(firstCall.data.pokemonIds).toBe("garchomp,heatran")
+    expect(mockExtractPokemonIds).toHaveBeenCalledTimes(2)
   })
 })

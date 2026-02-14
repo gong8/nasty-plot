@@ -1,6 +1,6 @@
 import { z } from "zod"
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js"
-import { apiGet, apiPost } from "../api-client.js"
+import { apiGet, apiPost } from "../api-client.service.js"
 import { buildParams, handleTool } from "../tool-helpers.js"
 
 export function registerMetaRecsTools(server: McpServer): void {

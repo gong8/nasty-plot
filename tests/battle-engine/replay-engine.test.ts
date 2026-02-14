@@ -20,7 +20,7 @@ vi.mock("#battle-engine/ai/win-probability.service", () => ({
 function makeMockState(overrides?: Partial<BattleState>): BattleState {
   return {
     phase: "battle",
-    format: "singles",
+    gameType: "singles",
     turn: 0,
     sides: {
       p1: {

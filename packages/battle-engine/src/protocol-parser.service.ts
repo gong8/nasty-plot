@@ -618,7 +618,7 @@ export function processLine(state: BattleState, line: string): BattleLogEntry | 
 
     case "gametype": {
       if (args[0] === "doubles") {
-        state.format = "doubles"
+        state.gameType = "doubles"
       }
       return null
     }

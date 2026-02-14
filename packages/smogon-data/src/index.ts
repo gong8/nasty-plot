@@ -2,6 +2,7 @@ export {
   syncUsageStats,
   getUsageStats,
   getUsageStatsCount,
+  getUsageForPokemon,
   getTopPokemon,
   getTeammates,
   getMoveUsage,
@@ -20,5 +21,5 @@ export {
 export { inferFromSets, enrichExtractedTeam } from "./set-inference.service"
 
 export { fetchSmogonData } from "./fetch-helper"
-export { upsertSyncLog } from "./sync-log.service"
+export { upsertSyncLog, getSyncLogs } from "./sync-log.service"
 export type { ExtractedPokemon } from "./set-inference.service"

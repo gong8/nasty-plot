@@ -1,5 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
+import { SkeletonGrid } from "@/components/skeleton-grid"
 
 export default function PokemonLoading() {
   return (
@@ -16,8 +17,8 @@ export default function PokemonLoading() {
             <Skeleton key={i} className="h-6 w-16 rounded-full" />
           ))}
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-          {Array.from({ length: 20 }).map((_, i) => (
+        <SkeletonGrid count={20} columns="grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+          {(i) => (
             <Card key={i}>
               <CardContent className="p-4 flex flex-col items-center gap-2">
                 <Skeleton className="w-20 h-20 rounded-md" />
@@ -25,8 +26,8 @@ export default function PokemonLoading() {
                 <Skeleton className="h-4 w-16" />
               </CardContent>
             </Card>
-          ))}
-        </div>
+          )}
+        </SkeletonGrid>
       </main>
     </div>
   )

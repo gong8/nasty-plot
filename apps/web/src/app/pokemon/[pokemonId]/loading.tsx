@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
+import { SkeletonGrid } from "@/components/skeleton-grid"
 
 export default function PokemonDetailLoading() {
   return (
@@ -9,7 +10,6 @@ export default function PokemonDetailLoading() {
         <Skeleton className="h-4 w-32 mb-4" />
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Sprite card */}
           <Card className="lg:col-span-1">
             <CardContent className="p-6 flex flex-col items-center gap-4">
               <Skeleton className="w-40 h-40 rounded-md" />
@@ -22,19 +22,20 @@ export default function PokemonDetailLoading() {
             </CardContent>
           </Card>
 
-          {/* Stats + abilities */}
           <div className="lg:col-span-2 space-y-6">
             <Card>
               <CardHeader>
                 <Skeleton className="h-6 w-40" />
               </CardHeader>
-              <CardContent className="space-y-2">
-                {Array.from({ length: 6 }).map((_, i) => (
-                  <div key={i} className="flex items-center gap-3">
-                    <Skeleton className="h-4 w-10" />
-                    <Skeleton className="h-4 flex-1" />
-                  </div>
-                ))}
+              <CardContent>
+                <SkeletonGrid count={6} columns="" className="space-y-2 gap-0">
+                  {(i) => (
+                    <div key={i} className="flex items-center gap-3">
+                      <Skeleton className="h-4 w-10" />
+                      <Skeleton className="h-4 flex-1" />
+                    </div>
+                  )}
+                </SkeletonGrid>
               </CardContent>
             </Card>
 
@@ -50,17 +51,14 @@ export default function PokemonDetailLoading() {
           </div>
         </div>
 
-        {/* Moves table skeleton */}
         <Card className="mt-6">
           <CardHeader>
             <Skeleton className="h-6 w-40" />
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
-              {Array.from({ length: 10 }).map((_, i) => (
-                <Skeleton key={i} className="h-8 w-full" />
-              ))}
-            </div>
+            <SkeletonGrid count={10} columns="" className="space-y-3 gap-0">
+              {(i) => <Skeleton key={i} className="h-8 w-full" />}
+            </SkeletonGrid>
           </CardContent>
         </Card>
       </main>

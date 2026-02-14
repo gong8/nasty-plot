@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
+import { SkeletonGrid } from "@/components/skeleton-grid"
 
 export default function TeamEditorLoading() {
   return (
@@ -10,8 +11,8 @@ export default function TeamEditorLoading() {
           <Skeleton className="h-8 w-48" />
           <Skeleton className="h-10 w-24" />
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
-          {Array.from({ length: 6 }).map((_, i) => (
+        <SkeletonGrid count={6} columns="grid-cols-2 md:grid-cols-3" className="mb-6">
+          {(i) => (
             <Card key={i}>
               <CardHeader>
                 <Skeleton className="h-5 w-20" />
@@ -25,8 +26,8 @@ export default function TeamEditorLoading() {
                 </div>
               </CardContent>
             </Card>
-          ))}
-        </div>
+          )}
+        </SkeletonGrid>
       </div>
     </div>
   )

@@ -216,7 +216,7 @@ describe("MCTSAI", () => {
   it("can handle doubles battles", async () => {
     const doublesState: BattleState = {
       phase: "battle",
-      format: "doubles",
+      gameType: "doubles",
       turn: 1,
       sides: {
         p1: {

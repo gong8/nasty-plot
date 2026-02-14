@@ -605,7 +605,7 @@ describe("protocol-parser", () => {
       const state = makeState()
       processLine(state, "|gametype|doubles")
 
-      expect(state.format).toBe("doubles")
+      expect(state.gameType).toBe("doubles")
     })
 
     it("returns null for |teamsize|, |gen|, |tier|, |rule|, |rated|, |clearpoke|, |teampreview|, |start|", () => {

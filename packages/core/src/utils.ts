@@ -18,3 +18,13 @@ export function formatUsagePercent(percent: number, decimals = 1): string {
 export function capitalize(str: string): string {
   return str.charAt(0).toUpperCase() + str.slice(1)
 }
+
+export function parseIntQueryParam(
+  value: string | null,
+  fallback: number,
+  min: number,
+  max: number,
+): number {
+  const parsed = parseInt(value ?? String(fallback), 10)
+  return Math.min(max, Math.max(min, isNaN(parsed) ? fallback : parsed))
+}

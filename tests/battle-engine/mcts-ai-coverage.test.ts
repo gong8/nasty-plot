@@ -725,7 +725,7 @@ describe("MCTSAI - deep coverage", () => {
       mockEvaluatePosition.mockReturnValue({ score: 0.5, rawScore: 500, features: [] })
 
       const state = makeState()
-      state.format = "doubles"
+      state.gameType = "doubles"
       const actions = makeActions()
 
       await ai.chooseAction(state, actions)
@@ -733,7 +733,7 @@ describe("MCTSAI - deep coverage", () => {
       expect(mockEvaluatePosition).toHaveBeenCalled()
       const evalArgs = mockEvaluatePosition.mock.calls[0]
       const battleState = evalArgs[0] as BattleState
-      expect(battleState.format).toBe("doubles")
+      expect(battleState.gameType).toBe("doubles")
     })
 
     it("handles null active pokemon in battleToState", async () => {

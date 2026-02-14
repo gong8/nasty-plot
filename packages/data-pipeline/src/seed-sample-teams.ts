@@ -1,5 +1,6 @@
 import { prisma } from "@nasty-plot/db"
-import { parseShowdownPaste } from "@nasty-plot/core"
+import { createSampleTeam, extractPokemonIds } from "@nasty-plot/teams"
+import { upsertSyncLog } from "@nasty-plot/smogon-data"
 import { SAMPLE_TEAMS } from "./data/sample-teams"
 
 const SOURCE = "curated-seed"
@@ -30,42 +31,30 @@ export async function seedSampleTeams(force: boolean): Promise<{
   let seeded = 0
   for (const team of SAMPLE_TEAMS) {
     try {
-      const slots = parseShowdownPaste(team.paste)
-      const pokemonIds = slots
-        .map((s) => s.pokemonId)
-        .filter(Boolean)
-        .join(",")
+      const pokemonIds = extractPokemonIds(team.paste)
 
-      await prisma.sampleTeam.create({
-        data: {
-          name: team.name,
-          formatId: team.formatId,
-          archetype: team.archetype,
-          source: team.source,
-          paste: team.paste,
-          pokemonIds,
-          isActive: true,
-        },
+      await createSampleTeam({
+        name: team.name,
+        formatId: team.formatId,
+        archetype: team.archetype,
+        source: team.source,
+        paste: team.paste,
       })
       seeded++
-      console.log(`  [OK] ${team.name} (${team.formatId}) — ${pokemonIds}`)
+      console.log(`  [OK] ${team.name} (${team.formatId}) — ${pokemonIds.join(",")}`)
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err)
       console.error(`  [FAIL] ${team.name}: ${msg}`)
     }
   }
 
-  const syncData = {
-    lastSynced: new Date(),
-    status: seeded === SAMPLE_TEAMS.length ? "ok" : "partial",
-    message: `Seeded ${seeded}/${SAMPLE_TEAMS.length} sample teams`,
-  }
-
-  await prisma.dataSyncLog.upsert({
-    where: { source_formatId: { source: "sample-teams", formatId: "all" } },
-    update: syncData,
-    create: { source: "sample-teams", formatId: "all", ...syncData },
-  })
+  const syncStatus = seeded === SAMPLE_TEAMS.length ? "ok" : "partial"
+  await upsertSyncLog(
+    "sample-teams",
+    "all",
+    `Seeded ${seeded}/${SAMPLE_TEAMS.length} sample teams`,
+    syncStatus,
+  )
 
   return { seeded, skipped: false }
 }

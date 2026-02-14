@@ -66,7 +66,7 @@ export function useBuildContextData(): UseBuildContextDataReturn {
     if (contextMode === "battle-live") {
       if (pageContext.formatId) data.formatId = pageContext.formatId
       if (battleState) {
-        data.gameType = battleState.format
+        data.gameType = battleState.gameType
         data.team1Name = battleState.sides.p1.name
         data.team2Name = battleState.sides.p2.name
       }

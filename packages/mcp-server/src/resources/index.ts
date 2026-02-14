@@ -2,7 +2,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js"
 import { ResourceTemplate } from "@modelcontextprotocol/sdk/server/mcp.js"
 import { TYPE_CHART, NATURE_DATA } from "@nasty-plot/core"
 import { FORMAT_DEFINITIONS } from "@nasty-plot/formats"
-import { apiGet } from "../api-client.js"
+import { apiGet } from "../api-client.service.js"
 
 // Strip the `name` field from NATURE_DATA for the MCP resource (simpler shape)
 const NATURES_DATA = Object.fromEntries(

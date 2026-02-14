@@ -1,9 +1,10 @@
 "use client"
 
-import { useState, useEffect, useCallback, useMemo } from "react"
+import { useCallback, useMemo } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { Trash2 } from "lucide-react"
 import { usePokemonQuery, useLearnsetQuery } from "../hooks/use-pokemon-data"
+import { useTeamSlotForm } from "../hooks/use-team-slot-form"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -13,19 +14,9 @@ import {
   STATS,
   STAT_LABELS,
   STAT_COLORS,
-  MAX_TOTAL_EVS,
-  MAX_SINGLE_EV,
-  DEFAULT_LEVEL,
-  DEFAULT_EVS,
-  DEFAULT_IVS,
-  DEFAULT_NATURE,
   calculateAllStats,
-  getTotalEvs,
-  type NatureName,
   type PokemonSpecies,
   type PokemonType,
-  type StatName,
-  type StatsTable,
   type TeamSlotData,
   type TeamSlotInput,
 } from "@nasty-plot/core"
@@ -64,32 +55,28 @@ export function SlotEditor({
   isNew = false,
   formatId,
 }: SlotEditorProps) {
-  const [pokemonId, setPokemonId] = useState(slot?.pokemonId ?? "")
-  const [nickname, setNickname] = useState(slot?.nickname ?? "")
-  const [ability, setAbility] = useState(slot?.ability ?? "")
-  const [item, setItem] = useState(slot?.item ?? "")
-  const [nature, setNature] = useState<NatureName>(slot?.nature ?? DEFAULT_NATURE)
-  const [teraType, setTeraType] = useState<PokemonType | undefined>(slot?.teraType)
-  const [level, setLevel] = useState(slot?.level ?? DEFAULT_LEVEL)
-  const [moves, setMoves] = useState<[string, string?, string?, string?]>(
-    slot?.moves ?? ["", undefined, undefined, undefined],
-  )
-  const [evs, setEvs] = useState<StatsTable>(slot?.evs ?? { ...DEFAULT_EVS })
-  const [ivs, setIvs] = useState<StatsTable>(slot?.ivs ?? { ...DEFAULT_IVS })
-
-  // Reset form when slot changes
-  useEffect(() => {
-    setPokemonId(slot?.pokemonId ?? "") // eslint-disable-line react-hooks/set-state-in-effect -- sync form state from prop
-    setNickname(slot?.nickname ?? "")
-    setAbility(slot?.ability ?? "")
-    setItem(slot?.item ?? "")
-    setNature(slot?.nature ?? DEFAULT_NATURE)
-    setTeraType(slot?.teraType)
-    setLevel(slot?.level ?? DEFAULT_LEVEL)
-    setMoves(slot?.moves ?? ["", undefined, undefined, undefined])
-    setEvs(slot?.evs ?? { ...DEFAULT_EVS })
-    setIvs(slot?.ivs ?? { ...DEFAULT_IVS })
-  }, [slot])
+  const {
+    pokemonId,
+    setPokemonId,
+    nickname,
+    setNickname,
+    ability,
+    setAbility,
+    item,
+    setItem,
+    nature,
+    setNature,
+    teraType,
+    setTeraType,
+    level,
+    moves,
+    setMoves,
+    evs,
+    ivs,
+    handleEvChange,
+    handleIvChange,
+    handleMoveChange,
+  } = useTeamSlotForm(slot)
 
   // Fetch pokemon species data for the selected pokemonId
   const { data: speciesData } = usePokemonQuery(pokemonId || null)
@@ -126,37 +113,17 @@ export function SlotEditor({
     return calculateAllStats(speciesData.baseStats, ivs, evs, level, nature)
   }, [speciesData, ivs, evs, level, nature])
 
-  const handleEvChange = useCallback((stat: StatName, value: number) => {
-    setEvs((prev) => {
-      const currentOther = getTotalEvs(prev) - prev[stat]
-      const maxForStat = Math.min(MAX_SINGLE_EV, MAX_TOTAL_EVS - currentOther)
-      const clamped = Math.min(value, maxForStat)
-      return { ...prev, [stat]: clamped }
-    })
-  }, [])
-
-  const handleIvChange = useCallback((stat: StatName, value: number) => {
-    const clamped = Math.max(0, Math.min(31, value))
-    setIvs((prev) => ({ ...prev, [stat]: clamped }))
-  }, [])
-
-  const handleMoveChange = useCallback((index: number, value: string) => {
-    setMoves((prev) => {
-      const next = [...prev] as [string, string?, string?, string?]
-      next[index] = value || (index === 0 ? "" : undefined)
-      return next
-    })
-  }, [])
-
-  const handlePokemonSelect = useCallback((pokemon: PokemonSpecies) => {
-    setPokemonId(pokemon.id)
-    setNickname("")
-    // Reset slot-specific data when changing Pokemon
-    const firstAbility = Object.values(pokemon.abilities)[0] ?? ""
-    setAbility(firstAbility)
-    setMoves(["", undefined, undefined, undefined])
-    setTeraType(pokemon.types[0])
-  }, [])
+  const handlePokemonSelect = useCallback(
+    (pokemon: PokemonSpecies) => {
+      setPokemonId(pokemon.id)
+      setNickname("")
+      const firstAbility = Object.values(pokemon.abilities)[0] ?? ""
+      setAbility(firstAbility)
+      setMoves(["", undefined, undefined, undefined])
+      setTeraType(pokemon.types[0])
+    },
+    [setPokemonId, setNickname, setAbility, setMoves, setTeraType],
+  )
 
   const handleSave = () => {
     onSave({

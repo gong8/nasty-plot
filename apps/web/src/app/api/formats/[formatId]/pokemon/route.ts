@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { getFormat, getFormatPokemon } from "@nasty-plot/formats"
-import type { PaginatedResponse, PokemonSpecies } from "@nasty-plot/core"
+import { parseIntQueryParam, type PaginatedResponse, type PokemonSpecies } from "@nasty-plot/core"
 import { notFoundResponse } from "../../../../../lib/api-error"
 
 export async function GET(request: Request, { params }: { params: Promise<{ formatId: string }> }) {
@@ -13,8 +13,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ form
 
   const { searchParams } = new URL(request.url)
   const search = searchParams.get("search") ?? ""
-  const page = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10))
-  const pageSize = Math.min(100, Math.max(1, parseInt(searchParams.get("pageSize") ?? "50", 10)))
+  const page = parseIntQueryParam(searchParams.get("page"), 1, 1, Number.MAX_SAFE_INTEGER)
+  const pageSize = parseIntQueryParam(searchParams.get("pageSize"), 50, 1, 100)
 
   let species: PokemonSpecies[] = getFormatPokemon(formatId)
 

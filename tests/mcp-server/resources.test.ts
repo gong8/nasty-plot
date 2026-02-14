@@ -4,11 +4,11 @@ import { registerResources } from "#mcp-server/resources/index"
 // Mocks
 // ---------------------------------------------------------------------------
 
-vi.mock("#mcp-server/api-client", () => ({
+vi.mock("#mcp-server/api-client.service", () => ({
   apiGet: vi.fn(),
 }))
 
-import { apiGet } from "#mcp-server/api-client"
+import { apiGet } from "#mcp-server/api-client.service"
 const mockApiGet = vi.mocked(apiGet)
 
 // ---------------------------------------------------------------------------

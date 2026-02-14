@@ -40,8 +40,8 @@ function isNameOrIdBanned(
   return false
 }
 
-export function getFormat(id: string): FormatDefinition | null {
-  const resolvedId = resolveFormatId(id)
+export function getFormat(formatId: string): FormatDefinition | null {
+  const resolvedId = resolveFormatId(formatId)
   if (!resolvedId) return null
   return FORMAT_DEFINITIONS.find((f) => f.id === resolvedId) ?? null
 }

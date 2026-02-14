@@ -5,14 +5,14 @@ import { DEFAULT_EVS, DEFAULT_IVS, DEFAULT_LEVEL, MAX_SINGLE_EV } from "@nasty-p
 // Mocks
 // ---------------------------------------------------------------------------
 
-vi.mock("#mcp-server/api-client", () => ({
+vi.mock("#mcp-server/api-client.service", () => ({
   apiGet: vi.fn(),
   apiPost: vi.fn(),
   apiPut: vi.fn(),
   apiDelete: vi.fn(),
 }))
 
-import { apiGet, apiPost, apiPut, apiDelete } from "#mcp-server/api-client"
+import { apiGet, apiPost, apiPut, apiDelete } from "#mcp-server/api-client.service"
 const mockApiGet = vi.mocked(apiGet)
 const mockApiPost = vi.mocked(apiPost)
 const mockApiPut = vi.mocked(apiPut)

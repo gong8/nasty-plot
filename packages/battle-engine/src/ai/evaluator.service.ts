@@ -170,7 +170,7 @@ function evalActiveMatchupScore(
   my: BattleState["sides"]["p1"],
   opp: BattleState["sides"]["p1"],
 ): number {
-  if (state.format !== "doubles") {
+  if (state.gameType !== "doubles") {
     return evalActiveMatchup(
       my.active[0],
       opp.active[0],

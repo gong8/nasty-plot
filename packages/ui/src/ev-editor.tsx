@@ -1,7 +1,14 @@
 "use client"
 
 import { Slider as SliderPrimitive } from "radix-ui"
-import { STATS, STAT_LABELS, STAT_COLORS, MAX_SINGLE_EV, MAX_TOTAL_EVS } from "@nasty-plot/core"
+import {
+  STATS,
+  STAT_LABELS,
+  STAT_COLORS,
+  MAX_SINGLE_EV,
+  MAX_TOTAL_EVS,
+  getTotalEvs,
+} from "@nasty-plot/core"
 import type { StatName, StatsTable } from "@nasty-plot/core"
 import { cn } from "./utils"
 
@@ -13,10 +20,6 @@ interface EvEditorProps {
 }
 
 export type { EvEditorProps }
-
-function getTotalEvs(evs: StatsTable): number {
-  return STATS.reduce((sum, stat) => sum + evs[stat], 0)
-}
 
 export function EvEditor({ evs, onChange, showRemaining = true, className }: EvEditorProps) {
   const evTotal = getTotalEvs(evs)

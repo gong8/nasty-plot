@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useCallback } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { Check, ChevronsUpDown } from "lucide-react"
 import { cn } from "@nasty-plot/ui"
@@ -18,6 +18,7 @@ import {
 import { formatUsagePercent, type ItemData, type PaginatedResponse } from "@nasty-plot/core"
 import { fetchJson } from "@/lib/api-client"
 import { usePopularityData } from "../hooks/use-popularity-data"
+import { usePopularityGroups } from "@/hooks/use-popularity-groups"
 
 interface ItemComboboxProps {
   value: string
@@ -63,23 +64,17 @@ export function ItemCombobox({ value, onChange, formatId, pokemonId }: ItemCombo
 
   const { data: popularity } = usePopularityData(pokemonId ?? "", formatId)
 
-  const { commonItems, otherItems } = useMemo(() => {
-    if (!popularity?.items?.length) {
-      return { commonItems: [], otherItems: items }
-    }
+  const getItemKey = useCallback((item: ItemData) => item.name, [])
+  const { common: commonItems, other: otherItems } = usePopularityGroups(
+    items,
+    popularity?.items,
+    getItemKey,
+  )
 
-    const popularSet = new Set(popularity.items.map((i) => i.name))
-    const usageMap = new Map(popularity.items.map((i) => [i.name, i.usagePercent]))
-
-    const common = items
-      .filter((item) => popularSet.has(item.name))
-      .sort((a, b) => (usageMap.get(b.name) ?? 0) - (usageMap.get(a.name) ?? 0))
-      .map((item) => ({ ...item, usagePercent: usageMap.get(item.name) }))
-
-    const other = items.filter((item) => !popularSet.has(item.name))
-
-    return { commonItems: common, otherItems: other }
-  }, [items, popularity])
+  const usageMap = useMemo(
+    () => new Map(popularity?.items?.map((i) => [i.name, i.usagePercent]) ?? []),
+    [popularity],
+  )
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -137,9 +132,9 @@ export function ItemCombobox({ value, onChange, formatId, pokemonId }: ItemCombo
                       />
                       <div className="flex items-center justify-between w-full">
                         <span>{item.name}</span>
-                        {item.usagePercent != null && (
+                        {usageMap.get(item.name) != null && (
                           <span className="text-xs text-muted-foreground ml-2">
-                            {formatUsagePercent(item.usagePercent)}
+                            {formatUsagePercent(usageMap.get(item.name)!)}
                           </span>
                         )}
                       </div>

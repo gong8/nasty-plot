@@ -4,7 +4,7 @@ import { registerDataQueryTools } from "#mcp-server/tools/data-query"
 // Mocks
 // ---------------------------------------------------------------------------
 
-vi.mock("#mcp-server/api-client", () => ({
+vi.mock("#mcp-server/api-client.service", () => ({
   apiGet: vi.fn(),
 }))
 
@@ -19,7 +19,7 @@ vi.mock("#mcp-server/tool-helpers", async (importOriginal) => {
   }
 })
 
-import { apiGet } from "#mcp-server/api-client"
+import { apiGet } from "#mcp-server/api-client.service"
 const mockApiGet = vi.mocked(apiGet)
 
 // ---------------------------------------------------------------------------

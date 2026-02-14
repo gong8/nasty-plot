@@ -85,7 +85,7 @@ export class HeuristicAI implements AIPlayer {
 
     const activeSlot = actions.activeSlot ?? 0
     const myActive = state.sides.p2.active[activeSlot]
-    const isDoubles = state.format === "doubles"
+    const isDoubles = state.gameType === "doubles"
 
     // Get opponent actives
     const oppActives = isDoubles

@@ -35,7 +35,7 @@ function makePokemon(overrides: Partial<BattlePokemon> = {}): BattlePokemon {
 function makeState(overrides: Partial<BattleState> = {}): BattleState {
   return {
     phase: "battle",
-    format: "singles",
+    gameType: "singles",
     turn: 5,
     sides: {
       p1: {
@@ -389,7 +389,7 @@ describe("evaluatePosition", () => {
 
   it("handles doubles battles with 2 actives per side", () => {
     const doublesState = makeState({
-      format: "doubles",
+      gameType: "doubles",
       sides: {
         p1: {
           active: [
@@ -1563,7 +1563,7 @@ describe("generateHints", () => {
 
   it("handles activeSlot=1 for doubles battles", () => {
     const doublesState = makeState({
-      format: "doubles",
+      gameType: "doubles",
       sides: {
         p1: {
           active: [

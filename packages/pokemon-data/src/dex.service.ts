@@ -31,8 +31,8 @@ function toSpecies(species: ReturnType<typeof dex.species.get>): PokemonSpecies 
   }
 }
 
-export function getSpecies(id: string): PokemonSpecies | null {
-  const species = dex.species.get(id)
+export function getSpecies(pokemonId: string): PokemonSpecies | null {
+  const species = dex.species.get(pokemonId)
   if (!species?.exists) return null
   return toSpecies(species)
 }
@@ -85,8 +85,8 @@ function toMove(move: ReturnType<typeof dex.moves.get>): MoveData {
   }
 }
 
-export function getMove(id: string): MoveData | null {
-  const move = dex.moves.get(id)
+export function getMove(moveId: string): MoveData | null {
+  const move = dex.moves.get(moveId)
   if (!move?.exists) return null
   return toMove(move)
 }
@@ -101,8 +101,8 @@ export function listMoves(): MoveData[] {
   return all
 }
 
-export function getAbility(id: string): AbilityData | null {
-  const ability = dex.abilities.get(id)
+export function getAbility(abilityId: string): AbilityData | null {
+  const ability = dex.abilities.get(abilityId)
   if (!ability?.exists) return null
   return {
     id: ability.id,
@@ -120,8 +120,8 @@ function toItemData(item: ReturnType<typeof dex.items.get>): ItemData {
   }
 }
 
-export function getItem(id: string): ItemData | null {
-  const item = dex.items.get(id)
+export function getItem(itemId: string): ItemData | null {
+  const item = dex.items.get(itemId)
   if (!item?.exists) return null
   return toItemData(item)
 }

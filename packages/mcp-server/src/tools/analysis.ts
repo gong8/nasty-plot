@@ -1,7 +1,7 @@
 import { z } from "zod"
-import { DEFAULT_LEVEL, type PokemonType, type StatName } from "@nasty-plot/core"
+import { DEFAULT_LEVEL, getTotalEvs, type PokemonType, type StatName } from "@nasty-plot/core"
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js"
-import { apiGet, apiPost } from "../api-client.js"
+import { apiGet, apiPost } from "../api-client.service.js"
 import { handleTool } from "../tool-helpers.js"
 
 export function registerAnalysisTools(server: McpServer): void {
@@ -75,8 +75,8 @@ export function registerAnalysisTools(server: McpServer): void {
 
         const a = (dataA as { data: PokemonData }).data
         const b = (dataB as { data: PokemonData }).data
-        const bstA = sumStats(a.baseStats)
-        const bstB = sumStats(b.baseStats)
+        const bstA = getTotalEvs(a.baseStats)
+        const bstB = getTotalEvs(b.baseStats)
 
         return {
           pokemonA: { ...a, bst: bstA },
@@ -141,8 +141,4 @@ interface PokemonData {
   baseStats: Record<StatName, number>
   abilities: Record<string, string>
   tier?: string
-}
-
-function sumStats(stats: Record<StatName, number>): number {
-  return Object.values(stats).reduce((sum, v) => sum + v, 0)
 }

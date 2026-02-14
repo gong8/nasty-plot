@@ -3,6 +3,9 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
   "main": "src/index.ts",
   "types": "src/index.ts",
   "scripts": {
@@ -15,7 +18,8 @@
     "@nasty-plot/core": "workspace:*",
     "@nasty-plot/db": "workspace:*",
     "@nasty-plot/formats": "workspace:*",
-    "@nasty-plot/smogon-data": "workspace:*"
+    "@nasty-plot/smogon-data": "workspace:*",
+    "@nasty-plot/teams": "workspace:*"
   },
   "devDependencies": {
     "typescript": "^5.9.3",

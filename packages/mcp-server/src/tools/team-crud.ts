@@ -1,7 +1,7 @@
 import { z } from "zod"
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js"
 import { DEFAULT_IVS, DEFAULT_LEVEL, NATURES, POKEMON_TYPES, fillStats } from "@nasty-plot/core"
-import { apiDelete, apiGet, apiPost, apiPut } from "../api-client.js"
+import { apiDelete, apiGet, apiPost, apiPut } from "../api-client.service.js"
 import { buildParams, handleTool, toolError, toolSuccess } from "../tool-helpers.js"
 
 const evsSchema = z

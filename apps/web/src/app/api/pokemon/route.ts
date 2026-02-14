@@ -4,6 +4,7 @@ import { getFormatPokemon } from "@nasty-plot/formats"
 import { getUsageStats } from "@nasty-plot/smogon-data"
 import {
   getBaseStatTotal,
+  parseIntQueryParam,
   type PaginatedResponse,
   type PokemonSpecies,
   type PokemonType,
@@ -16,8 +17,8 @@ export async function GET(request: Request) {
   const typeFilter = searchParams.get("type") as PokemonType | null
   const formatId = searchParams.get("formatId")
   const sort = (searchParams.get("sort") as SortMode) ?? "dex"
-  const page = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10))
-  const pageSize = Math.min(100, Math.max(1, parseInt(searchParams.get("pageSize") ?? "50", 10)))
+  const page = parseIntQueryParam(searchParams.get("page"), 1, 1, Number.MAX_SAFE_INTEGER)
+  const pageSize = parseIntQueryParam(searchParams.get("pageSize"), 50, 1, 100)
 
   let species: PokemonSpecies[]
 

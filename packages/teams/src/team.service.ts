@@ -1,5 +1,5 @@
 import { prisma } from "@nasty-plot/db"
-import { ensureFormatExists } from "@nasty-plot/formats/db"
+import { ensureFormatExists } from "@nasty-plot/formats"
 import { getSpecies } from "@nasty-plot/pokemon-data"
 import { STATS } from "@nasty-plot/core"
 import type {

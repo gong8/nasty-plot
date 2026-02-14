@@ -11,7 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import type { UsageStatsEntry, SmogonSetData } from "@nasty-plot/core"
+import { formatUsagePercent, type UsageStatsEntry, type SmogonSetData } from "@nasty-plot/core"
 
 interface FormatUsage {
   formatId: string
@@ -22,10 +22,6 @@ interface FormatUsage {
 interface CompetitiveDataProps {
   usageByFormat: FormatUsage[]
   setsByFormat: { formatId: string; formatName: string; sets: SmogonSetData[] }[]
-}
-
-function formatPercent(value: number): string {
-  return `${(value * 100).toFixed(2)}%`
 }
 
 function SetCard({ set }: { set: SmogonSetData }) {
@@ -120,7 +116,7 @@ export function CompetitiveData({ usageByFormat, setsByFormat }: CompetitiveData
                   <TableRow key={f.formatId}>
                     <TableCell className="font-medium">{f.formatName}</TableCell>
                     <TableCell className="text-right">
-                      {formatPercent(f.stats!.usagePercent)}
+                      {formatUsagePercent(f.stats!.usagePercent * 100, 2)}
                     </TableCell>
                     <TableCell className="text-right">#{f.stats!.rank}</TableCell>
                   </TableRow>

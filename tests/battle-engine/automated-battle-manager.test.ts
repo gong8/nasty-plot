@@ -36,7 +36,7 @@ vi.mock("@pkmn/sim", () => {
 function makeEndedState(): BattleState {
   return {
     phase: "ended",
-    format: "singles",
+    gameType: "singles",
     turn: 0,
     sides: {
       p1: {

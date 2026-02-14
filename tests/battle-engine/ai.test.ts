@@ -1860,7 +1860,7 @@ describe("HeuristicAI", () => {
 
   it("handles doubles battle with multiple opponent actives", async () => {
     const state = makeState()
-    state.format = "doubles"
+    state.gameType = "doubles"
     state.sides.p1.active = [
       {
         pokemonId: "garchomp",

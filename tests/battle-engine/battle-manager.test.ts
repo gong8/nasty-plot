@@ -337,7 +337,7 @@ describe("createInitialState", () => {
     const state = createInitialState("test-id", "singles")
 
     expect(state.id).toBe("test-id")
-    expect(state.format).toBe("singles")
+    expect(state.gameType).toBe("singles")
     expect(state.phase).toBe("setup")
     expect(state.turn).toBe(0)
     expect(state.winner).toBeNull()
@@ -420,7 +420,7 @@ describe("BattleManager", () => {
 
       const state = manager.getState()
       expect(state.phase).toBe("setup")
-      expect(state.format).toBe("singles")
+      expect(state.gameType).toBe("singles")
       expect(state.sides.p1.name).toBe("Player")
       expect(state.sides.p2.name).toBe("Opponent")
     })

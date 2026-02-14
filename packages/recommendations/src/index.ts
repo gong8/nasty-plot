@@ -1,3 +1,3 @@
-export { getRecommendations } from "./composite-recommender"
-export { getCoverageBasedRecommendations } from "./coverage-recommender"
-export { getUsageBasedRecommendations } from "./usage-recommender"
+export { getRecommendations } from "./composite-recommender.service"
+export { getCoverageBasedRecommendations } from "./coverage-recommender.service"
+export { getUsageBasedRecommendations } from "./usage-recommender.service"

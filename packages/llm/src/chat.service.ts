@@ -12,7 +12,7 @@ import {
   getAllMcpToolNames,
   type PageType,
 } from "./tool-context"
-import { streamCliChat } from "./cli-chat"
+import { streamCliChat } from "./cli-chat.service"
 import type { ChatMessage, ChatRole } from "@nasty-plot/core"
 import { getTeam } from "@nasty-plot/teams"
 import { getUsageStats } from "@nasty-plot/smogon-data"

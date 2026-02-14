@@ -15,18 +15,18 @@ vi.mock("@nasty-plot/pokemon-data", () => ({
   listSpecies: vi.fn(),
 }))
 
-vi.mock("#recommendations/usage-recommender", () => ({
+vi.mock("#recommendations/usage-recommender.service", () => ({
   getUsageBasedRecommendations: vi.fn(),
 }))
 
-vi.mock("#recommendations/coverage-recommender", () => ({
+vi.mock("#recommendations/coverage-recommender.service", () => ({
   getCoverageBasedRecommendations: vi.fn(),
 }))
 
 import { getTeam } from "@nasty-plot/teams"
 import { getSpecies } from "@nasty-plot/pokemon-data"
-import { getUsageBasedRecommendations } from "#recommendations/usage-recommender"
-import { getCoverageBasedRecommendations } from "#recommendations/coverage-recommender"
+import { getUsageBasedRecommendations } from "#recommendations/usage-recommender.service"
+import { getCoverageBasedRecommendations } from "#recommendations/coverage-recommender.service"
 
 const mockGetTeam = getTeam as ReturnType<typeof vi.fn>
 const mockGetSpecies = getSpecies as ReturnType<typeof vi.fn>

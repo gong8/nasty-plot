@@ -276,6 +276,9 @@ importers:
       '@nasty-plot/smogon-data':
         specifier: workspace:*
         version: link:../smogon-data
+      '@nasty-plot/teams':
+        specifier: workspace:*
+        version: link:../teams
     devDependencies:
       tsx:
         specifier: ^4.0.0

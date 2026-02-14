@@ -23,8 +23,8 @@ export {
   deleteLastAssistantMessage,
 } from "./chat-session.service"
 export { streamChat } from "./chat.service"
-export { streamCliChat } from "./cli-chat"
-export type { CliChatOptions } from "./cli-chat"
+export { streamCliChat } from "./cli-chat.service"
+export type { CliChatOptions } from "./cli-chat.service"
 export { getOpenAI, MODEL } from "./openai-client.service"
 export {
   getMcpTools,

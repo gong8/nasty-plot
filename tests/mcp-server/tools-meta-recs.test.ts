@@ -4,12 +4,12 @@ import { registerMetaRecsTools } from "#mcp-server/tools/meta-recs"
 // Mocks
 // ---------------------------------------------------------------------------
 
-vi.mock("#mcp-server/api-client", () => ({
+vi.mock("#mcp-server/api-client.service", () => ({
   apiGet: vi.fn(),
   apiPost: vi.fn(),
 }))
 
-import { apiGet, apiPost } from "#mcp-server/api-client"
+import { apiGet, apiPost } from "#mcp-server/api-client.service"
 const mockApiGet = vi.mocked(apiGet)
 const mockApiPost = vi.mocked(apiPost)
 

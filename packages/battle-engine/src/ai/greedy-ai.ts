@@ -19,7 +19,7 @@ export class GreedyAI implements AIPlayer {
 
     const activeSlot = actions.activeSlot ?? 0
     const activePokemon = state.sides.p2.active[activeSlot]
-    const isDoubles = state.format === "doubles"
+    const isDoubles = state.gameType === "doubles"
 
     // In doubles, consider all opponent active slots as targets
     const opponentActives = isDoubles
