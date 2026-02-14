@@ -206,9 +206,12 @@ export function useChatStream(sessionId?: string, options?: ChatStreamOptions) {
   const [actionNotifications, setActionNotifications] = useState<ActionNotification[]>([])
   const [planSteps, setPlanSteps] = useState<PlanStep[]>([])
   const [currentSessionId, setCurrentSessionId] = useState(sessionId)
+  const [queuedMessage, setQueuedMessage] = useState<string | null>(null)
   const currentSessionIdRef = useRef(sessionId)
   const abortRef = useRef<AbortController | null>(null)
   const deferredSessionIdRef = useRef<string | null>(null)
+  const queuedMessageRef = useRef<string | null>(null)
+  const sendMessageRef = useRef<(text: string) => void>(() => {})
   const pageContext = usePageContext()
   const { switchSession, pendingContext, clearPendingContext, registerStreamControl } =
     useChatSidebar()
@@ -247,6 +250,15 @@ export function useChatStream(sessionId?: string, options?: ChatStreamOptions) {
       deferredSessionIdRef.current = null
     }
     queryClient.invalidateQueries({ queryKey: ["chat-sessions"] })
+
+    // Auto-dequeue: send queued message after stream completes
+    const queued = queuedMessageRef.current
+    if (queued) {
+      queuedMessageRef.current = null
+      setQueuedMessage(null)
+      // Use setTimeout to avoid calling sendMessage during the setIsStreaming(false) update
+      setTimeout(() => sendMessageRef.current(queued), 0)
+    }
   }
 
   function buildContextPayload() {
@@ -345,7 +357,14 @@ export function useChatStream(sessionId?: string, options?: ChatStreamOptions) {
       extraContext?: { guidedBuilder: Record<string, unknown> },
     ) => {
       const trimmed = text.trim()
-      if (!trimmed || isStreaming) return
+      if (!trimmed) return
+
+      // Queue the message if currently streaming (don't queue regenerations)
+      if (isStreaming && !regenerate) {
+        setQueuedMessage(trimmed)
+        queuedMessageRef.current = trimmed
+        return
+      }
 
       if (!regenerate) {
         setMessages((prev) => [
@@ -373,6 +392,11 @@ export function useChatStream(sessionId?: string, options?: ChatStreamOptions) {
       queryClient,
     ],
   )
+
+  // Keep sendMessageRef in sync so finalizeStream always calls the latest version
+  useEffect(() => {
+    sendMessageRef.current = sendMessage
+  }, [sendMessage])
 
   const sendAutoAnalyze = useCallback(
     async (prompt: string, turn: number, depth: AutoAnalyzeDepth) => {
@@ -430,6 +454,16 @@ export function useChatStream(sessionId?: string, options?: ChatStreamOptions) {
     sendMessage(lastUserMessage.content, true)
   }, [messages, sendMessage])
 
+  const clearQueuedMessage = useCallback(() => {
+    setQueuedMessage(null)
+    queuedMessageRef.current = null
+  }, [])
+
+  const updateQueuedMessage = useCallback((text: string) => {
+    setQueuedMessage(text)
+    queuedMessageRef.current = text
+  }, [])
+
   const resetForSession = useCallback(
     (id: string | null) => {
       // Skip reset if the hook already owns this session (e.g., after streaming
@@ -440,6 +474,8 @@ export function useChatStream(sessionId?: string, options?: ChatStreamOptions) {
       setToolCalls(new Map())
       setActionNotifications([])
       setPlanSteps([])
+      setQueuedMessage(null)
+      queuedMessageRef.current = null
       setCurrentSessionId(id ?? undefined)
       currentSessionIdRef.current = id ?? undefined
       if (id) {
@@ -456,10 +492,13 @@ export function useChatStream(sessionId?: string, options?: ChatStreamOptions) {
     actionNotifications,
     planSteps,
     currentSessionId,
+    queuedMessage,
     sendMessage,
     sendAutoAnalyze,
     stopGeneration,
     retryLast,
     resetForSession,
+    clearQueuedMessage,
+    updateQueuedMessage,
   }
 }

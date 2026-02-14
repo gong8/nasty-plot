@@ -68,7 +68,7 @@ export default function ReplayPage({ params }: { params: Promise<{ battleId: str
 }
 
 function ReplayViewerContent({ battleData }: { battleData: BattleData }) {
-  const { openNewChatModal } = useChatSidebar()
+  const { newSession, openSidebar } = useChatSidebar()
   const replay = useReplay({
     protocolLog: battleData.protocolLog,
     format: battleData.gameType as GameType,
@@ -189,7 +189,10 @@ function ReplayViewerContent({ battleData }: { battleData: BattleData }) {
         <Button
           size="sm"
           variant="ghost"
-          onClick={openNewChatModal}
+          onClick={() => {
+            newSession()
+            openSidebar()
+          }}
           className="h-7 text-xs gap-1 shrink-0"
         >
           <MessageCircle className="h-3 w-3" />

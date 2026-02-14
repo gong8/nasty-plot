@@ -14,6 +14,7 @@ interface ChatInputProps {
   lastMessageIsAssistant: boolean
   pendingInput?: string | null
   onClearPendingInput?: () => void
+  queuedMessage?: string | null
   disabled?: boolean
 }
 
@@ -26,6 +27,7 @@ export function ChatInput({
   lastMessageIsAssistant,
   pendingInput,
   onClearPendingInput,
+  queuedMessage,
   disabled,
 }: ChatInputProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -43,7 +45,7 @@ export function ChatInput({
 
   const handleSend = () => {
     const value = textareaRef.current?.value.trim()
-    if (!value || isStreaming || disabled) return
+    if (!value || disabled) return
     onSend(value)
     if (textareaRef.current) {
       textareaRef.current.value = ""
@@ -85,11 +87,15 @@ export function ChatInput({
           placeholder={
             disabled
               ? "Navigate to the correct page to continue this chat..."
-              : "Ask about team building, sets, damage calcs..."
+              : queuedMessage
+                ? "Message queued — edit or clear it above"
+                : isStreaming
+                  ? "Type your next message..."
+                  : "Ask about team building, sets, damage calcs..."
           }
           className="min-h-[44px] max-h-[120px] resize-none"
           rows={1}
-          disabled={isStreaming || disabled}
+          disabled={disabled}
         />
         {isStreaming ? (
           <Button

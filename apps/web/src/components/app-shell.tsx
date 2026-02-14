@@ -7,7 +7,7 @@ import { ChatFab } from "./chat-fab"
 import { useChatSidebar } from "@/features/chat/context/chat-provider"
 
 export function AppShell({ children }: { children: React.ReactNode }) {
-  const { isOpen, width, toggleSidebar } = useChatSidebar()
+  const { isOpen, width, isFullscreen, toggleSidebar } = useChatSidebar()
   const prevIsOpen = useRef(isOpen)
   const [animating, setAnimating] = useState(false)
 
@@ -38,7 +38,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   // intentionally disabled. The code in ChatSidebar still supports fullPage
   // prop if we want to re-enable it later.
 
-  const mainMarginRight = isOpen ? width : 0
+  const mainMarginRight = isOpen && !isFullscreen ? width : 0
 
   return (
     <div className="min-h-screen flex flex-col">

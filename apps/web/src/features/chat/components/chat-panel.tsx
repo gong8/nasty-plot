@@ -4,23 +4,118 @@ import { useRef, useEffect, useCallback, useState, useMemo } from "react"
 import { useChatSidebar } from "@/features/chat/context/chat-provider"
 import { useChatStream } from "@/features/chat/hooks/use-chat-stream"
 import { useContextMismatch } from "@/features/chat/hooks/use-context-mismatch"
+import { useBuildContextData } from "@/features/chat/hooks/use-build-context-data"
 import { ChatMessage } from "./chat-message"
 import { ChatToolCall } from "./chat-tool-call"
 import { ChatActionNotify } from "./chat-action-notify"
 import { ChatPlanDisplay } from "./chat-plan-display"
 import { ChatInput } from "./chat-input"
 import { ChatContextPicker } from "./chat-context-picker"
-import { ContextMismatchBanner } from "./context-mismatch-banner"
 import { ChatWizardEvent } from "./chat-wizard-event"
 import { TurnAnalysisCard } from "./turn-analysis-card"
 import { ChatGuidedPrompts } from "./chat-guided-prompts"
-import { ArrowDown, Zap, Search } from "lucide-react"
+import { ArrowDown, Zap, Search, X, Pencil, Check } from "lucide-react"
 import type { ChatStreamOptions } from "@/features/chat/hooks/use-chat-stream"
 import type { ChatLayoutMode } from "./chat-session-list"
 import { cn } from "@nasty-plot/ui"
 import { PECHARUNT_SPRITE_URL } from "@/lib/constants"
 
 const SCROLL_BOTTOM_THRESHOLD = 60
+
+function QueuedMessageBubble({
+  message,
+  onClear,
+  onUpdate,
+}: {
+  message: string
+  onClear: () => void
+  onUpdate: (text: string) => void
+}) {
+  const [isEditing, setIsEditing] = useState(false)
+  const [editText, setEditText] = useState(message)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+  useEffect(() => {
+    if (isEditing) textareaRef.current?.focus()
+  }, [isEditing])
+
+  // Sync edit text when the queued message changes externally (e.g. re-queued)
+  useEffect(() => {
+    setEditText(message)
+  }, [message])
+
+  const handleConfirmEdit = () => {
+    const trimmed = editText.trim()
+    if (trimmed) {
+      onUpdate(trimmed)
+      setIsEditing(false)
+    }
+  }
+
+  return (
+    <div className="flex flex-col items-end gap-1">
+      <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mr-1">
+        Queued
+      </span>
+      <div className="max-w-[85%] rounded-2xl rounded-br-md border-2 border-dashed border-primary/30 bg-primary/5 px-4 py-2.5 opacity-75">
+        {isEditing ? (
+          <div className="flex flex-col gap-2">
+            <textarea
+              ref={textareaRef}
+              value={editText}
+              onChange={(e) => setEditText(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault()
+                  handleConfirmEdit()
+                }
+                if (e.key === "Escape") setIsEditing(false)
+              }}
+              className="w-full min-w-[200px] resize-none rounded border border-border bg-background p-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+              rows={2}
+            />
+            <div className="flex gap-1 justify-end">
+              <button
+                onClick={() => setIsEditing(false)}
+                className="p-1 rounded hover:bg-muted text-muted-foreground"
+                title="Cancel"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+              <button
+                onClick={handleConfirmEdit}
+                className="p-1 rounded hover:bg-primary/10 text-primary"
+                title="Confirm"
+              >
+                <Check className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-start gap-2">
+            <p className="text-sm whitespace-pre-wrap flex-1">{message}</p>
+            <div className="flex gap-0.5 shrink-0 mt-0.5">
+              <button
+                onClick={() => setIsEditing(true)}
+                className="p-1 rounded hover:bg-muted text-muted-foreground"
+                title="Edit queued message"
+              >
+                <Pencil className="h-3 w-3" />
+              </button>
+              <button
+                onClick={onClear}
+                className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
+                title="Remove queued message"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
 
 interface ChatPanelProps {
   teamId?: string
@@ -37,6 +132,7 @@ export function ChatPanel({ sessionId }: ChatPanelProps) {
     pendingInput,
     clearPendingInput,
     pendingContext,
+    newSession,
     autoAnalyze,
     setAutoAnalyzeDepth,
     guidedBuilderContextRef,
@@ -52,6 +148,14 @@ export function ChatPanel({ sessionId }: ChatPanelProps) {
   const [modeChosen, setModeChosen] = useState(false)
 
   const { mismatch } = useContextMismatch()
+  const { hasContext } = useBuildContextData()
+
+  // Auto-clear mismatched context-locked sessions — show picker instead of stale chat
+  useEffect(() => {
+    if (mismatch) {
+      newSession()
+    }
+  }, [mismatch, newSession])
 
   // Stable action notify callback that delegates to guided builder ref
   const actionNotifyCallback = useCallback<NonNullable<ChatStreamOptions["onActionNotify"]>>(
@@ -72,10 +176,13 @@ export function ChatPanel({ sessionId }: ChatPanelProps) {
     toolCalls,
     actionNotifications,
     planSteps,
+    queuedMessage,
     sendMessage,
     stopGeneration,
     retryLast,
     resetForSession,
+    clearQueuedMessage,
+    updateQueuedMessage,
   } = useChatStream(effectiveSessionId, streamOptions)
 
   // Sync streaming state to ChatProvider for guided builder proactive reactions
@@ -123,7 +230,7 @@ export function ChatPanel({ sessionId }: ChatPanelProps) {
     if (isAtBottom) {
       bottomRef.current?.scrollIntoView({ behavior: "instant" })
     }
-  }, [messages, toolCalls, planSteps, isAtBottom])
+  }, [messages, toolCalls, planSteps, queuedMessage, isAtBottom])
 
   const scrollToBottom = useCallback(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" })
@@ -147,8 +254,10 @@ export function ChatPanel({ sessionId }: ChatPanelProps) {
 
   const lastMessage = messages[messages.length - 1]
 
-  // Show the context picker for brand-new chats (no session, no messages, no pending context)
-  const showPicker = messages.length === 0 && !modeChosen && !effectiveSessionId && !pendingContext
+  // Show the context picker for brand-new chats on contextual pages (team/battle).
+  // Non-contextual pages skip directly to global chat since there's nothing to choose.
+  const showPicker =
+    messages.length === 0 && !modeChosen && !effectiveSessionId && !pendingContext && hasContext
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -188,7 +297,7 @@ export function ChatPanel({ sessionId }: ChatPanelProps) {
 
       {/* Messages — native scrollable div */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto overscroll-contain p-4">
-        <div className="space-y-4">
+        <div className="space-y-4 max-w-3xl mx-auto">
           {showPicker && <ChatContextPicker onModeChosen={() => setModeChosen(true)} />}
 
           {messages.length === 0 && !showPicker && (
@@ -253,6 +362,15 @@ export function ChatPanel({ sessionId }: ChatPanelProps) {
             <ChatActionNotify key={`${notif.name}-${i}`} notification={notif} />
           ))}
 
+          {/* Queued message */}
+          {queuedMessage && (
+            <QueuedMessageBubble
+              message={queuedMessage}
+              onClear={clearQueuedMessage}
+              onUpdate={updateQueuedMessage}
+            />
+          )}
+
           {/* Scroll anchor */}
           <div ref={bottomRef} />
         </div>
@@ -270,9 +388,6 @@ export function ChatPanel({ sessionId }: ChatPanelProps) {
           </button>
         </div>
       )}
-
-      {/* Context mismatch warning */}
-      {mismatch && <ContextMismatchBanner mismatch={mismatch} />}
 
       {/* Guided builder prompt suggestions */}
       {!showPicker && guidedBuilderStep && (
@@ -295,7 +410,7 @@ export function ChatPanel({ sessionId }: ChatPanelProps) {
           lastMessageIsAssistant={lastMessage?.role === "assistant"}
           pendingInput={pendingInput}
           onClearPendingInput={clearPendingInput}
-          disabled={!!mismatch}
+          queuedMessage={queuedMessage}
         />
       )}
     </div>

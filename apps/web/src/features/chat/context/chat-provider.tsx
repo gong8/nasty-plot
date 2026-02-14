@@ -82,26 +82,22 @@ function chatReducer(state: ChatSidebarState, action: ChatAction): ChatSidebarSt
 interface ChatContextValue {
   isOpen: boolean
   width: number
+  isFullscreen: boolean
   activeSessionId: string | null
   pendingInput: string | null
   pendingContext: PendingChatContext | null
-  pendingQuestion: string | null
-  showNewChatModal: boolean
   autoAnalyze: { enabled: boolean; depth: AutoAnalyzeDepth }
   isAutoAnalyzing: boolean
   toggleSidebar: () => void
   openSidebar: (message?: string) => void
   closeSidebar: () => void
+  toggleFullscreen: () => void
   clearPendingInput: () => void
   setWidth: (width: number) => void
   switchSession: (sessionId: string | null) => void
   newSession: () => void
   openContextChat: (params: PendingChatContext) => void
   clearPendingContext: () => void
-  setPendingQuestion: (question: string) => void
-  clearPendingQuestion: () => void
-  openNewChatModal: () => void
-  closeNewChatModal: () => void
   setAutoAnalyzeEnabled: (enabled: boolean) => void
   setAutoAnalyzeDepth: (depth: AutoAnalyzeDepth) => void
   registerStreamControl: (controls: StreamControl) => void
@@ -142,8 +138,6 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(chatReducer, SSR_INITIAL_STATE)
   const [pendingInput, setPendingInput] = useState<string | null>(null)
   const [pendingContext, setPendingContext] = useState<PendingChatContext | null>(null)
-  const [pendingQuestion, setPendingQuestionState] = useState<string | null>(null)
-  const [showNewChatModal, setShowNewChatModal] = useState(false)
   const [autoAnalyzeEnabled, setAutoAnalyzeEnabled] = useState(false)
   const [autoAnalyzeDepth, setAutoAnalyzeDepth] = useState<AutoAnalyzeDepth>("quick")
   const streamControlRef = useRef<StreamControl | null>(null)
@@ -154,6 +148,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   >(null)
   const [autoSendMessage, setAutoSendMessage] = useState<string | null>(null)
   const [isChatStreaming, setIsChatStreaming] = useState(false)
+  const [isFullscreen, setIsFullscreen] = useState(false)
   const [guidedBuilderStep, setGuidedBuilderStep] = useState<string | null>(null)
   const [guidedBuilderTeamSize, setGuidedBuilderTeamSize] = useState(0)
   const [isAutoAnalyzing, setIsAutoAnalyzing] = useState(false)
@@ -210,16 +205,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     dispatch({ type: "OPEN_SIDEBAR" })
   }, [])
   const clearPendingContext = useCallback(() => setPendingContext(null), [])
-  const setPendingQuestion = useCallback(
-    (question: string) => setPendingQuestionState(question),
-    [],
-  )
-  const clearPendingQuestion = useCallback(() => setPendingQuestionState(null), [])
-  const openNewChatModal = useCallback(() => {
-    dispatch({ type: "OPEN_SIDEBAR" })
-    setShowNewChatModal(true)
-  }, [])
-  const closeNewChatModal = useCallback(() => setShowNewChatModal(false), [])
+  const toggleFullscreen = useCallback(() => setIsFullscreen((prev) => !prev), [])
 
   const registerStreamControl = useCallback((controls: StreamControl) => {
     streamControlRef.current = controls
@@ -260,26 +246,22 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       value={{
         isOpen: state.isOpen,
         width: state.width,
+        isFullscreen,
         activeSessionId: state.activeSessionId,
         pendingInput,
         pendingContext,
-        pendingQuestion,
-        showNewChatModal,
         autoAnalyze: { enabled: autoAnalyzeEnabled, depth: autoAnalyzeDepth },
         isAutoAnalyzing,
         toggleSidebar,
         openSidebar,
         closeSidebar,
+        toggleFullscreen,
         clearPendingInput,
         setWidth,
         switchSession,
         newSession,
         openContextChat,
         clearPendingContext,
-        setPendingQuestion,
-        clearPendingQuestion,
-        openNewChatModal,
-        closeNewChatModal,
         setAutoAnalyzeEnabled,
         setAutoAnalyzeDepth,
         registerStreamControl,
