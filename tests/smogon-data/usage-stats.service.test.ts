@@ -63,26 +63,33 @@ vi.mock("@nasty-plot/db", () => ({
 }))
 
 import { prisma } from "@nasty-plot/db"
+import { asMock } from "../test-utils"
 
-const mockUsageUpsert = prisma.usageStats.upsert as ReturnType<typeof vi.fn>
-const mockUsageFindMany = prisma.usageStats.findMany as ReturnType<typeof vi.fn>
-const mockUsageCount = prisma.usageStats.count as ReturnType<typeof vi.fn>
-const mockTeammateCorrUpsert = prisma.teammateCorr.upsert as ReturnType<typeof vi.fn>
-const mockTeammateCorrFindMany = prisma.teammateCorr.findMany as ReturnType<typeof vi.fn>
-const mockCheckCounterUpsert = prisma.checkCounter.upsert as ReturnType<typeof vi.fn>
-const mockMoveUsageUpsert = (prisma as Record<string, Record<string, unknown>>).moveUsage
-  .upsert as ReturnType<typeof vi.fn>
-const mockMoveUsageFindMany = (prisma as Record<string, Record<string, unknown>>).moveUsage
-  .findMany as ReturnType<typeof vi.fn>
-const mockItemUsageUpsert = (prisma as Record<string, Record<string, unknown>>).itemUsage
-  .upsert as ReturnType<typeof vi.fn>
-const mockItemUsageFindMany = (prisma as Record<string, Record<string, unknown>>).itemUsage
-  .findMany as ReturnType<typeof vi.fn>
-const mockAbilityUsageUpsert = (prisma as Record<string, Record<string, unknown>>).abilityUsage
-  .upsert as ReturnType<typeof vi.fn>
-const mockAbilityUsageFindMany = (prisma as Record<string, Record<string, unknown>>).abilityUsage
-  .findMany as ReturnType<typeof vi.fn>
-const mockSyncLogUpsert = prisma.dataSyncLog.upsert as ReturnType<typeof vi.fn>
+const mockUsageUpsert = asMock(prisma.usageStats.upsert)
+const mockUsageFindMany = asMock(prisma.usageStats.findMany)
+const mockUsageCount = asMock(prisma.usageStats.count)
+const mockTeammateCorrUpsert = asMock(prisma.teammateCorr.upsert)
+const mockTeammateCorrFindMany = asMock(prisma.teammateCorr.findMany)
+const mockCheckCounterUpsert = asMock(prisma.checkCounter.upsert)
+const mockMoveUsageUpsert = asMock(
+  (prisma as Record<string, Record<string, unknown>>).moveUsage.upsert,
+)
+const mockMoveUsageFindMany = asMock(
+  (prisma as Record<string, Record<string, unknown>>).moveUsage.findMany,
+)
+const mockItemUsageUpsert = asMock(
+  (prisma as Record<string, Record<string, unknown>>).itemUsage.upsert,
+)
+const mockItemUsageFindMany = asMock(
+  (prisma as Record<string, Record<string, unknown>>).itemUsage.findMany,
+)
+const mockAbilityUsageUpsert = asMock(
+  (prisma as Record<string, Record<string, unknown>>).abilityUsage.upsert,
+)
+const mockAbilityUsageFindMany = asMock(
+  (prisma as Record<string, Record<string, unknown>>).abilityUsage.findMany,
+)
+const mockSyncLogUpsert = asMock(prisma.dataSyncLog.upsert)
 
 // ---------------------------------------------------------------------------
 // Tests

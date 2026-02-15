@@ -13,7 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
-import { DataStateRenderer } from "@/components/data-state-renderer"
+import { DataStateRenderer } from "@/components/DataStateRenderer"
 import { Pagination } from "@/components/pagination"
 import { PokemonSprite, TypeBadge } from "@nasty-plot/ui"
 import {

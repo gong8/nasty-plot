@@ -1,5 +1,6 @@
 import { vi } from "vitest"
 import { NextRequest } from "next/server"
+import { asMock } from "../test-utils"
 
 vi.mock("@nasty-plot/db", () => ({
   prisma: {
@@ -31,7 +32,7 @@ describe("GET /api/battles/batch/[batchId]", () => {
       status: "completed",
       analytics: JSON.stringify(analytics),
     }
-    ;(prisma.batchSimulation.findUnique as ReturnType<typeof vi.fn>).mockResolvedValue(mockBatch)
+    asMock(prisma.batchSimulation.findUnique).mockResolvedValue(mockBatch)
 
     const req = new NextRequest("http://localhost:3000/api/battles/batch/batch-123")
     const response = await GET(req, {
@@ -51,7 +52,7 @@ describe("GET /api/battles/batch/[batchId]", () => {
       status: "running",
       analytics: null,
     }
-    ;(prisma.batchSimulation.findUnique as ReturnType<typeof vi.fn>).mockResolvedValue(mockBatch)
+    asMock(prisma.batchSimulation.findUnique).mockResolvedValue(mockBatch)
 
     const req = new NextRequest("http://localhost:3000/api/battles/batch/batch-456")
     const response = await GET(req, {
@@ -64,7 +65,7 @@ describe("GET /api/battles/batch/[batchId]", () => {
   })
 
   it("returns 404 when batch not found", async () => {
-    ;(prisma.batchSimulation.findUnique as ReturnType<typeof vi.fn>).mockResolvedValue(null)
+    asMock(prisma.batchSimulation.findUnique).mockResolvedValue(null)
 
     const req = new NextRequest("http://localhost:3000/api/battles/batch/nonexistent")
     const response = await GET(req, {
@@ -83,7 +84,7 @@ describe("DELETE /api/battles/batch/[batchId]", () => {
   })
 
   it("soft deletes by setting status to cancelled", async () => {
-    ;(prisma.batchSimulation.update as ReturnType<typeof vi.fn>).mockResolvedValue({
+    asMock(prisma.batchSimulation.update).mockResolvedValue({
       id: "batch-123",
       status: "cancelled",
     })
@@ -105,9 +106,7 @@ describe("DELETE /api/battles/batch/[batchId]", () => {
   })
 
   it("returns 404 when batch not found", async () => {
-    ;(prisma.batchSimulation.update as ReturnType<typeof vi.fn>).mockRejectedValue(
-      new Error("Record not found"),
-    )
+    asMock(prisma.batchSimulation.update).mockRejectedValue(new Error("Record not found"))
 
     const req = new NextRequest("http://localhost:3000/api/battles/batch/nonexistent", {
       method: "DELETE",

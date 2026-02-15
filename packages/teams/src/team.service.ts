@@ -4,6 +4,7 @@ import { getSpecies } from "@nasty-plot/pokemon-data"
 import { statsToDbColumns, dbColumnsToStats } from "@nasty-plot/core"
 import type {
   NatureName,
+  PokemonSpecies,
   TeamCreateInput,
   TeamData,
   TeamMode,
@@ -82,8 +83,13 @@ function movesToDb(moves: TeamSlotInput["moves"]) {
   }
 }
 
-export function dbSlotToDomain(dbSlot: DbSlotRow): TeamSlotData {
-  const species = getSpecies(dbSlot.pokemonId)
+export function dbSlotToDomain(
+  dbSlot: DbSlotRow,
+  speciesMap?: Map<string, PokemonSpecies>,
+): TeamSlotData {
+  const species = speciesMap
+    ? (speciesMap.get(dbSlot.pokemonId) ?? null)
+    : getSpecies(dbSlot.pokemonId)
   return {
     position: dbSlot.position,
     pokemonId: dbSlot.pokemonId,
@@ -121,7 +127,10 @@ export function domainSlotToDb(slot: TeamSlotInput) {
   }
 }
 
-export function dbTeamToDomain(dbTeam: DbTeamRow): TeamData {
+export function dbTeamToDomain(
+  dbTeam: DbTeamRow,
+  speciesMap?: Map<string, PokemonSpecies>,
+): TeamData {
   return {
     id: dbTeam.id,
     name: dbTeam.name,
@@ -132,7 +141,9 @@ export function dbTeamToDomain(dbTeam: DbTeamRow): TeamData {
     parentId: dbTeam.parentId ?? undefined,
     branchName: dbTeam.branchName ?? undefined,
     isArchived: dbTeam.isArchived,
-    slots: dbTeam.slots.sort((a, b) => a.position - b.position).map(dbSlotToDomain),
+    slots: dbTeam.slots
+      .sort((a, b) => a.position - b.position)
+      .map((slot) => dbSlotToDomain(slot, speciesMap)),
     createdAt: dbTeam.createdAt.toISOString(),
     updatedAt: dbTeam.updatedAt.toISOString(),
   }
@@ -192,7 +203,21 @@ export async function listTeams(filters?: {
     }),
     prisma.team.count({ where }),
   ])
-  return { teams: teams.map(dbTeamToDomain), total }
+
+  // Batch hydrate species: collect unique pokemonIds across all teams, call getSpecies once per ID
+  const uniqueIds = new Set<string>()
+  for (const team of teams) {
+    for (const slot of team.slots) {
+      uniqueIds.add(slot.pokemonId)
+    }
+  }
+  const speciesMap = new Map<string, PokemonSpecies>()
+  for (const id of uniqueIds) {
+    const species = getSpecies(id)
+    if (species) speciesMap.set(id, species)
+  }
+
+  return { teams: teams.map((t) => dbTeamToDomain(t, speciesMap)), total }
 }
 
 export async function updateTeam(
@@ -229,9 +254,20 @@ export async function cleanupEmptyTeams(): Promise<number> {
     select: { id: true },
   })
 
-  for (const team of emptyTeams) {
-    await deleteTeam(team.id)
-  }
+  if (emptyTeams.length === 0) return 0
+
+  const emptyTeamIds = emptyTeams.map((t) => t.id)
+
+  // Re-parent children of empty teams in one batch query
+  await prisma.team.updateMany({
+    where: { parentId: { in: emptyTeamIds } },
+    data: { parentId: null },
+  })
+
+  // Delete all empty teams in one batch query
+  await prisma.team.deleteMany({
+    where: { id: { in: emptyTeamIds } },
+  })
 
   return emptyTeams.length
 }

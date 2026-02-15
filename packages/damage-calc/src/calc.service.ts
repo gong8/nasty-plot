@@ -161,14 +161,20 @@ function findBestMove(
   moves: string[],
   threatId: string,
   baseEntry: MatchupMatrixEntry,
+  cache?: Map<string, DamageCalcResult>,
 ): MatchupMatrixEntry {
   return moves.reduce((best, moveName) => {
     try {
-      const result = calculateDamage({
-        attacker: attackerInput,
-        defender: { pokemonId: threatId, level: DEFAULT_LEVEL },
-        move: moveName,
-      })
+      const cacheKey = `${attackerInput.pokemonId}|${moveName}|${threatId}`
+      let result = cache?.get(cacheKey)
+      if (!result) {
+        result = calculateDamage({
+          attacker: attackerInput,
+          defender: { pokemonId: threatId, level: DEFAULT_LEVEL },
+          move: moveName,
+        })
+        cache?.set(cacheKey, result)
+      }
       if (result.maxPercent > best.maxPercent) {
         return {
           ...best,
@@ -227,6 +233,8 @@ export function calculateMatchupMatrix(
   threatIds: string[],
   _formatId: string,
 ): MatchupMatrixEntry[][] {
+  const cache = new Map<string, DamageCalcResult>()
+
   return teamSlots.map((slot) => {
     const moves = slot.moves.filter(Boolean) as string[]
     const attackerName = slot.species?.name ?? resolveSpeciesName(slot.pokemonId)
@@ -242,7 +250,7 @@ export function calculateMatchupMatrix(
         maxPercent: 0,
         koChance: "N/A",
       }
-      return findBestMove(attackerInput, moves, threatId, baseEntry)
+      return findBestMove(attackerInput, moves, threatId, baseEntry, cache)
     })
   })
 }

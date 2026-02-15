@@ -1,40 +1,7 @@
-import type { TeamSlotData, PokemonType, StatsTable } from "@nasty-plot/core"
+import type { TeamSlotData } from "@nasty-plot/core"
 import { DEFAULT_EVS, DEFAULT_IVS, DEFAULT_LEVEL } from "@nasty-plot/core"
 import { calculateSynergy } from "@nasty-plot/analysis"
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-const defaultStats: StatsTable = { hp: 80, atk: 80, def: 80, spa: 80, spd: 80, spe: 80 }
-
-function makeSlot(
-  pokemonId: string,
-  types: [PokemonType] | [PokemonType, PokemonType],
-  overrides?: Partial<TeamSlotData>,
-): TeamSlotData {
-  return {
-    position: 1,
-    pokemonId,
-    species: {
-      id: pokemonId,
-      name: pokemonId.charAt(0).toUpperCase() + pokemonId.slice(1),
-      num: 1,
-      types,
-      baseStats: defaultStats,
-      abilities: { "0": "Ability" },
-      weightkg: 50,
-    },
-    ability: "Ability",
-    item: "",
-    nature: "Hardy",
-    level: DEFAULT_LEVEL,
-    moves: ["tackle", undefined, undefined, undefined],
-    evs: DEFAULT_EVS,
-    ivs: DEFAULT_IVS,
-    ...overrides,
-  }
-}
+import { makeSlot } from "../test-utils"
 
 // ---------------------------------------------------------------------------
 // Tests

@@ -1,5 +1,5 @@
 import {
-  getTypeEffectiveness,
+  getWeaknesses,
   type TeamSlotData,
   type ThreatEntry,
   type PokemonType,
@@ -37,6 +37,22 @@ export async function identifyThreats(
   }
 
   const teamPokemonIds = new Set(slots.map((s) => s.pokemonId))
+
+  // Pre-compute weakness map: attackingType -> list of slot indices weak to it
+  const weaknessMap = new Map<PokemonType, number[]>()
+  for (let i = 0; i < slots.length; i++) {
+    const defenderTypes = slots[i].species?.types ?? []
+    if (defenderTypes.length === 0) continue
+    for (const attackType of getWeaknesses(defenderTypes as PokemonType[])) {
+      let arr = weaknessMap.get(attackType)
+      if (!arr) {
+        arr = []
+        weaknessMap.set(attackType, arr)
+      }
+      arr.push(i)
+    }
+  }
+
   const threats: ThreatEntry[] = []
 
   for (const entry of usageEntries) {
@@ -51,13 +67,11 @@ export async function identifyThreats(
     const threatenedPokemonIds = new Set<string>()
 
     for (const stabType of stabTypes) {
-      let weakMemberCount = 0
-      for (const slot of slots) {
-        const defenderTypes = slot.species?.types ?? []
-        if (defenderTypes.length === 0) continue
-        if (getTypeEffectiveness(stabType, defenderTypes) > 1) {
-          weakMemberCount++
-          threatenedPokemonIds.add(slot.pokemonId)
+      const weakIndices = weaknessMap.get(stabType)
+      const weakMemberCount = weakIndices?.length ?? 0
+      if (weakIndices) {
+        for (const idx of weakIndices) {
+          threatenedPokemonIds.add(slots[idx].pokemonId)
         }
       }
       if (weakMemberCount >= 2) {

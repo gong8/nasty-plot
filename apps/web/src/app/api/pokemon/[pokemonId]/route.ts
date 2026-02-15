@@ -20,5 +20,7 @@ export async function GET(
     data: { ...species, learnset },
   }
 
-  return NextResponse.json(response)
+  return NextResponse.json(response, {
+    headers: { "Cache-Control": "public, max-age=86400, stale-while-revalidate=3600" },
+  })
 }

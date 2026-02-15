@@ -17,8 +17,9 @@ vi.mock("@nasty-plot/db", () => ({
 }))
 
 import { prisma } from "@nasty-plot/db"
+import { asMock } from "../test-utils"
 
-const mockFindMany = prisma.smogonSet.findMany as ReturnType<typeof vi.fn>
+const mockFindMany = asMock(prisma.smogonSet.findMany)
 
 // ---------------------------------------------------------------------------
 // Helpers

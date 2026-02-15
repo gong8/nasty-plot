@@ -39,12 +39,13 @@ vi.mock("@nasty-plot/core", () => ({
 }))
 
 import { prisma } from "@nasty-plot/db"
+import { asMock } from "../test-utils"
 
-const mockCreate = prisma.sampleTeam.create as ReturnType<typeof vi.fn>
-const mockFindMany = prisma.sampleTeam.findMany as ReturnType<typeof vi.fn>
-const mockCount = prisma.sampleTeam.count as ReturnType<typeof vi.fn>
-const mockFindUnique = prisma.sampleTeam.findUnique as ReturnType<typeof vi.fn>
-const mockDelete = prisma.sampleTeam.delete as ReturnType<typeof vi.fn>
+const mockCreate = asMock(prisma.sampleTeam.create)
+const mockFindMany = asMock(prisma.sampleTeam.findMany)
+const mockCount = asMock(prisma.sampleTeam.count)
+const mockFindUnique = asMock(prisma.sampleTeam.findUnique)
+const mockDelete = asMock(prisma.sampleTeam.delete)
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -89,7 +90,7 @@ describe("extractPokemonIds", () => {
 
   it("filters out falsy pokemonIds", async () => {
     const { parseShowdownPaste } = await import("@nasty-plot/core")
-    ;(parseShowdownPaste as ReturnType<typeof vi.fn>).mockReturnValueOnce([
+    asMock(parseShowdownPaste).mockReturnValueOnce([
       { pokemonId: "garchomp" },
       { pokemonId: "" },
       { pokemonId: undefined },

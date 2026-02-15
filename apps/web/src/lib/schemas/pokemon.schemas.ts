@@ -19,10 +19,6 @@ export const pokemonSetsSearchSchema = z.object({
   formatId: z.string().min(1, "Missing required query parameter: format"),
 })
 
-export const pokemonMegaFormSearchSchema = z.object({
-  item: z.string().min(1, "Missing ?item= query parameter"),
-})
-
 export const pokemonPopularitySearchSchema = z.object({
   formatId: z.string().min(1, "format query param is required"),
 })

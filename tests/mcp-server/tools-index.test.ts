@@ -1,3 +1,5 @@
+import { asMock } from "../test-utils"
+
 vi.mock("#mcp-server/tools/data-query", () => ({
   registerDataQueryTools: vi.fn(),
 }))
@@ -50,10 +52,10 @@ describe("registerTools", () => {
     registerTools(server)
 
     const calls = [
-      (registerDataQueryTools as ReturnType<typeof vi.fn>).mock.calls[0][0],
-      (registerAnalysisTools as ReturnType<typeof vi.fn>).mock.calls[0][0],
-      (registerTeamCrudTools as ReturnType<typeof vi.fn>).mock.calls[0][0],
-      (registerMetaRecsTools as ReturnType<typeof vi.fn>).mock.calls[0][0],
+      asMock(registerDataQueryTools).mock.calls[0][0],
+      asMock(registerAnalysisTools).mock.calls[0][0],
+      asMock(registerTeamCrudTools).mock.calls[0][0],
+      asMock(registerMetaRecsTools).mock.calls[0][0],
     ]
 
     for (const arg of calls) {

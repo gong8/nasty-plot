@@ -44,6 +44,44 @@ const PRIORITY_BONUS = 20
 const LOW_HP_THRESHOLD = 30
 const STAB_BONUS = 5
 
+/** Fallback score multiplier when damage calc throws (uses type effectiveness * multiplier) */
+const TYPE_EFFECTIVENESS_FALLBACK_MULTIPLIER = 20
+
+/** Default score for status-infliction moves not in the STATUS_INFLICTION_SCORES map */
+const DEFAULT_STATUS_INFLICTION_SCORE = 20
+
+/** HP threshold (%) above which setup moves are considered worthwhile */
+const SETUP_HP_THRESHOLD = 60
+
+/** Score for a setup move when the user is at low HP (risky) */
+const SETUP_LOW_HP_SCORE = 10
+
+/** Score for a generic status move with no specific classification */
+const GENERIC_STATUS_MOVE_SCORE = 5
+
+/** Minimum score for hazard removal when no hazards are present (still slightly useful for utility) */
+const NO_HAZARDS_REMOVAL_SCORE = 2
+
+/** Score for switching to an unknown Pokemon (baseline) */
+const SWITCH_UNKNOWN_SCORE = 5
+
+/** Score when no opponent is active (baseline switch score) */
+const SWITCH_NO_OPPONENT_SCORE = 10
+
+/** Thresholds for classifying move quality relative to the best option */
+const CLASSIFICATION_GAP = {
+  GOOD: 5,
+  NEUTRAL: 15,
+  INACCURACY: 30,
+  MISTAKE: 60,
+} as const
+
+/** Switch score thresholds for explanation text */
+const SWITCH_EXPLANATION = {
+  GOOD: 20,
+  REASONABLE: 0,
+} as const
+
 const SWITCH_SCORES = {
   RESIST_BONUS: 15,
   IMMUNITY_BONUS: 25,
@@ -101,10 +139,10 @@ const SINGLE_HAZARDS: Record<string, { key: "stealthRock" | "stickyWeb"; label: 
 
 function classifyGap(gap: number): MoveClassification {
   if (gap <= 0) return "best"
-  if (gap <= 5) return "good"
-  if (gap <= 15) return "neutral"
-  if (gap <= 30) return "inaccuracy"
-  if (gap <= 60) return "mistake"
+  if (gap <= CLASSIFICATION_GAP.GOOD) return "good"
+  if (gap <= CLASSIFICATION_GAP.NEUTRAL) return "neutral"
+  if (gap <= CLASSIFICATION_GAP.INACCURACY) return "inaccuracy"
+  if (gap <= CLASSIFICATION_GAP.MISTAKE) return "mistake"
   return "blunder"
 }
 
@@ -161,7 +199,7 @@ function estimateMoveScore(
   } catch {
     const oppTypes = getSpeciesTypes(oppActive.name)
     const eff = getTypeEffectiveness(moveData.type as PokemonType, oppTypes)
-    const score = eff * 20
+    const score = eff * TYPE_EFFECTIVENESS_FALLBACK_MULTIPLIER
     return { score, explanation: `Type effectiveness: ${eff}x` }
   }
 }
@@ -206,7 +244,7 @@ function scoreHazardMove(
   if (HAZARD_REMOVAL_IDS.has(moveId)) {
     const hazardCount = countHazards(mySideConditions)
     if (hazardCount === 0) {
-      return { score: 2, explanation: "No hazards to remove" }
+      return { score: NO_HAZARDS_REMOVAL_SCORE, explanation: "No hazards to remove" }
     }
     return {
       score: HAZARD_REMOVAL_BASE + hazardCount * HAZARD_REMOVAL_PER_HAZARD,
@@ -233,14 +271,14 @@ function estimateStatusMoveScore(
     if (oppActive.status) {
       return { score: 0, explanation: "Opponent already statused" }
     }
-    const score = STATUS_INFLICTION_SCORES[id as StatusKey] || 20
+    const score = STATUS_INFLICTION_SCORES[id as StatusKey] || DEFAULT_STATUS_INFLICTION_SCORE
     return { score, explanation: "Inflicts status on opponent" }
   }
 
   if (SETUP_MOVE_IDS.has(id)) {
-    return myActive.hpPercent > 60
+    return myActive.hpPercent > SETUP_HP_THRESHOLD
       ? { score: SETUP_MOVE_SCORE, explanation: "Boosts stats (good HP)" }
-      : { score: 10, explanation: "Boosts stats (low HP risk)" }
+      : { score: SETUP_LOW_HP_SCORE, explanation: "Boosts stats (low HP risk)" }
   }
 
   if (RECOVERY_MOVE_IDS.has(id)) {
@@ -253,7 +291,7 @@ function estimateStatusMoveScore(
     return { score: RECOVERY_SCORES.nearFull, explanation: "Already near full HP" }
   }
 
-  return { score: 5, explanation: "Status move" }
+  return { score: GENERIC_STATUS_MOVE_SCORE, explanation: "Status move" }
 }
 
 function estimateSwitchScore(
@@ -262,12 +300,12 @@ function estimateSwitchScore(
   oppSide: BattleState["sides"]["p1"],
 ): { score: number; explanation: string } {
   const oppActive = oppSide.active[0]
-  if (!oppActive) return { score: 10, explanation: "Switch out" }
+  if (!oppActive) return { score: SWITCH_NO_OPPONENT_SCORE, explanation: "Switch out" }
 
   const switchPokemon = mySide.team.find(
     (p) => p.name === switchOption.name || p.pokemonId === switchOption.pokemonId,
   )
-  if (!switchPokemon) return { score: 5, explanation: "Switch to unknown" }
+  if (!switchPokemon) return { score: SWITCH_UNKNOWN_SCORE, explanation: "Switch to unknown" }
 
   let score = 0
   const oppTypes = getSpeciesTypes(oppActive.name)
@@ -295,7 +333,11 @@ function estimateSwitchScore(
   if (mySideConditions.stickyWeb) score -= SWITCH_SCORES.STICKY_WEB_PENALTY
 
   const explanation =
-    score > 20 ? "Good defensive switch" : score > 0 ? "Reasonable switch" : "Risky switch"
+    score > SWITCH_EXPLANATION.GOOD
+      ? "Good defensive switch"
+      : score > SWITCH_EXPLANATION.REASONABLE
+        ? "Reasonable switch"
+        : "Risky switch"
 
   return { score, explanation }
 }

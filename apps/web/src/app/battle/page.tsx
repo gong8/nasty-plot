@@ -21,9 +21,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { LoadingSpinner } from "@/components/loading-spinner"
-import { EmptyState } from "@/components/empty-state"
-import { DataStateRenderer } from "@/components/data-state-renderer"
+import { LoadingSpinner } from "@/components/LoadingSpinner"
+import { EmptyState } from "@/components/EmptyState"
+import { DataStateRenderer } from "@/components/DataStateRenderer"
 import { Swords, FlaskConical, Clock, Trophy, Play, X, Upload } from "lucide-react"
 import {
   hasCheckpoint,

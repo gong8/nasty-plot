@@ -6,8 +6,8 @@ import { ArrowLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useTeam } from "@/features/teams/hooks/use-teams"
-import { GuidedBuilder } from "@/features/team-builder/components/guided-builder"
-import { GuidedBuilderProvider } from "@/features/team-builder/context/guided-builder-provider"
+import { GuidedBuilder } from "@/features/team-builder/components/GuidedBuilder"
+import { GuidedBuilderProvider } from "@/features/team-builder/context/GuidedBuilderProvider"
 
 export default function GuidedBuilderPage({ params }: { params: Promise<{ teamId: string }> }) {
   const { teamId } = use(params)

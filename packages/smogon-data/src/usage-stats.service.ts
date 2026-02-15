@@ -1,4 +1,5 @@
 import { prisma } from "@nasty-plot/db"
+import type { PrismaPromise } from "@nasty-plot/db"
 import { toId, TTLCache } from "@nasty-plot/core"
 import type { UsageStatsEntry, TeammateCorrelation } from "@nasty-plot/core"
 import { fetchSmogonData } from "./fetch-helper"
@@ -230,8 +231,7 @@ export async function syncUsageStats(
 
   // Collect all operations into a single array for batched execution
   // Mixed PrismaPromise types (UsageStats, TeammateCorr, CheckCounter, etc.)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const allOps: any[] = []
+  const allOps: PrismaPromise<unknown>[] = []
 
   for (let i = 0; i < entries.length; i++) {
     const [name, data] = entries[i]

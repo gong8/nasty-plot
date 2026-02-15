@@ -1,8 +1,8 @@
 "use client"
 
 import { useMemo } from "react"
-import { useChatSidebar } from "@/features/chat/context/chat-provider"
-import { usePageContext } from "@/features/chat/context/page-context-provider"
+import { useChatSidebar } from "@/features/chat/context/ChatProvider"
+import { usePageContext } from "@/features/chat/context/PageContextProvider"
 import { useChatSession } from "@/features/chat/hooks/use-chat-sessions"
 import type { ChatContextMode } from "@nasty-plot/core"
 

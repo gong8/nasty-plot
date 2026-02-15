@@ -2,6 +2,7 @@
 
 import { useState, useRef, useMemo, useCallback } from "react"
 import { cn } from "@nasty-plot/ui"
+import { FeatureErrorBoundary } from "@/components/FeatureErrorBoundary"
 import type { BattleState } from "@nasty-plot/battle-engine"
 import { BattleField } from "./BattleField"
 import { BattleLog } from "./BattleLog"
@@ -14,12 +15,12 @@ import { CommentaryPanel } from "./CommentaryPanel"
 import { useBattleHints } from "../hooks/use-battle-hints"
 import { useAutoAnalyze } from "../hooks/use-auto-analyze"
 import { useBattleAnimations, type AnimationState } from "../hooks/use-battle-animations"
-import { useBattleStatePublisher } from "../context/battle-state-context"
+import { useBattleStatePublisher } from "../context/BattleStateContext"
 import { useBuildContextData } from "@/features/chat/hooks/use-build-context-data"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Trophy, RotateCcw, ArrowLeft, Zap, Save, Loader2 } from "lucide-react"
-import { useChatSidebar } from "@/features/chat/context/chat-provider"
+import { useChatSidebar } from "@/features/chat/context/ChatProvider"
 import { putJson } from "@/lib/api-client"
 import Link from "next/link"
 
@@ -238,30 +239,34 @@ export function BattleView({
   // Team Preview Phase
   if (state.phase === "preview") {
     return (
-      <div className={cn("max-w-2xl mx-auto py-8", className)}>
-        <TeamPreview
-          playerTeam={state.sides.p1.team}
-          opponentTeam={state.sides.p2.team}
-          format={state.gameType}
-          onSubmit={onLeadSelect}
-        />
-      </div>
+      <FeatureErrorBoundary>
+        <div className={cn("max-w-2xl mx-auto py-8", className)}>
+          <TeamPreview
+            playerTeam={state.sides.p1.team}
+            opponentTeam={state.sides.p2.team}
+            format={state.gameType}
+            onSubmit={onLeadSelect}
+          />
+        </div>
+      </FeatureErrorBoundary>
     )
   }
 
   // Battle Ended
   if (state.phase === "ended") {
     return (
-      <BattleEnded
-        state={state}
-        animState={animState}
-        textSpeed={textSpeed}
-        isSaving={isSaving}
-        savedId={savedId}
-        onSave={onSave ? handleSave : undefined}
-        onRematch={onRematch}
-        className={className}
-      />
+      <FeatureErrorBoundary>
+        <BattleEnded
+          state={state}
+          animState={animState}
+          textSpeed={textSpeed}
+          isSaving={isSaving}
+          savedId={savedId}
+          onSave={onSave ? handleSave : undefined}
+          onRematch={onRematch}
+          className={className}
+        />
+      </FeatureErrorBoundary>
     )
   }
 
@@ -309,40 +314,44 @@ export function BattleView({
     )
 
   return (
-    <div className={cn("flex flex-col h-[calc(100vh-80px)]", className)}>
-      {/* Top bar: turn + names */}
-      <div className="flex items-center justify-between px-3 py-1 shrink-0">
-        <span className="text-sm font-semibold tabular-nums">Turn {state.turn}</span>
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <span>{state.sides.p1.name}</span>
-          <span className="text-xs">vs</span>
-          <span>{state.sides.p2.name}</span>
-          <Button
-            size="sm"
-            variant={autoAnalyze.enabled ? "default" : "secondary"}
-            onClick={handleToggleAutoAnalyze}
-            className="h-7 text-xs gap-1"
-          >
-            <Zap className="h-3 w-3" />
-            {autoAnalyze.enabled ? "Auto-Analyze On" : "Auto-Analyze"}
-          </Button>
+    <FeatureErrorBoundary>
+      <div className={cn("flex flex-col h-[calc(100vh-80px)]", className)}>
+        {/* Top bar: turn + names */}
+        <div className="flex items-center justify-between px-3 py-1 shrink-0">
+          <span className="text-sm font-semibold tabular-nums">Turn {state.turn}</span>
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <span>{state.sides.p1.name}</span>
+            <span className="text-xs">vs</span>
+            <span>{state.sides.p2.name}</span>
+            <Button
+              size="sm"
+              variant={autoAnalyze.enabled ? "default" : "secondary"}
+              onClick={handleToggleAutoAnalyze}
+              className="h-7 text-xs gap-1"
+            >
+              <Zap className="h-3 w-3" />
+              {autoAnalyze.enabled ? "Auto-Analyze On" : "Auto-Analyze"}
+            </Button>
+          </div>
+        </div>
+
+        {/* BattleScreen with controls nested below the field */}
+        <div className="flex-1 px-2 py-1 min-h-0">
+          <BattleScreen
+            evalBar={
+              winProb ? <EvalBar p1WinProb={winProb.p1} p2WinProb={winProb.p2} /> : undefined
+            }
+            state={state}
+            animState={animState}
+            textSpeed={textSpeed}
+            speed={textSpeed}
+            onSpeedChange={setTextSpeed}
+            sidebarTabs={sidebarTabs}
+            bottomContent={controlPanel}
+            className="h-full"
+          />
         </div>
       </div>
-
-      {/* BattleScreen with controls nested below the field */}
-      <div className="flex-1 px-2 py-1 min-h-0">
-        <BattleScreen
-          evalBar={winProb ? <EvalBar p1WinProb={winProb.p1} p2WinProb={winProb.p2} /> : undefined}
-          state={state}
-          animState={animState}
-          textSpeed={textSpeed}
-          speed={textSpeed}
-          onSpeedChange={setTextSpeed}
-          sidebarTabs={sidebarTabs}
-          bottomContent={controlPanel}
-          className="h-full"
-        />
-      </div>
-    </div>
+    </FeatureErrorBoundary>
   )
 }

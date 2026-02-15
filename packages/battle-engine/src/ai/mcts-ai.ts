@@ -1,3 +1,31 @@
+/**
+ * Monte Carlo Tree Search (MCTS) AI using Decoupled UCT (DUCT).
+ *
+ * MCTS Algorithm Overview:
+ *
+ * 1. SELECTION — Pick actions using UCB1 (Upper Confidence Bound):
+ *    UCB1(a) = avgValue(a) + C * sqrt(ln(parentVisits) / (visits(a) + 1))
+ *    where C is the exploration constant (default sqrt(2)). Higher C favors
+ *    unexplored actions; lower C exploits known-good actions.
+ *
+ * 2. EXPANSION — Each iteration creates one DUCT node. Because both players
+ *    act simultaneously in Pokemon, we maintain separate action statistics per
+ *    player (p1Stats, p2Stats) rather than alternating tree layers.
+ *
+ * 3. SIMULATION (Rollout) — From the expanded node, play out random moves for
+ *    `rolloutDepth` turns. If opponent predictions exist (from SetPredictor),
+ *    predicted moves are weighted 3x more likely during p2 rollouts, improving
+ *    accuracy against common sets.
+ *
+ * 4. BACKPROPAGATION — The rollout outcome (+1 win, -1 loss, 0 draw) updates
+ *    visits and totalValue for each selected action. avgValue = totalValue / visits.
+ *    Values are negated for the opponent's perspective.
+ *
+ * The best action is chosen by most visits (not highest avgValue), which is
+ * more robust to noise in value estimates.
+ *
+ * Falls back to HeuristicAI when no Battle JSON is available for cloning.
+ */
 import { Battle } from "@pkmn/sim"
 import { DEFAULT_FORMAT_ID, normalizeMoveName, type GameType } from "@nasty-plot/core"
 import {
@@ -31,7 +59,7 @@ const WIN = 1
 const LOSS = -1
 const DRAW = 0
 
-/** Weight multiplier for predicted moves during rollouts. */
+/** Weight multiplier for predicted moves during rollouts — biases random play toward likely opponent actions. */
 const PREDICTED_MOVE_WEIGHT = 3
 
 const ZERO_BOOSTS = {
@@ -160,8 +188,9 @@ export class MCTSAI implements AIPlayer {
   }
 
   /**
-   * Set the serialized battle state (from BattleManager.getSerializedBattle()).
-   * Must be called before chooseAction for MCTS to work.
+   * Provide the serialized Battle JSON (from BattleManager.getSerializedBattle()).
+   * Must be called before each chooseAction call. Without it, MCTS falls back to HeuristicAI
+   * because tree search requires cloning the battle state.
    */
   setBattleState(battleJson: unknown, formatId?: string) {
     this.battleState = battleJson
@@ -188,6 +217,7 @@ export class MCTSAI implements AIPlayer {
     return Array.from({ length: teamSize }, (_, i) => i + 1)
   }
 
+  /** Run the MCTS loop, iterating until maxIterations or maxTimeMs is reached. */
   private runSearch(perspective: "p1" | "p2"): MCTSResult {
     const startTime = Date.now()
     const root = this.createNode()
@@ -223,6 +253,7 @@ export class MCTSAI implements AIPlayer {
     return { bestAction, actionScores, winProbability, iterations, timeMs }
   }
 
+  /** Single MCTS iteration: select actions via UCB1, apply them, rollout, then backpropagate. */
   private iterate(battle: Battle, node: DUCTNode, perspective: "p1" | "p2"): number {
     if (isBattleOver(battle)) {
       return outcomeValue(getBattleWinner(battle), perspective)
@@ -268,6 +299,7 @@ export class MCTSAI implements AIPlayer {
     jointStats.set(key, joint)
   }
 
+  /** Update win/visit stats for the chosen action. Value is negated for the opponent's stats. */
   private backpropagateStats(
     stats: Map<string, ActionStats>,
     choice: string,
@@ -280,12 +312,18 @@ export class MCTSAI implements AIPlayer {
     stat.avgValue = stat.totalValue / stat.visits
   }
 
+  /**
+   * Select an action using the UCB1 formula: exploit + explore.
+   * Unvisited actions are always tried first (infinite UCB score).
+   * For the opponent's perspective, exploit is negated so we pick their worst action for us.
+   */
   private selectUCB1(
     stats: Map<string, ActionStats>,
     choices: string[],
     parentVisits: number,
     maximize: boolean,
   ): string {
+    // Always try unvisited actions first — effectively infinite exploration bonus
     for (const c of choices) {
       const s = stats.get(c)
       if (!s || s.visits === 0) return c
@@ -298,7 +336,9 @@ export class MCTSAI implements AIPlayer {
 
     for (const c of choices) {
       const s = stats.get(c)!
+      // Exploitation: average outcome from this action's perspective
       const exploit = maximize ? s.avgValue : -s.avgValue
+      // Exploration: bonus for under-visited actions (decays as visits increase)
       const explore = explorationConstant * Math.sqrt(logParent / (s.visits + 1))
       const ucb = exploit + explore
 
@@ -311,6 +351,7 @@ export class MCTSAI implements AIPlayer {
     return bestAction
   }
 
+  /** Random playout from the current position. Uses heuristic evaluation if depth is exhausted without a winner. */
   private rollout(battle: Battle, perspective: "p1" | "p2", depth: number): number {
     for (let d = 0; d < depth; d++) {
       if (isBattleOver(battle)) {
@@ -384,6 +425,7 @@ export class MCTSAI implements AIPlayer {
     return fallbackMove(actions)
   }
 
+  /** During rollouts, bias p2's random moves toward predicted moves (from SetPredictor) for more realistic play. */
   private weightedRolloutChoice(choices: string[], battle: Battle): string {
     if (choices.length <= 1) return choices[0]
 

@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from "react"
 import { cn, TypeBadge, PokemonSprite } from "@nasty-plot/ui"
+import { FeatureErrorBoundary } from "@/components/FeatureErrorBoundary"
 import { TYPE_COLORS, isLightTypeColor, type PokemonType, type GameType } from "@nasty-plot/core"
 import { calcHpPercent, type BattleActionSet, type BattlePokemon } from "@nasty-plot/battle-engine"
 import { Button } from "@/components/ui/button"
@@ -202,182 +203,189 @@ export function MoveSelector({
   ]
 
   return (
-    <div className={cn("space-y-0", className)}>
-      <TooltipProvider>
-        <div className="grid grid-cols-2 gap-2">
-          {actions.moves.map((move, i) => {
-            const color = TYPE_COLORS[move.type] || FALLBACK_TYPE_COLOR
-            const light = isLightTypeColor(color)
-            const isDamaging = move.category !== "Status" && move.basePower > 0
-            const CategoryIcon = CATEGORY_ICONS[move.category] || Circle
+    <FeatureErrorBoundary>
+      <div className={cn("space-y-0", className)}>
+        <TooltipProvider>
+          <div className="grid grid-cols-2 gap-2">
+            {actions.moves.map((move, i) => {
+              const color = TYPE_COLORS[move.type] || FALLBACK_TYPE_COLOR
+              const light = isLightTypeColor(color)
+              const isDamaging = move.category !== "Status" && move.basePower > 0
+              const CategoryIcon = CATEGORY_ICONS[move.category] || Circle
 
-            return (
-              <div key={move.id} className="relative">
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button
-                      onClick={() => handleMoveClick(i)}
-                      disabled={move.disabled}
-                      className={cn(
-                        "relative w-full px-3 py-2 rounded-lg font-semibold text-sm",
-                        "transition-all hover:brightness-110 active:scale-[0.98]",
-                        "disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:brightness-100",
-                        "shadow-sm",
-                        light
-                          ? "text-gray-900 border border-black/10"
-                          : "text-white border border-white/20",
-                      )}
-                      style={{
-                        backgroundColor: move.disabled ? DISABLED_MOVE_COLOR : color,
-                      }}
-                    >
-                      {/* Move name + PP */}
-                      <div className="flex justify-between items-center">
-                        <span className="flex items-center gap-1 truncate">
-                          {move.name}
-                          {isDoubles && needsTargetSelection(move.target) && !move.disabled && (
-                            <Target className="h-3 w-3 opacity-50 shrink-0" />
-                          )}
-                        </span>
-                        <span className="text-[10px] opacity-70 font-mono shrink-0 ml-1">
-                          {move.pp}/{move.maxPp}
-                        </span>
-                      </div>
-
-                      {/* Stats row: Category icon, BP, Accuracy, Type */}
-                      <div className="flex items-center gap-1.5 mt-1 text-[10px] opacity-80">
-                        <CategoryIcon className="h-3 w-3 shrink-0" />
-                        {isDamaging && <span className="font-mono">{move.basePower} BP</span>}
-                        <span className="font-mono">
-                          {move.accuracy === true ? "—" : `${move.accuracy}%`}
-                        </span>
-                        <TypeBadge
-                          type={move.type}
-                          size="sm"
-                          className="ml-auto min-w-0 px-1.5 py-0 text-[10px] rounded shadow-none"
-                        />
-                      </div>
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent side="top" sideOffset={6}>
-                    <div className="space-y-1 py-0.5">
-                      <div className="flex items-center gap-2 text-sm">
-                        <span className="font-semibold">{move.name}</span>
-                        <span className="text-muted-foreground">·</span>
-                        <span>{move.category}</span>
-                      </div>
-                      {isDoubles && (
-                        <div className="text-xs text-muted-foreground">
-                          Target: {formatTargetType(move.target)}
+              return (
+                <div key={move.id} className="relative">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        onClick={() => handleMoveClick(i)}
+                        disabled={move.disabled}
+                        className={cn(
+                          "relative w-full px-3 py-2 rounded-lg font-semibold text-sm",
+                          "transition-all hover:brightness-110 active:scale-[0.98]",
+                          "disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:brightness-100",
+                          "shadow-sm",
+                          light
+                            ? "text-gray-900 border border-black/10"
+                            : "text-white border border-white/20",
+                        )}
+                        style={{
+                          backgroundColor: move.disabled ? DISABLED_MOVE_COLOR : color,
+                        }}
+                      >
+                        {/* Move name + PP */}
+                        <div className="flex justify-between items-center">
+                          <span className="flex items-center gap-1 truncate">
+                            {move.name}
+                            {isDoubles && needsTargetSelection(move.target) && !move.disabled && (
+                              <Target className="h-3 w-3 opacity-50 shrink-0" />
+                            )}
+                          </span>
+                          <span className="text-[10px] opacity-70 font-mono shrink-0 ml-1">
+                            {move.pp}/{move.maxPp}
+                          </span>
                         </div>
-                      )}
-                      {move.description && (
-                        <p className="text-muted-foreground max-w-[220px] text-xs">
-                          {move.description}
-                        </p>
-                      )}
-                    </div>
-                  </TooltipContent>
-                </Tooltip>
-              </div>
-            )
-          })}
 
-          {/* Row 3: Switch + Tera, inside the same 2-col grid */}
-          <Button
-            variant="outline"
-            size="sm"
-            className={cn("gap-1.5 h-auto py-2", !(canTera && teraType) && "col-span-2")}
-            onClick={onSwitchClick}
-            disabled={actions.switches.length === 0}
-          >
-            <ArrowLeftRight className="h-3.5 w-3.5" />
-            Switch
-          </Button>
+                        {/* Stats row: Category icon, BP, Accuracy, Type */}
+                        <div className="flex items-center gap-1.5 mt-1 text-[10px] opacity-80">
+                          <CategoryIcon className="h-3 w-3 shrink-0" />
+                          {isDamaging && <span className="font-mono">{move.basePower} BP</span>}
+                          <span className="font-mono">
+                            {move.accuracy === true ? "—" : `${move.accuracy}%`}
+                          </span>
+                          <TypeBadge
+                            type={move.type}
+                            size="sm"
+                            className="ml-auto min-w-0 px-1.5 py-0 text-[10px] rounded shadow-none"
+                          />
+                        </div>
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" sideOffset={6}>
+                      <div className="space-y-1 py-0.5">
+                        <div className="flex items-center gap-2 text-sm">
+                          <span className="font-semibold">{move.name}</span>
+                          <span className="text-muted-foreground">·</span>
+                          <span>{move.category}</span>
+                        </div>
+                        {isDoubles && (
+                          <div className="text-xs text-muted-foreground">
+                            Target: {formatTargetType(move.target)}
+                          </div>
+                        )}
+                        {move.description && (
+                          <p className="text-muted-foreground max-w-[220px] text-xs">
+                            {move.description}
+                          </p>
+                        )}
+                      </div>
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+              )
+            })}
 
-          {canTera && teraType && (
-            <button
-              onClick={() => setTeraActive((prev) => !prev)}
-              className={cn(
-                "flex items-center justify-center gap-2 rounded-lg text-sm font-semibold py-2 px-3",
-                "transition-all border",
-                teraActive
-                  ? "bg-pink-500/20 border-pink-500 text-pink-400 ring-2 ring-pink-400/30"
-                  : "bg-transparent border-border text-muted-foreground hover:text-foreground hover:border-foreground/30",
-              )}
+            {/* Row 3: Switch + Tera, inside the same 2-col grid */}
+            <Button
+              variant="outline"
+              size="sm"
+              className={cn("gap-1.5 h-auto py-2", !(canTera && teraType) && "col-span-2")}
+              onClick={onSwitchClick}
+              disabled={actions.switches.length === 0}
             >
-              <Sparkles className="h-3.5 w-3.5" />
-              Tera {teraType}
-            </button>
-          )}
-        </div>
-      </TooltipProvider>
+              <ArrowLeftRight className="h-3.5 w-3.5" />
+              Switch
+            </Button>
 
-      {/* Target selection modal */}
-      <Dialog
-        open={pendingMoveIndex !== null}
-        onOpenChange={(open) => !open && cancelTargetSelection()}
-      >
-        <DialogContent showCloseButton={false} className="sm:max-w-sm p-4">
-          <DialogHeader className="pb-0">
-            <DialogTitle className="text-base">
-              {pendingMove && (
-                <span className="flex items-center gap-2">
-                  <span
-                    className="inline-block w-2.5 h-2.5 rounded-full shrink-0"
-                    style={{
-                      backgroundColor: TYPE_COLORS[pendingMove.type] || FALLBACK_TYPE_COLOR,
-                    }}
-                  />
-                  {pendingMove.name}
-                </span>
-              )}
-            </DialogTitle>
-            <DialogDescription className="text-xs">
-              {pendingMove && formatTargetType(pendingMove.target)} — pick a target
-            </DialogDescription>
-          </DialogHeader>
-
-          {/* 2x2 battlefield grid */}
-          <div className="space-y-2">
-            {/* Opponent label */}
-            <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider text-center">
-              Opponent
-            </div>
-
-            {/* Top row: foes */}
-            <div className="grid grid-cols-2 gap-2">
-              {gridSlots.slice(0, 2).map((info) => (
-                <TargetCard key={`foe-${info.slot}`} info={info} onSelect={handleTargetSelect} />
-              ))}
-            </div>
-
-            {/* Divider */}
-            <div className="flex items-center gap-3">
-              <div className="flex-1 border-t border-dashed" />
-              <span className="text-[10px] text-muted-foreground font-medium">VS</span>
-              <div className="flex-1 border-t border-dashed" />
-            </div>
-
-            {/* Bottom row: player side */}
-            <div className="grid grid-cols-2 gap-2">
-              {gridSlots.slice(2).map((info) => (
-                <TargetCard key={`ally-${info.slot}`} info={info} onSelect={handleTargetSelect} />
-              ))}
-            </div>
-
-            {/* Player label */}
-            <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider text-center">
-              Your side
-            </div>
+            {canTera && teraType && (
+              <button
+                onClick={() => setTeraActive((prev) => !prev)}
+                className={cn(
+                  "flex items-center justify-center gap-2 rounded-lg text-sm font-semibold py-2 px-3",
+                  "transition-all border",
+                  teraActive
+                    ? "bg-pink-500/20 border-pink-500 text-pink-400 ring-2 ring-pink-400/30"
+                    : "bg-transparent border-border text-muted-foreground hover:text-foreground hover:border-foreground/30",
+                )}
+              >
+                <Sparkles className="h-3.5 w-3.5" />
+                Tera {teraType}
+              </button>
+            )}
           </div>
+        </TooltipProvider>
 
-          <Button variant="ghost" size="sm" onClick={cancelTargetSelection} className="w-full mt-1">
-            Cancel
-          </Button>
-        </DialogContent>
-      </Dialog>
-    </div>
+        {/* Target selection modal */}
+        <Dialog
+          open={pendingMoveIndex !== null}
+          onOpenChange={(open) => !open && cancelTargetSelection()}
+        >
+          <DialogContent showCloseButton={false} className="sm:max-w-sm p-4">
+            <DialogHeader className="pb-0">
+              <DialogTitle className="text-base">
+                {pendingMove && (
+                  <span className="flex items-center gap-2">
+                    <span
+                      className="inline-block w-2.5 h-2.5 rounded-full shrink-0"
+                      style={{
+                        backgroundColor: TYPE_COLORS[pendingMove.type] || FALLBACK_TYPE_COLOR,
+                      }}
+                    />
+                    {pendingMove.name}
+                  </span>
+                )}
+              </DialogTitle>
+              <DialogDescription className="text-xs">
+                {pendingMove && formatTargetType(pendingMove.target)} — pick a target
+              </DialogDescription>
+            </DialogHeader>
+
+            {/* 2x2 battlefield grid */}
+            <div className="space-y-2">
+              {/* Opponent label */}
+              <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider text-center">
+                Opponent
+              </div>
+
+              {/* Top row: foes */}
+              <div className="grid grid-cols-2 gap-2">
+                {gridSlots.slice(0, 2).map((info) => (
+                  <TargetCard key={`foe-${info.slot}`} info={info} onSelect={handleTargetSelect} />
+                ))}
+              </div>
+
+              {/* Divider */}
+              <div className="flex items-center gap-3">
+                <div className="flex-1 border-t border-dashed" />
+                <span className="text-[10px] text-muted-foreground font-medium">VS</span>
+                <div className="flex-1 border-t border-dashed" />
+              </div>
+
+              {/* Bottom row: player side */}
+              <div className="grid grid-cols-2 gap-2">
+                {gridSlots.slice(2).map((info) => (
+                  <TargetCard key={`ally-${info.slot}`} info={info} onSelect={handleTargetSelect} />
+                ))}
+              </div>
+
+              {/* Player label */}
+              <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider text-center">
+                Your side
+              </div>
+            </div>
+
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={cancelTargetSelection}
+              className="w-full mt-1"
+            >
+              Cancel
+            </Button>
+          </DialogContent>
+        </Dialog>
+      </div>
+    </FeatureErrorBoundary>
   )
 }
 

@@ -78,9 +78,14 @@ async function seedFormat(format: SeedableFormat, force: boolean) {
 export async function POST(request: NextRequest) {
   const authHeader = request.headers.get("authorization")
   const expectedToken = process.env.SEED_SECRET
-  if (expectedToken && authHeader !== `Bearer ${expectedToken}`) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  const isProduction = process.env.NODE_ENV === "production"
+  if (isProduction || expectedToken) {
+    if (!expectedToken || authHeader !== `Bearer ${expectedToken}`) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
   }
+
+  console.warn(`[Seed] Data seed triggered at ${new Date().toISOString()}`)
 
   let raw: unknown = {}
   try {

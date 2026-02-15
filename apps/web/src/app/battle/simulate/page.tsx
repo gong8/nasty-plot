@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Progress } from "@/components/ui/progress"
 import { Play, BarChart3 } from "lucide-react"
-import { LoadingSpinner } from "@/components/loading-spinner"
+import { LoadingSpinner } from "@/components/LoadingSpinner"
 import type { BatchAnalytics } from "@nasty-plot/battle-engine/client"
 import { FormatSelector } from "@/features/battle/components/FormatSelector"
 import { TeamPicker, type TeamSelection } from "@/features/battle/components/TeamPicker"
@@ -94,6 +94,7 @@ export default function SimulatePage() {
   const [batchState, setBatchState] = useState<BatchState | null>(null)
   const [error, setError] = useState<string | null>(null)
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const pollErrorCount = useRef(0)
 
   const format = useFormat(formatId)
   const gameType: GameType = format?.gameType ?? "singles"
@@ -157,17 +158,28 @@ export default function SimulatePage() {
       })
 
       // Poll for updates
+      pollErrorCount.current = 0
       pollRef.current = setInterval(async () => {
         try {
           const statusData = await fetchJson<BatchState>(`/api/battles/batch/${data.id}`)
+          pollErrorCount.current = 0
           setBatchState({ ...statusData, id: data.id })
 
-          if (statusData.status === "completed" || statusData.status === "cancelled") {
+          if (
+            statusData.status === "completed" ||
+            statusData.status === "cancelled" ||
+            statusData.status === "failed"
+          ) {
             if (pollRef.current) clearInterval(pollRef.current)
             setPhase("results")
           }
         } catch {
-          // Poll failure, keep trying
+          pollErrorCount.current++
+          if (pollErrorCount.current >= 5) {
+            if (pollRef.current) clearInterval(pollRef.current)
+            setError("Lost connection to simulation. Please try again.")
+            setPhase("setup")
+          }
         }
       }, 2000)
     } catch (err) {

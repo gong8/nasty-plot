@@ -4,7 +4,7 @@ import { useState, useCallback, useRef, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { MessageSquare, Loader2 } from "lucide-react"
-import { ScrollArea } from "@/components/ui/scroll-area"
+import { ScrollArea } from "@/components/ui/ScrollArea"
 import type { BattleState, BattleLogEntry } from "@nasty-plot/battle-engine/client"
 import { readSSEEvents } from "@/lib/sse"
 

@@ -12,11 +12,6 @@ import {
   searchItems,
   getTypeChart,
   isMegaStone,
-  getMegaStonesFor,
-  getMegaForm,
-  isZCrystal,
-  getZCrystalType,
-  getSignatureZCrystal,
 } from "@nasty-plot/pokemon-data"
 
 // =============================================================================
@@ -676,89 +671,6 @@ describe("isMegaStone", () => {
   })
 })
 
-describe("getMegaStonesFor", () => {
-  it("returns Charizardite X and Y for Charizard", () => {
-    const stones = getMegaStonesFor("charizard")
-    const ids = stones.map((s) => s.id)
-    expect(ids).toContain("charizarditex")
-    expect(ids).toContain("charizarditey")
-    expect(ids).toHaveLength(2)
-  })
-
-  it("returns empty array for Pokemon without Mega", () => {
-    const stones = getMegaStonesFor("pikachu")
-    expect(stones).toHaveLength(0)
-  })
-
-  it("returns empty array for non-existent Pokemon", () => {
-    const stones = getMegaStonesFor("fakemon")
-    expect(stones).toHaveLength(0)
-  })
-})
-
-describe("getMegaForm", () => {
-  it("returns Mega Charizard X for Charizard + Charizardite X", () => {
-    const mega = getMegaForm("charizard", "charizarditex")
-    expect(mega).not.toBeNull()
-    expect(mega!.name).toBe("Charizard-Mega-X")
-    expect(mega!.types).toEqual(["Fire", "Dragon"])
-  })
-
-  it("returns null for incompatible stone", () => {
-    const mega = getMegaForm("pikachu", "charizarditex")
-    expect(mega).toBeNull()
-  })
-
-  it("returns null for non-Mega-Stone item", () => {
-    const mega = getMegaForm("charizard", "leftovers")
-    expect(mega).toBeNull()
-  })
-})
-
-// =============================================================================
-// Z-Crystal utilities
-// =============================================================================
-
-describe("isZCrystal", () => {
-  it("returns true for Electrium Z", () => {
-    expect(isZCrystal("electriumz")).toBe(true)
-  })
-
-  it("returns true for signature Z-Crystal (Pikanium Z)", () => {
-    expect(isZCrystal("pikaniumz")).toBe(true)
-  })
-
-  it("returns false for Leftovers", () => {
-    expect(isZCrystal("leftovers")).toBe(false)
-  })
-
-  it("returns false for Mega Stones", () => {
-    expect(isZCrystal("charizarditex")).toBe(false)
-  })
-})
-
-describe("getZCrystalType", () => {
-  it("returns Electric for Electrium Z", () => {
-    expect(getZCrystalType("electriumz")).toBe("Electric")
-  })
-
-  it("returns Fire for Firium Z", () => {
-    expect(getZCrystalType("firiumz")).toBe("Fire")
-  })
-
-  it("returns Normal for Normalium Z", () => {
-    expect(getZCrystalType("normaliumz")).toBe("Normal")
-  })
-
-  it("returns null for signature Z-Crystals", () => {
-    expect(getZCrystalType("pikaniumz")).toBeNull()
-  })
-
-  it("returns null for non-Z items", () => {
-    expect(getZCrystalType("leftovers")).toBeNull()
-  })
-})
-
 // =============================================================================
 // searchItems
 // =============================================================================
@@ -797,22 +709,5 @@ describe("searchItems", () => {
     expect(leftovers).toBeDefined()
     expect(leftovers!.id).toBe("leftovers")
     expect(leftovers!.description).toBeTruthy()
-  })
-})
-
-describe("getSignatureZCrystal", () => {
-  it("returns Pikachu + Volt Tackle for Pikanium Z", () => {
-    const sig = getSignatureZCrystal("pikaniumz")
-    expect(sig).not.toBeNull()
-    expect(sig!.pokemonId).toBe("pikachu")
-    expect(sig!.moveId).toBe("volttackle")
-  })
-
-  it("returns null for type-based Z-Crystals", () => {
-    expect(getSignatureZCrystal("electriumz")).toBeNull()
-  })
-
-  it("returns null for non-Z items", () => {
-    expect(getSignatureZCrystal("leftovers")).toBeNull()
   })
 })

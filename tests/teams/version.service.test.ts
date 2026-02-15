@@ -12,6 +12,7 @@ import {
   MAX_SINGLE_EV,
   PERFECT_IV,
 } from "@nasty-plot/core"
+import { asMock } from "../test-utils"
 import {
   compareTeams,
   forkTeam,
@@ -55,10 +56,10 @@ vi.mock("@nasty-plot/pokemon-data", () => ({
 
 import { prisma } from "@nasty-plot/db"
 
-const mockTeamFindUnique = prisma.team.findUnique as ReturnType<typeof vi.fn>
-const mockTeamFindMany = prisma.team.findMany as ReturnType<typeof vi.fn>
-const mockTeamUpdate = prisma.team.update as ReturnType<typeof vi.fn>
-const mockTransaction = prisma.$transaction as ReturnType<typeof vi.fn>
+const mockTeamFindUnique = asMock(prisma.team.findUnique)
+const mockTeamFindMany = asMock(prisma.team.findMany)
+const mockTeamUpdate = asMock(prisma.team.update)
+const mockTransaction = asMock(prisma.$transaction)
 
 // ---------------------------------------------------------------------------
 // Helpers

@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { EventEmitter } from "events"
 import type { CliChatOptions } from "@nasty-plot/llm"
+import { asMock } from "../test-utils"
 
 // ---------------------------------------------------------------------------
 // Mock child_process.spawn
@@ -89,7 +90,6 @@ async function collectSSEEvents(
   const decoder = new TextDecoder()
   const events: Array<Record<string, unknown>> = []
 
-   
   while (true) {
     const { done, value } = await reader.read()
     if (done) break
@@ -133,7 +133,7 @@ describe("streamCliChat", () => {
     const mod = await import("@nasty-plot/llm")
     streamCliChat = mod.streamCliChat
     const cp = await import("child_process")
-    spawnFn = cp.spawn as ReturnType<typeof vi.fn>
+    spawnFn = asMock(cp.spawn)
   })
 
   const defaultOptions: CliChatOptions = {
@@ -159,7 +159,7 @@ describe("streamCliChat", () => {
     mockProcess.emit("close", 0)
 
     // Drain the stream
-     
+
     while (true) {
       const { done } = await reader.read()
       if (done) break
@@ -186,7 +186,6 @@ describe("streamCliChat", () => {
     await new Promise((r) => setTimeout(r, 10))
     mockProcess.emit("close", 0)
 
-     
     while (true) {
       const { done } = await reader.read()
       if (done) break
@@ -468,7 +467,7 @@ describe("streamCliChat", () => {
 
   it("handles spawn failure with non-Error throw", async () => {
     spawnFn.mockImplementationOnce(() => {
-      throw "string error"  
+      throw "string error"
     })
 
     const stream = streamCliChat(defaultOptions)
@@ -701,7 +700,7 @@ describe("streamCliChat", () => {
 
   it("writes MCP config and system prompt files", async () => {
     const fs = await import("fs")
-    const writeFileSync = fs.writeFileSync as ReturnType<typeof vi.fn>
+    const writeFileSync = asMock(fs.writeFileSync)
 
     const stream = streamCliChat(defaultOptions)
 
@@ -726,7 +725,7 @@ describe("streamCliChat", () => {
 
   it("creates temp directory with recursive flag", async () => {
     const fs = await import("fs")
-    const mkdirSync = fs.mkdirSync as ReturnType<typeof vi.fn>
+    const mkdirSync = asMock(fs.mkdirSync)
 
     const stream = streamCliChat(defaultOptions)
 

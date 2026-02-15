@@ -19,6 +19,7 @@ vi.mock("@nasty-plot/core", async () => {
 })
 
 import { DEFAULT_IVS, DEFAULT_LEVEL, MAX_SINGLE_EV } from "@nasty-plot/core"
+import { asMock } from "../test-utils"
 
 vi.mock("#teams/team.service", () => ({
   createTeam: vi.fn(),
@@ -35,13 +36,13 @@ import { parseShowdownPaste, serializeShowdownPaste } from "@nasty-plot/core"
 import { createTeam, addSlot, getTeam, clearSlots } from "#teams/team.service"
 import { getSpecies } from "@nasty-plot/pokemon-data"
 
-const mockParse = parseShowdownPaste as ReturnType<typeof vi.fn>
-const mockSerialize = serializeShowdownPaste as ReturnType<typeof vi.fn>
-const mockCreateTeam = createTeam as ReturnType<typeof vi.fn>
-const mockAddSlot = addSlot as ReturnType<typeof vi.fn>
-const mockGetTeam = getTeam as ReturnType<typeof vi.fn>
-const mockClearSlots = clearSlots as ReturnType<typeof vi.fn>
-const mockGetSpecies = getSpecies as ReturnType<typeof vi.fn>
+const mockParse = asMock(parseShowdownPaste)
+const mockSerialize = asMock(serializeShowdownPaste)
+const mockCreateTeam = asMock(createTeam)
+const mockAddSlot = asMock(addSlot)
+const mockGetTeam = asMock(getTeam)
+const mockClearSlots = asMock(clearSlots)
+const mockGetSpecies = asMock(getSpecies)
 
 // ---------------------------------------------------------------------------
 // Helpers

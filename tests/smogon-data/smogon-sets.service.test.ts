@@ -52,12 +52,13 @@ vi.mock("#smogon-data/chaos-sets.service", async (importOriginal) => {
 import { prisma } from "@nasty-plot/db"
 import { resolveYearMonth } from "#smogon-data/usage-stats.service"
 import { generateSetsFromChaos } from "#smogon-data/chaos-sets.service"
+import { asMock } from "../test-utils"
 
-const mockSetUpsert = prisma.smogonSet.upsert as ReturnType<typeof vi.fn>
-const mockSetFindMany = prisma.smogonSet.findMany as ReturnType<typeof vi.fn>
-const mockSyncLogUpsert = prisma.dataSyncLog.upsert as ReturnType<typeof vi.fn>
-const mockResolveYearMonth = resolveYearMonth as ReturnType<typeof vi.fn>
-const mockGenerateSetsFromChaos = generateSetsFromChaos as ReturnType<typeof vi.fn>
+const mockSetUpsert = asMock(prisma.smogonSet.upsert)
+const mockSetFindMany = asMock(prisma.smogonSet.findMany)
+const mockSyncLogUpsert = asMock(prisma.dataSyncLog.upsert)
+const mockResolveYearMonth = asMock(resolveYearMonth)
+const mockGenerateSetsFromChaos = asMock(generateSetsFromChaos)
 
 // ---------------------------------------------------------------------------
 // Helpers

@@ -1,4 +1,5 @@
 import { getUsageBasedRecommendations } from "@nasty-plot/recommendations"
+import { asMock, makeSpecies } from "../test-utils"
 
 // ---------------------------------------------------------------------------
 // Mocks
@@ -20,23 +21,15 @@ vi.mock("@nasty-plot/pokemon-data", () => ({
 import { prisma } from "@nasty-plot/db"
 import { getSpecies } from "@nasty-plot/pokemon-data"
 
-const mockCorrFindMany = prisma.teammateCorr.findMany as ReturnType<typeof vi.fn>
-const mockGetSpecies = getSpecies as ReturnType<typeof vi.fn>
+const mockCorrFindMany = asMock(prisma.teammateCorr.findMany)
+const mockGetSpecies = asMock(getSpecies)
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
 function mockSpecies(id: string) {
-  return {
-    id,
-    name: id.charAt(0).toUpperCase() + id.slice(1),
-    num: 1,
-    types: ["Normal"] as [string],
-    baseStats: { hp: 80, atk: 80, def: 80, spa: 80, spd: 80, spe: 80 },
-    abilities: { "0": "Ability" },
-    weightkg: 50,
-  }
+  return makeSpecies(id, ["Normal"])
 }
 
 // ---------------------------------------------------------------------------

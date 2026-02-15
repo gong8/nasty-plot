@@ -1,5 +1,17 @@
 import type { BattleState, AIPlayer, BattleActionSet } from "./types"
 
+/** AI thinking delay ranges in milliseconds (simulates decision time for realism) */
+const AI_THINK_DELAY = {
+  /** Normal turn: base delay before choosing an action */
+  TURN_BASE_MS: 300,
+  /** Normal turn: random jitter added to base delay */
+  TURN_JITTER_MS: 700,
+  /** Force switch: base delay (shorter since forced switches are simpler decisions) */
+  FORCE_SWITCH_BASE_MS: 200,
+  /** Force switch: random jitter added to base delay */
+  FORCE_SWITCH_JITTER_MS: 300,
+} as const
+
 /** Simulate AI "thinking" with a randomized delay for realism. */
 function aiThinkDelay(baseMs: number, jitterMs: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, baseMs + Math.random() * jitterMs))
@@ -53,7 +65,7 @@ export async function handleAITurn(ctx: AIHandlerContext): Promise<{
     }
   }
 
-  await aiThinkDelay(300, 700)
+  await aiThinkDelay(AI_THINK_DELAY.TURN_BASE_MS, AI_THINK_DELAY.TURN_JITTER_MS)
   syncMCTSBattleState(ctx.ai, ctx.getSerializedBattle, ctx.formatId)
 
   const action1 = await ctx.ai.chooseAction(ctx.state, ctx.pendingP2Actions)
@@ -81,7 +93,7 @@ export async function handleAIForceSwitch(
   actions: BattleActionSet,
   stream: { write(data: string): void },
 ): Promise<void> {
-  await aiThinkDelay(200, 300)
+  await aiThinkDelay(AI_THINK_DELAY.FORCE_SWITCH_BASE_MS, AI_THINK_DELAY.FORCE_SWITCH_JITTER_MS)
   const aiAction = await ai.chooseAction(state, actions)
   stream.write(`>p2 ${actionToChoice(aiAction)}`)
 }
@@ -96,7 +108,7 @@ export async function handleAIForceSwitchDoubles(
   slot2Actions: BattleActionSet | null,
   stream: { write(data: string): void },
 ): Promise<void> {
-  await aiThinkDelay(200, 300)
+  await aiThinkDelay(AI_THINK_DELAY.FORCE_SWITCH_BASE_MS, AI_THINK_DELAY.FORCE_SWITCH_JITTER_MS)
   const action1 = await ai.chooseAction(state, slot1Actions)
 
   if (slot2Actions) {

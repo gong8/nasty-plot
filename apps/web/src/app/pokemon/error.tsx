@@ -1,6 +1,6 @@
 "use client"
 
-import { ErrorPage } from "@/components/error-page"
+import { ErrorPage } from "@/components/ErrorPage"
 
 export default function PokemonError({ error, reset }: { error: Error; reset: () => void }) {
   return (

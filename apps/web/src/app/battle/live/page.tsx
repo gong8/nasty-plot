@@ -5,10 +5,10 @@ import { useEffect, Suspense } from "react"
 import { BattleView } from "@/features/battle/components/BattleView"
 import { useBattle } from "@/features/battle/hooks/use-battle"
 import { loadCheckpoint } from "@/features/battle/lib/checkpoint-store"
-import { useChatSidebar } from "@/features/chat/context/chat-provider"
+import { useChatSidebar } from "@/features/chat/context/ChatProvider"
 import type { AIDifficulty } from "@nasty-plot/battle-engine"
 import { DEFAULT_FORMAT_ID, type GameType } from "@nasty-plot/core"
-import { LoadingSpinner } from "@/components/loading-spinner"
+import { LoadingSpinner } from "@/components/LoadingSpinner"
 
 function BattleLiveContent() {
   const searchParams = useSearchParams()

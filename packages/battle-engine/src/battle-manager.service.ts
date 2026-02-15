@@ -24,6 +24,7 @@ const START_TIMEOUT_MS = 10_000
 const UPDATE_TIMEOUT_MS = 15_000
 const PLAYER_ID_PATTERN = /^p[1-4]$/
 
+/** Create an empty BattleState in "setup" phase, ready for BattleManager.start(). */
 export function createInitialState(id: string, gameType: GameType): BattleState {
   function makeEmptySide(name: string) {
     return {
@@ -73,13 +74,17 @@ interface BattleManagerConfig {
 export type BattleEventHandler = (state: BattleState, entries: BattleLogEntry[]) => void
 
 /**
- * BattleManager orchestrates a battle using @pkmn/sim's BattleStream.
+ * BattleManager orchestrates a Pokemon battle using @pkmn/sim's BattleStream.
  *
- * It handles:
- * - Creating battles via BattleStream
- * - Submitting team choices and move selections
- * - Maintaining normalized BattleState
- * - Routing AI decisions
+ * Architecture:
+ * - Wraps a BattleStream which runs the @pkmn/sim engine
+ * - Parses the sim's protocol output into normalized BattleState via protocol-parser.service
+ * - Routes player actions (moves/switches) to the stream as formatted choice strings
+ * - Delegates AI (p2) decisions to an AIPlayer implementation via battle-ai-handler
+ * - Handles both singles and doubles formats, including multi-slot action sequencing
+ * - Supports save/resume via BattleCheckpoint serialization
+ *
+ * Lifecycle: construct -> setAI() -> onUpdate() -> start() -> [chooseLead/submitAction]* -> destroy()
  */
 export class BattleManager implements ResumableManager {
   private stream: InstanceType<typeof BattleStreams.BattleStream>
@@ -150,17 +155,17 @@ export class BattleManager implements ResumableManager {
     return this.config
   }
 
-  /** Set the AI player for p2. */
+  /** Set the AI player that controls p2. Must be called before start(). */
   setAI(ai: AIPlayer) {
     this.ai = ai
   }
 
-  /** Set a SetPredictor for opponent set inference. */
+  /** Set a SetPredictor for opponent set inference. Enables mid-battle prediction of unrevealed moves/items. */
   setSetPredictor(predictor: SetPredictor) {
     this.setPredictor = predictor
   }
 
-  /** Set a callback for state updates. */
+  /** Register a callback that fires after each state update with the new state and log entries. */
   onUpdate(handler: BattleEventHandler) {
     this.eventHandler = handler
   }
@@ -249,11 +254,15 @@ export class BattleManager implements ResumableManager {
   }
 
   /**
-   * Submit a player action (move or switch).
+   * Submit a player (p1) action for the current turn.
    *
-   * In doubles, this is called twice per turn (once per active slot).
-   * The first call stores the action and swaps availableActions to slot 2.
-   * The second call combines both and sends to the sim.
+   * In singles, a single call sends the action immediately.
+   * In doubles, called twice per turn: the first call stores the slot-0 action
+   * and swaps availableActions to show slot-1 options. The second call combines
+   * both actions into one choice string and submits to the sim.
+   *
+   * Also triggers the AI's p2 decision if an AI player is attached.
+   * Resolves when the sim produces the next state update.
    */
   async submitAction(action: BattleAction): Promise<void> {
     const isDoubles = this.state.gameType === "doubles"
@@ -588,7 +597,8 @@ export class BattleManager implements ResumableManager {
   }
 
   /**
-   * Submit two actions for both active slots in doubles.
+   * Submit both slot actions at once in doubles (bypasses the two-call flow of submitAction).
+   * Used internally by AI handlers that compute both slot decisions simultaneously.
    */
   async submitDoubleActions(action1: BattleAction, action2: BattleAction): Promise<void> {
     if (this.submitting) return

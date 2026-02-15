@@ -1,6 +1,6 @@
-import type { TeamSlotData, PokemonType, StatsTable } from "@nasty-plot/core"
-import { DEFAULT_EVS, DEFAULT_IVS, DEFAULT_LEVEL } from "@nasty-plot/core"
+import type { PokemonType } from "@nasty-plot/core"
 import { getCoverageBasedRecommendations } from "@nasty-plot/recommendations"
+import { asMock, makeSlot, makeSpecies } from "../test-utils"
 
 // ---------------------------------------------------------------------------
 // Mocks
@@ -18,53 +18,16 @@ vi.mock("@nasty-plot/smogon-data", () => ({
 import { getSpecies, listSpecies } from "@nasty-plot/pokemon-data"
 import { getUsageStats } from "@nasty-plot/smogon-data"
 
-const mockGetSpecies = getSpecies as ReturnType<typeof vi.fn>
-const mockListSpecies = listSpecies as ReturnType<typeof vi.fn>
-const mockGetUsageStats = getUsageStats as ReturnType<typeof vi.fn>
+const mockGetSpecies = asMock(getSpecies)
+const mockListSpecies = asMock(listSpecies)
+const mockGetUsageStats = asMock(getUsageStats)
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-const defaultStats: StatsTable = { hp: 80, atk: 80, def: 80, spa: 80, spd: 80, spe: 80 }
-
-function makeSlot(
-  pokemonId: string,
-  types: [PokemonType] | [PokemonType, PokemonType],
-): TeamSlotData {
-  return {
-    position: 1,
-    pokemonId,
-    species: {
-      id: pokemonId,
-      name: pokemonId,
-      num: 1,
-      types,
-      baseStats: defaultStats,
-      abilities: { "0": "Ability" },
-      weightkg: 50,
-    },
-    ability: "Ability",
-    item: "",
-    nature: "Hardy",
-    level: DEFAULT_LEVEL,
-    moves: ["tackle", undefined, undefined, undefined],
-    evs: DEFAULT_EVS,
-    ivs: DEFAULT_IVS,
-  }
-}
-
 function mockSpeciesResult(id: string, types: PokemonType[]) {
-  return {
-    id,
-    name: id.charAt(0).toUpperCase() + id.slice(1),
-    num: 1,
-    types,
-    baseStats: defaultStats,
-    abilities: { "0": "Ability" },
-    weightkg: 50,
-    isNonstandard: null,
-  }
+  return makeSpecies(id, types, { isNonstandard: null })
 }
 
 // ---------------------------------------------------------------------------

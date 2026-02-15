@@ -6,7 +6,7 @@ import { BattleStatsCards } from "./BattleStatsCards"
 import { BattleHistoryList } from "./BattleHistoryList"
 import { BattleExportDialog } from "./BattleExportDialog"
 import { cn } from "@nasty-plot/ui"
-import { EmptyState } from "@/components/empty-state"
+import { EmptyState } from "@/components/EmptyState"
 import { useTeamBattles, useTeamBattleStats } from "../hooks/use-team-battles"
 
 const TREND_COLORS: Record<string, string> = {

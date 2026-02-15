@@ -1,6 +1,6 @@
 import { useCallback } from "react"
-import { usePageContext } from "@/features/chat/context/page-context-provider"
-import { useBattleStateContext } from "@/features/battle/context/battle-state-context"
+import { usePageContext } from "@/features/chat/context/PageContextProvider"
+import { useBattleStateContext } from "@/features/battle/context/BattleStateContext"
 import type { ChatContextMode } from "@nasty-plot/core"
 
 export const PAGE_TO_CONTEXT_MODE: Record<string, ChatContextMode> = {

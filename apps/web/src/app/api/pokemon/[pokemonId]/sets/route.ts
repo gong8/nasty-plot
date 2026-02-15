@@ -17,7 +17,9 @@ export async function GET(
     const sets = await getSetsForPokemon(searchParams.formatId, pokemonId)
 
     const response: ApiResponse<SmogonSetData[]> = { data: sets }
-    return NextResponse.json(response)
+    return NextResponse.json(response, {
+      headers: { "Cache-Control": "public, max-age=86400, stale-while-revalidate=3600" },
+    })
   } catch (err) {
     return apiErrorResponse(err, { code: "SETS_ERROR" })
   }

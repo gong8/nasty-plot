@@ -1,6 +1,7 @@
 import { analyzeTeam } from "@nasty-plot/analysis"
 import type { PokemonType } from "@nasty-plot/core"
 import { DEFAULT_LEVEL, DEFAULT_IVS, MAX_SINGLE_EV } from "@nasty-plot/core"
+import { asMock, makeTeamData } from "../test-utils"
 
 // ---------------------------------------------------------------------------
 // Mocks
@@ -45,31 +46,16 @@ import { analyzeTypeCoverage } from "#analysis/coverage.service"
 import { identifyThreats } from "#analysis/threat.service"
 import { calculateSynergy } from "#analysis/synergy.service"
 
-const mockGetTeam = getTeam as ReturnType<typeof vi.fn>
-const mockGetSpecies = getSpecies as ReturnType<typeof vi.fn>
-const mockGetUsageStats = getUsageStats as ReturnType<typeof vi.fn>
-const mockCoverage = analyzeTypeCoverage as ReturnType<typeof vi.fn>
-const mockThreats = identifyThreats as ReturnType<typeof vi.fn>
-const mockSynergy = calculateSynergy as ReturnType<typeof vi.fn>
+const mockGetTeam = asMock(getTeam)
+const mockGetSpecies = asMock(getSpecies)
+const mockGetUsageStats = asMock(getUsageStats)
+const mockCoverage = asMock(analyzeTypeCoverage)
+const mockThreats = asMock(identifyThreats)
+const mockSynergy = asMock(calculateSynergy)
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
-function makeTeamData(slots: unknown[] = []) {
-  return {
-    id: "team-1",
-    name: "Test Team",
-    formatId: "gen9ou",
-    mode: "freeform",
-    source: "manual",
-    notes: undefined,
-    isArchived: false,
-    slots,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  }
-}
 
 function makeSlot(overrides?: Record<string, unknown>) {
   return {

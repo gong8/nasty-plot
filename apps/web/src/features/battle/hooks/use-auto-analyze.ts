@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useRef, useCallback } from "react"
-import { useChatSidebar } from "@/features/chat/context/chat-provider"
+import { useChatSidebar } from "@/features/chat/context/ChatProvider"
 import { buildAutoAnalyzePrompt } from "@nasty-plot/llm/browser"
 import type { BattleState } from "@nasty-plot/battle-engine"
 

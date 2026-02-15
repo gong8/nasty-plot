@@ -2,11 +2,13 @@ import { NextResponse, type NextRequest } from "next/server"
 import { getToken } from "next-auth/jwt"
 import { checkRateLimit } from "./lib/rate-limit"
 
-const ALLOWED_ORIGINS = [
-  "http://localhost:3000",
-  "http://localhost:3001",
-  ...(process.env.NASTY_PLOT_ORIGIN ? [process.env.NASTY_PLOT_ORIGIN] : []),
-]
+const DEV_ORIGINS = ["http://localhost:3000", "http://localhost:3001"]
+
+const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(",").map((o) => o.trim())
+  : process.env.NODE_ENV === "production"
+    ? []
+    : DEV_ORIGINS
 
 function getCorsHeaders(origin: string | null) {
   const allowedOrigin = origin && ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0]
@@ -21,6 +23,8 @@ function getCorsHeaders(origin: string | null) {
 const RATE_LIMITS = {
   seed: { maxRequests: 1, windowMs: 600_000 },
   chat: { maxRequests: 20, windowMs: 60_000 },
+  cleanup: { maxRequests: 1, windowMs: 600_000 },
+  batchSim: { maxRequests: 5, windowMs: 600_000 },
   default: { maxRequests: 100, windowMs: 60_000 },
 } as const
 
@@ -30,6 +34,10 @@ function getRateLimitBucket(pathname: string): {
 } {
   if (pathname.startsWith("/api/data/seed")) return { key: "seed", config: RATE_LIMITS.seed }
   if (pathname.startsWith("/api/chat")) return { key: "chat", config: RATE_LIMITS.chat }
+  if (pathname.startsWith("/api/data/cleanup"))
+    return { key: "cleanup", config: RATE_LIMITS.cleanup }
+  if (pathname.startsWith("/api/battles/batch"))
+    return { key: "batchSim", config: RATE_LIMITS.batchSim }
   return { key: "default", config: RATE_LIMITS.default }
 }
 

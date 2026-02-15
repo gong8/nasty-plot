@@ -1,57 +1,21 @@
-import type { DamageCalcInput, StatsTable, TeamSlotData, PokemonType } from "@nasty-plot/core"
-import { DEFAULT_EVS, DEFAULT_IVS, DEFAULT_LEVEL, MAX_SINGLE_EV } from "@nasty-plot/core"
 import { calculateDamage, calculateMatchupMatrix } from "@nasty-plot/damage-calc"
+import { makeCalcInput, makeSlot as makeSlotBase, DEFAULT_STATS } from "../test-utils"
+import { DEFAULT_LEVEL, MAX_SINGLE_EV } from "@nasty-plot/core"
+import type { TeamSlotData, PokemonType } from "@nasty-plot/core"
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
-function makeCalcInput(overrides?: Partial<DamageCalcInput>): DamageCalcInput {
-  return {
-    attacker: {
-      pokemonId: "garchomp",
-      level: DEFAULT_LEVEL,
-      nature: "Jolly",
-      ability: "Rough Skin",
-      evs: { hp: 0, atk: MAX_SINGLE_EV, def: 0, spa: 0, spd: 4, spe: MAX_SINGLE_EV },
-    },
-    defender: {
-      pokemonId: "heatran",
-      level: DEFAULT_LEVEL,
-    },
-    move: "Earthquake",
-    ...overrides,
-  }
-}
-
-const defaultStats: StatsTable = { hp: 80, atk: 80, def: 80, spa: 80, spd: 80, spe: 80 }
 
 function makeSlot(
   pokemonId: string,
   types: [PokemonType] | [PokemonType, PokemonType],
   overrides?: Partial<TeamSlotData>,
 ): TeamSlotData {
-  return {
-    position: 1,
-    pokemonId,
-    species: {
-      id: pokemonId,
-      name: pokemonId.charAt(0).toUpperCase() + pokemonId.slice(1),
-      num: 1,
-      types,
-      baseStats: defaultStats,
-      abilities: { "0": "Ability" },
-      weightkg: 50,
-    },
-    ability: "Ability",
-    item: "",
-    nature: "Hardy",
-    level: DEFAULT_LEVEL,
+  return makeSlotBase(pokemonId, types, {
     moves: ["Earthquake", "Dragon Claw", undefined, undefined],
-    evs: DEFAULT_EVS,
-    ivs: DEFAULT_IVS,
     ...overrides,
-  }
+  })
 }
 
 // ---------------------------------------------------------------------------
@@ -583,7 +547,7 @@ describe("calculateMatchupMatrix", () => {
           name: "Garchomp",
           num: 445,
           types: ["Dragon", "Ground"],
-          baseStats: defaultStats,
+          baseStats: DEFAULT_STATS,
           abilities: { "0": "Rough Skin" },
           weightkg: 95,
         },

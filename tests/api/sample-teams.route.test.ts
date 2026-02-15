@@ -1,4 +1,5 @@
 import { vi } from "vitest"
+import { asMock } from "../test-utils"
 
 vi.mock("@nasty-plot/teams", () => ({
   listSampleTeams: vi.fn(),
@@ -41,7 +42,7 @@ describe("GET /api/sample-teams", () => {
   })
 
   it("returns sample teams list", async () => {
-    ;(listSampleTeams as ReturnType<typeof vi.fn>).mockResolvedValue({
+    asMock(listSampleTeams).mockResolvedValue({
       teams: [mockSampleTeam],
       total: 1,
     })
@@ -65,7 +66,7 @@ describe("GET /api/sample-teams", () => {
   })
 
   it("filters by formatId", async () => {
-    ;(listSampleTeams as ReturnType<typeof vi.fn>).mockResolvedValue({
+    asMock(listSampleTeams).mockResolvedValue({
       teams: [mockSampleTeam],
       total: 1,
     })
@@ -78,7 +79,7 @@ describe("GET /api/sample-teams", () => {
   })
 
   it("filters by archetype", async () => {
-    ;(listSampleTeams as ReturnType<typeof vi.fn>).mockResolvedValue({
+    asMock(listSampleTeams).mockResolvedValue({
       teams: [mockSampleTeam],
       total: 1,
     })
@@ -91,7 +92,7 @@ describe("GET /api/sample-teams", () => {
   })
 
   it("filters by search query", async () => {
-    ;(listSampleTeams as ReturnType<typeof vi.fn>).mockResolvedValue({ teams: [], total: 0 })
+    asMock(listSampleTeams).mockResolvedValue({ teams: [], total: 0 })
 
     const req = new Request("http://localhost:3000/api/sample-teams?search=pelipper")
     const response = await GET(req)
@@ -107,7 +108,7 @@ describe("POST /api/sample-teams", () => {
   })
 
   it("creates sample team with valid data", async () => {
-    ;(createSampleTeam as ReturnType<typeof vi.fn>).mockResolvedValue(mockSampleTeam)
+    asMock(createSampleTeam).mockResolvedValue(mockSampleTeam)
 
     const req = new Request("http://localhost:3000/api/sample-teams", {
       method: "POST",
@@ -179,7 +180,7 @@ describe("GET /api/sample-teams/[id]", () => {
   })
 
   it("returns sample team by id", async () => {
-    ;(getSampleTeam as ReturnType<typeof vi.fn>).mockResolvedValue(mockSampleTeam)
+    asMock(getSampleTeam).mockResolvedValue(mockSampleTeam)
 
     const req = new Request("http://localhost:3000/api/sample-teams/st-1")
     const response = await GET_BY_ID(req, {
@@ -194,7 +195,7 @@ describe("GET /api/sample-teams/[id]", () => {
   })
 
   it("returns 404 when not found", async () => {
-    ;(getSampleTeam as ReturnType<typeof vi.fn>).mockResolvedValue(null)
+    asMock(getSampleTeam).mockResolvedValue(null)
 
     const req = new Request("http://localhost:3000/api/sample-teams/nonexistent")
     const response = await GET_BY_ID(req, {
@@ -213,7 +214,7 @@ describe("DELETE /api/sample-teams/[id]", () => {
   })
 
   it("deletes sample team and returns success", async () => {
-    ;(deleteSampleTeam as ReturnType<typeof vi.fn>).mockResolvedValue(undefined)
+    asMock(deleteSampleTeam).mockResolvedValue(undefined)
 
     const req = new Request("http://localhost:3000/api/sample-teams/st-1", {
       method: "DELETE",
@@ -229,7 +230,7 @@ describe("DELETE /api/sample-teams/[id]", () => {
   })
 
   it("returns 500 when delete fails", async () => {
-    ;(deleteSampleTeam as ReturnType<typeof vi.fn>).mockRejectedValue(new Error("Record not found"))
+    asMock(deleteSampleTeam).mockRejectedValue(new Error("Record not found"))
 
     const req = new Request("http://localhost:3000/api/sample-teams/nonexistent", {
       method: "DELETE",
@@ -255,7 +256,7 @@ describe("POST /api/sample-teams/import", () => {
       { ...mockSampleTeam, id: "st-import-2", name: "Imported Team 2" },
     ]
 
-    ;(importSampleTeamsFromPastes as ReturnType<typeof vi.fn>).mockResolvedValue(mockImportedTeams)
+    asMock(importSampleTeamsFromPastes).mockResolvedValue(mockImportedTeams)
 
     const pastes = [
       {

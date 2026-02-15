@@ -32,9 +32,11 @@ export async function analyzeTeam(teamId: string): Promise<TeamAnalysis> {
   const slots = team.slots
 
   const coverage = analyzeTypeCoverage(slots)
-  const threats = await identifyThreats(slots, team.formatId)
   const synergyScore = calculateSynergy(slots)
-  const speedTiers = await calculateSpeedTiers(slots, team.formatId)
+  const [threats, speedTiers] = await Promise.all([
+    identifyThreats(slots, team.formatId),
+    calculateSpeedTiers(slots, team.formatId),
+  ])
   const suggestions = generateSuggestions(coverage, threats, synergyScore, slots)
 
   return {

@@ -1,5 +1,6 @@
 import { vi } from "vitest"
 import { NextRequest } from "next/server"
+import { asMock } from "../test-utils"
 
 vi.mock("@nasty-plot/db", () => ({
   prisma: {
@@ -36,7 +37,7 @@ describe("GET /api/battles/[battleId]", () => {
         },
       ],
     }
-    ;(prisma.battle.findUnique as ReturnType<typeof vi.fn>).mockResolvedValue(mockBattle)
+    asMock(prisma.battle.findUnique).mockResolvedValue(mockBattle)
 
     const req = new NextRequest("http://localhost:3000/api/battles/test-battle-id")
     const response = await GET(req, {
@@ -54,7 +55,7 @@ describe("GET /api/battles/[battleId]", () => {
   })
 
   it("returns 404 when not found", async () => {
-    ;(prisma.battle.findUnique as ReturnType<typeof vi.fn>).mockResolvedValue(null)
+    asMock(prisma.battle.findUnique).mockResolvedValue(null)
 
     const req = new NextRequest("http://localhost:3000/api/battles/nonexistent")
     const response = await GET(req, {
@@ -73,7 +74,7 @@ describe("DELETE /api/battles/[battleId]", () => {
   })
 
   it("deletes battle and returns success", async () => {
-    ;(prisma.battle.delete as ReturnType<typeof vi.fn>).mockResolvedValue({})
+    asMock(prisma.battle.delete).mockResolvedValue({})
 
     const req = new NextRequest("http://localhost:3000/api/battles/test-battle-id", {
       method: "DELETE",
@@ -91,9 +92,7 @@ describe("DELETE /api/battles/[battleId]", () => {
   })
 
   it("returns 404 when battle not found", async () => {
-    ;(prisma.battle.delete as ReturnType<typeof vi.fn>).mockRejectedValue(
-      new Error("Record not found"),
-    )
+    asMock(prisma.battle.delete).mockRejectedValue(new Error("Record not found"))
 
     const req = new NextRequest("http://localhost:3000/api/battles/nonexistent", {
       method: "DELETE",

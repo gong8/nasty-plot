@@ -1,5 +1,6 @@
 import { vi } from "vitest"
 import { NextRequest } from "next/server"
+import { asMock } from "../test-utils"
 
 vi.mock("@nasty-plot/db", () => ({
   prisma: {
@@ -38,7 +39,7 @@ describe("GET /api/battles/[battleId]/replay", () => {
         { turnNumber: 2, team1Action: "move stone edge", team2Action: "switch dragapult" },
       ],
     }
-    ;(prisma.battle.findUnique as ReturnType<typeof vi.fn>).mockResolvedValue(mockBattle)
+    asMock(prisma.battle.findUnique).mockResolvedValue(mockBattle)
 
     const req = new NextRequest("http://localhost:3000/api/battles/replay-battle-id/replay")
     const response = await GET(req, {
@@ -63,7 +64,7 @@ describe("GET /api/battles/[battleId]/replay", () => {
   })
 
   it("returns 404 when battle not found", async () => {
-    ;(prisma.battle.findUnique as ReturnType<typeof vi.fn>).mockResolvedValue(null)
+    asMock(prisma.battle.findUnique).mockResolvedValue(null)
 
     const req = new NextRequest("http://localhost:3000/api/battles/nonexistent/replay")
     const response = await GET(req, {

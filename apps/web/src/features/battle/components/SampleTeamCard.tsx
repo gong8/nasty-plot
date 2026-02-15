@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Swords } from "lucide-react"
-import { PokemonSpriteRow } from "@/components/pokemon-sprite-row"
+import { PokemonSpriteRow } from "@/components/PokemonSpriteRow"
 
 interface SampleTeamCardProps {
   name: string

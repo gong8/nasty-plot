@@ -25,6 +25,56 @@ import {
 /** Matchup score below which HeuristicAI considers switching out. */
 const UNFAVORABLE_MATCHUP_THRESHOLD = -0.3
 
+/** Type offense scoring coefficients (used in evaluateMatchup) */
+const TYPE_OFFENSE = {
+  /** Bonus per super-effective type matchup */
+  SE_BONUS: 0.3,
+  /** Penalty per resisted type matchup */
+  RESIST_PENALTY: 0.15,
+} as const
+
+/** Scoring bonuses/penalties for damaging moves */
+const DAMAGE_SCORING = {
+  /** Bonus when max damage can KO the opponent */
+  KO_BONUS: 50,
+  /** STAB (Same Type Attack Bonus) score addition */
+  STAB_BONUS: 5,
+  /** Bonus for priority moves when opponent is at low HP */
+  PRIORITY_BONUS: 20,
+  /** Opponent HP% threshold below which priority moves get a bonus */
+  PRIORITY_HP_THRESHOLD: 30,
+  /** Fallback score multiplier using type effectiveness when damage calc fails */
+  TYPE_EFFECTIVENESS_FALLBACK: 20,
+} as const
+
+/** Ratio of top score used to filter near-optimal choices for randomization */
+const TOP_CHOICES_RATIO = 0.85
+
+/** Favorable matchup threshold above which setup moves are considered */
+const SETUP_MATCHUP_THRESHOLD = 0.2
+
+/** HP% threshold above which setup moves are worth using */
+const SETUP_HP_THRESHOLD = 70
+
+/** Score for a generic status move with no specific classification */
+const GENERIC_STATUS_SCORE = 5
+
+/** Scoring weights for switch target evaluation */
+const SWITCH_SCORING = {
+  /** Multiplier applied to matchup score */
+  MATCHUP_MULTIPLIER: 40,
+  /** Multiplier applied to HP fraction (hpPercent / 100) */
+  HP_MULTIPLIER: 10,
+  /** Penalty when switch target also has an unfavorable matchup */
+  UNFAVORABLE_PENALTY: 30,
+  /** Bonus per opponent type that the switch-in resists */
+  RESIST_BONUS: 10,
+  /** Bonus per opponent type that the switch-in is immune to */
+  IMMUNITY_BONUS: 20,
+  /** Penalty multiplier per predicted super-effective move (scaled by confidence) */
+  PREDICTED_SE_PENALTY: 15,
+} as const
+
 const HAZARD_MOVES = new Set(["stealthrock", "spikes", "toxicspikes", "stickyweb"])
 const STATUS_MOVES = new Set(["willowisp", "thunderwave", "toxic", "spore", "sleeppowder", "yawn"])
 const SETUP_MOVES = new Set([
@@ -72,8 +122,8 @@ function typeOffenseScore(attackerTypes: PokemonType[], defenderTypes: PokemonTy
   let score = 0
   for (const t of attackerTypes) {
     const eff = getTypeEffectiveness(t, defenderTypes)
-    if (eff > 1) score += 0.3
-    if (eff < 1) score -= 0.15
+    if (eff > 1) score += TYPE_OFFENSE.SE_BONUS
+    if (eff < 1) score -= TYPE_OFFENSE.RESIST_PENALTY
   }
   return score
 }
@@ -145,7 +195,9 @@ export class HeuristicAI implements AIPlayer {
     if (scoredActions.length === 0) return fallbackMove(actions)
 
     scoredActions.sort((a, b) => b.score - a.score)
-    const topChoices = scoredActions.filter((a) => a.score >= scoredActions[0].score * 0.85)
+    const topChoices = scoredActions.filter(
+      (a) => a.score >= scoredActions[0].score * TOP_CHOICES_RATIO,
+    )
     return topChoices[Math.floor(Math.random() * topChoices.length)].action
   }
 
@@ -181,15 +233,18 @@ export class HeuristicAI implements AIPlayer {
       const { minPercent, maxPercent } = calculateBattleDamage(myPokemon, oppPokemon, moveName)
       score += (minPercent + maxPercent) / 2
 
-      if (maxPercent >= oppPokemon.hpPercent) score += 50
+      if (maxPercent >= oppPokemon.hpPercent) score += DAMAGE_SCORING.KO_BONUS
 
       const myTypes = getSpeciesTypes(myPokemon.name)
-      if (myTypes.includes(moveData.type as PokemonType)) score += 5
+      if (myTypes.includes(moveData.type as PokemonType)) score += DAMAGE_SCORING.STAB_BONUS
 
-      if (moveData.priority > 0 && oppPokemon.hpPercent < 30) score += 20
+      if (moveData.priority > 0 && oppPokemon.hpPercent < DAMAGE_SCORING.PRIORITY_HP_THRESHOLD)
+        score += DAMAGE_SCORING.PRIORITY_BONUS
     } catch {
       const oppTypes = getSpeciesTypes(oppPokemon.name)
-      score += getTypeEffectiveness(moveData.type as PokemonType, oppTypes) * 20
+      score +=
+        getTypeEffectiveness(moveData.type as PokemonType, oppTypes) *
+        DAMAGE_SCORING.TYPE_EFFECTIVENESS_FALLBACK
     }
 
     return score
@@ -208,7 +263,9 @@ export class HeuristicAI implements AIPlayer {
 
     if (SETUP_MOVES.has(moveName)) {
       const matchup = this.evaluateMatchup(myPokemon, oppPokemon)
-      return matchup > 0.2 && myPokemon.hpPercent > 70 ? SETUP_MOVE_SCORE : 0
+      return matchup > SETUP_MATCHUP_THRESHOLD && myPokemon.hpPercent > SETUP_HP_THRESHOLD
+        ? SETUP_MOVE_SCORE
+        : 0
     }
 
     if (RECOVERY_MOVES.has(moveName)) {
@@ -219,7 +276,7 @@ export class HeuristicAI implements AIPlayer {
 
     if (HAZARD_REMOVAL_MOVES.has(moveName)) return this.scoreHazardRemoval(state)
 
-    return 5
+    return GENERIC_STATUS_SCORE
   }
 
   private scoreHazardRemoval(state: BattleState): number {
@@ -280,16 +337,18 @@ export class HeuristicAI implements AIPlayer {
     prediction?: PredictedSet,
   ): number {
     const matchup = this.evaluateMatchup(switchTarget, opponent)
-    let score = matchup * 40 + (switchTarget.hpPercent / 100) * 10
+    let score =
+      matchup * SWITCH_SCORING.MATCHUP_MULTIPLIER +
+      (switchTarget.hpPercent / 100) * SWITCH_SCORING.HP_MULTIPLIER
 
-    if (matchup < UNFAVORABLE_MATCHUP_THRESHOLD) score -= 30
+    if (matchup < UNFAVORABLE_MATCHUP_THRESHOLD) score -= SWITCH_SCORING.UNFAVORABLE_PENALTY
 
     const oppTypes = getSpeciesTypes(opponent.name)
     const switchTypes = getSpeciesTypes(switchTarget.name)
     for (const t of oppTypes) {
       const eff = getTypeEffectiveness(t, switchTypes)
-      if (eff < 1) score += 10
-      if (eff === 0) score += 20
+      if (eff < 1) score += SWITCH_SCORING.RESIST_BONUS
+      if (eff === 0) score += SWITCH_SCORING.IMMUNITY_BONUS
     }
 
     if (prediction?.predictedMoves.length) {
@@ -297,7 +356,7 @@ export class HeuristicAI implements AIPlayer {
         const moveData = getRawMove(moveName)
         if (!moveData?.exists || moveData.category === "Status") continue
         const eff = getTypeEffectiveness(moveData.type as PokemonType, switchTypes)
-        if (eff > 1) score -= 15 * prediction.confidence
+        if (eff > 1) score -= SWITCH_SCORING.PREDICTED_SE_PENALTY * prediction.confidence
       }
     }
 

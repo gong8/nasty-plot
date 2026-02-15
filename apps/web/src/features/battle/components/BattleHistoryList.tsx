@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Download } from "lucide-react"
 import { Pagination } from "@/components/pagination"
-import { EmptyState } from "@/components/empty-state"
+import { EmptyState } from "@/components/EmptyState"
 import { timeAgo } from "@/lib/format-time"
 import type { BattleSummary } from "../hooks/use-team-battles"
 

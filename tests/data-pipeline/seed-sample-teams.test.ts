@@ -49,12 +49,13 @@ vi.mock("#data-pipeline/data/sample-teams", () => ({
 import { prisma } from "@nasty-plot/db"
 import { createSampleTeam, extractPokemonIds } from "@nasty-plot/teams"
 import { upsertSyncLog } from "@nasty-plot/smogon-data"
+import { asMock } from "../test-utils"
 
-const mockCount = prisma.sampleTeam.count as ReturnType<typeof vi.fn>
-const mockDeleteMany = prisma.sampleTeam.deleteMany as ReturnType<typeof vi.fn>
-const mockCreateSampleTeam = createSampleTeam as ReturnType<typeof vi.fn>
-const mockExtractPokemonIds = extractPokemonIds as ReturnType<typeof vi.fn>
-const mockUpsertSyncLog = upsertSyncLog as ReturnType<typeof vi.fn>
+const mockCount = asMock(prisma.sampleTeam.count)
+const mockDeleteMany = asMock(prisma.sampleTeam.deleteMany)
+const mockCreateSampleTeam = asMock(createSampleTeam)
+const mockExtractPokemonIds = asMock(extractPokemonIds)
+const mockUpsertSyncLog = asMock(upsertSyncLog)
 
 // ---------------------------------------------------------------------------
 // Tests

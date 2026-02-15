@@ -1,8 +1,8 @@
 "use client"
 
 import { useState, useCallback, useRef, useEffect } from "react"
-import { usePageContext } from "@/features/chat/context/page-context-provider"
-import { useChatSidebar } from "@/features/chat/context/chat-provider"
+import { usePageContext } from "@/features/chat/context/PageContextProvider"
+import { useChatSidebar } from "@/features/chat/context/ChatProvider"
 import { useQueryClient } from "@tanstack/react-query"
 import type { ChatMessageMetadata, AutoAnalyzeDepth } from "@nasty-plot/core"
 import { fetchApiData } from "@/lib/api-client"

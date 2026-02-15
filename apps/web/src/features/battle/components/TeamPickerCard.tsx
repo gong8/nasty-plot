@@ -2,7 +2,7 @@
 
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@nasty-plot/ui"
-import { PokemonSpriteRow } from "@/components/pokemon-sprite-row"
+import { PokemonSpriteRow } from "@/components/PokemonSpriteRow"
 import type { TeamPickerSource } from "./TeamPicker"
 
 interface TeamPickerCardProps {

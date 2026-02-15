@@ -1,6 +1,7 @@
 import { getRecommendations } from "@nasty-plot/recommendations"
 import type { PokemonType } from "@nasty-plot/core"
-import { DEFAULT_LEVEL, DEFAULT_EVS, DEFAULT_IVS, MAX_SINGLE_EV } from "@nasty-plot/core"
+import { DEFAULT_EVS, DEFAULT_IVS, DEFAULT_LEVEL, MAX_SINGLE_EV } from "@nasty-plot/core"
+import { asMock, makeTeamData, makeSpecies as makeSpeciesBase } from "../test-utils"
 
 // ---------------------------------------------------------------------------
 // Mocks
@@ -28,25 +29,17 @@ import { getSpecies } from "@nasty-plot/pokemon-data"
 import { getUsageBasedRecommendations } from "#recommendations/usage-recommender.service"
 import { getCoverageBasedRecommendations } from "#recommendations/coverage-recommender.service"
 
-const mockGetTeam = getTeam as ReturnType<typeof vi.fn>
-const mockGetSpecies = getSpecies as ReturnType<typeof vi.fn>
-const mockUsageRecs = getUsageBasedRecommendations as ReturnType<typeof vi.fn>
-const mockCoverageRecs = getCoverageBasedRecommendations as ReturnType<typeof vi.fn>
+const mockGetTeam = asMock(getTeam)
+const mockGetSpecies = asMock(getSpecies)
+const mockUsageRecs = asMock(getUsageBasedRecommendations)
+const mockCoverageRecs = asMock(getCoverageBasedRecommendations)
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
 function makeSpecies(id: string, name: string, types: PokemonType[]) {
-  return {
-    id,
-    name,
-    num: 1,
-    types,
-    baseStats: { hp: 80, atk: 80, def: 80, spa: 80, spd: 80, spe: 80 },
-    abilities: { "0": "Ability" },
-    weightkg: 50,
-  }
+  return makeSpeciesBase(id, types, { name })
 }
 
 function makeSlot(position: number, pokemonId: string, species?: ReturnType<typeof makeSpecies>) {
@@ -59,23 +52,9 @@ function makeSlot(position: number, pokemonId: string, species?: ReturnType<type
     nature: "Hardy",
     teraType: undefined,
     level: DEFAULT_LEVEL,
-    moves: ["tackle", undefined, undefined, undefined],
+    moves: ["tackle", undefined, undefined, undefined] as [string, string?, string?, string?],
     evs: { ...DEFAULT_EVS },
     ivs: { ...DEFAULT_IVS },
-  }
-}
-
-function makeTeamData(slots: ReturnType<typeof makeSlot>[]) {
-  return {
-    id: "team-1",
-    name: "Test Team",
-    formatId: "gen9ou",
-    mode: "freeform",
-    source: "manual",
-    isArchived: false,
-    slots,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
   }
 }
 

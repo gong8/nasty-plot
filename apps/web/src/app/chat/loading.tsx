@@ -1,5 +1,5 @@
 import { Skeleton } from "@/components/ui/skeleton"
-import { SkeletonGrid } from "@/components/skeleton-grid"
+import { SkeletonGrid } from "@/components/SkeletonGrid"
 
 export default function ChatLoading() {
   return (

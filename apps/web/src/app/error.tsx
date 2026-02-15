@@ -1,6 +1,6 @@
 "use client"
 
-import { ErrorPage } from "@/components/error-page"
+import { ErrorPage } from "@/components/ErrorPage"
 import { PECHARUNT_SPRITE_URL } from "@/lib/constants"
 
 export default function Error({ error, reset }: { error: Error; reset: () => void }) {

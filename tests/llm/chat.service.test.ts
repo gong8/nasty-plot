@@ -1,4 +1,5 @@
 import { streamChat } from "@nasty-plot/llm"
+import { asMock } from "../test-utils"
 
 // ---------------------------------------------------------------------------
 // Mocks
@@ -237,9 +238,7 @@ describe("streamChat", () => {
 
   it("passes disallowed MCP tools when page context has pageType", async () => {
     const { getDisallowedMcpTools } = await import("#llm/tool-context")
-    ;(getDisallowedMcpTools as ReturnType<typeof vi.fn>).mockReturnValue([
-      "mcp__nasty-plot__create_team",
-    ])
+    asMock(getDisallowedMcpTools).mockReturnValue(["mcp__nasty-plot__create_team"])
 
     const stream = await streamChat({
       messages: [{ role: "user", content: "Hi" }],
@@ -367,7 +366,7 @@ describe("streamChat", () => {
 
   it("includes context mode prompt when contextMode is set", async () => {
     const { getDisallowedMcpToolsForContextMode } = await import("#llm/tool-context")
-    ;(getDisallowedMcpToolsForContextMode as ReturnType<typeof vi.fn>).mockReturnValue([])
+    asMock(getDisallowedMcpToolsForContextMode).mockReturnValue([])
 
     const stream = await streamChat({
       messages: [{ role: "user", content: "Hi" }],
@@ -385,9 +384,7 @@ describe("streamChat", () => {
 
   it("uses context mode tool filtering instead of page-based when contextMode is set", async () => {
     const { getDisallowedMcpToolsForContextMode } = await import("#llm/tool-context")
-    ;(getDisallowedMcpToolsForContextMode as ReturnType<typeof vi.fn>).mockReturnValue([
-      "mcp__nasty-plot__create_team",
-    ])
+    asMock(getDisallowedMcpToolsForContextMode).mockReturnValue(["mcp__nasty-plot__create_team"])
 
     const stream = await streamChat({
       messages: [{ role: "user", content: "Hi" }],
@@ -453,7 +450,7 @@ describe("streamChat", () => {
 
   it("disables all tools when disableAllTools is true", async () => {
     const { getAllMcpToolNames } = await import("#llm/tool-context")
-    ;(getAllMcpToolNames as ReturnType<typeof vi.fn>).mockReturnValue([
+    asMock(getAllMcpToolNames).mockReturnValue([
       "mcp__nasty-plot__get_pokemon",
       "mcp__nasty-plot__create_team",
     ])

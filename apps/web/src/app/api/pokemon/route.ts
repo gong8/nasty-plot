@@ -36,7 +36,7 @@ export async function GET(request: Request) {
   }
 
   if ((sort as SortMode) === "usage" && formatId) {
-    const usageStats = await getUsageStats(formatId, { limit: 9999 })
+    const usageStats = await getUsageStats(formatId, { limit: 200 })
     const rankMap = new Map<string, number>()
     for (const entry of usageStats) {
       rankMap.set(entry.pokemonId, entry.rank)

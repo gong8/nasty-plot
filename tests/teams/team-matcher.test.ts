@@ -7,6 +7,7 @@ import {
 } from "@nasty-plot/teams"
 import type { TeamSlotData } from "@nasty-plot/core"
 import { DEFAULT_EVS, DEFAULT_IVS, DEFAULT_LEVEL } from "@nasty-plot/core"
+import { asMock } from "../test-utils"
 
 vi.mock("@nasty-plot/db", () => ({
   prisma: {
@@ -18,7 +19,7 @@ vi.mock("@nasty-plot/db", () => ({
 
 import { prisma } from "@nasty-plot/db"
 
-const mockFindMany = prisma.team.findMany as ReturnType<typeof vi.fn>
+const mockFindMany = asMock(prisma.team.findMany)
 
 function makeSlot(pokemonId: string, moves: string[]): TeamSlotData {
   return {

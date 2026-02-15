@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect } from "react"
-import { useChatSidebar } from "@/features/chat/context/chat-provider"
+import { useChatSidebar } from "@/features/chat/context/ChatProvider"
 import { PECHARUNT_SPRITE_URL } from "@/lib/constants"
 
 // The /chat route opens the sidebar automatically.

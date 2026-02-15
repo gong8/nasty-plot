@@ -1,18 +1,13 @@
-import type { TeamCreateInput, TeamSlotInput } from "@nasty-plot/core"
-import {
-  DEFAULT_EVS,
-  DEFAULT_IVS,
-  DEFAULT_LEVEL,
-  MAX_SINGLE_EV,
-  PERFECT_IV,
-  TEAM_SIZE,
-} from "@nasty-plot/core"
+import type { TeamCreateInput } from "@nasty-plot/core"
+import { MAX_SINGLE_EV, PERFECT_IV, TEAM_SIZE } from "@nasty-plot/core"
+import { asMock, makeDbTeam, makeDbSlot, makeSlotInput } from "../test-utils"
 import {
   createTeam,
   getTeam,
   listTeams,
   updateTeam,
   deleteTeam,
+  cleanupEmptyTeams,
   addSlot,
   updateSlot,
   removeSlot,
@@ -36,6 +31,7 @@ vi.mock("@nasty-plot/db", () => ({
       update: vi.fn(),
       updateMany: vi.fn(),
       delete: vi.fn(),
+      deleteMany: vi.fn(),
     },
     teamSlot: {
       count: vi.fn(),
@@ -54,88 +50,27 @@ vi.mock("@nasty-plot/pokemon-data", () => ({
 
 import { prisma } from "@nasty-plot/db"
 
-const mockFormatUpsert = prisma.format.upsert as ReturnType<typeof vi.fn>
-const mockTeamCreate = prisma.team.create as ReturnType<typeof vi.fn>
-const mockTeamFindUnique = prisma.team.findUnique as ReturnType<typeof vi.fn>
-const mockTeamFindMany = prisma.team.findMany as ReturnType<typeof vi.fn>
-const mockTeamCount = prisma.team.count as ReturnType<typeof vi.fn>
-const mockTeamUpdate = prisma.team.update as ReturnType<typeof vi.fn>
-const mockTeamDelete = prisma.team.delete as ReturnType<typeof vi.fn>
-const mockSlotCount = prisma.teamSlot.count as ReturnType<typeof vi.fn>
-const mockSlotCreate = prisma.teamSlot.create as ReturnType<typeof vi.fn>
-const mockSlotUpdate = prisma.teamSlot.update as ReturnType<typeof vi.fn>
-const mockSlotDelete = prisma.teamSlot.delete as ReturnType<typeof vi.fn>
-const mockSlotDeleteMany = prisma.teamSlot.deleteMany as ReturnType<typeof vi.fn>
-const mockSlotFindMany = prisma.teamSlot.findMany as ReturnType<typeof vi.fn>
+const mockFormatUpsert = asMock(prisma.format.upsert)
+const mockTeamCreate = asMock(prisma.team.create)
+const mockTeamFindUnique = asMock(prisma.team.findUnique)
+const mockTeamFindMany = asMock(prisma.team.findMany)
+const mockTeamCount = asMock(prisma.team.count)
+const mockTeamUpdate = asMock(prisma.team.update)
+const mockTeamDelete = asMock(prisma.team.delete)
+const mockTeamDeleteMany = asMock(prisma.team.deleteMany)
+const mockTeamUpdateMany = asMock(prisma.team.updateMany)
+const mockSlotCount = asMock(prisma.teamSlot.count)
+const mockSlotCreate = asMock(prisma.teamSlot.create)
+const mockSlotUpdate = asMock(prisma.teamSlot.update)
+const mockSlotDelete = asMock(prisma.teamSlot.delete)
+const mockSlotDeleteMany = asMock(prisma.teamSlot.deleteMany)
+const mockSlotFindMany = asMock(prisma.teamSlot.findMany)
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-function makeDbTeam(overrides?: Record<string, unknown>) {
-  const now = new Date()
-  return {
-    id: "team-1",
-    name: "Test Team",
-    formatId: "gen9ou",
-    mode: "freeform",
-    notes: null,
-    parentId: null,
-    branchName: null,
-    isArchived: false,
-    createdAt: now,
-    updatedAt: now,
-    slots: [],
-    ...overrides,
-  }
-}
-
-function makeDbSlot(overrides?: Record<string, unknown>) {
-  return {
-    id: 1,
-    teamId: "team-1",
-    position: 1,
-    pokemonId: "garchomp",
-    nickname: null,
-    ability: "Rough Skin",
-    item: "Leftovers",
-    nature: "Jolly",
-    teraType: null,
-    level: DEFAULT_LEVEL,
-    move1: "Earthquake",
-    move2: "Dragon Claw",
-    move3: null,
-    move4: null,
-    evHp: 0,
-    evAtk: MAX_SINGLE_EV,
-    evDef: 0,
-    evSpA: 0,
-    evSpD: 4,
-    evSpe: MAX_SINGLE_EV,
-    ivHp: PERFECT_IV,
-    ivAtk: PERFECT_IV,
-    ivDef: PERFECT_IV,
-    ivSpA: PERFECT_IV,
-    ivSpD: PERFECT_IV,
-    ivSpe: PERFECT_IV,
-    ...overrides,
-  }
-}
-
-function makeSlotInput(overrides?: Partial<TeamSlotInput>): TeamSlotInput {
-  return {
-    position: 1,
-    pokemonId: "garchomp",
-    ability: "Rough Skin",
-    item: "Leftovers",
-    nature: "Jolly",
-    level: DEFAULT_LEVEL,
-    moves: ["Earthquake", "Dragon Claw", undefined, undefined],
-    evs: { ...DEFAULT_EVS, atk: MAX_SINGLE_EV, spe: MAX_SINGLE_EV },
-    ivs: DEFAULT_IVS,
-    ...overrides,
-  }
-}
+// Factories imported from ../test-utils
 
 // ---------------------------------------------------------------------------
 // Tests
@@ -348,7 +283,7 @@ describe("deleteTeam", () => {
 
   it("deletes team by id", async () => {
     mockTeamFindUnique.mockResolvedValue({ parentId: null })
-    ;(prisma.team.updateMany as ReturnType<typeof vi.fn>).mockResolvedValue({ count: 0 })
+    asMock(prisma.team.updateMany).mockResolvedValue({ count: 0 })
     mockTeamDelete.mockResolvedValue({})
 
     await deleteTeam("team-1")
@@ -536,5 +471,36 @@ describe("reorderSlots", () => {
 
     // Should be called for temp positions + final positions
     expect(mockSlotUpdate).toHaveBeenCalled()
+  })
+})
+
+describe("cleanupEmptyTeams", () => {
+  beforeEach(() => vi.clearAllMocks())
+
+  it("returns 0 when no empty teams exist", async () => {
+    mockTeamFindMany.mockResolvedValue([])
+
+    const result = await cleanupEmptyTeams()
+
+    expect(result).toBe(0)
+    expect(mockTeamUpdateMany).not.toHaveBeenCalled()
+    expect(mockTeamDeleteMany).not.toHaveBeenCalled()
+  })
+
+  it("batch deletes empty teams", async () => {
+    mockTeamFindMany.mockResolvedValue([{ id: "t1" }, { id: "t2" }])
+    mockTeamUpdateMany.mockResolvedValue({ count: 0 })
+    mockTeamDeleteMany.mockResolvedValue({ count: 2 })
+
+    const result = await cleanupEmptyTeams()
+
+    expect(result).toBe(2)
+    expect(mockTeamUpdateMany).toHaveBeenCalledWith({
+      where: { parentId: { in: ["t1", "t2"] } },
+      data: { parentId: null },
+    })
+    expect(mockTeamDeleteMany).toHaveBeenCalledWith({
+      where: { id: { in: ["t1", "t2"] } },
+    })
   })
 })

@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto"
 import { DEFAULT_MCP_PORT } from "@nasty-plot/core"
 import express from "express"
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js"
@@ -47,7 +48,7 @@ app.post("/mcp", async (req, res) => {
   }
 
   const transport = new StreamableHTTPServerTransport({
-    sessionIdGenerator: () => `session-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    sessionIdGenerator: () => randomUUID(),
   })
 
   const server = createServer()

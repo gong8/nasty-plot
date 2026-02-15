@@ -177,66 +177,6 @@ export function isMegaStone(itemId: string): boolean {
   return item.exists && !!item.megaStone
 }
 
-/** Get all valid Mega Stones for a given Pokemon */
-export function getMegaStonesFor(pokemonId: string): ItemData[] {
-  const species = dex.species.get(pokemonId)
-  if (!species?.exists) return []
-  const baseName = species.baseSpecies || species.name
-  const results: ItemData[] = []
-  for (const item of dex.items.all()) {
-    if (
-      item.megaStone &&
-      baseName in item.megaStone &&
-      !EXCLUDED_NONSTANDARD.has(item.isNonstandard as string)
-    ) {
-      results.push(toItemData(item))
-    }
-  }
-  return results
-}
-
-/** Get the Mega form a Pokemon transforms into when holding a specific Mega Stone */
-export function getMegaForm(pokemonId: string, itemId: string): PokemonSpecies | null {
-  const item = dex.items.get(itemId)
-  if (!item.exists || !item.megaStone) return null
-  const species = dex.species.get(pokemonId)
-  if (!species?.exists) return null
-  const baseName = species.baseSpecies || species.name
-  const megaFormName = item.megaStone[baseName]
-  if (!megaFormName) return null
-  const megaSpecies = dex.species.get(megaFormName)
-  if (!megaSpecies?.exists) return null
-  return toSpecies(megaSpecies)
-}
-
-/** Check if an item is a Z-Crystal */
-export function isZCrystal(itemId: string): boolean {
-  const item = dex.items.get(itemId)
-  return item.exists && item.zMove !== undefined
-}
-
-/** Get the type a Z-Crystal powers up (e.g., "Electrium Z" -> "Electric"). Returns null for signature Z-Crystals. */
-export function getZCrystalType(itemId: string): PokemonType | null {
-  const item = dex.items.get(itemId)
-  if (!item.exists || !item.zMove) return null
-  if (item.zMove === true && item.zMoveType) {
-    return item.zMoveType as PokemonType
-  }
-  return null
-}
-
-/** Get signature Z-Crystal info (e.g., "Pikanium Z" -> { pokemonId, moveId }). Returns null for type-based Z-Crystals. */
-export function getSignatureZCrystal(itemId: string): { pokemonId: string; moveId: string } | null {
-  const item = dex.items.get(itemId)
-  if (!item.exists || !item.zMove) return null
-  if (typeof item.zMove === "string" && item.zMoveFrom && item.itemUser?.[0]) {
-    const species = dex.species.get(item.itemUser[0])
-    const move = dex.moves.get(item.zMoveFrom)
-    return { pokemonId: species.id, moveId: move.id }
-  }
-  return null
-}
-
 export function enrichWithSpeciesData(pokemonId: string): {
   pokemonName: string | undefined
   types: PokemonType[] | undefined

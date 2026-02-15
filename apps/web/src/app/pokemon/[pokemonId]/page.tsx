@@ -1,3 +1,4 @@
+import Image from "next/image"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { ArrowLeft } from "lucide-react"
@@ -14,7 +15,7 @@ import {
 import { getSpecies, getLearnset, getMove } from "@nasty-plot/pokemon-data"
 import { getSetsForPokemon } from "@nasty-plot/smogon-data"
 import { StatBar, TypeBadge } from "@nasty-plot/ui"
-import { CompetitiveData } from "./competitive-data"
+import { CompetitiveData } from "./CompetitiveData"
 import { getActiveFormatsFromDb, getUsageByFormat } from "./actions"
 import { STATS, getBaseStatTotal, type MoveData, type StatName } from "@nasty-plot/core"
 
@@ -70,13 +71,13 @@ export default async function PokemonDetailPage({ params }: Props) {
           {/* Left column: Sprite + basic info */}
           <Card className="lg:col-span-1">
             <CardContent className="p-6 flex flex-col items-center gap-4">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
+              <Image
                 src={spriteUrl}
                 alt={species.name}
                 width={160}
                 height={160}
                 className="pixelated"
+                loading="lazy"
               />
               <h1 className="text-2xl font-bold">{species.name}</h1>
               <span className="text-sm text-muted-foreground">#{species.num}</span>

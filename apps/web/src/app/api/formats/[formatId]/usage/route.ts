@@ -37,7 +37,9 @@ export async function GET(
       pageSize: searchParams.limit,
     }
 
-    return NextResponse.json(response)
+    return NextResponse.json(response, {
+      headers: { "Cache-Control": "public, max-age=3600, stale-while-revalidate=600" },
+    })
   } catch (err) {
     return apiErrorResponse(err, { code: "USAGE_STATS_ERROR" })
   }

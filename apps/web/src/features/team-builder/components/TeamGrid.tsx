@@ -1,0 +1,141 @@
+"use client"
+
+import { memo } from "react"
+import { Plus } from "lucide-react"
+import { Card, CardContent } from "@/components/ui/card"
+import { TEAM_SIZE, type PokemonType, type TeamData, type TeamSlotData } from "@nasty-plot/core"
+import { cn, PokemonSprite, TypeBadge } from "@nasty-plot/ui"
+
+interface SlotCardProps {
+  slot: TeamSlotData
+  isSelected: boolean
+  isVertical: boolean
+  onSelect: (position: number) => void
+}
+
+const SlotCard = memo(function SlotCard({ slot, isSelected, isVertical, onSelect }: SlotCardProps) {
+  return (
+    <Card
+      className={cn(
+        "cursor-pointer transition-all hover:shadow-md dark:hover:shadow-[0_0_15px_var(--color-glow-primary)] border-primary/20",
+        isSelected &&
+          "ring-2 ring-primary shadow-md dark:shadow-[0_0_15px_var(--color-glow-primary)]",
+        isVertical ? "flex flex-row items-center overflow-hidden" : "",
+      )}
+      onClick={() => onSelect(slot.position)}
+    >
+      <CardContent
+        className={cn(
+          "p-3 w-full",
+          isVertical ? "flex items-center gap-4 py-2 px-3" : "flex flex-col items-center gap-2",
+        )}
+      >
+        <div className="shrink-0">
+          <PokemonSprite pokemonId={slot.pokemonId} size={isVertical ? 40 : 48} />
+        </div>
+
+        <div
+          className={cn(
+            "flex flex-col min-w-0",
+            isVertical ? "flex-1 items-start" : "items-center w-full",
+          )}
+        >
+          <span className="text-sm font-medium truncate w-full text-foreground/90">
+            {slot.nickname || slot.species?.name || slot.pokemonId}
+          </span>
+
+          <div className="flex gap-1 mt-1">
+            {slot.species?.types?.map((t: PokemonType) => (
+              <TypeBadge key={t} type={t} size="sm" />
+            ))}
+          </div>
+
+          {isVertical && (
+            <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground w-full">
+              {slot.item && <span className="truncate max-w-[80px]">{slot.item}</span>}
+              {slot.item && slot.ability && <span>•</span>}
+              {slot.ability && <span className="truncate max-w-[100px]">{slot.ability}</span>}
+            </div>
+          )}
+        </div>
+
+        {!isVertical && slot.item && (
+          <span className="text-xs text-muted-foreground truncate w-full text-center">
+            {slot.item}
+          </span>
+        )}
+        {!isVertical && slot.ability && (
+          <span className="text-xs text-muted-foreground truncate w-full text-center">
+            {slot.ability}
+          </span>
+        )}
+      </CardContent>
+    </Card>
+  )
+})
+
+interface TeamGridProps {
+  team: TeamData
+  selectedSlot: number | null
+  onSelectSlot: (position: number) => void
+  onAddSlot: () => void
+  layout?: "grid" | "vertical"
+}
+
+export const TeamGrid = memo(function TeamGrid({
+  team,
+  selectedSlot,
+  onSelectSlot,
+  onAddSlot,
+  layout = "grid",
+}: TeamGridProps) {
+  const emptyCount = TEAM_SIZE - team.slots.length
+
+  const isVertical = layout === "vertical"
+
+  return (
+    <div
+      className={cn(
+        isVertical ? "space-y-3" : "grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6",
+      )}
+    >
+      {team.slots.map((slot) => (
+        <SlotCard
+          key={slot.position}
+          slot={slot}
+          isSelected={selectedSlot === slot.position}
+          isVertical={isVertical}
+          onSelect={onSelectSlot}
+        />
+      ))}
+
+      {Array.from({ length: emptyCount }).map((_, i) => (
+        <Card
+          key={`empty-${i}`}
+          className={cn(
+            "cursor-pointer border-dashed transition-all hover:shadow-md hover:border-primary/50 bg-muted/20",
+            isVertical ? "h-16 flex items-center justify-center" : "",
+          )}
+          onClick={onAddSlot}
+        >
+          <CardContent
+            className={cn(
+              "flex items-center justify-center p-3 text-muted-foreground",
+              isVertical ? "gap-2 w-full py-0" : "flex-col gap-2 min-h-[140px]",
+            )}
+          >
+            <div
+              className={cn(
+                "flex items-center justify-center rounded-full bg-muted",
+                isVertical ? "h-8 w-8" : "h-12 w-12",
+              )}
+            >
+              <Plus className={cn("text-muted-foreground", isVertical ? "h-4 w-4" : "h-6 w-6")} />
+            </div>
+            <span className="text-sm font-medium">Add Pokemon</span>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  )
+})

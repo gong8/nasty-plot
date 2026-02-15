@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Switch } from "@/components/ui/switch"
-import { PokemonSpriteRow } from "@/components/pokemon-sprite-row"
+import { PokemonSpriteRow } from "@/components/PokemonSpriteRow"
 import { useTeams, useRestoreTeam } from "@/features/teams/hooks/use-teams"
 import { PECHARUNT_SPRITE_URL } from "@/lib/constants"
 
