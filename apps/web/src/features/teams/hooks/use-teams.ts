@@ -22,7 +22,10 @@ export function useTeams(formatId?: string, includeArchived?: boolean) {
   const qs = searchParams.toString()
   return useQuery<TeamData[]>({
     queryKey: ["teams", formatId, includeArchived],
-    queryFn: () => fetchJson(`/api/teams${qs ? `?${qs}` : ""}`),
+    queryFn: async () => {
+      const res = await fetchJson<{ data: TeamData[] }>(`/api/teams${qs ? `?${qs}` : ""}`)
+      return res.data
+    },
   })
 }
 

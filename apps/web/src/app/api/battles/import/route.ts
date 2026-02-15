@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from "next/server"
-import { apiErrorResponse, badRequestResponse } from "../../../../lib/api-error"
+import { apiErrorResponse } from "../../../../lib/api-error"
 import { importFromReplayUrl, importFromRawLog } from "@nasty-plot/battle-engine"
 import { createBattle } from "@nasty-plot/battle-engine/db"
-import { ensureFormatExists } from "@nasty-plot/formats"
+import { ensureFormatExists } from "@nasty-plot/formats/db"
 import { findMatchingTeams, createTeamFromExtractedData } from "@nasty-plot/teams"
 import { enrichExtractedTeam } from "@nasty-plot/smogon-data"
 import type { ExtractedTeamData } from "@nasty-plot/core"
+import { validateBody } from "../../../../lib/validation"
+import { battleImportSchema } from "../../../../lib/schemas/battle.schemas"
 
 const MATCH_CONFIDENCE_THRESHOLD = 60
 const PLAYER_SIDE_MAP: Record<string, string> = { p1: "team1", p2: "team2" }
@@ -26,20 +28,12 @@ const SKIPPED_MATCH: TeamImportResult = {
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json()
-    const {
-      replayUrl,
-      rawLog,
-      autoMatchTeams = true,
-      autoCreateTeams = true,
-      inferSets = true,
-    } = body
+    const [body, error] = await validateBody(req, battleImportSchema)
+    if (error) return error
 
-    if (!replayUrl && !rawLog) {
-      return badRequestResponse("Either replayUrl or rawLog is required")
-    }
+    const { replayUrl, rawLog, autoMatchTeams, autoCreateTeams, inferSets } = body
 
-    const parsed = replayUrl ? await importFromReplayUrl(replayUrl) : importFromRawLog(rawLog)
+    const parsed = replayUrl ? await importFromReplayUrl(replayUrl) : importFromRawLog(rawLog!)
 
     if (inferSets) {
       const [enriched1, enriched2] = await Promise.all([
@@ -95,8 +89,8 @@ export async function POST(req: NextRequest) {
       },
       { status: 201 },
     )
-  } catch (error) {
-    return apiErrorResponse(error, {
+  } catch (err) {
+    return apiErrorResponse(err, {
       fallback: "Failed to import battle",
     })
   }

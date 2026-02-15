@@ -1,20 +1,15 @@
 import { NextRequest, NextResponse } from "next/server"
-import {
-  apiErrorResponse,
-  badRequestResponse,
-  notFoundResponse,
-} from "../../../../../lib/api-error"
+import { apiErrorResponse, notFoundResponse } from "../../../../../lib/api-error"
 import { getBattleCommentary, updateBattleCommentary } from "@nasty-plot/battle-engine/db"
+import { validateBody } from "../../../../../lib/validation"
+import { battleCommentaryUpdateSchema } from "../../../../../lib/schemas/battle.schemas"
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ battleId: string }> }) {
   const { battleId } = await params
 
   try {
-    const { turn, text } = await req.json()
-
-    if (typeof turn !== "number" || typeof text !== "string") {
-      return badRequestResponse("Invalid turn or text")
-    }
+    const [body, error] = await validateBody(req, battleCommentaryUpdateSchema)
+    if (error) return error
 
     const battle = await getBattleCommentary(battleId)
 
@@ -26,15 +21,15 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ batt
       ? JSON.parse(battle.commentary)
       : {}
 
-    commentaryByTurn[String(turn)] = text
+    commentaryByTurn[String(body.turn)] = body.text
 
     const updated = await updateBattleCommentary(battleId, JSON.stringify(commentaryByTurn))
 
     return NextResponse.json({
       commentary: JSON.parse(updated.commentary!),
     })
-  } catch (error) {
-    return apiErrorResponse(error, {
+  } catch (err) {
+    return apiErrorResponse(err, {
       fallback: "Failed to save commentary",
     })
   }

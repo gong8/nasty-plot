@@ -207,7 +207,7 @@ export async function runAutomatedBattle(
   } catch {
     /* ok */
   }
-  await outputPromise.catch(() => {})
+  await outputPromise.catch((err) => console.error("[automated-battle-manager]:", err))
 
   const winner = state.winner === "p1" ? "p1" : state.winner === "p2" ? "p2" : "draw"
 

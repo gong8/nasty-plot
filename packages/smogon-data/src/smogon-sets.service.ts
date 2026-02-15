@@ -1,10 +1,12 @@
 import { prisma } from "@nasty-plot/db"
-import { toId } from "@nasty-plot/core"
+import { toId, TTLCache } from "@nasty-plot/core"
 import type { SmogonSetData, NatureName, PokemonType } from "@nasty-plot/core"
 import { fetchSmogonData } from "./fetch-helper"
 import { resolveYearMonth, type SmogonChaosData } from "./usage-stats.service"
 import { generateSetsFromChaos } from "./chaos-sets.service"
 import { upsertSyncLog } from "./sync-log.service"
+
+const setsCache = new TTLCache<SmogonSetData[]>(5 * 60 * 1000) // 5 min
 
 function buildSetsUrl(formatId: string): string {
   return `https://data.pkmn.cc/sets/${formatId}.json`
@@ -45,13 +47,15 @@ interface SetDbFields {
   ivs: string | null
 }
 
-async function upsertSet(
+const TRANSACTION_CHUNK_SIZE = 500
+
+function buildUpsertSetOp(
   formatId: string,
   pokemonId: string,
   setName: string,
   fields: SetDbFields,
-): Promise<void> {
-  await prisma.smogonSet.upsert({
+) {
+  return prisma.smogonSet.upsert({
     where: {
       formatId_pokemonId_setName: { formatId, pokemonId, setName },
     },
@@ -62,6 +66,7 @@ async function upsertSet(
 
 /**
  * Fetch Smogon recommended sets from data.pkmn.cc and persist to DB.
+ * Collects all upsert operations and executes them in batched transactions.
  * @param formatId - The app's format ID (used for DB storage)
  * @param options.pkmnSetsId - Override format ID for the pkmn.cc URL (e.g. "gen9doublesou")
  */
@@ -88,6 +93,8 @@ export async function syncSmogonSets(
   let totalSets = 0
   let skipped = 0
 
+  const ops: ReturnType<typeof prisma.smogonSet.upsert>[] = []
+
   for (const [pokemonName, sets] of Object.entries(json)) {
     const pokemonId = toId(pokemonName)
     if (!pokemonId || !sets || typeof sets !== "object") {
@@ -104,19 +111,28 @@ export async function syncSmogonSets(
       const normalizedIvs = setData.ivs ? firstRecord(setData.ivs) : null
       const hasCustomIvs = normalizedIvs && Object.keys(normalizedIvs).length > 0
 
-      await upsertSet(formatId, pokemonId, setName, {
-        ability: firstOf(setData.ability ?? ""),
-        item: firstOf(setData.item ?? ""),
-        nature: firstOf(setData.nature ?? "Serious"),
-        teraType: setData.teraType ? firstOf(setData.teraType) : null,
-        moves: JSON.stringify(setData.moves ?? []),
-        evs: JSON.stringify(firstRecord(setData.evs ?? {})),
-        ivs: hasCustomIvs ? JSON.stringify(normalizedIvs) : null,
-      })
+      ops.push(
+        buildUpsertSetOp(formatId, pokemonId, setName, {
+          ability: firstOf(setData.ability ?? ""),
+          item: firstOf(setData.item ?? ""),
+          nature: firstOf(setData.nature ?? "Serious"),
+          teraType: setData.teraType ? firstOf(setData.teraType) : null,
+          moves: JSON.stringify(setData.moves ?? []),
+          evs: JSON.stringify(firstRecord(setData.evs ?? {})),
+          ivs: hasCustomIvs ? JSON.stringify(normalizedIvs) : null,
+        }),
+      )
 
       totalSets++
     }
   }
+
+  // Execute in chunks to avoid SQLite limits
+  for (let i = 0; i < ops.length; i += TRANSACTION_CHUNK_SIZE) {
+    await prisma.$transaction(ops.slice(i, i + TRANSACTION_CHUNK_SIZE))
+  }
+
+  setsCache.clear()
 
   const syncMessage = `Fetched ${totalSets} sets${skipped > 0 ? ` (${skipped} entries skipped)` : ""}`
   await upsertSyncLog("smogon-sets", formatId, syncMessage)
@@ -127,6 +143,7 @@ export async function syncSmogonSets(
 
 /**
  * Fallback: Generate sets from Smogon Chaos usage stats when pkmn.cc has no pre-compiled sets.
+ * Collects all upsert operations and executes them in batched transactions.
  */
 async function fetchAndSaveChaosSets(formatId: string, smogonStatsId: string): Promise<void> {
   const { url } = await resolveYearMonth(smogonStatsId)
@@ -139,8 +156,8 @@ async function fetchAndSaveChaosSets(formatId: string, smogonStatsId: string): P
 
   console.log(`[smogon-sets] Generated ${sets.length} sets from usage stats. Saving to DB...`)
 
-  for (const set of sets) {
-    await upsertSet(formatId, set.pokemonId, set.setName, {
+  const ops = sets.map((set) =>
+    buildUpsertSetOp(formatId, set.pokemonId, set.setName, {
       ability: set.ability,
       item: set.item,
       nature: set.nature,
@@ -148,8 +165,14 @@ async function fetchAndSaveChaosSets(formatId: string, smogonStatsId: string): P
       moves: JSON.stringify(set.moves),
       evs: JSON.stringify(set.evs),
       ivs: null,
-    })
+    }),
+  )
+
+  for (let i = 0; i < ops.length; i += TRANSACTION_CHUNK_SIZE) {
+    await prisma.$transaction(ops.slice(i, i + TRANSACTION_CHUNK_SIZE))
   }
+
+  setsCache.clear()
 
   await upsertSyncLog(
     "smogon-sets",
@@ -203,11 +226,17 @@ export async function getSetsForPokemon(
   formatId: string,
   pokemonId: string,
 ): Promise<SmogonSetData[]> {
+  const cacheKey = `${formatId}:${pokemonId}`
+  const cached = setsCache.get(cacheKey)
+  if (cached) return cached
+
   const rows = await prisma.smogonSet.findMany({
     where: { formatId, pokemonId },
   })
 
-  return rows.map(rowToSetData)
+  const result = rows.map(rowToSetData)
+  setsCache.set(cacheKey, result)
+  return result
 }
 
 /**
@@ -250,4 +279,9 @@ export async function getAllSetsForFormat(
   }
 
   return grouped
+}
+
+/** Clear the in-memory sets cache. Exported for testing. */
+export function clearSetsCache(): void {
+  setsCache.clear()
 }

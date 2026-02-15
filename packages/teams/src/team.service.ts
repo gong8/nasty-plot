@@ -1,5 +1,5 @@
 import { prisma } from "@nasty-plot/db"
-import { ensureFormatExists } from "@nasty-plot/formats"
+import { ensureFormatExists } from "@nasty-plot/formats/db"
 import { getSpecies } from "@nasty-plot/pokemon-data"
 import { statsToDbColumns, dbColumnsToStats } from "@nasty-plot/core"
 import type {
@@ -171,17 +171,28 @@ export async function getTeam(teamId: string): Promise<TeamData | null> {
 export async function listTeams(filters?: {
   formatId?: string
   includeArchived?: boolean
-}): Promise<TeamData[]> {
+  page?: number
+  pageSize?: number
+}): Promise<{ teams: TeamData[]; total: number }> {
   const where: Record<string, unknown> = {}
   if (filters?.formatId) where.formatId = filters.formatId
   if (!filters?.includeArchived) where.isArchived = false
 
-  const teams = await prisma.team.findMany({
-    where,
-    include: { slots: { orderBy: { position: "asc" } } },
-    orderBy: { updatedAt: "desc" },
-  })
-  return teams.map(dbTeamToDomain)
+  const page = filters?.page ?? 1
+  const pageSize = filters?.pageSize ?? 20
+  const skip = (page - 1) * pageSize
+
+  const [teams, total] = await Promise.all([
+    prisma.team.findMany({
+      where,
+      include: { slots: { orderBy: { position: "asc" } } },
+      orderBy: { updatedAt: "desc" },
+      skip,
+      take: pageSize,
+    }),
+    prisma.team.count({ where }),
+  ])
+  return { teams: teams.map(dbTeamToDomain), total }
 }
 
 export async function updateTeam(
@@ -276,14 +287,18 @@ export async function removeSlot(teamId: string, position: number): Promise<void
     orderBy: { position: "asc" },
   })
 
-  for (let i = 0; i < remaining.length; i++) {
-    const newPosition = i + 1
-    if (remaining[i].position !== newPosition) {
-      await prisma.teamSlot.update({
-        where: { id: remaining[i].id },
+  const updates = remaining
+    .map((slot, i) => ({ slot, newPosition: i + 1 }))
+    .filter(({ slot, newPosition }) => slot.position !== newPosition)
+    .map(({ slot, newPosition }) =>
+      prisma.teamSlot.update({
+        where: { id: slot.id },
         data: { position: newPosition },
-      })
-    }
+      }),
+    )
+
+  if (updates.length > 0) {
+    await prisma.$transaction(updates)
   }
 }
 
@@ -299,21 +314,20 @@ export async function reorderSlots(teamId: string, newOrder: number[]): Promise<
 
   const posToId = new Map(slots.map((s) => [s.position, s.id]))
 
-  // Use temporary positions to avoid unique constraint conflicts
-  for (let i = 0; i < slots.length; i++) {
-    await prisma.teamSlot.update({
-      where: { id: slots[i].id },
-      data: { position: REORDER_TEMP_OFFSET + i },
-    })
-  }
-
-  for (let i = 0; i < newOrder.length; i++) {
-    const slotId = posToId.get(newOrder[i])
-    if (slotId !== undefined) {
-      await prisma.teamSlot.update({
-        where: { id: slotId },
-        data: { position: i + 1 },
-      })
-    }
-  }
+  await prisma.$transaction([
+    // Move to temporary positions to avoid unique constraint conflicts
+    ...slots.map((s, i) =>
+      prisma.teamSlot.update({
+        where: { id: s.id },
+        data: { position: REORDER_TEMP_OFFSET + i },
+      }),
+    ),
+    // Move to final positions
+    ...newOrder.flatMap((oldPos, i) => {
+      const slotId = posToId.get(oldPos)
+      return slotId
+        ? [prisma.teamSlot.update({ where: { id: slotId }, data: { position: i + 1 } })]
+        : []
+    }),
+  ])
 }

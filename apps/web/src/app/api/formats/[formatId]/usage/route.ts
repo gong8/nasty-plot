@@ -2,20 +2,21 @@ import { NextRequest, NextResponse } from "next/server"
 import { apiErrorResponse } from "../../../../../lib/api-error"
 import { getUsageStats, getUsageStatsCount } from "@nasty-plot/smogon-data"
 import { enrichWithSpeciesData } from "@nasty-plot/pokemon-data"
-import { parseIntQueryParam, type PaginatedResponse, type UsageStatsEntry } from "@nasty-plot/core"
+import { type PaginatedResponse, type UsageStatsEntry } from "@nasty-plot/core"
+import { validateSearchParams } from "../../../../../lib/validation"
+import { formatUsageSearchSchema } from "../../../../../lib/schemas/format.schemas"
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ formatId: string }> },
 ) {
   const { formatId } = await params
-  const searchParams = request.nextUrl.searchParams
-  const limit = parseIntQueryParam(searchParams.get("limit"), 50, 1, 200)
-  const page = parseIntQueryParam(searchParams.get("page"), 1, 1, Number.MAX_SAFE_INTEGER)
+  const [searchParams, error] = validateSearchParams(request.url, formatUsageSearchSchema)
+  if (error) return error
 
   try {
     const [data, total] = await Promise.all([
-      getUsageStats(formatId, { limit, page }),
+      getUsageStats(formatId, { limit: searchParams.limit, page: searchParams.page }),
       getUsageStatsCount(formatId),
     ])
 
@@ -32,12 +33,12 @@ export async function GET(
     const response: PaginatedResponse<UsageStatsEntry> = {
       data: enriched,
       total,
-      page,
-      pageSize: limit,
+      page: searchParams.page,
+      pageSize: searchParams.limit,
     }
 
     return NextResponse.json(response)
-  } catch (error) {
-    return apiErrorResponse(error, { code: "USAGE_STATS_ERROR" })
+  } catch (err) {
+    return apiErrorResponse(err, { code: "USAGE_STATS_ERROR" })
   }
 }

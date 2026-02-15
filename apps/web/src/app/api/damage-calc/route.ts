@@ -1,23 +1,19 @@
 import { NextRequest, NextResponse } from "next/server"
 import { calculateDamage } from "@nasty-plot/damage-calc"
-import type { DamageCalcInput, ApiResponse, DamageCalcResult } from "@nasty-plot/core"
-import { apiErrorResponse, badRequestResponse } from "../../../lib/api-error"
+import type { ApiResponse, DamageCalcResult } from "@nasty-plot/core"
+import { apiErrorResponse } from "../../../lib/api-error"
+import { validateBody } from "../../../lib/validation"
+import { damageCalcSchema } from "../../../lib/schemas/battle.schemas"
 
 export async function POST(request: NextRequest) {
   try {
-    const body = (await request.json()) as DamageCalcInput
-
-    if (!body.attacker?.pokemonId || !body.defender?.pokemonId || !body.move) {
-      return badRequestResponse(
-        "Missing required fields: attacker.pokemonId, defender.pokemonId, move",
-        "INVALID_INPUT",
-      )
-    }
+    const [body, error] = await validateBody(request, damageCalcSchema)
+    if (error) return error
 
     const result = calculateDamage(body)
 
     return NextResponse.json({ data: result } satisfies ApiResponse<DamageCalcResult>)
-  } catch (error) {
-    return apiErrorResponse(error, { fallback: "Calculation failed", code: "CALC_ERROR" })
+  } catch (err) {
+    return apiErrorResponse(err, { fallback: "Calculation failed", code: "CALC_ERROR" })
   }
 }

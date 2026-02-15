@@ -106,7 +106,8 @@ describe("POST /api/battles/batch", () => {
     const data = await response.json()
 
     expect(response.status).toBe(400)
-    expect(data.error).toBe("Missing required fields")
+    expect(data.error).toBe("Validation failed")
+    expect(data.details).toBeDefined()
   })
 
   it("returns 400 when team pastes are missing", async () => {

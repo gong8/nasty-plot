@@ -26,11 +26,13 @@ import {
 
 vi.mock("@nasty-plot/db", () => ({
   prisma: {
+    $transaction: vi.fn((ops: Promise<unknown>[]) => Promise.all(ops)),
     format: { upsert: vi.fn() },
     team: {
       create: vi.fn(),
       findUnique: vi.fn(),
       findMany: vi.fn(),
+      count: vi.fn(),
       update: vi.fn(),
       updateMany: vi.fn(),
       delete: vi.fn(),
@@ -56,6 +58,7 @@ const mockFormatUpsert = prisma.format.upsert as ReturnType<typeof vi.fn>
 const mockTeamCreate = prisma.team.create as ReturnType<typeof vi.fn>
 const mockTeamFindUnique = prisma.team.findUnique as ReturnType<typeof vi.fn>
 const mockTeamFindMany = prisma.team.findMany as ReturnType<typeof vi.fn>
+const mockTeamCount = prisma.team.count as ReturnType<typeof vi.fn>
 const mockTeamUpdate = prisma.team.update as ReturnType<typeof vi.fn>
 const mockTeamDelete = prisma.team.delete as ReturnType<typeof vi.fn>
 const mockSlotCount = prisma.teamSlot.count as ReturnType<typeof vi.fn>
@@ -257,19 +260,24 @@ describe("listTeams", () => {
 
   it("lists all teams without filters", async () => {
     mockTeamFindMany.mockResolvedValue([makeDbTeam()])
+    mockTeamCount.mockResolvedValue(1)
 
     const result = await listTeams()
 
-    expect(result).toHaveLength(1)
+    expect(result.teams).toHaveLength(1)
+    expect(result.total).toBe(1)
     expect(mockTeamFindMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { isArchived: false },
+        skip: 0,
+        take: 20,
       }),
     )
   })
 
   it("filters by formatId", async () => {
     mockTeamFindMany.mockResolvedValue([])
+    mockTeamCount.mockResolvedValue(0)
 
     await listTeams({ formatId: "gen9ou" })
 

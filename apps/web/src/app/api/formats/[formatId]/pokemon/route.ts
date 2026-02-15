@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server"
 import { getFormat, getFormatPokemon } from "@nasty-plot/formats"
-import { parseIntQueryParam, type PaginatedResponse, type PokemonSpecies } from "@nasty-plot/core"
+import { type PaginatedResponse, type PokemonSpecies } from "@nasty-plot/core"
 import { notFoundResponse } from "../../../../../lib/api-error"
+import { validateSearchParams } from "../../../../../lib/validation"
+import { formatPokemonSearchSchema } from "../../../../../lib/schemas/format.schemas"
 
 export async function GET(request: Request, { params }: { params: Promise<{ formatId: string }> }) {
   const { formatId } = await params
@@ -11,27 +13,25 @@ export async function GET(request: Request, { params }: { params: Promise<{ form
     return notFoundResponse("Format")
   }
 
-  const { searchParams } = new URL(request.url)
-  const search = searchParams.get("search") ?? ""
-  const page = parseIntQueryParam(searchParams.get("page"), 1, 1, Number.MAX_SAFE_INTEGER)
-  const pageSize = parseIntQueryParam(searchParams.get("pageSize"), 50, 1, 100)
+  const [searchParams, error] = validateSearchParams(request.url, formatPokemonSearchSchema)
+  if (error) return error
 
   let species: PokemonSpecies[] = getFormatPokemon(formatId)
 
-  if (search) {
-    const lower = search.toLowerCase()
+  if (searchParams.search) {
+    const lower = searchParams.search.toLowerCase()
     species = species.filter((s) => s.name.toLowerCase().includes(lower))
   }
 
   const total = species.length
-  const start = (page - 1) * pageSize
-  const data = species.slice(start, start + pageSize)
+  const start = (searchParams.page - 1) * searchParams.pageSize
+  const data = species.slice(start, start + searchParams.pageSize)
 
   const response: PaginatedResponse<PokemonSpecies> = {
     data,
     total,
-    page,
-    pageSize,
+    page: searchParams.page,
+    pageSize: searchParams.pageSize,
   }
 
   return NextResponse.json(response)

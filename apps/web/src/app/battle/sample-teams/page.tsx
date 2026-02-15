@@ -17,17 +17,12 @@ import { DataStateRenderer } from "@/components/data-state-renderer"
 import { SampleTeamCard } from "@/features/battle/components/SampleTeamCard"
 import { ArrowLeft, Search } from "lucide-react"
 import Link from "next/link"
-import { getActiveFormats } from "@nasty-plot/formats"
+import type { FormatDefinition } from "@nasty-plot/core"
 import type { SampleTeamData } from "@nasty-plot/teams"
 import { useFetchData } from "@/lib/hooks/use-fetch-data"
 
 /** SampleTeam as returned by the API (createdAt serialized to string) */
 type SampleTeam = Omit<SampleTeamData, "createdAt"> & { createdAt: string }
-
-const FORMAT_OPTIONS = [
-  { value: "all", label: "All Formats" },
-  ...getActiveFormats().map((f) => ({ value: f.id, label: f.name })),
-]
 
 const ARCHETYPE_OPTIONS = [
   { value: "all", label: "All Archetypes" },
@@ -48,12 +43,21 @@ export default function SampleTeamsPage() {
   const [archetype, setArchetype] = useState("all")
   const [search, setSearch] = useState("")
 
+  const { data: formatsResponse } = useFetchData<{ data: FormatDefinition[] }>("/api/formats")
+  const formatOptions = [
+    { value: "all", label: "All Formats" },
+    ...(formatsResponse?.data
+      ?.filter((f) => f.isActive)
+      .map((f) => ({ value: f.id, label: f.name })) ?? []),
+  ]
+
   const sampleTeamsParams = new URLSearchParams()
   if (formatId !== "all") sampleTeamsParams.set("formatId", formatId)
   if (archetype !== "all") sampleTeamsParams.set("archetype", archetype)
   if (search) sampleTeamsParams.set("search", search)
   const sampleTeamsUrl = `/api/sample-teams?${sampleTeamsParams}`
-  const { data: teams, loading } = useFetchData<SampleTeam[]>(sampleTeamsUrl)
+  const { data: teamsResponse, loading } = useFetchData<{ data: SampleTeam[] }>(sampleTeamsUrl)
+  const teams = teamsResponse?.data ?? null
 
   const handleUseInBattle = (paste: string) => {
     const params = new URLSearchParams({
@@ -98,7 +102,7 @@ export default function SampleTeamsPage() {
               <SelectValue placeholder="All Formats" />
             </SelectTrigger>
             <SelectContent>
-              {FORMAT_OPTIONS.map((f) => (
+              {formatOptions.map((f) => (
                 <SelectItem key={f.value} value={f.value}>
                   {f.label}
                 </SelectItem>

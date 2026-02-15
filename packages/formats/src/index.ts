@@ -10,5 +10,6 @@ export {
   getFormatMoves,
   getFormatLearnset,
 } from "./format.service"
-export { ensureFormatExists } from "./format-db.service"
+// ensureFormatExists is server-only (imports @nasty-plot/db).
+// Import it from "@nasty-plot/formats/db" to avoid pulling Prisma into client bundles.
 export type * from "./types"

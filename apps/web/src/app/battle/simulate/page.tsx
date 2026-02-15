@@ -105,9 +105,10 @@ export default function SimulatePage() {
   // Load sample teams from DB as defaults
   useEffect(() => {
     let cancelled = false
-    fetchJson<Array<{ paste: string }>>(`/api/sample-teams?formatId=${formatId}`)
-      .then((teams) => {
+    fetchJson<{ data: Array<{ paste: string }> }>(`/api/sample-teams?formatId=${formatId}`)
+      .then((res) => {
         if (cancelled) return
+        const teams = res.data
         if (teams.length >= 1 && !team1Selection.paste) {
           setTeam1Selection(emptySelection(teams[0].paste))
         }
@@ -115,7 +116,7 @@ export default function SimulatePage() {
           setTeam2Selection(emptySelection(teams[1].paste))
         }
       })
-      .catch(() => {})
+      .catch((err) => console.error("[battle-simulate]:", err))
     return () => {
       cancelled = true
     }

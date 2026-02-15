@@ -41,23 +41,34 @@ describe("GET /api/sample-teams", () => {
   })
 
   it("returns sample teams list", async () => {
-    ;(listSampleTeams as ReturnType<typeof vi.fn>).mockResolvedValue([mockSampleTeam])
+    ;(listSampleTeams as ReturnType<typeof vi.fn>).mockResolvedValue({
+      teams: [mockSampleTeam],
+      total: 1,
+    })
 
     const req = new Request("http://localhost:3000/api/sample-teams")
     const response = await GET(req)
     const data = await response.json()
 
     expect(response.status).toBe(200)
-    expect(data).toEqual([mockSampleTeam])
-    expect(listSampleTeams).toHaveBeenCalledWith({
-      formatId: undefined,
-      archetype: undefined,
-      search: undefined,
-    })
+    expect(data.data).toEqual([mockSampleTeam])
+    expect(data.total).toBe(1)
+    expect(data.page).toBe(1)
+    expect(data.pageSize).toBe(20)
+    expect(listSampleTeams).toHaveBeenCalledWith(
+      expect.objectContaining({
+        formatId: undefined,
+        archetype: undefined,
+        search: undefined,
+      }),
+    )
   })
 
   it("filters by formatId", async () => {
-    ;(listSampleTeams as ReturnType<typeof vi.fn>).mockResolvedValue([mockSampleTeam])
+    ;(listSampleTeams as ReturnType<typeof vi.fn>).mockResolvedValue({
+      teams: [mockSampleTeam],
+      total: 1,
+    })
 
     const req = new Request("http://localhost:3000/api/sample-teams?formatId=gen9ou")
     const response = await GET(req)
@@ -67,7 +78,10 @@ describe("GET /api/sample-teams", () => {
   })
 
   it("filters by archetype", async () => {
-    ;(listSampleTeams as ReturnType<typeof vi.fn>).mockResolvedValue([mockSampleTeam])
+    ;(listSampleTeams as ReturnType<typeof vi.fn>).mockResolvedValue({
+      teams: [mockSampleTeam],
+      total: 1,
+    })
 
     const req = new Request("http://localhost:3000/api/sample-teams?archetype=Rain")
     const response = await GET(req)
@@ -77,7 +91,7 @@ describe("GET /api/sample-teams", () => {
   })
 
   it("filters by search query", async () => {
-    ;(listSampleTeams as ReturnType<typeof vi.fn>).mockResolvedValue([])
+    ;(listSampleTeams as ReturnType<typeof vi.fn>).mockResolvedValue({ teams: [], total: 0 })
 
     const req = new Request("http://localhost:3000/api/sample-teams?search=pelipper")
     const response = await GET(req)
@@ -132,7 +146,8 @@ describe("POST /api/sample-teams", () => {
     const data = await response.json()
 
     expect(response.status).toBe(400)
-    expect(data.error).toContain("required")
+    expect(data.error).toBe("Validation failed")
+    expect(data.details).toBeDefined()
   })
 
   it("returns 400 when formatId is missing", async () => {
@@ -243,8 +258,14 @@ describe("POST /api/sample-teams/import", () => {
     ;(importSampleTeamsFromPastes as ReturnType<typeof vi.fn>).mockResolvedValue(mockImportedTeams)
 
     const pastes = [
-      "Pelipper @ Damp Rock\nAbility: Drizzle\nEVs: 248 HP / 252 SpA / 8 Spe",
-      "Barraskewda @ Choice Band\nAbility: Swift Swim\nEVs: 252 Atk / 4 SpD / 252 Spe",
+      {
+        name: "OU Rain",
+        paste: "Pelipper @ Damp Rock\nAbility: Drizzle\nEVs: 248 HP / 252 SpA / 8 Spe",
+      },
+      {
+        name: "Swift Swim",
+        paste: "Barraskewda @ Choice Band\nAbility: Swift Swim\nEVs: 252 Atk / 4 SpD / 252 Spe",
+      },
     ]
 
     const req = new Request("http://localhost:3000/api/sample-teams/import", {
@@ -278,16 +299,15 @@ describe("POST /api/sample-teams/import", () => {
     const data = await response.json()
 
     expect(response.status).toBe(400)
-    expect(data.error).toContain("pastes")
-    expect(data.error).toContain("formatId")
-    expect(data.error).toContain("required")
+    expect(data.error).toBe("Validation failed")
+    expect(data.details).toBeDefined()
   })
 
   it("returns 400 when formatId is missing", async () => {
     const req = new Request("http://localhost:3000/api/sample-teams/import", {
       method: "POST",
       body: JSON.stringify({
-        pastes: ["some paste"],
+        pastes: [{ name: "Test", paste: "some paste" }],
       }),
       headers: { "Content-Type": "application/json" },
     })
@@ -296,9 +316,8 @@ describe("POST /api/sample-teams/import", () => {
     const data = await response.json()
 
     expect(response.status).toBe(400)
-    expect(data.error).toContain("pastes")
-    expect(data.error).toContain("formatId")
-    expect(data.error).toContain("required")
+    expect(data.error).toBe("Validation failed")
+    expect(data.details).toBeDefined()
   })
 
   it("returns 400 when pastes is not an array", async () => {
@@ -315,7 +334,7 @@ describe("POST /api/sample-teams/import", () => {
     const data = await response.json()
 
     expect(response.status).toBe(400)
-    expect(data.error).toContain("pastes")
-    expect(data.error).toContain("array")
+    expect(data.error).toBe("Validation failed")
+    expect(data.details).toBeDefined()
   })
 })

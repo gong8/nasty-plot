@@ -19,7 +19,7 @@ export function useDialogAsyncData<T>(
       .then((result) => {
         if (!cancelled) setData(result)
       })
-      .catch(() => {})
+      .catch((err) => console.error("[use-dialog-async-data]:", err))
       .finally(() => {
         if (!cancelled) setLoading(false)
       })

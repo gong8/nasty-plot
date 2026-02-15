@@ -8,38 +8,29 @@ import {
   getOpenAI,
   MODEL,
 } from "@nasty-plot/llm"
+import { validateBody } from "../../../../lib/validation"
+import { battleCommentarySchema } from "../../../../lib/schemas/battle.schemas"
 
 const DEFAULT_SYSTEM_PROMPT = "You are an expert Pokemon competitive battle commentator."
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json()
-    const {
-      mode,
-      state,
-      recentEntries,
-      allEntries,
-      turnEntries,
-      prevTurnEntries,
-      team1Name,
-      team2Name,
-      winner,
-      totalTurns,
-    } = body
+    const [body, error] = await validateBody(req, battleCommentarySchema)
+    if (error) return error
 
-    const playerName = team1Name || "Player"
-    const opponentName = team2Name || "Opponent"
+    const playerName = body.team1Name || "Player"
+    const opponentName = body.team2Name || "Opponent"
 
-    const prompts = buildPrompts(mode, {
-      state,
-      recentEntries,
-      allEntries,
-      turnEntries,
-      prevTurnEntries,
+    const prompts = buildPrompts(body.mode, {
+      state: body.state as BattleState | undefined,
+      recentEntries: body.recentEntries as BattleLogEntry[] | undefined,
+      allEntries: body.allEntries as BattleLogEntry[] | undefined,
+      turnEntries: body.turnEntries as BattleLogEntry[] | undefined,
+      prevTurnEntries: body.prevTurnEntries as BattleLogEntry[] | undefined,
       playerName,
       opponentName,
-      winner,
-      totalTurns,
+      winner: body.winner,
+      totalTurns: body.totalTurns,
     })
 
     if (!prompts) {
@@ -70,8 +61,8 @@ export async function POST(req: NextRequest) {
           }
           controller.enqueue(encoder.encode("data: [DONE]\n\n"))
           controller.close()
-        } catch (error) {
-          controller.error(error)
+        } catch (err) {
+          controller.error(err)
         }
       },
     })
@@ -83,8 +74,8 @@ export async function POST(req: NextRequest) {
         Connection: "keep-alive",
       },
     })
-  } catch (error) {
-    return apiErrorResponse(error, { fallback: "Commentary failed" })
+  } catch (err) {
+    return apiErrorResponse(err, { fallback: "Commentary failed" })
   }
 }
 

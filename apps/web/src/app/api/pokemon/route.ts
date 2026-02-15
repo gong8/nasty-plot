@@ -4,21 +4,19 @@ import { getFormatPokemon } from "@nasty-plot/formats"
 import { getUsageStats } from "@nasty-plot/smogon-data"
 import {
   getBaseStatTotal,
-  parseIntQueryParam,
   type PaginatedResponse,
   type PokemonSpecies,
   type PokemonType,
 } from "@nasty-plot/core"
 import type { SortMode } from "@/features/pokemon/types"
+import { validateSearchParams } from "../../../lib/validation"
+import { pokemonSearchSchema } from "../../../lib/schemas/pokemon.schemas"
 
 export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url)
-  const search = searchParams.get("search") ?? ""
-  const typeFilter = searchParams.get("type") as PokemonType | null
-  const formatId = searchParams.get("formatId")
-  const sort = (searchParams.get("sort") as SortMode) ?? "dex"
-  const page = parseIntQueryParam(searchParams.get("page"), 1, 1, Number.MAX_SAFE_INTEGER)
-  const pageSize = parseIntQueryParam(searchParams.get("pageSize"), 50, 1, 100)
+  const [params, error] = validateSearchParams(request.url, pokemonSearchSchema)
+  if (error) return error
+
+  const { search, type: typeFilter, formatId, sort, page, pageSize } = params
 
   let species: PokemonSpecies[]
 
@@ -34,10 +32,10 @@ export async function GET(request: Request) {
   }
 
   if (typeFilter) {
-    species = species.filter((s) => s.types.includes(typeFilter))
+    species = species.filter((s) => s.types.includes(typeFilter as PokemonType))
   }
 
-  if (sort === "usage" && formatId) {
+  if ((sort as SortMode) === "usage" && formatId) {
     const usageStats = await getUsageStats(formatId, { limit: 9999 })
     const rankMap = new Map<string, number>()
     for (const entry of usageStats) {

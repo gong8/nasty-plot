@@ -90,10 +90,10 @@ async function fetchAnalysis(teamId: string): Promise<TeamAnalysis | null> {
 
 async function fetchSampleTeams(formatId: string): Promise<SampleTeamEntry[]> {
   try {
-    const teams = await fetchJson<Record<string, unknown>[]>(
+    const res = await fetchJson<{ data: Record<string, unknown>[] }>(
       `/api/sample-teams?formatId=${encodeURIComponent(formatId)}`,
     )
-    return teams.map((t) => ({
+    return res.data.map((t) => ({
       ...t,
       pokemonIds:
         typeof t.pokemonIds === "string" ? (t.pokemonIds as string).split(",") : t.pokemonIds,

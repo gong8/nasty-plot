@@ -33,19 +33,19 @@
 | Circular dependencies               | 0            | Excellent        |
 | Cross-layer violations              | 1 (0.1%)     | Excellent        |
 | Service pattern compliance          | 69%          | Good             |
-| Type assertions (`as`)              | 667          | Medium risk      |
-| Non-null assertions (`!`)           | 286          | Medium-high risk |
-| `any` types                         | 46           | Low risk         |
-| `@ts-ignore` / `@ts-expect-error`   | 1            | Excellent        |
+| Type assertions (`as`)              | ~920         | Medium-high risk |
+| Non-null assertions (`!`)           | ~64          | Low-medium risk  |
+| `any` types                         | ~8           | Excellent        |
+| `@ts-ignore` / `@ts-expect-error`   | 126          | High risk        |
 | TODO/FIXME/HACK comments            | 1            | Excellent        |
 | API endpoints                       | 46           | -                |
 | Endpoints with auth                 | 0 (0%)       | **Critical**     |
-| Endpoints without input validation  | 7 (15%)      | High             |
+| Endpoints without input validation  | 46 (100%)    | **Critical**     |
 | Raw SQL queries (injection risk)    | 0            | Excellent        |
 | Unsafe HTML rendering patterns      | 0            | Excellent        |
 | N+1 query patterns                  | 3 critical   | **Critical**     |
 | Queries without select optimization | 35+          | High             |
-| Endpoints without pagination        | 9            | High             |
+| Endpoints without pagination        | 10+          | High             |
 | O(n^2)+ algorithms                  | 2            | Medium           |
 | Caching layer                       | None         | **Critical**     |
 | Test files                          | 80           | -                |
@@ -55,7 +55,7 @@
 | Functions >50 lines                 | 8+           | Medium           |
 | Files >400 lines                    | 7            | Medium           |
 | Empty catch blocks                  | 0            | Excellent        |
-| Silent `.catch(() => {})`           | 8            | Low              |
+| Silent `.catch(() => {})`           | 16           | Medium           |
 | Package README files                | 0/14         | Low              |
 
 ---
@@ -165,7 +165,7 @@ For 600 Pokemon per format: **18,000-48,000 sequential queries**.
 
 ---
 
-### HIGH (8 findings)
+### HIGH (6 findings)
 
 ---
 
@@ -180,39 +180,24 @@ Any unauthenticated request can trigger expensive database synchronization. No r
 
 ---
 
-#### H2. Unvalidated External URL in Battle Import (SSRF Risk)
+#### H2. All 46 API Routes Lack Formal Input Validation
 
 **Category:** Security
-**Location:** `apps/web/src/app/api/battles/import/route.ts`
+**Evidence:** All 46 routes accept request bodies without Zod validation schemas. None have formal input validation:
 
-```typescript
-const parsed = replayUrl ? await importFromReplayUrl(replayUrl) : importFromRawLog(rawLog)
-```
-
-User-supplied `replayUrl` is fetched server-side without domain validation, enabling Server-Side Request Forgery.
-
-**Recommendation:** Whitelist only `replay.pokemonshowdown.com`. Validate URL before fetching. Add timeout.
-
----
-
-#### H3. Missing Input Validation on 7 API Endpoints
-
-**Category:** Security
-**Evidence:** 7 of 46 routes (15%) accept request bodies without Zod validation:
-
-| Route                      | Issue                                     |
-| -------------------------- | ----------------------------------------- |
-| `PUT /api/teams/[teamId]`  | `body = await request.json()` — no schema |
-| `POST /api/battles/import` | Destructured without validation           |
-| `POST /api/recommend`      | Unsafe `as` type assertion                |
-| `POST /api/chat`           | Partial validation only                   |
-| 3 others                   | Missing or incomplete schemas             |
+| Route                     | Issue                                     |
+| ------------------------- | ----------------------------------------- |
+| `PUT /api/teams/[teamId]` | `body = await request.json()` — no schema |
+| `POST /api/battles`       | Destructured without validation           |
+| `POST /api/recommend`     | Unsafe `as` type assertion                |
+| `POST /api/chat`          | Partial validation only                   |
+| All other routes          | Missing or incomplete schemas             |
 
 **Recommendation:** Add Zod schemas to all POST/PUT routes. Return 400 for validation failures.
 
 ---
 
-#### H4. Sequential Database Operations in Team Slot Management
+#### H3. Sequential Database Operations in Team Slot Management
 
 **Category:** Performance
 **Location:** `packages/teams/src/team.service.ts:269-319`
@@ -223,7 +208,7 @@ Slot reorder: 2N sequential queries (12 for a 6-slot team). Slot delete: up to 5
 
 ---
 
-#### H5. 35+ Queries Without Select Optimization
+#### H4. 35+ Queries Without Select Optimization
 
 **Category:** Performance
 **Evidence:** Across all packages, 35+ Prisma queries fetch all columns instead of using `select`:
@@ -239,18 +224,18 @@ Slot reorder: 2N sequential queries (12 for a 6-slot team). Slot delete: up to 5
 
 ---
 
-#### H6. Protocol Parser 248-Line Monster Function
+#### H5. Protocol Parser 248-Line Monster Function
 
 **Category:** Maintainability
 **Location:** `packages/battle-engine/src/protocol-parser.service.ts:479-726`
 
-`processLine()` handles 25+ protocol message types (`|move|`, `|-damage|`, `|switch|`, etc.) in a single 248-line function.
+`processLine()` handles 68 protocol message type cases (`|move|`, `|-damage|`, `|switch|`, etc.) in a single 248-line function.
 
 **Recommendation:** Extract into handler-per-message-type pattern. Estimated effort: 4 hours.
 
 ---
 
-#### H7. Battle Manager Class Has 12 Private Fields
+#### H6. Battle Manager Class Has 19 Private Fields
 
 **Category:** Maintainability
 **Location:** `packages/battle-engine/src/battle-manager.service.ts` (894 lines)
@@ -258,23 +243,6 @@ Slot reorder: 2N sequential queries (12 for a 6-slot team). Slot delete: up to 5
 Mixes stream lifecycle, AI routing, state management, and error handling in a single class.
 
 **Recommendation:** Split into BattleStream wrapper + AIRouter + StateManager.
-
----
-
-#### H8. Team Service Functions Exceed 100+ Lines Each
-
-**Category:** Maintainability
-**Location:** `packages/teams/src/team.service.ts`
-
-| Function       | Lines | Concerns                             |
-| -------------- | ----- | ------------------------------------ |
-| `createTeam()` | 173   | DB ops + validation + transformation |
-| `getTeam()`    | 157   | Hydration of nested data             |
-| `listTeams()`  | 148   | Filtering + pagination               |
-| `updateTeam()` | 132   | Partial updates + side effects       |
-| `deleteTeam()` | 115   | Cleanup operations                   |
-
-**Recommendation:** Extract validation to `team-validation.service.ts`, transformations to `team-mapper.ts`.
 
 ---
 
@@ -312,25 +280,25 @@ proc = spawn("claude", args, { env: { ...process.env } })
 
 ---
 
-#### M4. 667 Type Assertions Across Codebase
+#### M4. ~920 Type Assertions Across Codebase
 
 **Category:** Code Quality
 **Distribution:** battle-engine (71), teams (23), llm (21), mcp-server (20), others (<20 each)
 **Impact:** Bypasses TypeScript's type checker, hiding potential runtime errors.
-**Recommendation:** Reduce to ~500 via branded types and type guards. Focus on battle-engine first.
+**Recommendation:** Reduce via branded types and type guards. Focus on battle-engine first.
 
 ---
 
-#### M5. 286 Non-null Assertions
+#### M5. ~64 Non-null Assertions
 
 **Category:** Code Quality
-**Distribution:** battle-engine (141), teams (27), pokemon-data (26), data-pipeline (24)
+**Distribution:** Spread across packages; 0 in battle-engine.
 **Impact:** Runtime `undefined` errors when assumptions are wrong.
-**Recommendation:** Replace with optional chaining (`?.`) where possible. Target: reduce to ~150.
+**Recommendation:** Replace with optional chaining (`?.`) where possible.
 
 ---
 
-#### M6. 9 Endpoints Without Pagination
+#### M6. 10+ Endpoints Without Pagination
 
 **Category:** Performance
 **Impact:** Unbounded queries can return 1000+ records, bloating memory and response size.
@@ -355,7 +323,7 @@ proc = spawn("claude", args, { env: { ...process.env } })
 
 ---
 
-#### M9. 8 Silent `.catch(() => {})` Patterns
+#### M9. 16 Silent `.catch(() => {})` Patterns
 
 **Category:** Maintainability
 **Locations:** `battle.service.ts`, `automated-battle-manager.ts`, and others
@@ -504,7 +472,7 @@ No "god packages" or unnecessary abstractions. All packages have clear single pu
 | --- | --------------------------------------------------- | --------------- | -------- | ------------------------ |
 | 4   | Implement auth layer (NextAuth.js)                  | Security        | 2-3 days | Blocks production deploy |
 | 5   | Add in-memory LRU cache for usage stats + species   | Performance     | 1-2 days | 3-5x faster team ops     |
-| 6   | Add Zod validation to remaining 7 API routes        | Security        | 4 hours  | Input safety             |
+| 6   | Add Zod validation to all 46 API routes             | Security        | 2-3 days | Input safety             |
 | 7   | Add first React tests (damage-calc, guided-builder) | Maintainability | 8 hours  | Regression safety        |
 
 ### Medium-Term (Next Month)
@@ -514,9 +482,9 @@ No "god packages" or unnecessary abstractions. All packages have clear single pu
 | 8   | Add CORS + rate limiting + security headers     | Security        | 1 day    | Production readiness |
 | 9   | Add `select` optimization to 35+ Prisma queries | Performance     | 8 hours  | 30-40% less data     |
 | 10  | Batch team slot operations                      | Performance     | 6 hours  | Faster UI            |
-| 11  | Split team.service.ts (validation, mapping)     | Maintainability | 8 hours  | Testability          |
+| 11  | Reduce 126 @ts-ignore/@ts-expect-error usages   | Code Quality    | 1 week   | Type safety          |
 | 12  | Decompose large React components (>400 lines)   | Maintainability | 2-3 days | Maintainability      |
-| 13  | Add pagination to 9 unbounded endpoints         | Performance     | 4 hours  | Memory safety        |
+| 13  | Add pagination to 10+ unbounded endpoints       | Performance     | 4 hours  | Memory safety        |
 | 14  | Sanitize error responses in production          | Security        | 2 hours  | Info disclosure      |
 
 ### Long-Term (Next Quarter)
@@ -528,7 +496,7 @@ No "god packages" or unnecessary abstractions. All packages have clear single pu
 | 17  | Centralized config validation (Zod)           | Maintainability | 4 hours   | Reliability   |
 | 18  | Dependency security scanning (Snyk/npm audit) | Security        | 1 day     | Supply chain  |
 | 19  | Add error tracking (Sentry)                   | Maintainability | 1 day     | Observability |
-| 20  | Reduce type assertions from 667 to ~500       | Code Quality    | 1 week    | Type safety   |
+| 20  | Reduce type assertions from ~920 to ~700      | Code Quality    | 1 week    | Type safety   |
 
 ---
 
@@ -538,7 +506,7 @@ No "god packages" or unnecessary abstractions. All packages have clear single pu
 
 The **architecture is excellent** (A-). Clean separation of concerns, zero circular dependencies, consistent patterns, and well-scoped packages. This is better than most production monorepos.
 
-The **code quality is solid** (B+). Strict TypeScript, minimal tech debt, consistent naming, and the service pattern is applied throughout. The 667 type assertions and 286 non-null assertions are localized to external library boundaries (mostly `@pkmn/sim`), which is acceptable.
+The **code quality is solid** (B+). Strict TypeScript, minimal tech debt, consistent naming, and the service pattern is applied throughout. The ~920 type assertions are localized to external library boundaries (mostly `@pkmn/sim`), which is largely acceptable, though the 126 `@ts-expect-error` directives warrant attention.
 
 The **security posture is unacceptable for production** (D). Zero authentication on 46 endpoints is the single biggest gap. This is appropriate for a local development/learning tool but must be addressed before any deployment.
 
@@ -547,3 +515,34 @@ The **performance has clear bottlenecks** (C). The sequential Smogon sync and mi
 The **maintainability is mixed** (B). Backend packages are well-tested (84-100% on critical paths), but the entire React frontend (228 files) has zero tests. A few hot-spot files need decomposition.
 
 **Bottom line:** This is a well-architected codebase with strong engineering fundamentals. The gaps are concentrated in security infrastructure (auth, CORS, rate limiting) and operational concerns (caching, query optimization, frontend testing) — all of which are solvable. The foundation is sound enough that addressing the 5 critical findings would raise the overall grade to a solid B+/A-.
+
+---
+
+## Fact-Check Notes
+
+The following corrections were applied to this report after independent verification against the actual codebase. The original audit contained several fabricated or inaccurate claims.
+
+### Removed Findings (Fabricated)
+
+| Original Finding                          | Reason for Removal                                                                                                                                                  |
+| ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **H2 (SSRF in battle import)**            | The `importFromReplayUrl()` function validates URLs against `replay.pokemonshowdown.com`. No SSRF risk exists; the domain whitelist was already implemented.        |
+| **H8 (team service 100+ line functions)** | Completely fabricated. The functions (`createTeam`, `getTeam`, `listTeams`, `updateTeam`, `deleteTeam`) are actually 8-16 lines each, not 115-173 lines as claimed. |
+
+### Corrected Metrics
+
+| Metric                          | Original Claim             | Corrected Value          | Evidence                                                                |
+| ------------------------------- | -------------------------- | ------------------------ | ----------------------------------------------------------------------- |
+| Non-null assertions (`!`)       | 286 (141 in battle-engine) | ~64 (0 in battle-engine) | `rg '!\.' --type ts` across all packages                                |
+| Type assertions (`as`)          | 667                        | ~920                     | `rg '\bas\b' --type ts` across all packages                             |
+| `@ts-ignore`/`@ts-expect-error` | 1                          | 126                      | `rg '@ts-(ignore\|expect-error)' --type ts` across all packages         |
+| `any` types                     | 46                         | ~8                       | `rg ': any\b' --type ts` across source files (excluding generated/test) |
+| Silent `.catch(() => {})`       | 8                          | 16                       | `rg '\.catch\(' --type ts` with empty/no-op handler patterns            |
+| Routes without validation       | 7 (15%)                    | 46 (100%)                | No route uses Zod schemas for request body validation                   |
+| Endpoints without pagination    | 9                          | 10+                      | Audit of all list endpoints in `apps/web/src/app/api/`                  |
+| Battle Manager private fields   | 12                         | 19                       | `rg 'private ' packages/battle-engine/src/battle-manager.service.ts`    |
+| `processLine()` message types   | 25+                        | 68 cases                 | Count of case branches in `processLine()` switch statement              |
+
+### Notes on Methodology
+
+The original audit appears to have been generated with significant hallucination in quantitative claims. While the qualitative findings and architectural assessment are largely accurate, specific numbers should always be verified against actual `rg`/`grep` counts on the codebase. The corrected values above were obtained via direct code search on 2026-02-15.

@@ -1,20 +1,23 @@
 import { NextRequest, NextResponse } from "next/server"
 import { apiErrorResponse } from "../../../../../lib/api-error"
-import { parseIntQueryParam } from "@nasty-plot/core"
 import { getTopCores } from "@nasty-plot/smogon-data"
 import { enrichWithSpeciesData } from "@nasty-plot/pokemon-data"
+import { validateSearchParams } from "../../../../../lib/validation"
+import { formatCoresSearchSchema } from "../../../../../lib/schemas/format.schemas"
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ formatId: string }> },
 ) {
   const { formatId } = await params
-  const searchParams = request.nextUrl.searchParams
-  const pokemonId = searchParams.get("pokemonId") ?? undefined
-  const limit = parseIntQueryParam(searchParams.get("limit"), 20, 1, 100)
+  const [searchParams, error] = validateSearchParams(request.url, formatCoresSearchSchema)
+  if (error) return error
 
   try {
-    const cores = await getTopCores(formatId, { pokemonId, limit })
+    const cores = await getTopCores(formatId, {
+      pokemonId: searchParams.pokemonId,
+      limit: searchParams.limit,
+    })
 
     const enriched = cores.map((core) => {
       const { pokemonName: pokemonAName } = enrichWithSpeciesData(core.pokemonAId)
@@ -29,7 +32,7 @@ export async function GET(
     })
 
     return NextResponse.json({ data: enriched })
-  } catch (error) {
-    return apiErrorResponse(error, { code: "CORES_ERROR" })
+  } catch (err) {
+    return apiErrorResponse(err, { code: "CORES_ERROR" })
   }
 }

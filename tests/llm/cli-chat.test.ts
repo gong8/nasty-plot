@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { EventEmitter } from "events"
 import type { CliChatOptions } from "@nasty-plot/llm"
 
@@ -19,16 +20,30 @@ function createMockProcess(): MockChildProcess {
   return new MockChildProcess()
 }
 
-vi.mock("child_process", () => ({
-  spawn: vi.fn(() => mockProcess),
+const mockSpawn = vi.fn(() => mockProcess)
+vi.mock("child_process", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("child_process")>()
+  return {
+    ...actual,
+    spawn: mockSpawn,
+    default: { ...actual, spawn: mockSpawn },
+  }
+})
+
+// Mock @nasty-plot/db to prevent transitive fs.existsSync error from db/client.ts
+vi.mock("@nasty-plot/db", () => ({
+  prisma: {},
 }))
 
+const mockWriteFileSync = vi.fn()
+const mockMkdirSync = vi.fn()
 vi.mock("fs", async (importOriginal) => {
   const actual = await importOriginal<typeof import("fs")>()
   return {
     ...actual,
-    writeFileSync: vi.fn(),
-    mkdirSync: vi.fn(),
+    writeFileSync: mockWriteFileSync,
+    mkdirSync: mockMkdirSync,
+    default: { ...actual, writeFileSync: mockWriteFileSync, mkdirSync: mockMkdirSync },
   }
 })
 
@@ -74,7 +89,7 @@ async function collectSSEEvents(
   const decoder = new TextDecoder()
   const events: Array<Record<string, unknown>> = []
 
-  // eslint-disable-next-line no-constant-condition
+   
   while (true) {
     const { done, value } = await reader.read()
     if (done) break
@@ -144,7 +159,7 @@ describe("streamCliChat", () => {
     mockProcess.emit("close", 0)
 
     // Drain the stream
-    // eslint-disable-next-line no-constant-condition
+     
     while (true) {
       const { done } = await reader.read()
       if (done) break
@@ -171,7 +186,7 @@ describe("streamCliChat", () => {
     await new Promise((r) => setTimeout(r, 10))
     mockProcess.emit("close", 0)
 
-    // eslint-disable-next-line no-constant-condition
+     
     while (true) {
       const { done } = await reader.read()
       if (done) break
@@ -453,7 +468,7 @@ describe("streamCliChat", () => {
 
   it("handles spawn failure with non-Error throw", async () => {
     spawnFn.mockImplementationOnce(() => {
-      throw "string error" // eslint-disable-line no-throw-literal
+      throw "string error"  
     })
 
     const stream = streamCliChat(defaultOptions)

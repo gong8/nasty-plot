@@ -1,20 +1,18 @@
 import { NextResponse } from "next/server"
 import { mergeTeams } from "@nasty-plot/teams"
-import { badRequestResponse, entityErrorResponse } from "../../../../lib/api-error"
+import { entityErrorResponse } from "../../../../lib/api-error"
+import { validateBody } from "../../../../lib/validation"
+import { teamMergeSchema } from "../../../../lib/schemas/team.schemas"
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json()
-    const { teamAId, teamBId, decisions, name, branchName, notes } = body
+    const [body, error] = await validateBody(request, teamMergeSchema)
+    if (error) return error
 
-    if (!teamAId || !teamBId || !decisions) {
-      return badRequestResponse("teamAId, teamBId, and decisions are required")
-    }
-
-    const result = await mergeTeams(teamAId, teamBId, decisions, {
-      name,
-      branchName,
-      notes,
+    const result = await mergeTeams(body.teamAId, body.teamBId, body.decisions, {
+      name: body.name,
+      branchName: body.branchName,
+      notes: body.notes,
     })
     return NextResponse.json(result, { status: 201 })
   } catch (error) {

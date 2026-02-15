@@ -15,14 +15,9 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { cn } from "@nasty-plot/ui"
-import { DEFAULT_FORMAT_ID } from "@nasty-plot/core"
+import { DEFAULT_FORMAT_ID, type FormatDefinition } from "@nasty-plot/core"
 import { useCreateTeam } from "@/features/teams/hooks/use-teams"
-import { getActiveFormats } from "@nasty-plot/formats"
-
-const COMMON_FORMATS = getActiveFormats().map((f) => ({
-  id: f.id,
-  name: f.name,
-}))
+import { useFetchData } from "@/lib/hooks/use-fetch-data"
 
 type BuilderMode = "freeform" | "guided"
 
@@ -32,6 +27,12 @@ export default function NewTeamPage() {
   const [name, setName] = useState("")
   const [formatId, setFormatId] = useState(DEFAULT_FORMAT_ID)
   const [mode, setMode] = useState<BuilderMode>("freeform")
+
+  const { data: formatsResponse } = useFetchData<{ data: FormatDefinition[] }>("/api/formats")
+  const COMMON_FORMATS = (formatsResponse?.data?.filter((f) => f.isActive) ?? []).map((f) => ({
+    id: f.id,
+    name: f.name,
+  }))
 
   const handleCreate = async () => {
     if (!name.trim()) return

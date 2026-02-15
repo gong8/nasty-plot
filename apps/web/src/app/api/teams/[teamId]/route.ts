@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server"
 import { getTeam, updateTeam, deleteTeam } from "@nasty-plot/teams"
 import { apiErrorResponse, notFoundResponse } from "../../../../lib/api-error"
+import { validateBody } from "../../../../lib/validation"
+import { teamUpdateSchema } from "../../../../lib/schemas/team.schemas"
 
 export async function GET(_request: Request, { params }: { params: Promise<{ teamId: string }> }) {
   try {
@@ -18,7 +20,9 @@ export async function GET(_request: Request, { params }: { params: Promise<{ tea
 export async function PUT(request: Request, { params }: { params: Promise<{ teamId: string }> }) {
   try {
     const { teamId } = await params
-    const body = await request.json()
+    const [body, error] = await validateBody(request, teamUpdateSchema)
+    if (error) return error
+
     const team = await updateTeam(teamId, body)
     return NextResponse.json(team)
   } catch (error) {

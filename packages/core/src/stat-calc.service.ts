@@ -115,10 +115,10 @@ export function statsToDbColumns(stats: StatsTable, prefix: "ev" | "iv"): Record
   return result
 }
 
-export function dbColumnsToStats(row: Record<string, number>, prefix: "ev" | "iv"): StatsTable {
+export function dbColumnsToStats(row: Record<string, unknown>, prefix: "ev" | "iv"): StatsTable {
   const result = {} as StatsTable
   for (const stat of STATS) {
-    result[stat] = row[`${prefix}${STAT_CAPITALIZED[stat]}`]
+    result[stat] = (row[`${prefix}${STAT_CAPITALIZED[stat]}`] as number) ?? 0
   }
   return result
 }

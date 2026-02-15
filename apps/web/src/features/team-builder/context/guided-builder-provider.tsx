@@ -201,7 +201,9 @@ export function GuidedBuilderProvider({ teamId, formatId, children }: GuidedBuil
     ;(async () => {
       for (const slot of guided.filledSlots) {
         if (slot.pokemonId && slot.position) {
-          await persistSlotToDb(slot.position, slot.pokemonId).catch(() => {})
+          await persistSlotToDb(slot.position, slot.pokemonId).catch((err) =>
+            console.error("[guided-builder] persistSlot:", err),
+          )
         }
       }
     })()
@@ -240,7 +242,9 @@ export function GuidedBuilderProvider({ teamId, formatId, children }: GuidedBuil
 
   const handleLeadPick = useCallback(
     async (pick: GuidedPokemonPick) => {
-      await persistSlotToDb(1, pick.pokemonId).catch(() => {})
+      await persistSlotToDb(1, pick.pokemonId).catch((err) =>
+        console.error("[guided-builder] persistSlot:", err),
+      )
       guided.addSlotPick(1, pick)
       guided.goToStep("build")
     },
@@ -258,7 +262,9 @@ export function GuidedBuilderProvider({ teamId, formatId, children }: GuidedBuil
   const handleBuildPick = useCallback(
     async (pick: GuidedPokemonPick) => {
       const position = guided.currentBuildSlot
-      await persistSlotToDb(position, pick.pokemonId).catch(() => {})
+      await persistSlotToDb(position, pick.pokemonId).catch((err) =>
+        console.error("[guided-builder] persistSlot:", err),
+      )
       guided.addSlotPick(position, pick)
       advanceBuildOrFinish()
     },
@@ -294,7 +300,9 @@ export function GuidedBuilderProvider({ teamId, formatId, children }: GuidedBuil
   const handleImportSample = useCallback(
     async (sample: SampleTeamEntry) => {
       for (let i = 0; i < sample.pokemonIds.length && i < 6; i++) {
-        await persistSlotToDb(i + 1, sample.pokemonIds[i]).catch(() => {})
+        await persistSlotToDb(i + 1, sample.pokemonIds[i]).catch((err) =>
+          console.error("[guided-builder] persistSlot:", err),
+        )
       }
       guided.importSampleTeam(sample)
     },

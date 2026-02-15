@@ -16,6 +16,7 @@ vi.mock("@nasty-plot/db", () => ({
     sampleTeam: {
       create: vi.fn(),
       findMany: vi.fn(),
+      count: vi.fn(),
       findUnique: vi.fn(),
       delete: vi.fn(),
     },
@@ -41,6 +42,7 @@ import { prisma } from "@nasty-plot/db"
 
 const mockCreate = prisma.sampleTeam.create as ReturnType<typeof vi.fn>
 const mockFindMany = prisma.sampleTeam.findMany as ReturnType<typeof vi.fn>
+const mockCount = prisma.sampleTeam.count as ReturnType<typeof vi.fn>
 const mockFindUnique = prisma.sampleTeam.findUnique as ReturnType<typeof vi.fn>
 const mockDelete = prisma.sampleTeam.delete as ReturnType<typeof vi.fn>
 
@@ -169,40 +171,51 @@ describe("listSampleTeams", () => {
 
   it("lists all active sample teams without filters", async () => {
     mockFindMany.mockResolvedValue([makeSampleTeam()])
+    mockCount.mockResolvedValue(1)
 
     const result = await listSampleTeams()
 
-    expect(result).toHaveLength(1)
+    expect(result.teams).toHaveLength(1)
+    expect(result.total).toBe(1)
     expect(mockFindMany).toHaveBeenCalledWith({
       where: { isActive: true },
       orderBy: { createdAt: "desc" },
+      skip: 0,
+      take: 20,
     })
   })
 
   it("filters by formatId", async () => {
     mockFindMany.mockResolvedValue([])
+    mockCount.mockResolvedValue(0)
 
     await listSampleTeams({ formatId: "gen9uu" })
 
     expect(mockFindMany).toHaveBeenCalledWith({
       where: { isActive: true, formatId: "gen9uu" },
       orderBy: { createdAt: "desc" },
+      skip: 0,
+      take: 20,
     })
   })
 
   it("filters by archetype", async () => {
     mockFindMany.mockResolvedValue([])
+    mockCount.mockResolvedValue(0)
 
     await listSampleTeams({ archetype: "rain" })
 
     expect(mockFindMany).toHaveBeenCalledWith({
       where: { isActive: true, archetype: "rain" },
       orderBy: { createdAt: "desc" },
+      skip: 0,
+      take: 20,
     })
   })
 
   it("filters by search term with OR conditions", async () => {
     mockFindMany.mockResolvedValue([])
+    mockCount.mockResolvedValue(0)
 
     await listSampleTeams({ search: "garchomp" })
 
@@ -212,11 +225,14 @@ describe("listSampleTeams", () => {
         OR: [{ name: { contains: "garchomp" } }, { pokemonIds: { contains: "garchomp" } }],
       },
       orderBy: { createdAt: "desc" },
+      skip: 0,
+      take: 20,
     })
   })
 
   it("combines multiple filters", async () => {
     mockFindMany.mockResolvedValue([])
+    mockCount.mockResolvedValue(0)
 
     await listSampleTeams({ formatId: "gen9ou", archetype: "rain", search: "pelipper" })
 
@@ -228,6 +244,8 @@ describe("listSampleTeams", () => {
         OR: [{ name: { contains: "pelipper" } }, { pokemonIds: { contains: "pelipper" } }],
       },
       orderBy: { createdAt: "desc" },
+      skip: 0,
+      take: 20,
     })
   })
 })

@@ -18,6 +18,7 @@ vi.mock("@nasty-plot/db", () => ({
       create: vi.fn(),
       findUnique: vi.fn(),
       findMany: vi.fn(),
+      count: vi.fn(),
       update: vi.fn(),
       delete: vi.fn(),
     },
@@ -35,6 +36,7 @@ const mockedPrisma = vi.mocked(prisma, true)
 const mockSessionCreate = mockedPrisma.chatSession.create
 const mockSessionFindUnique = mockedPrisma.chatSession.findUnique
 const mockSessionFindMany = mockedPrisma.chatSession.findMany
+const mockSessionCount = mockedPrisma.chatSession.count
 const mockSessionUpdate = mockedPrisma.chatSession.update
 const mockSessionDelete = mockedPrisma.chatSession.delete
 const mockMessageCreate = mockedPrisma.chatMessage.create
@@ -166,6 +168,7 @@ describe("listSessions", () => {
 
   it("lists all sessions when no teamId filter", async () => {
     mockSessionFindMany.mockResolvedValue([makeDbSession()])
+    mockSessionCount.mockResolvedValue(1)
 
     const result = await listSessions()
 
@@ -173,12 +176,16 @@ describe("listSessions", () => {
       where: {},
       include: { messages: { orderBy: { createdAt: "asc" }, take: 1 } },
       orderBy: { updatedAt: "desc" },
+      skip: 0,
+      take: 20,
     })
-    expect(result).toHaveLength(1)
+    expect(result.sessions).toHaveLength(1)
+    expect(result.total).toBe(1)
   })
 
   it("filters by teamId when provided", async () => {
     mockSessionFindMany.mockResolvedValue([])
+    mockSessionCount.mockResolvedValue(0)
 
     await listSessions("team-1")
 
@@ -186,6 +193,8 @@ describe("listSessions", () => {
       where: { teamId: "team-1" },
       include: { messages: { orderBy: { createdAt: "asc" }, take: 1 } },
       orderBy: { updatedAt: "desc" },
+      skip: 0,
+      take: 20,
     })
   })
 })

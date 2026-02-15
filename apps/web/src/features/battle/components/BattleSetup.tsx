@@ -97,9 +97,10 @@ export function BattleSetup({ onStart, initialTeamId, initialFormatId }: BattleS
   // Load sample teams from DB as defaults
   useEffect(() => {
     let cancelled = false
-    fetchJson<Array<{ paste: string }>>(`/api/sample-teams?formatId=${formatId}`)
-      .then((teams) => {
+    fetchJson<{ data: Array<{ paste: string }> }>(`/api/sample-teams?formatId=${formatId}`)
+      .then((res) => {
         if (cancelled) return
+        const teams = res.data
         if (teams.length >= 1 && !playerSelection.paste) {
           setPlayerSelection(emptySelection(teams[0].paste))
         }
@@ -107,7 +108,7 @@ export function BattleSetup({ onStart, initialTeamId, initialFormatId }: BattleS
           setOpponentSelection(emptySelection(teams[1].paste))
         }
       })
-      .catch(() => {})
+      .catch((err) => console.error("[BattleSetup]:", err))
     return () => {
       cancelled = true
     }
@@ -123,9 +124,7 @@ export function BattleSetup({ onStart, initialTeamId, initialFormatId }: BattleS
           setPlayerSelection({ teamId: initialTeamId, paste, source: "saved" })
         }
       })
-      .catch(() => {
-        // Silently fail — user can pick manually
-      })
+      .catch((err) => console.error("[BattleSetup]:", err))
     return () => {
       cancelled = true
     }

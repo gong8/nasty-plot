@@ -9,6 +9,7 @@ export {
   getItemUsage,
   getAbilityUsage,
   getTopCores,
+  clearUsageStatsCache,
 } from "./usage-stats.service"
 
 export {
@@ -16,6 +17,7 @@ export {
   getSetsForPokemon,
   getAllSetsForFormat,
   getNatureUsage,
+  clearSetsCache,
 } from "./smogon-sets.service"
 
 export { inferFromSets, enrichExtractedTeam } from "./set-inference.service"

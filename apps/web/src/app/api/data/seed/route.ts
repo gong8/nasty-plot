@@ -2,8 +2,10 @@ import { NextRequest, NextResponse } from "next/server"
 import { getErrorMessage } from "../../../../lib/api-error"
 import { syncUsageStats, syncSmogonSets } from "@nasty-plot/smogon-data"
 import { isStale } from "@nasty-plot/data-pipeline"
-import { FORMAT_DEFINITIONS, getActiveFormats, ensureFormatExists } from "@nasty-plot/formats"
+import { FORMAT_DEFINITIONS, getActiveFormats } from "@nasty-plot/formats"
+import { ensureFormatExists } from "@nasty-plot/formats/db"
 import type { GameType } from "@nasty-plot/core"
+import { seedSchema } from "../../../../lib/schemas/data.schemas"
 
 interface SeedableFormat {
   id: string
@@ -74,14 +76,21 @@ async function seedFormat(format: SeedableFormat, force: boolean) {
 }
 
 export async function POST(request: NextRequest) {
-  let body: { formatId?: string; force?: boolean } = {}
+  const authHeader = request.headers.get("authorization")
+  const expectedToken = process.env.SEED_SECRET
+  if (expectedToken && authHeader !== `Bearer ${expectedToken}`) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
+  let raw: unknown = {}
   try {
-    body = await request.json()
+    raw = await request.json()
   } catch {
     // empty body is fine, seed all formats
   }
 
-  const { formatId, force = false } = body
+  const result = seedSchema.safeParse(raw)
+  const { formatId, force } = result.success ? result.data : { formatId: undefined, force: false }
   const formats = resolveFormats(formatId)
 
   const results = []

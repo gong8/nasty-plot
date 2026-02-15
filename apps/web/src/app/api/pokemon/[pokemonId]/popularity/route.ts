@@ -5,25 +5,22 @@ import {
   getAbilityUsage,
   getNatureUsage,
 } from "@nasty-plot/smogon-data"
-import { badRequestResponse } from "../../../../../lib/api-error"
+import { validateSearchParams } from "../../../../../lib/validation"
+import { pokemonPopularitySearchSchema } from "../../../../../lib/schemas/pokemon.schemas"
 
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ pokemonId: string }> },
 ) {
   const { pokemonId } = await params
-  const { searchParams } = new URL(request.url)
-  const formatId = searchParams.get("formatId")
-
-  if (!formatId) {
-    return badRequestResponse("format query param is required")
-  }
+  const [searchParams, error] = validateSearchParams(request.url, pokemonPopularitySearchSchema)
+  if (error) return error
 
   const [moves, items, abilities, natures] = await Promise.all([
-    getMoveUsage(formatId, pokemonId),
-    getItemUsage(formatId, pokemonId),
-    getAbilityUsage(formatId, pokemonId),
-    getNatureUsage(formatId, pokemonId),
+    getMoveUsage(searchParams.formatId, pokemonId),
+    getItemUsage(searchParams.formatId, pokemonId),
+    getAbilityUsage(searchParams.formatId, pokemonId),
+    getNatureUsage(searchParams.formatId, pokemonId),
   ])
 
   return NextResponse.json({

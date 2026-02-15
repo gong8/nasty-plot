@@ -1,21 +1,19 @@
 import { NextResponse } from "next/server"
 import { getMegaForm } from "@nasty-plot/pokemon-data"
 import type { ApiResponse, PokemonSpecies } from "@nasty-plot/core"
-import { badRequestResponse, notFoundResponse } from "../../../../../lib/api-error"
+import { notFoundResponse } from "../../../../../lib/api-error"
+import { validateSearchParams } from "../../../../../lib/validation"
+import { pokemonMegaFormSearchSchema } from "../../../../../lib/schemas/pokemon.schemas"
 
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ pokemonId: string }> },
 ) {
   const { pokemonId } = await params
-  const { searchParams } = new URL(request.url)
-  const itemId = searchParams.get("item")
+  const [searchParams, error] = validateSearchParams(request.url, pokemonMegaFormSearchSchema)
+  if (error) return error
 
-  if (!itemId) {
-    return badRequestResponse("Missing ?item= query parameter")
-  }
-
-  const megaForm = getMegaForm(pokemonId, itemId)
+  const megaForm = getMegaForm(pokemonId, searchParams.item)
 
   if (!megaForm) {
     return notFoundResponse("Mega form")

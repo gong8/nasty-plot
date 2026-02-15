@@ -57,7 +57,8 @@ export function apiErrorResponse(
     }
   }
 
-  const body: Record<string, string> = { error: message }
+  const sanitizedMessage = status >= 500 ? "Internal server error" : message
+  const body: Record<string, string> = { error: sanitizedMessage }
   if (code) body.code = code
 
   return NextResponse.json(body, { status })

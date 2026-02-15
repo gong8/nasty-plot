@@ -1,6 +1,8 @@
 import { NextRequest } from "next/server"
 import { getSession, updateSession, deleteSession } from "@nasty-plot/llm"
 import { internalErrorResponse, notFoundResponse } from "../../../../../lib/api-error"
+import { validateBody } from "../../../../../lib/validation"
+import { chatSessionUpdateSchema } from "../../../../../lib/schemas/chat.schemas"
 
 export async function GET(
   _req: NextRequest,
@@ -26,10 +28,10 @@ export async function PUT(
 ) {
   try {
     const { sessionId } = await params
-    const body = await req.json()
-    const { title }: { title?: string } = body
+    const [body, error] = await validateBody(req, chatSessionUpdateSchema)
+    if (error) return error
 
-    const session = await updateSession(sessionId, { title })
+    const session = await updateSession(sessionId, { title: body.title })
     if (!session) {
       return notFoundResponse("Session")
     }

@@ -273,7 +273,14 @@ export function streamCliChat(options: CliChatOptions): ReadableStream<Uint8Arra
       try {
         proc = spawn("claude", args, {
           cwd: TEMP_DIR,
-          env: { ...process.env },
+          env: {
+            PATH: process.env.PATH,
+            HOME: process.env.HOME,
+            SHELL: process.env.SHELL,
+            TERM: process.env.TERM,
+            NODE_ENV: process.env.NODE_ENV,
+            MCP_URL: process.env.MCP_URL,
+          },
           stdio: ["pipe", "pipe", "pipe"],
         })
       } catch (err) {

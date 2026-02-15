@@ -1,28 +1,22 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getRecommendations } from "@nasty-plot/recommendations"
 import type { ApiResponse, Recommendation } from "@nasty-plot/core"
-import { apiErrorResponse, badRequestResponse } from "../../../lib/api-error"
+import { apiErrorResponse } from "../../../lib/api-error"
+import { validateBody } from "../../../lib/validation"
+import { recommendSchema } from "../../../lib/schemas/data.schemas"
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
-    const { teamId, limit, weights } = body as {
-      teamId: string
-      limit?: number
-      weights?: { usage: number; coverage: number }
-    }
+    const [body, error] = await validateBody(request, recommendSchema)
+    if (error) return error
 
-    if (!teamId) {
-      return badRequestResponse("Missing required field: teamId", "INVALID_INPUT")
-    }
-
-    const recommendations = await getRecommendations(teamId, limit ?? 10, weights)
+    const recommendations = await getRecommendations(body.teamId, body.limit ?? 10, body.weights)
 
     return NextResponse.json({
       data: recommendations,
     } satisfies ApiResponse<Recommendation[]>)
-  } catch (error) {
-    return apiErrorResponse(error, {
+  } catch (err) {
+    return apiErrorResponse(err, {
       fallback: "Recommendations failed",
       code: "RECOMMEND_ERROR",
       inferNotFound: true,

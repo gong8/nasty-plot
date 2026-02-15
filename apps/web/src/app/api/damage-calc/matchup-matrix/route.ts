@@ -3,31 +3,25 @@ import { calculateMatchupMatrix } from "@nasty-plot/damage-calc"
 import { getTeam } from "@nasty-plot/teams"
 import { getUsageStats } from "@nasty-plot/smogon-data"
 import type { ApiResponse, MatchupMatrixEntry } from "@nasty-plot/core"
-import { apiErrorResponse, badRequestResponse, notFoundResponse } from "../../../../lib/api-error"
+import { apiErrorResponse, notFoundResponse } from "../../../../lib/api-error"
+import { validateBody } from "../../../../lib/validation"
+import { matchupMatrixSchema } from "../../../../lib/schemas/battle.schemas"
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
-    const { teamId, threatIds, formatId } = body as {
-      teamId: string
-      threatIds?: string[]
-      formatId: string
-    }
+    const [body, error] = await validateBody(request, matchupMatrixSchema)
+    if (error) return error
 
-    if (!teamId || !formatId) {
-      return badRequestResponse("Missing required fields: teamId, formatId", "INVALID_INPUT")
-    }
-
-    const team = await getTeam(teamId)
+    const team = await getTeam(body.teamId)
 
     if (!team) {
       return notFoundResponse("Team")
     }
 
     // Resolve threat IDs: use provided or top usage Pokemon
-    let resolvedThreats = threatIds ?? []
+    let resolvedThreats = body.threatIds ?? []
     if (resolvedThreats.length === 0) {
-      const usageEntries = await getUsageStats(formatId, { limit: 10 })
+      const usageEntries = await getUsageStats(body.formatId, { limit: 10 })
       resolvedThreats = usageEntries.map((e) => e.pokemonId)
     }
 
@@ -37,13 +31,13 @@ export async function POST(request: NextRequest) {
       } satisfies ApiResponse<MatchupMatrixEntry[][]>)
     }
 
-    const matrix = calculateMatchupMatrix(team.slots, resolvedThreats, formatId)
+    const matrix = calculateMatchupMatrix(team.slots, resolvedThreats, body.formatId)
 
     return NextResponse.json({
       data: matrix,
     } satisfies ApiResponse<MatchupMatrixEntry[][]>)
-  } catch (error) {
-    return apiErrorResponse(error, {
+  } catch (err) {
+    return apiErrorResponse(err, {
       fallback: "Matrix calculation failed",
       code: "CALC_ERROR",
     })

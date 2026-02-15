@@ -10,13 +10,17 @@ import {
 import type { AIDifficulty } from "@nasty-plot/battle-engine"
 import type { GameType } from "@nasty-plot/core"
 import { parseShowdownPaste } from "@nasty-plot/core"
+import { validateBody } from "../../../../lib/validation"
+import { batchSimulationSchema } from "../../../../lib/schemas/battle.schemas"
 
 const MAX_BATCH_GAMES = 500
 const PROGRESS_INTERVAL = 10
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json()
+    const [body, error] = await validateBody(req, batchSimulationSchema)
+    if (error) return error
+
     const {
       formatId,
       simFormatId,
@@ -29,10 +33,6 @@ export async function POST(req: NextRequest) {
       totalGames,
     } = body
 
-    if (!formatId || !team1Paste || !team2Paste || !totalGames) {
-      return badRequestResponse("Missing required fields")
-    }
-
     const pasteErrors = validateTeamPastes([
       { label: "Team 1", paste: team1Paste },
       { label: "Team 2", paste: team2Paste },
@@ -42,8 +42,8 @@ export async function POST(req: NextRequest) {
     }
 
     const games = Math.min(totalGames, MAX_BATCH_GAMES)
-    const resolvedGameType = gameType || "singles"
-    const resolvedDifficulty = aiDifficulty || "heuristic"
+    const resolvedGameType = (gameType || "singles") as GameType
+    const resolvedDifficulty = (aiDifficulty || "heuristic") as AIDifficulty
     const resolvedTeam1Name = team1Name || "Team 1"
     const resolvedTeam2Name = team2Name || "Team 2"
 
@@ -62,8 +62,8 @@ export async function POST(req: NextRequest) {
       {
         formatId,
         simFormatId: simFormatId || undefined,
-        gameType: resolvedGameType as GameType,
-        aiDifficulty: resolvedDifficulty as AIDifficulty,
+        gameType: resolvedGameType,
+        aiDifficulty: resolvedDifficulty,
         team1Paste,
         team2Paste,
         team1Name: resolvedTeam1Name,
@@ -90,8 +90,8 @@ export async function POST(req: NextRequest) {
       })
 
     return NextResponse.json({ id: batch.id, status: "running" }, { status: 201 })
-  } catch (error) {
-    return apiErrorResponse(error, {
+  } catch (err) {
+    return apiErrorResponse(err, {
       fallback: "Failed to start batch simulation",
     })
   }

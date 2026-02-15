@@ -67,7 +67,9 @@ export async function listSampleTeams(filters?: {
   formatId?: string
   archetype?: string
   search?: string
-}): Promise<SampleTeamData[]> {
+  page?: number
+  pageSize?: number
+}): Promise<{ teams: SampleTeamData[]; total: number }> {
   const where: Record<string, unknown> = { isActive: true }
   if (filters?.formatId) where.formatId = filters.formatId
   if (filters?.archetype) where.archetype = filters.archetype
@@ -77,7 +79,21 @@ export async function listSampleTeams(filters?: {
       { pokemonIds: { contains: filters.search } },
     ]
   }
-  return prisma.sampleTeam.findMany({ where, orderBy: { createdAt: "desc" } })
+
+  const page = filters?.page ?? 1
+  const pageSize = filters?.pageSize ?? 20
+  const skip = (page - 1) * pageSize
+
+  const [teams, total] = await Promise.all([
+    prisma.sampleTeam.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      skip,
+      take: pageSize,
+    }),
+    prisma.sampleTeam.count({ where }),
+  ])
+  return { teams, total }
 }
 
 export async function getSampleTeam(sampleTeamId: string): Promise<SampleTeamData | null> {

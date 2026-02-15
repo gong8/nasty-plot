@@ -38,18 +38,28 @@ export async function getSession(sessionId: string): Promise<ChatSessionData | n
 export async function listSessions(
   teamId?: string,
   contextMode?: string,
-): Promise<ChatSessionData[]> {
+  pagination?: { page?: number; pageSize?: number },
+): Promise<{ sessions: ChatSessionData[]; total: number }> {
   const where: Record<string, unknown> = {}
   if (teamId) where.teamId = teamId
   if (contextMode) where.contextMode = contextMode
 
-  const sessions = await prisma.chatSession.findMany({
-    where,
-    include: { messages: { orderBy: { createdAt: "asc" }, take: 1 } },
-    orderBy: { updatedAt: "desc" },
-  })
+  const page = pagination?.page ?? 1
+  const pageSize = pagination?.pageSize ?? 20
+  const skip = (page - 1) * pageSize
 
-  return sessions.map(mapSession)
+  const [sessions, total] = await Promise.all([
+    prisma.chatSession.findMany({
+      where,
+      include: { messages: { orderBy: { createdAt: "asc" }, take: 1 } },
+      orderBy: { updatedAt: "desc" },
+      skip,
+      take: pageSize,
+    }),
+    prisma.chatSession.count({ where }),
+  ])
+
+  return { sessions: sessions.map(mapSession), total }
 }
 
 export async function addMessage(

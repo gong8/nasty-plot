@@ -1,65 +1,31 @@
 import { NextRequest, NextResponse } from "next/server"
-import { apiErrorResponse, badRequestResponse } from "../../../lib/api-error"
-import { listBattles, createBattle } from "@nasty-plot/battle-engine/db"
+import { apiErrorResponse } from "../../../lib/api-error"
+import { listBattles, createBattle, type CreateBattleData } from "@nasty-plot/battle-engine/db"
+import { validateBody, validateSearchParams } from "../../../lib/validation"
+import { battleCreateSchema, battleListSearchSchema } from "../../../lib/schemas/battle.schemas"
 
 export async function GET(req: NextRequest) {
-  const { searchParams } = new URL(req.url)
-  const page = parseInt(searchParams.get("page") || "1", 10)
-  const limit = parseInt(searchParams.get("limit") || "20", 10)
-  const teamId = searchParams.get("teamId")
+  const [params, error] = validateSearchParams(req.url, battleListSearchSchema)
+  if (error) return error
 
-  const result = await listBattles({ page, limit, teamId })
+  const result = await listBattles({
+    page: params.page,
+    limit: params.limit,
+    teamId: params.teamId,
+  })
 
   return NextResponse.json(result)
 }
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json()
-    const {
-      formatId,
-      gameType,
-      mode = "play",
-      aiDifficulty,
-      team1Paste,
-      team1Name,
-      team2Paste,
-      team2Name,
-      team1Id,
-      team2Id,
-      winnerId,
-      turnCount,
-      protocolLog,
-      commentary,
-      turns,
-      chatSessionId,
-    } = body
+    const [body, error] = await validateBody(req, battleCreateSchema)
+    if (error) return error
 
-    if (!formatId || !team1Paste || !team2Paste || !protocolLog) {
-      return badRequestResponse("Missing required fields")
-    }
-
-    const battle = await createBattle({
-      formatId,
-      gameType,
-      mode,
-      aiDifficulty,
-      team1Paste,
-      team1Name,
-      team2Paste,
-      team2Name,
-      team1Id,
-      team2Id,
-      winnerId,
-      turnCount,
-      protocolLog,
-      commentary,
-      turns,
-      chatSessionId,
-    })
+    const battle = await createBattle(body as CreateBattleData)
 
     return NextResponse.json(battle, { status: 201 })
-  } catch (error) {
-    return apiErrorResponse(error, { fallback: "Failed to save battle" })
+  } catch (err) {
+    return apiErrorResponse(err, { fallback: "Failed to save battle" })
   }
 }

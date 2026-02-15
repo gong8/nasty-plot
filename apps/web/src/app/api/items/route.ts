@@ -1,14 +1,15 @@
 import { NextResponse } from "next/server"
 import { listItems, searchItems } from "@nasty-plot/pokemon-data"
 import { getFormatItems } from "@nasty-plot/formats"
-import { parseIntQueryParam, type PaginatedResponse, type ItemData } from "@nasty-plot/core"
+import { type PaginatedResponse, type ItemData } from "@nasty-plot/core"
+import { validateSearchParams } from "../../../lib/validation"
+import { itemsSearchSchema } from "../../../lib/schemas/data.schemas"
 
 export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url)
-  const search = searchParams.get("search") ?? ""
-  const formatId = searchParams.get("formatId")
-  const page = parseIntQueryParam(searchParams.get("page"), 1, 1, Number.MAX_SAFE_INTEGER)
-  const pageSize = parseIntQueryParam(searchParams.get("pageSize"), 50, 1, 100)
+  const [params, error] = validateSearchParams(request.url, itemsSearchSchema)
+  if (error) return error
+
+  const { search, formatId, page, pageSize } = params
 
   let items: ItemData[]
   if (formatId) {

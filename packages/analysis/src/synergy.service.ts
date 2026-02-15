@@ -38,7 +38,13 @@ export function calculateSynergy(slots: TeamSlotData[]): number {
   return Math.min(100, Math.max(0, Math.round(score)))
 }
 
-/** Max 35 points. Do teammates cover each other's weaknesses? */
+/**
+ * Max 35 points. Do teammates cover each other's weaknesses?
+ *
+ * O(n^2) where n = team size. Acceptable since n <= 6 (max 36 iterations).
+ * For recommendation candidates (n up to ~100), consider pre-computing
+ * a type effectiveness lookup table if this becomes a bottleneck.
+ */
 function calculateDefensiveComplementarity(slots: TeamSlotData[]): number {
   let coveredWeaknesses = 0
   let totalWeaknesses = 0

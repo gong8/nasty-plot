@@ -1,17 +1,16 @@
 import { vi } from "vitest"
 import { NextRequest } from "next/server"
 
-vi.mock("@nasty-plot/db", () => ({
-  prisma: {
-    battle: {
-      findMany: vi.fn(),
-      create: vi.fn(),
-      count: vi.fn(),
-    },
-  },
+const { mockListBattles, mockCreateBattle } = vi.hoisted(() => ({
+  mockListBattles: vi.fn(),
+  mockCreateBattle: vi.fn(),
 }))
 
-import { prisma } from "@nasty-plot/db"
+vi.mock("@nasty-plot/battle-engine/db", () => ({
+  listBattles: mockListBattles,
+  createBattle: mockCreateBattle,
+}))
+
 import { GET, POST } from "../../apps/web/src/app/api/battles/route"
 
 describe("GET /api/battles", () => {
@@ -34,8 +33,7 @@ describe("GET /api/battles", () => {
         createdAt: new Date().toISOString(),
       },
     ]
-    ;(prisma.battle.findMany as ReturnType<typeof vi.fn>).mockResolvedValue(mockBattles)
-    ;(prisma.battle.count as ReturnType<typeof vi.fn>).mockResolvedValue(1)
+    mockListBattles.mockResolvedValue({ battles: mockBattles, total: 1, page: 1, limit: 10 })
 
     const req = new NextRequest("http://localhost:3000/api/battles?page=1&limit=10")
     const response = await GET(req)
@@ -46,14 +44,11 @@ describe("GET /api/battles", () => {
     expect(data.total).toBe(1)
     expect(data.page).toBe(1)
     expect(data.limit).toBe(10)
-    expect(prisma.battle.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({ skip: 0, take: 10 }),
-    )
+    expect(mockListBattles).toHaveBeenCalledWith(expect.objectContaining({ page: 1, limit: 10 }))
   })
 
   it("handles empty results", async () => {
-    ;(prisma.battle.findMany as ReturnType<typeof vi.fn>).mockResolvedValue([])
-    ;(prisma.battle.count as ReturnType<typeof vi.fn>).mockResolvedValue(0)
+    mockListBattles.mockResolvedValue({ battles: [], total: 0, page: 1, limit: 20 })
 
     const req = new NextRequest("http://localhost:3000/api/battles")
     const response = await GET(req)
@@ -65,8 +60,7 @@ describe("GET /api/battles", () => {
   })
 
   it("applies default pagination when no params", async () => {
-    ;(prisma.battle.findMany as ReturnType<typeof vi.fn>).mockResolvedValue([])
-    ;(prisma.battle.count as ReturnType<typeof vi.fn>).mockResolvedValue(0)
+    mockListBattles.mockResolvedValue({ battles: [], total: 0, page: 1, limit: 20 })
 
     const req = new NextRequest("http://localhost:3000/api/battles")
     const response = await GET(req)
@@ -74,9 +68,7 @@ describe("GET /api/battles", () => {
 
     expect(data.page).toBe(1)
     expect(data.limit).toBe(20)
-    expect(prisma.battle.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({ skip: 0, take: 20 }),
-    )
+    expect(mockListBattles).toHaveBeenCalledWith(expect.objectContaining({ page: 1, limit: 20 }))
   })
 })
 
@@ -95,7 +87,7 @@ describe("POST /api/battles", () => {
       team2Paste: "Dragapult @ Choice Specs\nAbility: Infiltrator",
       protocolLog: "|start\n|turn|1",
     }
-    ;(prisma.battle.create as ReturnType<typeof vi.fn>).mockResolvedValue(mockBattle)
+    mockCreateBattle.mockResolvedValue(mockBattle)
 
     const req = new NextRequest("http://localhost:3000/api/battles", {
       method: "POST",
@@ -113,13 +105,12 @@ describe("POST /api/battles", () => {
 
     expect(response.status).toBe(201)
     expect(data.id).toBe("new-battle-id")
-    expect(prisma.battle.create).toHaveBeenCalledWith(
+    expect(mockCreateBattle).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: expect.objectContaining({
-          formatId: "gen9ou",
-          gameType: "singles",
-          mode: "play",
-        }),
+        formatId: "gen9ou",
+        team1Paste: "Garchomp @ Choice Scarf\nAbility: Rough Skin",
+        team2Paste: "Dragapult @ Choice Specs\nAbility: Infiltrator",
+        protocolLog: "|start\n|turn|1",
       }),
     )
   })
@@ -135,7 +126,8 @@ describe("POST /api/battles", () => {
     const data = await response.json()
 
     expect(response.status).toBe(400)
-    expect(data.error).toBe("Missing required fields")
+    expect(data.error).toBe("Validation failed")
+    expect(data.details).toBeDefined()
   })
 
   it("returns 400 when protocolLog is missing", async () => {
@@ -155,7 +147,7 @@ describe("POST /api/battles", () => {
 
   it("creates battle with turns data", async () => {
     const mockBattle = { id: "battle-with-turns" }
-    ;(prisma.battle.create as ReturnType<typeof vi.fn>).mockResolvedValue(mockBattle)
+    mockCreateBattle.mockResolvedValue(mockBattle)
 
     const turns = [
       {
@@ -181,15 +173,15 @@ describe("POST /api/battles", () => {
 
     const response = await POST(req)
     expect(response.status).toBe(201)
-    expect(prisma.battle.create).toHaveBeenCalledWith(
+    expect(mockCreateBattle).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: expect.objectContaining({
-          turns: {
-            create: expect.arrayContaining([
-              expect.objectContaining({ turnNumber: 1, winProbTeam1: 0.55 }),
-            ]),
-          },
-        }),
+        formatId: "gen9ou",
+        team1Paste: "paste1",
+        team2Paste: "paste2",
+        protocolLog: "|turn|1",
+        turns: expect.arrayContaining([
+          expect.objectContaining({ turnNumber: 1, winProbTeam1: 0.55 }),
+        ]),
       }),
     )
   })

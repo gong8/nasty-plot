@@ -216,7 +216,7 @@ export async function updateBatchProgress(
         draws: progress.draws,
       },
     })
-    .catch(() => {})
+    .catch((err) => console.error("[battle-service] updateBatchProgress:", err))
 }
 
 export async function completeBatchSimulation(
@@ -240,7 +240,7 @@ export async function failBatchSimulation(batchId: string) {
       where: { id: batchId },
       data: { status: "completed" },
     })
-    .catch(() => {})
+    .catch((err) => console.error("[battle-service] failBatchSimulation:", err))
 }
 
 // --- Team Battle Stats ---

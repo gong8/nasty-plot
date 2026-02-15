@@ -1,10 +1,5 @@
-import { Battle, BattleStreams, Teams } from "@pkmn/sim"
-import {
-  processChunk,
-  parseRequest,
-  parseRequestForSlot,
-  updateSideFromRequest,
-} from "./protocol-parser.service"
+import { BattleStreams, Teams } from "@pkmn/sim"
+import { processChunk, parseRequest } from "./protocol-parser.service"
 import type { SetPredictor } from "./ai/set-predictor"
 import { DEFAULT_FORMAT_ID, toId, type GameType } from "@nasty-plot/core"
 import {
@@ -18,10 +13,15 @@ import {
   type BattleCheckpoint,
   type PredictedSet,
 } from "./types"
+import { handleAITurn as aiHandleTurn } from "./battle-ai-handler"
+import {
+  handleP1Request as reqHandleP1,
+  handleP2Request as reqHandleP2,
+} from "./battle-request-handler"
+import { resumeBattle, type ResumableManager } from "./battle-resume"
 
 const START_TIMEOUT_MS = 10_000
 const UPDATE_TIMEOUT_MS = 15_000
-const RESUME_INIT_DELAY_MS = 50
 const PLAYER_ID_PATTERN = /^p[1-4]$/
 
 export function createInitialState(id: string, gameType: GameType): BattleState {
@@ -81,7 +81,7 @@ export type BattleEventHandler = (state: BattleState, entries: BattleLogEntry[])
  * - Maintaining normalized BattleState
  * - Routing AI decisions
  */
-export class BattleManager {
+export class BattleManager implements ResumableManager {
   private stream: InstanceType<typeof BattleStreams.BattleStream>
   private state: BattleState
   private config: BattleManagerConfig
@@ -116,6 +116,38 @@ export class BattleManager {
     this.state.sides.p1.name = config.playerName || "Player"
     this.state.sides.p2.name = config.opponentName || "Opponent"
     this.stream = new BattleStreams.BattleStream()
+  }
+
+  // --- ResumableManager interface for battle-resume.ts ---
+  _setSuppressingOutput(v: boolean) {
+    this.suppressingOutput = v
+  }
+  _setStarted(v: boolean) {
+    this.started = v
+  }
+  _readStream() {
+    this.readStream()
+  }
+  _getStream() {
+    return this.stream
+  }
+  _setState(state: BattleState) {
+    this.state = state
+  }
+  _setProtocolLog(log: string) {
+    this.protocolLog = log
+  }
+  _setPendingP2Actions(actions: BattleActionSet | null) {
+    this.pendingP2Actions = actions
+  }
+  _setPendingP2Slot2Actions(actions: BattleActionSet | null) {
+    this.pendingP2Slot2Actions = actions
+  }
+  _setPendingP1Slot2Actions(actions: BattleActionSet | null) {
+    this.pendingP1Slot2Actions = actions
+  }
+  _getConfig() {
+    return this.config
   }
 
   /** Set the AI player for p2. */
@@ -246,7 +278,7 @@ export class BattleManager {
       this.stream.write(`>p1 ${choice}`)
 
       if (this.ai && this.pendingP2Actions) {
-        await this.handleAITurn()
+        await this.delegateAITurn()
       }
 
       await this.waitForUpdate()
@@ -341,105 +373,20 @@ export class BattleManager {
 
   /**
    * Resume a battle from a checkpoint.
-   * Creates a new BattleManager, initializes the stream, then swaps in the
-   * deserialized battle state using Battle.fromJSON() + battle.restart().
+   * Delegates to battle-resume.ts for the deserialization logic.
    */
   static async resume(
     checkpoint: BattleCheckpoint,
     ai: AIPlayer,
     eventHandler: BattleEventHandler,
   ): Promise<BattleManager> {
-    const manager = new BattleManager({
-      formatId: checkpoint.config.formatId,
-      simFormatId: checkpoint.config.simFormatId,
-      gameType: checkpoint.config.gameType,
-      playerTeam: checkpoint.config.playerTeam,
-      opponentTeam: checkpoint.config.opponentTeam,
-      playerName: checkpoint.config.playerName,
-      opponentName: checkpoint.config.opponentName,
-    })
-
-    manager.setAI(ai)
-    manager.suppressingOutput = true
-    manager.started = true
-
-    // Start reading the stream (but output is suppressed)
-    manager.readStream()
-
-    // Initialize BattleStream plumbing — this creates a throwaway Battle
-    // whose only purpose is to set up the `send` callback
-    const playerPacked = pasteToPackedTeam(checkpoint.config.playerTeam)
-    const opponentPacked = pasteToPackedTeam(checkpoint.config.opponentTeam)
-    const format = checkpoint.config.simFormatId || checkpoint.config.formatId || DEFAULT_FORMAT_ID
-
-    manager.stream.write(`>start {"formatid":"${format}"}`)
-    manager.stream.write(
-      `>player p1 {"name":"${checkpoint.config.playerName}","team":"${escapeTeam(playerPacked || "")}"}`,
+    const manager = await resumeBattle(
+      checkpoint,
+      ai,
+      eventHandler,
+      (config) => new BattleManager(config),
     )
-    manager.stream.write(
-      `>player p2 {"name":"${checkpoint.config.opponentName}","team":"${escapeTeam(opponentPacked || "")}"}`,
-    )
-
-    // Let the event loop process stream initialization
-    await new Promise((r) => setTimeout(r, RESUME_INIT_DELAY_MS))
-
-    // Capture the send callback from the throwaway battle
-    const streamBattle = (manager.stream as unknown as { battle?: { send: unknown } }).battle
-    if (!streamBattle) {
-      throw new Error("Failed to initialize battle stream for resume")
-    }
-    const send = streamBattle.send as (...args: unknown[]) => void
-
-    // Deserialize the saved battle and wire it back into the stream
-    const restored = Battle.fromJSON(checkpoint.serializedBattle as string)
-    restored.restart(send)
-    ;(manager.stream as unknown as { battle: unknown }).battle = restored
-
-    // Restore our state and protocol log
-    manager.state = structuredClone(checkpoint.battleState)
-    manager.protocolLog = checkpoint.protocolLog
-
-    BattleManager.restorePendingActions(manager, restored)
-
-    // Re-enable output processing and emit current state
-    manager.suppressingOutput = false
-    manager.eventHandler = eventHandler
-    eventHandler(manager.state, [])
-
-    return manager
-  }
-
-  /** Re-extract pending actions from a restored battle's active requests. */
-  private static restorePendingActions(manager: BattleManager, restored: Battle) {
-    const p1Request = restored.sides[0]?.activeRequest
-    const p2Request = restored.sides[1]?.activeRequest
-
-    if (p2Request && !p2Request.wait) {
-      try {
-        const parsed = parseRequest(JSON.stringify(p2Request))
-        if (parsed.actions) {
-          manager.pendingP2Actions = parsed.actions
-          if (manager.state.sides.p2.hasTerastallized) {
-            manager.pendingP2Actions.canTera = false
-          }
-        }
-        if (manager.state.gameType === "doubles") {
-          const slot2 = parseRequestForSlot(JSON.stringify(p2Request), 1)
-          manager.pendingP2Slot2Actions = slot2.actions
-        }
-      } catch {
-        // Non-critical — AI will get actions on next turn
-      }
-    }
-
-    if (p1Request && !p1Request.wait && manager.state.gameType === "doubles") {
-      try {
-        const slot2 = parseRequestForSlot(JSON.stringify(p1Request), 1)
-        manager.pendingP1Slot2Actions = slot2.actions
-      } catch {
-        // Non-critical
-      }
-    }
+    return manager as BattleManager
   }
 
   /** Destroy the battle stream. */
@@ -599,123 +546,45 @@ export class BattleManager {
       const isDoubles = this.state.gameType === "doubles"
 
       if (sideId === "p1") {
-        this.handleP1Request(parsed, requestJson, isDoubles)
+        const result = reqHandleP1(parsed, requestJson, isDoubles, {
+          state: this.state,
+          ai: this.ai,
+          eventHandler: this.eventHandler,
+          stream: this.stream,
+          pendingP2Actions: this.pendingP2Actions,
+          pendingP2Slot2Actions: this.pendingP2Slot2Actions,
+          pendingP1Slot2Actions: this.pendingP1Slot2Actions,
+          pendingP1Slot1Action: this.pendingP1Slot1Action,
+          resolveWaiter: () => this.resolveWaiter(),
+        })
+        this.pendingP1Slot2Actions = result.pendingP1Slot2Actions
+        this.pendingP1Slot1Action = result.pendingP1Slot1Action as BattleAction | null
       } else if (sideId === "p2") {
-        this.handleP2Request(parsed, requestJson, isDoubles)
+        this.delegateP2Request(parsed, requestJson, isDoubles)
       }
     } catch (err) {
       console.error("[BattleManager] Failed to parse request:", err)
     }
   }
 
-  private handleP1Request(
+  private async delegateP2Request(
     parsed: ReturnType<typeof parseRequest>,
     requestJson: string,
     isDoubles: boolean,
   ) {
-    if (parsed.side) {
-      updateSideFromRequest(this.state, "p1", parsed.side)
-    }
-
-    // Reset pending slot-1 action on new request (new turn)
-    this.pendingP1Slot1Action = null
-
-    if (parsed.teamPreview) {
-      this.state.phase = "preview"
-      this.state.waitingForChoice = true
-    } else if (parsed.wait) {
-      this.state.waitingForChoice = false
-      if (isDoubles) {
-        console.log("[BattleManager] p1 received wait request")
-      }
-    } else {
-      this.applyP1Actions(parsed, requestJson, isDoubles)
-    }
-
-    this.eventHandler?.(this.state, [])
-    this.resolveWaiter()
-  }
-
-  /** Set availableActions and pendingP1Slot2Actions from a parsed p1 request. */
-  private applyP1Actions(
-    parsed: ReturnType<typeof parseRequest>,
-    requestJson: string,
-    isDoubles: boolean,
-  ) {
-    if (isDoubles) {
-      const slot2 = parseRequestForSlot(requestJson, 1)
-      const slot0HasNoMoves =
-        parsed.actions && !parsed.actions.forceSwitch && parsed.actions.moves.length === 0
-
-      // If slot 0 has no moves and no forceSwitch but slot 1 needs to act
-      // (e.g. forceSwitch: [false, true]), show slot 1's actions directly
-      if (slot0HasNoMoves && slot2.actions) {
-        this.pendingP1Slot1Action = { type: "move", moveIndex: 0 } // sentinel for "pass"
-        this.state.availableActions = slot2.actions
-        this.pendingP1Slot2Actions = null
-        console.log("[BattleManager] p1 doubles: slot0 pass, showing slot1 forceSwitch")
-      } else {
-        this.state.availableActions = parsed.actions
-        this.pendingP1Slot2Actions = slot2.actions
-      }
-
-      console.log(
-        "[BattleManager] p1 request: slot0 moves=%d, slot1 actions=%s, forceSwitch=%s",
-        parsed.actions?.moves.length ?? 0,
-        slot2.actions ? `moves=${slot2.actions.moves.length}` : "null",
-        parsed.actions?.forceSwitch ?? false,
-      )
-    } else {
-      this.state.availableActions = parsed.actions
-    }
-
-    if (this.state.availableActions && this.state.sides.p1.hasTerastallized) {
-      this.state.availableActions.canTera = false
-    }
-    this.state.waitingForChoice = true
-  }
-
-  private handleP2Request(
-    parsed: ReturnType<typeof parseRequest>,
-    requestJson: string,
-    isDoubles: boolean,
-  ) {
-    if (parsed.side) {
-      updateSideFromRequest(this.state, "p2", parsed.side)
-    }
-
-    // Reset stale p2 pending actions on every new p2 request to prevent
-    // sending choices for fainted Pokemon on subsequent turns.
-    this.pendingP2Actions = null
-    this.pendingP2Slot2Actions = null
-
-    if (parsed.teamPreview || parsed.wait || !parsed.actions) return
-
-    // Only p2 needs to switch (p1 is waiting) — AI responds immediately
-    if (parsed.actions.forceSwitch && this.ai && !this.state.waitingForChoice) {
-      const slot2Actions = isDoubles ? parseRequestForSlot(requestJson, 1).actions : null
-      if (isDoubles) {
-        this.handleAIForceSwitchDoubles(parsed.actions, slot2Actions)
-      } else {
-        this.handleAIForceSwitch(parsed.actions)
-      }
-      return
-    }
-
-    // Store for AI to use when player submits their action
-    this.pendingP2Actions = parsed.actions
-    if (this.state.sides.p2.hasTerastallized) {
-      this.pendingP2Actions.canTera = false
-    }
-
-    if (isDoubles) {
-      this.pendingP2Slot2Actions = parseRequestForSlot(requestJson, 1).actions
-      console.log(
-        "[BattleManager] p2 request: slot0 moves=%d, slot1=%s",
-        parsed.actions.moves.length,
-        this.pendingP2Slot2Actions ? `moves=${this.pendingP2Slot2Actions.moves.length}` : "null",
-      )
-    }
+    const result = await reqHandleP2(parsed, requestJson, isDoubles, {
+      state: this.state,
+      ai: this.ai,
+      eventHandler: this.eventHandler,
+      stream: this.stream,
+      pendingP2Actions: this.pendingP2Actions,
+      pendingP2Slot2Actions: this.pendingP2Slot2Actions,
+      pendingP1Slot2Actions: this.pendingP1Slot2Actions,
+      pendingP1Slot1Action: this.pendingP1Slot1Action,
+      resolveWaiter: () => this.resolveWaiter(),
+    })
+    this.pendingP2Actions = result.pendingP2Actions
+    this.pendingP2Slot2Actions = result.pendingP2Slot2Actions
   }
 
   /**
@@ -732,7 +601,7 @@ export class BattleManager {
 
       // Let AI make its choice
       if (this.ai && this.pendingP2Actions) {
-        await this.handleAITurn()
+        await this.delegateAITurn()
       }
 
       await this.waitForUpdate()
@@ -741,78 +610,21 @@ export class BattleManager {
     }
   }
 
-  private async handleAITurn() {
+  /** Delegate AI turn to the extracted handler. */
+  private async delegateAITurn() {
     if (!this.ai || !this.pendingP2Actions) return
 
-    await aiThinkDelay(300, 700)
-    this.syncMCTSBattleState()
-
-    const action1 = await this.ai.chooseAction(this.state, this.pendingP2Actions)
-    let choice: string
-
-    if (this.state.gameType === "doubles" && this.pendingP2Slot2Actions) {
-      const action2 = await this.ai.chooseAction(this.state, this.pendingP2Slot2Actions)
-      choice = `${actionToChoice(action1)}, ${actionToChoice(action2)}`
-      console.log("[BattleManager] p2 AI doubles choice:", choice)
-      this.pendingP2Slot2Actions = null
-    } else {
-      choice = actionToChoice(action1)
-      console.log("[BattleManager] p2 AI choice:", choice)
-    }
-
-    this.stream.write(`>p2 ${choice}`)
-    this.pendingP2Actions = null
-  }
-
-  /** Pass serialized battle state to MCTS AI if it supports it. */
-  private syncMCTSBattleState() {
-    const ai = this.ai as { setBattleState?: (json: unknown, fmt?: string) => void } | null
-    if (typeof ai?.setBattleState !== "function") return
-
-    const serialized = this.getSerializedBattle()
-    if (serialized) {
-      ai.setBattleState(serialized, this.config.formatId)
-    }
-  }
-
-  private async handleAIForceSwitch(actions: BattleActionSet) {
-    if (!this.ai) return
-
-    await aiThinkDelay(200, 300)
-    const aiAction = await this.ai.chooseAction(this.state, actions)
-    this.stream.write(`>p2 ${actionToChoice(aiAction)}`)
-  }
-
-  private async handleAIForceSwitchDoubles(
-    slot1Actions: BattleActionSet,
-    slot2Actions: BattleActionSet | null,
-  ) {
-    if (!this.ai) return
-
-    await aiThinkDelay(200, 300)
-    const action1 = await this.ai.chooseAction(this.state, slot1Actions)
-
-    if (slot2Actions) {
-      // If slot1 chose a switch, remove that Pokemon from slot2's options
-      // to prevent "can only switch in once" errors when both slots faint
-      if (action1.type === "switch") {
-        slot2Actions = {
-          ...slot2Actions,
-          switches: slot2Actions.switches.filter((s) => s.index !== action1.pokemonIndex),
-        }
-      }
-      const action2 = await this.ai.chooseAction(this.state, slot2Actions)
-      const choice = `${actionToChoice(action1)}, ${actionToChoice(action2)}`
-      console.log("[BattleManager] p2 AI doubles forceSwitch:", choice)
-      this.stream.write(`>p2 ${choice}`)
-    } else {
-      const choice = buildPartialDoublesChoice(
-        actionToChoice(action1),
-        slot1Actions.activeSlot ?? 0,
-      )
-      console.log("[BattleManager] p2 AI doubles partial forceSwitch:", choice)
-      this.stream.write(`>p2 ${choice}`)
-    }
+    const result = await aiHandleTurn({
+      ai: this.ai,
+      state: this.state,
+      pendingP2Actions: this.pendingP2Actions,
+      pendingP2Slot2Actions: this.pendingP2Slot2Actions,
+      stream: this.stream,
+      getSerializedBattle: () => this.getSerializedBattle(),
+      formatId: this.config.formatId,
+    })
+    this.pendingP2Actions = result.pendingP2Actions
+    this.pendingP2Slot2Actions = result.pendingP2Slot2Actions
   }
 
   private resolveWaiter() {
@@ -842,11 +654,6 @@ export class BattleManager {
       }, UPDATE_TIMEOUT_MS)
     })
   }
-}
-
-/** Simulate AI "thinking" with a randomized delay for realism. */
-function aiThinkDelay(baseMs: number, jitterMs: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, baseMs + Math.random() * jitterMs))
 }
 
 /** Build a doubles choice string where only one slot acts and the other passes. */

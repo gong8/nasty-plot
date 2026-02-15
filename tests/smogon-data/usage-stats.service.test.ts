@@ -13,8 +13,25 @@ import {
 // Mocks
 // ---------------------------------------------------------------------------
 
+// Disable TTLCache so cached values don't leak between tests
+vi.mock("@nasty-plot/core", async (importOriginal) => {
+  const actual = await importOriginal<Record<string, unknown>>()
+  return {
+    ...actual,
+    TTLCache: class {
+      get() {
+        return undefined
+      }
+      set() {}
+      invalidate() {}
+      clear() {}
+    },
+  }
+})
+
 vi.mock("@nasty-plot/db", () => ({
   prisma: {
+    $transaction: vi.fn((ops: Promise<unknown>[]) => Promise.all(ops)),
     usageStats: {
       upsert: vi.fn(),
       findMany: vi.fn(),

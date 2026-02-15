@@ -22,6 +22,9 @@ function resolveDbUrl(rawUrl: string): string {
   return "file:" + path.resolve(findMonorepoRoot(), relPath)
 }
 
+// Note: Prisma with better-sqlite3 adapter does not support $on event logging
+// (query events require a Prisma engine, not a driver adapter). Use PRISMA_LOG=query
+// with a non-adapter setup or enable SQLite's own tracing for query-level debugging.
 function createPrismaClient(): PrismaClient {
   const dbUrl = resolveDbUrl(process.env.DATABASE_URL || "file:./prisma/dev.db")
   const adapter = new PrismaBetterSqlite3({ url: dbUrl })

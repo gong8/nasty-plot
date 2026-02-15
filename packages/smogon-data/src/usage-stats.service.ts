@@ -1,8 +1,10 @@
 import { prisma } from "@nasty-plot/db"
-import { toId } from "@nasty-plot/core"
+import { toId, TTLCache } from "@nasty-plot/core"
 import type { UsageStatsEntry, TeammateCorrelation } from "@nasty-plot/core"
 import { fetchSmogonData } from "./fetch-helper"
 import { upsertSyncLog } from "./sync-log.service"
+
+const usageStatsCache = new TTLCache<UsageStatsEntry[]>(5 * 60 * 1000) // 5 min
 
 // Build Smogon stats URL for a given format/year/month
 export function buildStatsUrl(
@@ -83,103 +85,126 @@ export async function resolveYearMonth(
 }
 
 // ---------------------------------------------------------------------------
-// Upsert helpers for syncUsageStats
+// Collect helpers for syncUsageStats (return PrismaPromise arrays for batching)
 // ---------------------------------------------------------------------------
 
-async function saveTeammates(
+const TRANSACTION_CHUNK_SIZE = 500
+
+function collectTeammateOps(
   formatId: string,
   pokemonId: string,
   teammates: Record<string, number> | undefined,
-): Promise<void> {
+) {
+  const ops = []
   for (const [teammateName, correlation] of Object.entries(teammates ?? {})) {
     const teammateId = toId(teammateName)
     if (!teammateId || correlation <= 0) continue
-    await prisma.teammateCorr.upsert({
-      where: {
-        formatId_pokemonAId_pokemonBId: {
+    ops.push(
+      prisma.teammateCorr.upsert({
+        where: {
+          formatId_pokemonAId_pokemonBId: {
+            formatId,
+            pokemonAId: pokemonId,
+            pokemonBId: teammateId,
+          },
+        },
+        update: { correlationPercent: correlation },
+        create: {
           formatId,
           pokemonAId: pokemonId,
           pokemonBId: teammateId,
+          correlationPercent: correlation,
         },
-      },
-      update: { correlationPercent: correlation },
-      create: {
-        formatId,
-        pokemonAId: pokemonId,
-        pokemonBId: teammateId,
-        correlationPercent: correlation,
-      },
-    })
+      }),
+    )
   }
+  return ops
 }
 
-async function saveChecksAndCounters(
+function collectChecksAndCounterOps(
   formatId: string,
   targetId: string,
   counters: Record<string, [number, number, ...number[]]> | undefined,
-): Promise<void> {
+) {
+  const ops = []
   for (const [counterName, [koPercent, switchPercent]] of Object.entries(counters ?? {})) {
     const counterId = toId(counterName)
     if (!counterId) continue
-    await prisma.checkCounter.upsert({
-      where: {
-        formatId_targetId_counterId: { formatId, targetId, counterId },
-      },
-      update: { koPercent, switchPercent },
-      create: { formatId, targetId, counterId, koPercent, switchPercent },
-    })
+    ops.push(
+      prisma.checkCounter.upsert({
+        where: {
+          formatId_targetId_counterId: { formatId, targetId, counterId },
+        },
+        update: { koPercent, switchPercent },
+        create: { formatId, targetId, counterId, koPercent, switchPercent },
+      }),
+    )
   }
+  return ops
 }
 
-async function saveMoveUsage(
+function collectMoveUsageOps(
   formatId: string,
   pokemonId: string,
   moves: Record<string, number> | undefined,
-): Promise<void> {
+) {
+  const ops = []
   for (const [moveName, usage] of Object.entries(moves ?? {})) {
     if (!moveName || usage <= 0) continue
-    await prisma.moveUsage.upsert({
-      where: { formatId_pokemonId_moveName: { formatId, pokemonId, moveName } },
-      update: { usagePercent: usage },
-      create: { formatId, pokemonId, moveName, usagePercent: usage },
-    })
+    ops.push(
+      prisma.moveUsage.upsert({
+        where: { formatId_pokemonId_moveName: { formatId, pokemonId, moveName } },
+        update: { usagePercent: usage },
+        create: { formatId, pokemonId, moveName, usagePercent: usage },
+      }),
+    )
   }
+  return ops
 }
 
-async function saveItemUsage(
+function collectItemUsageOps(
   formatId: string,
   pokemonId: string,
   items: Record<string, number> | undefined,
-): Promise<void> {
+) {
+  const ops = []
   for (const [itemName, usage] of Object.entries(items ?? {})) {
     if (!itemName || usage <= 0) continue
-    await prisma.itemUsage.upsert({
-      where: { formatId_pokemonId_itemName: { formatId, pokemonId, itemName } },
-      update: { usagePercent: usage },
-      create: { formatId, pokemonId, itemName, usagePercent: usage },
-    })
+    ops.push(
+      prisma.itemUsage.upsert({
+        where: { formatId_pokemonId_itemName: { formatId, pokemonId, itemName } },
+        update: { usagePercent: usage },
+        create: { formatId, pokemonId, itemName, usagePercent: usage },
+      }),
+    )
   }
+  return ops
 }
 
-async function saveAbilityUsage(
+function collectAbilityUsageOps(
   formatId: string,
   pokemonId: string,
   abilities: Record<string, number> | undefined,
-): Promise<void> {
+) {
+  const ops = []
   for (const [abilityName, usage] of Object.entries(abilities ?? {})) {
     if (!abilityName || usage <= 0) continue
-    await prisma.abilityUsage.upsert({
-      where: { formatId_pokemonId_abilityName: { formatId, pokemonId, abilityName } },
-      update: { usagePercent: usage },
-      create: { formatId, pokemonId, abilityName, usagePercent: usage },
-    })
+    ops.push(
+      prisma.abilityUsage.upsert({
+        where: { formatId_pokemonId_abilityName: { formatId, pokemonId, abilityName } },
+        update: { usagePercent: usage },
+        create: { formatId, pokemonId, abilityName, usagePercent: usage },
+      }),
+    )
   }
+  return ops
 }
 
 // ---------------------------------------------------------------------------
 
 /**
  * Fetch usage statistics from Smogon and persist to DB.
+ * Collects all upsert operations and executes them in batched transactions.
  * @param formatId - The app's format ID (used for DB storage)
  * @param options.smogonStatsId - Override format ID for the Smogon URL (e.g. "gen9vgc2025regj")
  * @param options.year - Specific year to fetch
@@ -203,35 +228,49 @@ export async function syncUsageStats(
   entries.sort(([, a], [, b]) => b.usage - a.usage)
   console.log(`[usage-stats] Saving ${entries.length} Pokemon for ${formatId}`)
 
+  // Collect all operations into a single array for batched execution
+  // Mixed PrismaPromise types (UsageStats, TeammateCorr, CheckCounter, etc.)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const allOps: any[] = []
+
   for (let i = 0; i < entries.length; i++) {
     const [name, data] = entries[i]
     const pokemonId = toId(name)
     const rank = i + 1
 
-    await prisma.usageStats.upsert({
-      where: {
-        formatId_pokemonId_year_month: { formatId, pokemonId, year: statYear, month: statMonth },
-      },
-      update: { usagePercent: data.usage, rank },
-      create: {
-        formatId,
-        pokemonId,
-        usagePercent: data.usage,
-        rank,
-        year: statYear,
-        month: statMonth,
-      },
-    })
+    allOps.push(
+      prisma.usageStats.upsert({
+        where: {
+          formatId_pokemonId_year_month: { formatId, pokemonId, year: statYear, month: statMonth },
+        },
+        update: { usagePercent: data.usage, rank },
+        create: {
+          formatId,
+          pokemonId,
+          usagePercent: data.usage,
+          rank,
+          year: statYear,
+          month: statMonth,
+        },
+      }),
+    )
 
-    await saveTeammates(formatId, pokemonId, data.Teammates)
-    await saveChecksAndCounters(formatId, pokemonId, data["Checks and Counters"])
-    await saveMoveUsage(formatId, pokemonId, data.Moves)
-    await saveItemUsage(formatId, pokemonId, data.Items)
-    await saveAbilityUsage(formatId, pokemonId, data.Abilities)
+    allOps.push(...collectTeammateOps(formatId, pokemonId, data.Teammates))
+    allOps.push(...collectChecksAndCounterOps(formatId, pokemonId, data["Checks and Counters"]))
+    allOps.push(...collectMoveUsageOps(formatId, pokemonId, data.Moves))
+    allOps.push(...collectItemUsageOps(formatId, pokemonId, data.Items))
+    allOps.push(...collectAbilityUsageOps(formatId, pokemonId, data.Abilities))
+  }
+
+  // Execute in chunks to avoid SQLite limits
+  for (let i = 0; i < allOps.length; i += TRANSACTION_CHUNK_SIZE) {
+    await prisma.$transaction(allOps.slice(i, i + TRANSACTION_CHUNK_SIZE))
   }
 
   const monthStr = `${statYear}-${String(statMonth).padStart(2, "0")}`
   await upsertSyncLog("smogon-stats", formatId, `Fetched ${entries.length} Pokemon for ${monthStr}`)
+
+  usageStatsCache.clear()
 
   console.log(`[usage-stats] Done: ${entries.length} Pokemon saved for ${formatId}`)
 }
@@ -268,6 +307,11 @@ export async function getUsageStats(
 ): Promise<UsageStatsEntry[]> {
   const limit = options?.limit ?? 50
   const page = options?.page ?? 1
+  const cacheKey = `${formatId}:${limit}:${page}`
+
+  const cached = usageStatsCache.get(cacheKey)
+  if (cached) return cached
+
   const skip = (page - 1) * limit
 
   const rows = await prisma.usageStats.findMany({
@@ -277,7 +321,9 @@ export async function getUsageStats(
     skip,
   })
 
-  return rows.map(rowToEntry)
+  const result = rows.map(rowToEntry)
+  usageStatsCache.set(cacheKey, result)
+  return result
 }
 
 /**
@@ -384,4 +430,9 @@ export async function getAbilityUsage(
     orderBy: { usagePercent: "desc" },
   })
   return rows.map((row) => ({ abilityName: row.abilityName, usagePercent: row.usagePercent }))
+}
+
+/** Clear the in-memory usage stats cache. Exported for testing. */
+export function clearUsageStatsCache(): void {
+  usageStatsCache.clear()
 }
