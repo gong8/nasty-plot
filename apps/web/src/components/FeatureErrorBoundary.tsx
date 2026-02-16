@@ -5,6 +5,7 @@ import { Component, type ReactNode, type ErrorInfo } from "react"
 interface FeatureErrorBoundaryProps {
   children: ReactNode
   fallback?: ReactNode
+  name?: string
 }
 
 interface FeatureErrorBoundaryState {
@@ -25,7 +26,10 @@ export class FeatureErrorBoundary extends Component<
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error("[FeatureErrorBoundary]", error, errorInfo)
+    const label = this.props.name
+      ? `[FeatureErrorBoundary:${this.props.name}]`
+      : "[FeatureErrorBoundary]"
+    console.error(label, error, errorInfo)
   }
 
   render() {

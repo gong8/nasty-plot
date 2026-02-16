@@ -3,10 +3,11 @@
 import { useEffect } from "react"
 import { useChatSidebar } from "@/features/chat/context/ChatProvider"
 import { PECHARUNT_SPRITE_URL } from "@/lib/constants"
+import { FeatureErrorBoundary } from "@/components/FeatureErrorBoundary"
 
 // The /chat route opens the sidebar automatically.
 // Full-page chat mode is preserved in ChatSidebar (fullPage prop) but disabled.
-export default function ChatPage() {
+function ChatPageContent() {
   const { openSidebar } = useChatSidebar()
 
   useEffect(() => {
@@ -32,5 +33,13 @@ export default function ChatPage() {
         The chat sidebar should be open on the right &rarr;
       </p>
     </div>
+  )
+}
+
+export default function ChatPage() {
+  return (
+    <FeatureErrorBoundary name="Chat">
+      <ChatPageContent />
+    </FeatureErrorBoundary>
   )
 }

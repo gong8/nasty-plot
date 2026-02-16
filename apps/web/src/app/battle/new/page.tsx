@@ -5,6 +5,7 @@ import { Suspense } from "react"
 import { BattleSetup } from "@/features/battle/components/BattleSetup"
 import type { AIDifficulty } from "@nasty-plot/battle-engine"
 import type { GameType } from "@nasty-plot/core"
+import { FeatureErrorBoundary } from "@/components/FeatureErrorBoundary"
 
 function NewBattleContent() {
   const router = useRouter()
@@ -48,10 +49,12 @@ function NewBattleContent() {
 
 export default function NewBattlePage() {
   return (
-    <main className="container mx-auto p-4">
-      <Suspense fallback={null}>
-        <NewBattleContent />
-      </Suspense>
-    </main>
+    <FeatureErrorBoundary name="BattleNew">
+      <main className="container mx-auto p-4">
+        <Suspense fallback={null}>
+          <NewBattleContent />
+        </Suspense>
+      </main>
+    </FeatureErrorBoundary>
   )
 }

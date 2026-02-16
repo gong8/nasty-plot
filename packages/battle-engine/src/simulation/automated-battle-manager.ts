@@ -1,4 +1,4 @@
-import { BattleStreams, Teams } from "@pkmn/sim"
+import { BattleStreams } from "@pkmn/sim"
 import {
   processChunk,
   parseRequest,
@@ -7,7 +7,8 @@ import {
 } from "../protocol-parser.service"
 import { createInitialState } from "../battle-manager.service"
 import { DEFAULT_FORMAT_ID, type GameType } from "@nasty-plot/core"
-import type { BattleState, BattleAction, BattleActionSet, AIPlayer } from "../types"
+import type { BattleState, BattleActionSet, AIPlayer } from "../types"
+import { actionToChoice, escapeTeam, pasteToPackedTeam } from "../battle-utils"
 
 export interface SingleBattleResult {
   winner: "p1" | "p2" | "draw"
@@ -43,7 +44,7 @@ const REQUEST_PREFIX_LEN = REQUEST_PREFIX.length
 
 /**
  * Runs a fully automated battle between two AIs with no delay.
- * Optimized for speed — no UI callbacks or artificial delays.
+ * Optimized for speed -- no UI callbacks or artificial delays.
  */
 export async function runAutomatedBattle(
   config: AutomatedBattleConfig,
@@ -244,38 +245,6 @@ async function resolvePlayerChoice(
   }
   const action2 = await ai.chooseAction(state, slot2Actions)
   return `${choice1}, ${actionToChoice(action2)}`
-}
-
-function actionToChoice(action: BattleAction): string {
-  if (action.type === "move") {
-    let choice = `move ${action.moveIndex}`
-    if (action.targetSlot != null) choice += ` ${action.targetSlot}`
-    if (action.tera) choice += " terastallize"
-    if (action.mega) choice += " mega"
-    return choice
-  }
-  return `switch ${action.pokemonIndex}`
-}
-
-function escapeTeam(team: string): string {
-  return team.replace(/\\/g, "\\\\").replace(/"/g, '\\"')
-}
-
-function pasteToPackedTeam(paste: string): string | null {
-  const trimmed = paste.trim()
-  if (!trimmed) return null
-  if (isAlreadyPacked(trimmed)) return trimmed
-  try {
-    const sets = Teams.import(trimmed)
-    if (!sets || sets.length === 0) return null
-    return Teams.pack(sets)
-  } catch {
-    return null
-  }
-}
-
-function isAlreadyPacked(text: string): boolean {
-  return !text.includes("\n") || (text.includes("|") && !text.includes("Ability:"))
 }
 
 function tick(): Promise<void> {

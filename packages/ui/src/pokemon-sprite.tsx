@@ -1,8 +1,8 @@
 "use client"
 
 import { useState } from "react"
-import { getSpriteUrl } from "@nasty-plot/pokemon-data"
-import type { SpriteOptions } from "@nasty-plot/pokemon-data"
+import { getSpriteUrl } from "@nasty-plot/pokemon-data/browser"
+import type { SpriteOptions } from "@nasty-plot/pokemon-data/browser"
 import { cn } from "./utils"
 
 export interface PokemonSpriteProps {

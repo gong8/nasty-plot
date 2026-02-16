@@ -52,7 +52,17 @@ function isCosmeticForme(species: ReturnType<typeof dex.species.get>): boolean {
   )
 }
 
-export function listSpecies(): PokemonSpecies[] {
+// ---------------------------------------------------------------------------
+// Cached species list and pre-built indexes (static data, computed once)
+// ---------------------------------------------------------------------------
+
+let _speciesCache: PokemonSpecies[] | null = null
+let _speciesByNameCache: PokemonSpecies[] | null = null
+let _speciesByBstCache: PokemonSpecies[] | null = null
+let _typeIndex: Map<PokemonType, PokemonSpecies[]> | null = null
+
+function getAllSpecies(): PokemonSpecies[] {
+  if (_speciesCache) return _speciesCache
   const all: PokemonSpecies[] = []
   for (const species of dex.species.all()) {
     if (
@@ -65,7 +75,48 @@ export function listSpecies(): PokemonSpecies[] {
       all.push(toSpecies(species))
     }
   }
+  _speciesCache = all
   return all
+}
+
+export function listSpecies(): PokemonSpecies[] {
+  return getAllSpecies()
+}
+
+/** Pre-sorted species list by name (cached). */
+export function listSpeciesByName(): PokemonSpecies[] {
+  if (_speciesByNameCache) return _speciesByNameCache
+  _speciesByNameCache = [...getAllSpecies()].sort((a, b) => a.name.localeCompare(b.name))
+  return _speciesByNameCache
+}
+
+/** Pre-sorted species list by BST descending (cached). */
+export function listSpeciesByBst(): PokemonSpecies[] {
+  if (_speciesByBstCache) return _speciesByBstCache
+  const getBst = (s: PokemonSpecies) =>
+    s.baseStats.hp +
+    s.baseStats.atk +
+    s.baseStats.def +
+    s.baseStats.spa +
+    s.baseStats.spd +
+    s.baseStats.spe
+  _speciesByBstCache = [...getAllSpecies()].sort((a, b) => getBst(b) - getBst(a))
+  return _speciesByBstCache
+}
+
+/** Pre-built type index: Map<PokemonType, PokemonSpecies[]> (cached). */
+export function getTypeIndex(): Map<PokemonType, PokemonSpecies[]> {
+  if (_typeIndex) return _typeIndex
+  _typeIndex = new Map<PokemonType, PokemonSpecies[]>()
+  for (const type of POKEMON_TYPES) {
+    _typeIndex.set(type, [])
+  }
+  for (const species of getAllSpecies()) {
+    for (const type of species.types) {
+      _typeIndex.get(type)!.push(species)
+    }
+  }
+  return _typeIndex
 }
 
 function toMove(move: ReturnType<typeof dex.moves.get>): MoveData {

@@ -9,6 +9,7 @@ import { useChatSidebar } from "@/features/chat/context/ChatProvider"
 import type { AIDifficulty } from "@nasty-plot/battle-engine"
 import { DEFAULT_FORMAT_ID, type GameType } from "@nasty-plot/core"
 import { LoadingSpinner } from "@/components/LoadingSpinner"
+import { FeatureErrorBoundary } from "@/components/FeatureErrorBoundary"
 
 function BattleLiveContent() {
   const searchParams = useSearchParams()
@@ -119,12 +120,12 @@ function BattleLiveContent() {
 
 export default function BattleLivePage() {
   return (
-    <>
+    <FeatureErrorBoundary name="BattleLive">
       <main className="container mx-auto px-2 py-2 max-w-7xl">
         <Suspense fallback={<LoadingSpinner size="lg" className="py-24" />}>
           <BattleLiveContent />
         </Suspense>
       </main>
-    </>
+    </FeatureErrorBoundary>
   )
 }

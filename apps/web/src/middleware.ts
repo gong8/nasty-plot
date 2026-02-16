@@ -4,14 +4,17 @@ import { checkRateLimit } from "./lib/rate-limit"
 
 const DEV_ORIGINS = ["http://localhost:3000", "http://localhost:3001"]
 
-const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS
-  ? process.env.ALLOWED_ORIGINS.split(",").map((o) => o.trim())
-  : process.env.NODE_ENV === "production"
-    ? []
-    : DEV_ORIGINS
+const ALLOWED_ORIGINS = (
+  process.env.ALLOWED_ORIGINS
+    ? process.env.ALLOWED_ORIGINS.split(",").map((o) => o.trim())
+    : process.env.NODE_ENV === "production"
+      ? []
+      : DEV_ORIGINS
+).filter((o) => o.startsWith("http://") || o.startsWith("https://"))
 
 function getCorsHeaders(origin: string | null) {
-  const allowedOrigin = origin && ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0]
+  // Only reflect the origin if it is in the allow list; never fall back to a default origin
+  const allowedOrigin = origin && ALLOWED_ORIGINS.includes(origin) ? origin : ""
   return {
     "Access-Control-Allow-Origin": allowedOrigin,
     "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
@@ -25,6 +28,7 @@ const RATE_LIMITS = {
   chat: { maxRequests: 20, windowMs: 60_000 },
   cleanup: { maxRequests: 1, windowMs: 600_000 },
   batchSim: { maxRequests: 5, windowMs: 600_000 },
+  auth: { maxRequests: 10, windowMs: 60_000 },
   default: { maxRequests: 100, windowMs: 60_000 },
 } as const
 
@@ -32,6 +36,7 @@ function getRateLimitBucket(pathname: string): {
   key: string
   config: { maxRequests: number; windowMs: number }
 } {
+  if (pathname.startsWith("/api/auth/")) return { key: "auth", config: RATE_LIMITS.auth }
   if (pathname.startsWith("/api/data/seed")) return { key: "seed", config: RATE_LIMITS.seed }
   if (pathname.startsWith("/api/chat")) return { key: "chat", config: RATE_LIMITS.chat }
   if (pathname.startsWith("/api/data/cleanup"))

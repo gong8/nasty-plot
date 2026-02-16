@@ -2,6 +2,7 @@ import { spawn, type ChildProcessWithoutNullStreams } from "child_process"
 import { writeFileSync, mkdirSync } from "fs"
 import { join } from "path"
 import { tmpdir } from "os"
+import { randomUUID } from "crypto"
 import { getToolLabel, isWriteTool } from "./tool-labels"
 import { StreamParser } from "./stream-parser"
 import type { SSEEvent } from "./sse-events"
@@ -10,7 +11,8 @@ import type { PageContextData } from "./context-builder.service"
 import { MCP_URL, MODEL } from "./config"
 
 const LOG_PREFIX = "[cli-chat]"
-const TEMP_DIR = join(tmpdir(), "nasty-plot-cli")
+// Use a unique temp dir per process to prevent symlink attacks (TOCTOU)
+const TEMP_DIR = join(tmpdir(), "nasty-plot-cli-" + randomUUID().slice(0, 8))
 
 const SYSTEM_PROMPT_SUFFIX = [
   "",

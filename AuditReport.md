@@ -1,494 +1,391 @@
 # Comprehensive Codebase Audit Report
 
-**Project:** Nasty Plot — Pokemon Team Building & Competitive Analysis Platform
-**Date:** February 15, 2026
-**Auditor:** Senior Staff Software Engineer & Security Auditor (AI-Assisted)
-**Scope:** Full monorepo (462 source files, 80 test files, 41,017 lines of code)
+**Project:** Nasty Plot - Pokemon Team Builder and Competitive Analysis Platform
+**Audit Date:** 2026-02-15
+**Auditor:** Senior Staff Software Engineer and Security Auditor (Automated)
+**Scope:** Full-stack analysis - Architecture, Code Quality, Security, Performance, Maintainability
 
 ---
 
 ## Executive Summary
 
-| Dimension                   | Grade  | Score      |
-| --------------------------- | ------ | ---------- |
-| Architecture                | A+     | 9.5/10     |
-| Code Quality & Tech Debt    | B+     | 7.5/10     |
-| Security                    | B-     | 6.5/10     |
-| Performance & Scalability   | B      | 7.0/10     |
-| Maintainability             | C+     | 6.3/10     |
-| Dependencies & Build Config | A-     | 8.5/10     |
-| **Overall**                 | **B+** | **7.6/10** |
+**Overall Grade: A- (Excellent)**
 
-**Verdict:** This is a well-architected codebase with exemplary package structure and zero dependency layer violations. The architecture is production-grade. However, several areas need attention before production deployment: security hardening, performance optimization in the damage calc/battle engine, and maintainability improvements in oversized service files. The codebase is significantly above average for a project of this size.
+Nasty Plot is a **professionally architected** monorepo with strict TypeScript, clean layered dependencies, zero circular imports, and an 86% test-to-source line ratio. The codebase demonstrates engineering discipline well above average for a project of this scale. The primary risks are **security gaps in authentication** (dev-only auth that would be dangerous in production) and **6 oversized behavioral files** that concentrate too many responsibilities. No critical code quality or architectural issues were found.
+
+| Dimension               | Grade | Summary                                                   |
+| ----------------------- | ----- | --------------------------------------------------------- |
+| Architecture            | A+    | Perfect layering, zero circular deps, 100% barrel exports |
+| Code Quality            | A     | 1 `any` type, 0 TODOs, minimal duplication                |
+| Security                | B-    | 1 Critical (dev auth), 2 High, 4 Medium findings          |
+| Performance             | B+    | Good caching patterns, some missing memoization           |
+| Maintainability         | B+    | Strong foundations, 6 files need decomposition            |
+| Dependencies and Config | A     | 95/100 consistency, all deps current                      |
 
 ---
 
-## Table of Contents
+## Quantitative Codebase Profile
 
-1. [Architecture](#1-architecture)
-2. [Code Quality & Technical Debt](#2-code-quality--technical-debt)
-3. [Security Risks](#3-security-risks)
-4. [Performance & Scalability](#4-performance--scalability)
-5. [Maintainability](#5-maintainability)
-6. [Dependencies & Build Configuration](#6-dependencies--build-configuration)
-7. [Ranked Findings](#7-ranked-findings)
-8. [Recommendations](#8-recommendations)
+| Metric                                 | Value                 |
+| -------------------------------------- | --------------------- |
+| Total source files (packages/ + apps/) | 390                   |
+| Total lines of source code             | 42,492                |
+| Total test files                       | 94                    |
+| Total lines of test code               | 36,572                |
+| Test-to-source ratio (by lines)        | 0.86 (86%)            |
+| Packages                               | 14                    |
+| API route files                        | 46                    |
+| React components (.tsx)                | 148                   |
+| Export statements                      | 1,055                 |
+| Average file size                      | 108 lines (median 67) |
+| Largest file                           | 1,219 lines           |
+| Deepest directory nesting              | 10 levels             |
 
 ---
 
 ## 1. Architecture
 
-**Grade: A+ (9.5/10)**
+**Grade: A+**
 
-### 1.1 Package Structure — Perfect Layer Compliance
+### Strengths
 
-The monorepo contains 15 packages across 5 well-defined dependency layers with **zero violations**:
+- **Perfect dependency layering.** 5 clear layers (Foundation, Data, Domain, Feature, Presentation) with **zero critical violations** across 100+ cross-package imports. Only 1 justified exception: `data-pipeline` imports from `teams` for seeding.
+- **Zero circular dependencies.** Verified across all 14 packages.
+- **100% barrel export coverage.** Every package exports through `src/index.ts`. Smart subpath exports (`formats/db`, `llm/browser`) isolate server-only code from client bundles.
+- **Strict barrel import pattern.** No reaching into internal package paths. All inter-package imports use `@nasty-plot/<pkg>` barrels.
+- **Thin API controllers.** All 46 API routes delegate business logic to packages. Average route length: 41 lines. Routes handle only HTTP concerns (validation, response formatting).
+- **Controlled class usage.** Only 9 classes in the entire codebase (5 AI players, 1 BattleManager, 1 ReplayEngine, 1 TTLCache, 1 StreamParser). All justified.
 
-```
-Foundation:   core (12 files), db (2 files)
-Data:         pokemon-data (4), formats (6), smogon-data (7)
-Domain:       teams (7), analysis (6), damage-calc (2), recommendations (5), battle-engine (28)
-Feature:      llm (14), mcp-server (9)
-Presentation: ui (15), data-pipeline (7), web (242)
-```
+### Package Distribution
 
-| Metric                         | Value        | Status |
-| ------------------------------ | ------------ | ------ |
-| Layer violations               | 0            | PASS   |
-| Circular dependencies          | 0            | PASS   |
-| Barrel export coverage         | 14/14 (100%) | PASS   |
-| API route SoC compliance       | 47/47 (100%) | PASS   |
-| Service file naming compliance | 48/48 (100%) | PASS   |
-| TypeScript strict mode         | 14/14 (100%) | PASS   |
-| ESM compliance                 | 14/14 (100%) | PASS   |
-| Package scope alignment        | 14/14 (100%) | PASS   |
+| Layer        | Packages                                                     | Files | Lines  |
+| ------------ | ------------------------------------------------------------ | ----- | ------ |
+| Foundation   | core, db                                                     | 14    | 1,540  |
+| Data         | pokemon-data, formats, smogon-data, data-pipeline            | 24    | 4,484  |
+| Domain       | teams, analysis, damage-calc, recommendations, battle-engine | 59    | 9,210  |
+| Feature      | llm, mcp-server                                              | 33    | 2,609  |
+| Presentation | ui, web                                                      | 260+  | 24,649 |
 
-### 1.2 Separation of Concerns
+### Findings
 
-- **API Routes:** All 47 routes are thin wrappers. 35 are under 50 lines, 10 are moderate (50-150 lines), 2 are complex (>150 lines). 100% delegate business logic to package services.
-- **Service Files:** 48 service files follow the pure-function pattern. 5 appropriate class exceptions exist (AI players, BattleManager, TTLCache).
-- **UI Components:** All 15 shared components in `@nasty-plot/ui` are presentation-only with no API calls.
-
-### 1.3 Minor Architectural Observations
-
-| Finding              | Severity | Details                                                                                      |
-| -------------------- | -------- | -------------------------------------------------------------------------------------------- |
-| Thick chat route     | Low      | `/api/chat/route.ts` (191 lines) — complex streaming/session logic, could extract to service |
-| Thick batch route    | Low      | `/api/battles/batch/route.ts` (118 lines) — batch validation and progress tracking           |
-| MCP HTTP indirection | Medium   | MCP server calls `/api` via HTTP instead of importing package services directly              |
+| ID  | Finding                                         | Severity | Details                                                   |
+| --- | ----------------------------------------------- | -------- | --------------------------------------------------------- |
+| A1  | data-pipeline imports from Domain layer (teams) | Low      | Justified for seeding; isolated to `seed-sample-teams.ts` |
 
 ---
 
-## 2. Code Quality & Technical Debt
+## 2. Code Quality and Technical Debt
 
-**Grade: B+ (7.5/10)**
+**Grade: A**
 
-### 2.1 Type Safety — Excellent
+### Type Safety Metrics
 
-| Metric                            | Count            | Assessment    |
-| --------------------------------- | ---------------- | ------------- |
-| `any` types                       | 1                | Excellent     |
-| Type assertions (`as`)            | 82 (67 in tests) | Good          |
-| `@ts-ignore` / `@ts-expect-error` | 0                | Excellent     |
-| Loose equality (`==`)             | 0                | Excellent     |
-| Type guard functions              | 6                | Good coverage |
-| TODO/FIXME comments               | 1                | Excellent     |
+| Metric                    | Count              | Assessment                                                              |
+| ------------------------- | ------------------ | ----------------------------------------------------------------------- |
+| `any` types               | 1 (test mock only) | Excellent                                                               |
+| Type assertions (`as`)    | 63 total           | ~40 are `as const` (safe); 6 `as unknown` (justified @pkmn workarounds) |
+| Non-null assertions (`!`) | 0 detected         | Excellent                                                               |
+| TODO/FIXME/HACK comments  | 0                  | Excellent                                                               |
+| Commented-out code        | ~4 lines           | Negligible                                                              |
+| Dead/unused exports       | 0 detected         | Excellent                                                               |
 
-### 2.2 Code Duplication — Moderate Debt
+### DRY Compliance
 
-| Pattern                                                         | Instances    | Impact                                     |
-| --------------------------------------------------------------- | ------------ | ------------------------------------------ |
-| Test mock type casts (`as ReturnType<typeof vi.fn>`)            | 67           | ~150 lines duplicated across 21 test files |
-| Test helper factories (`makeSpecies`, `makeSlot`, `makeDbTeam`) | 21 files     | ~200+ lines duplicated                     |
-| Stat mapping (EV/IV column transformations)                     | 4 locations  | Low risk due to helper functions           |
-| `getSpecies()` mock setup                                       | 6 test files | Repetitive mock initialization             |
+- **Excellent centralization** of conversion logic: `statsToDbColumns()`, `dbColumnsToStats()`, `movesToDb()` in core/teams
+- **No significant duplication** across packages. Domain-specific `toX()` converters have different inputs/outputs (not true duplication)
+- **Minor opportunity:** `handleP1Request()` / `handleP2Request()` in battle-request-handler share ~80% logic, but extraction would reduce clarity for asymmetric game state
 
-### 2.3 Complexity Hotspots
+### Naming Consistency
 
-**Files exceeding 500 lines (code, not data):**
+- Consistent `camelCase` functions, `PascalCase` types, `{name}.service.ts` pattern
+- Consistent `p1`/`p2` naming in battle engine
+- Consistent type suffixes: `Data`, `Input`, `View`, `Row`
+- **Minor:** Slot positioning uses mixed 0-indexed (`targetSlot`) and 1-indexed (`moveIndex`) - documented but easy to confuse
 
-| File                                           | Lines | Concern                     |
-| ---------------------------------------------- | ----- | --------------------------- |
-| `battle-engine/src/protocol-parser.service.ts` | 1,111 | 68+ case switch statement   |
-| `battle-engine/src/battle-manager.service.ts`  | 701   | God object with 15+ methods |
-| `data-pipeline/src/cli/verify.ts`              | 523   | 3 concerns bundled          |
-| `smogon-data/src/usage-stats.service.ts`       | 438   | Complex data transformation |
-| `battle-engine/src/ai/hint-engine.service.ts`  | 422   | Scoring with magic numbers  |
-| `battle-engine/src/ai/mcts-ai.ts`              | 418   | Recursive tree search       |
+### Findings
 
-**12 total files exceed 300 lines** across packages.
-
-### 2.4 Dead Code
-
-| Item                     | Location                        | Status                                 |
-| ------------------------ | ------------------------------- | -------------------------------------- |
-| `getMegaStonesFor()`     | pokemon-data/dex.service.ts:181 | Test-only, Gen 9 doesn't support Megas |
-| `getMegaForm()`          | pokemon-data/dex.service.ts:199 | Test-only                              |
-| `isZCrystal()`           | pokemon-data/dex.service.ts:213 | Test-only                              |
-| `getZCrystalType()`      | pokemon-data/dex.service.ts:219 | Test-only                              |
-| `getSignatureZCrystal()` | pokemon-data/dex.service.ts:229 | Completely unused                      |
-
-### 2.5 Coupling Analysis
-
-- **God Object:** `BattleState` type (40+ fields, 4 nesting levels) imported by 22+ files in battle-engine alone
-- **God Service:** `BattleManager` orchestrates 8+ internal services
-- **MCP Server Coupling:** Uses HTTP calls to `/api` routes instead of direct package imports, creating version mismatch risk and unnecessary network overhead
+| ID  | Finding                                                | Severity | Details                                   |
+| --- | ------------------------------------------------------ | -------- | ----------------------------------------- |
+| Q1  | 6 `as unknown` type assertions for @pkmn/sim internals | Low      | Fragile but necessary for library interop |
+| Q2  | Battle request handler duplication (~80% shared logic) | Low      | Would reduce clarity if extracted         |
+| Q3  | Mixed 0/1-indexed slot numbering                       | Low      | Documented in types; consider type alias  |
 
 ---
 
 ## 3. Security Risks
 
-**Grade: B- (6.5/10)**
+**Grade: B-**
 
-### 3.1 Critical Findings
+### Critical (1)
 
-| #    | Finding                                                                  | Severity     | Location                     |
-| ---- | ------------------------------------------------------------------------ | ------------ | ---------------------------- |
-| S-1  | Hardcoded NextAuth secret (`nasty-plot-dev-secret-change-in-production`) | **CRITICAL** | `.env:17`                    |
-| S-2  | Auth completely disabled in development (`NODE_ENV !== "production"`)    | HIGH         | `middleware.ts:76`           |
-| S-3  | Dev auth accepts any non-empty credentials                               | HIGH         | `lib/auth.ts:12-16`          |
-| S-4  | Missing `SEED_SECRET` allows unauthenticated seeding                     | MEDIUM       | `api/data/seed/route.ts:80`  |
-| S-5  | Weak MCP session ID generation (`Math.random()` not crypto-secure)       | MEDIUM       | `mcp-server/src/index.ts:50` |
-| S-6  | No security headers (CSP, X-Frame-Options, X-Content-Type-Options)       | MEDIUM       | `next.config.ts`             |
-| S-7  | Cleanup endpoint unprotected (no auth, no rate limit)                    | MEDIUM       | `api/data/cleanup/route.ts`  |
-| S-8  | CORS hardcodes localhost origins                                         | MEDIUM       | `middleware.ts:5-9`          |
-| S-9  | Rate limits too loose on expensive operations                            | MEDIUM       | `middleware.ts:21-25`        |
-| S-10 | In-memory rate limiting (single-node only)                               | LOW          | `lib/rate-limit.ts`          |
+| ID  | Finding                              | File                             | Details                                                                                                                                                                                                            |
+| --- | ------------------------------------ | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| S1  | **Dev auth accepts ANY credentials** | `apps/web/src/lib/auth.ts:12-16` | `authorize()` callback returns success for any non-empty username/password. Auth is disabled entirely when `NODE_ENV !== "production"`. If deployed to production with wrong config, entire system is unprotected. |
 
-### 3.2 Security Strengths
+### High (2)
 
-| Area                       | Status  | Details                                                 |
-| -------------------------- | ------- | ------------------------------------------------------- |
-| SQL Injection              | PASS    | Prisma parameterized queries everywhere, zero raw SQL   |
-| XSS                        | PASS    | No unsafe innerHTML usage, React auto-escapes           |
-| Command Injection          | PASS    | No `exec`/`spawn` in API routes                         |
-| Input Validation           | STRONG  | Comprehensive Zod schemas on all API routes             |
-| Error Sanitization         | GOOD    | 5xx errors return generic messages, no stack traces     |
-| Safe JSON.parse            | PASS    | All instances wrapped in try/catch                      |
-| URL Encoding               | PASS    | All user input URL-encoded in API calls                 |
-| Dependency Vulnerabilities | 6 found | 5 moderate + 1 low, all transitive via Prisma dev tools |
+| ID  | Finding                                              | File                           | Details                                                                                                                                                        |
+| --- | ---------------------------------------------------- | ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| S2  | **Hardcoded NEXTAUTH_SECRET in committed .env**      | `.env:17`                      | Secret `"nasty-plot-dev-secret-change-in-production"` is trivially guessable. `.env` is tracked in git. Token forgery possible if production uses same secret. |
+| S3  | **Seed endpoint unprotected when SEED_SECRET unset** | `api/data/seed/route.ts:78-86` | Auth only required if `SEED_SECRET` is set OR `NODE_ENV=production`. In dev, `SEED_SECRET=` (empty), so anyone can trigger expensive data sync. DoS vector.    |
+
+### Medium (4)
+
+| ID  | Finding                                           | File                                  | Details                                                                                                                        |
+| --- | ------------------------------------------------- | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| S4  | API key fallback to `"not-needed"` literal        | `llm/src/openai-client.service.ts:12` | OpenAI client initializes with literal string if env vars missing. Confusing errors instead of clear auth failure.             |
+| S5  | Unvalidated MCP_URL from environment              | `llm/src/config.ts:3`                 | If attacker controls env, Claude CLI connects to attacker-controlled MCP server. Could inject malicious tool responses.        |
+| S6  | Prompt injection via user-controlled chat context | `llm/src/chat.service.ts:150-156`     | `contextData` embedded into system prompt without sanitization. Mitigated by strict tool allowlisting.                         |
+| S7  | CORS origin validation not strict                 | `apps/web/src/middleware.ts:5-21`     | No protocol validation on `ALLOWED_ORIGINS`. Falls back to first origin on mismatch. Empty value in `.env` could cause issues. |
+
+### Low (3)
+
+| ID  | Finding                                         | File                             | Details                                                                       |
+| --- | ----------------------------------------------- | -------------------------------- | ----------------------------------------------------------------------------- |
+| S8  | Silent validation failure in seed endpoint      | `api/data/seed/route.ts:90-98`   | Failed Zod parse silently defaults instead of returning 400                   |
+| S9  | Auth endpoints use default rate limit (100/min) | `middleware.ts:23-29`            | Should be stricter for auth; brute-force slower but still possible            |
+| S10 | TOCTOU in temp file handling                    | `llm/src/cli-chat.service.ts:13` | Symlink attack on `/tmp/nasty-plot-cli` possible in multi-tenant environments |
+
+### Safe Areas
+
+- **SQL Injection:** All queries use Prisma parameterized API. Zero raw query usage.
+- **XSS:** Zero unsafe HTML injection patterns found. No `innerHTML` assignments, no unsafe rendering. React auto-escaping protects all output.
+- **Dependencies:** All packages at current versions (Next.js 16.1.6, Prisma 7.3.0, React 19.2.4).
 
 ---
 
-## 4. Performance & Scalability
+## 4. Performance and Scalability
 
-**Grade: B (7.0/10)**
+**Grade: B+**
 
-### 4.1 Critical Performance Issues
+### Strengths
 
-| #    | Finding                                                                              | Severity     | Est. Impact            | Location                                                 |
-| ---- | ------------------------------------------------------------------------------------ | ------------ | ---------------------- | -------------------------------------------------------- |
-| P-1  | O(n^2) matchup matrix: 6 slots x 10 threats x 4 moves = 240 damage calcs per request | **CRITICAL** | 1-2s response time     | `damage-calc/src/calc.service.ts:225`                    |
-| P-2  | N+1 `getSpecies()` calls in team hydration (per-slot lookup)                         | **CRITICAL** | +100ms per team list   | `teams/src/team.service.ts:85`                           |
-| P-3  | Unbounded `getUsageStats()` fetches all records (limit: 9999)                        | HIGH         | +20-50MB memory        | `api/pokemon/route.ts:39`                                |
-| P-4  | O(n^2) threat identification loop (200-400 Pokemon x 6 slots)                        | HIGH         | 200-500ms per analysis | `analysis/src/threat.service.ts:42`                      |
-| P-5  | Coverage recommender iterates ALL legal Pokemon before returning top N               | HIGH         | 200-500ms              | `recommendations/src/coverage-recommender.service.ts:41` |
-| P-6  | Batch simulation fire-and-forget (no error recovery, orphaned batches)               | HIGH         | Stuck "running" states | `api/battles/batch/route.ts:61`                          |
-| P-7  | Missing `React.memo` on team grid (6 slot cards re-render on every state change)     | HIGH         | 100-200ms re-render    | `teams/[teamId]/page.tsx:277`                            |
-| P-8  | Sequential async calls in `analyzeTeam()` that could be parallelized                 | MEDIUM       | +100-200ms latency     | `analysis/src/analysis.service.ts:25`                    |
-| P-9  | Sequential batch deletes in `cleanupEmptyTeams()` (O(n) DB roundtrips)               | MEDIUM       | 1-2s per 100 teams     | `teams/src/team.service.ts:226`                          |
-| P-10 | No HTTP Cache-Control headers on any API responses                                   | MEDIUM       | No browser/CDN caching | All API routes                                           |
-| P-11 | Raw `<img>` instead of Next.js `<Image />` for Pokemon sprites                       | MEDIUM       | Extra network requests | `pokemon/[pokemonId]/page.tsx:74`                        |
+- **TTL cache for usage stats** (5-min TTL) prevents repeated DB queries
+- **Batch upserts** with transaction chunking (500 ops/chunk) for data sync
+- **Parallel query execution** (`Promise.all` for count + fetch in pagination)
+- **MCTS config is bounded** (10K iterations, 5s timeout, 4 determinizations)
+- **Database indexes** on all high-traffic query paths (UsageStats, SmogonSet, TeammateCorr, Battle)
 
-### 4.2 Performance Strengths
+### Findings
 
-| Area                         | Status  | Details                                         |
-| ---------------------------- | ------- | ----------------------------------------------- |
-| Usage stats TTL cache        | GOOD    | 5-minute TTL cache in `smogon-data`             |
-| Prisma query optimization    | GOOD    | `select` fields used to minimize data           |
-| Species data in-memory       | GOOD    | `@pkmn/dex` cached at module load               |
-| React Query client-side      | GOOD    | `@tanstack/react-query` for client data caching |
-| Pagination on list endpoints | PARTIAL | Most list endpoints paginate, some don't        |
+| ID  | Finding                                                       | Severity | File                                                                          | Details                                                                                        |
+| --- | ------------------------------------------------------------- | -------- | ----------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| P1  | Pokemon search filters all in memory                          | Medium   | `api/pokemon/route.ts:19-48`                                                  | Loads 1000+ species, filters/sorts in memory, then paginates. Scales poorly.                   |
+| P2  | Damage calc results only cached per-request                   | Medium   | `damage-calc/calc.service.ts:159-191`                                         | Matchup matrix recalculates all damage on every request. No persistent LRU cache.              |
+| P3  | Over-fetching slot columns in listTeams                       | Medium   | `teams/team.service.ts:196-205`                                               | `include: { slots }` fetches all EV/IV/move columns even for list view.                        |
+| P4  | Loop-based getSpecies calls (3 services)                      | Low      | `threat.service.ts`, `analysis.service.ts`, `coverage-recommender.service.ts` | Sequential dex lookups in loops (50-100 calls). @pkmn/dex is in-memory so impact is minor.     |
+| P5  | battle-engine exports may bundle @pkmn/sim (~500KB) to client | Medium   | `battle-engine/package.json`                                                  | Main export re-exports MCTS, protocol parser, etc. Client imports could pull server-only code. |
+| P6  | UI imports full @pkmn/dex                                     | Medium   | `ui/package.json`                                                             | Components referencing species would bundle entire dex. Needs lightweight browser entry.       |
+| P7  | Missing composite index on BattleTurn                         | Low      | `prisma/schema.prisma`                                                        | No `(battleId, turnNumber)` composite for replay ordered queries                               |
 
 ---
 
 ## 5. Maintainability
 
-**Grade: C+ (6.3/10)**
+**Grade: B+**
 
-### 5.1 Module Size Distribution
+### Top 10 Most Problematic Files
 
-| Range         | Count     | Percentage | Assessment        |
-| ------------- | --------- | ---------- | ----------------- |
-| 0-100 lines   | 210 files | 45%        | Good              |
-| 100-200 lines | 140 files | 30%        | Acceptable        |
-| 200-300 lines | 50 files  | 11%        | Monitor           |
-| 300-500 lines | 42 files  | 9%         | Needs refactoring |
-| 500+ lines    | 20 files  | 4%         | Critical          |
+| Rank | File                                                      | Lines | Severity | Issue                                                     |
+| ---- | --------------------------------------------------------- | ----- | -------- | --------------------------------------------------------- |
+| 1    | `data-pipeline/src/data/sample-teams.ts`                  | 1,219 | High     | Hardcoded team data; should be JSON/DB                    |
+| 2    | `battle-engine/src/battle-manager.service.ts`             | 711   | High     | 30+ methods; stream + protocol + AI + prediction concerns |
+| 3    | `features/damage-calc/components/DamageCalculator.tsx`    | 615   | High     | Monolithic component; UI + calc + API logic mixed         |
+| 4    | `features/team-builder/context/GuidedBuilderProvider.tsx` | 576   | High     | Context provider + complex business orchestration         |
+| 5    | `features/chat/hooks/use-chat-stream.ts`                  | 504   | Medium   | Streaming + parsing + token collection combined           |
+| 6    | `app/teams/[teamId]/page.tsx`                             | 493   | Medium   | Page with embedded form + edit logic                      |
+| 7    | `battle-engine/src/ai/hint-engine.service.ts`             | 464   | Medium   | Multiple hint strategies in single file                   |
+| 8    | `battle-engine/src/ai/mcts-ai.ts`                         | 460   | Medium   | Complex MCTS algorithm; sparse comments                   |
+| 9    | `smogon-data/src/usage-stats.service.ts`                  | 438   | Low      | Multi-function service; acceptable for data layer         |
+| 10   | `battle-engine/src/ai/heuristic-ai.ts`                    | 396   | Low      | Heuristic complexity is inherent to domain                |
 
-### 5.2 Package Size Analysis
+### Error Handling
 
-| Package         | Files | Avg Lines/File | Assessment                        |
-| --------------- | ----- | -------------- | --------------------------------- |
-| data-pipeline   | 7     | 301            | CRITICAL — above optimal range    |
-| battle-engine   | 28    | 234            | HIGH CONCERN — 23% over preferred |
-| teams           | 7     | 187            | At upper boundary                 |
-| smogon-data     | 7     | 167            | Moderate                          |
-| formats         | 6     | 146            | Acceptable                        |
-| llm             | 14    | 128            | Good                              |
-| core            | 12    | 122            | Good                              |
-| pokemon-data    | 4     | 100            | Good                              |
-| ui              | 15    | 90             | Good                              |
-| mcp-server      | 9     | 85             | Good                              |
-| analysis        | 6     | 82             | Good                              |
-| recommendations | 5     | 58             | Good                              |
-| damage-calc     | 2     | 127            | Minimal but acceptable            |
-| db              | 2     | 19             | Correctly minimal                 |
+- **37/46 API routes** (80%) use consistent `apiErrorResponse()` pattern
+- **9 routes** lack try-catch in GET handlers (rely on validation only)
+- **0 empty catch blocks** found
+- **Only 1 error boundary** in entire web app (`FeatureErrorBoundary` on DamageCalculator)
 
-### 5.3 Test Coverage
+### Documentation
 
-| Package         | Src Files | Test Files | File Coverage | Assessment           |
-| --------------- | --------- | ---------- | ------------- | -------------------- |
-| mcp-server      | 9         | 9          | 100%          | Excellent            |
-| llm             | 14        | 12         | 86%           | Good                 |
-| teams           | 7         | 6          | 86%           | Good                 |
-| battle-engine   | 28        | 21         | 75%           | Good                 |
-| analysis        | 6         | 4          | 67%           | Moderate             |
-| recommendations | 5         | 3          | 60%           | Moderate             |
-| smogon-data     | 7         | 4          | 57%           | Moderate             |
-| core            | 12        | 6          | 50%           | Needs improvement    |
-| formats         | 6         | 3          | 50%           | Needs improvement    |
-| damage-calc     | 2         | 1          | 50%           | Needs improvement    |
-| data-pipeline   | 7         | 2          | 29%           | Poor                 |
-| pokemon-data    | 4         | 1          | 25%           | Poor                 |
-| ui              | 15        | 1          | 7%            | **Critical gap**     |
-| db              | 2         | 0          | 0%            | Acceptable (trivial) |
+| Metric                              | Value                                    |
+| ----------------------------------- | ---------------------------------------- |
+| JSDoc coverage (exported functions) | ~85%                                     |
+| JSDoc coverage (React components)   | ~40%                                     |
+| JSDoc coverage (hooks)              | ~35%                                     |
+| README files per package            | 14/14 (100%)                             |
+| Inline comment density (avg)        | 3-5% (target: 8-10% for complex modules) |
 
-**Overall:** 80 test files, 36,206 lines of tests, test-to-code ratio of 1.93x.
+### Test Coverage by Package
 
-### 5.4 Error Handling
+| Package         | Test Files | Test Lines | Assessment    |
+| --------------- | ---------- | ---------- | ------------- |
+| battle-engine   | 21         | 16,265     | Comprehensive |
+| llm             | 12         | 3,976      | Good          |
+| smogon-data     | 4          | 2,790      | Good          |
+| teams           | 6          | 2,674      | Good          |
+| core            | 6          | 2,381      | Good          |
+| mcp-server      | 9          | 1,882      | Good          |
+| api             | 7          | 1,166      | Adequate      |
+| recommendations | 3          | 1,099      | Limited       |
+| analysis        | 4          | 896        | Limited       |
+| ui              | 11         | 730        | Adequate      |
+| formats         | 3          | 716        | Limited       |
+| pokemon-data    | 1          | 713        | Minimal       |
+| damage-calc     | 1          | 666        | Minimal       |
+| data-pipeline   | 2          | 386        | Minimal       |
+| **db**          | **0**      | **0**      | **None**      |
 
-| Metric                        | Count            | Assessment              |
-| ----------------------------- | ---------------- | ----------------------- |
-| Files with try/catch          | 43 (33% of src)  | Moderate coverage       |
-| Total catch blocks            | 57               |                         |
-| Empty catch blocks            | 0                | Excellent               |
-| React error boundaries        | Route-level only | Missing component-level |
-| Silent failures in battle sim | 3 locations      | Needs improvement       |
+### Findings
 
-### 5.5 Naming Consistency
-
-- **Service files:** 100% consistent (`{name}.service.ts`, kebab-case)
-- **React components:** **INCONSISTENT** — 48 PascalCase files vs 30 kebab-case files
-- **Types/constants:** 100% consistent (`types.ts`, `constants.ts`)
-
-### 5.6 Documentation Gaps
-
-- Protocol parser (1,111 lines) has minimal inline comments
-- Battle AI scoring algorithms lack explanation of weight rationale
-- MCTS tree expansion logic has no documentation
-- 20+ magic numbers in battle engine without named constants
+| ID  | Finding                                                | Severity | Details                                                                         |
+| --- | ------------------------------------------------------ | -------- | ------------------------------------------------------------------------------- |
+| M1  | BattleManager handles 8+ concerns (711 lines)          | High     | Extract protocol handling, AI delegation, set prediction into separate services |
+| M2  | DamageCalculator monolithic component (615 lines)      | High     | Split into attacker/defender config + calc hook + results display               |
+| M3  | GuidedBuilderProvider mixes context with orchestration | High     | Move orchestration to custom hook; keep provider lean                           |
+| M4  | `@nasty-plot/db` has zero tests                        | Medium   | Prisma client singleton is untested                                             |
+| M5  | Only 1 error boundary in entire web app                | Medium   | Battle, teams, chat pages lack error protection                                 |
+| M6  | 9 API GET routes lack try-catch                        | Medium   | Service errors would surface as 500s without context                            |
+| M7  | 1,219-line sample-teams.ts data file                   | Low      | Extract to JSON or seed from DB                                                 |
 
 ---
 
-## 6. Dependencies & Build Configuration
+## 6. Dependencies and Configuration
 
-**Grade: A- (8.5/10)**
+**Grade: A**
 
-### 6.1 Dependency Health
+### Dependency Health
 
-| Metric                   | Value                      | Status                    |
-| ------------------------ | -------------------------- | ------------------------- |
-| Total packages           | 15                         |                           |
-| Internal references      | 57 (all use `workspace:*`) | PASS                      |
-| External dependencies    | 40                         |                           |
-| External devDependencies | 28                         |                           |
-| Known vulnerabilities    | 6 (5 moderate, 1 low)      | All transitive via Prisma |
-| pnpm-lock.yaml committed | Yes (428 KB)               | PASS                      |
+- **4 minor updates available:** Prisma 7.3 to 7.4, jsdom 28.0 to 28.1, turbo 2.8.3 to 2.8.9
+- **Zero duplicate dependencies** at conflicting versions
+- **Zero unused dependencies** detected
+- **All version ranges safe** (caret ranges, no wildcard or overly broad specifiers)
 
-### 6.2 Build & Tooling
+### Configuration Consistency
 
-| Tool                   | Status     | Details                                 |
-| ---------------------- | ---------- | --------------------------------------- |
-| Turbo                  | Configured | Proper dependency caching               |
-| ESLint v10             | Configured | Flat config with TypeScript plugin      |
-| Prettier               | Configured | Consistent across all packages          |
-| Husky + lint-staged    | Configured | Pre-commit hooks (prettier + eslint)    |
-| Quality gate script    | Present    | Detects `@ts-ignore`, `as any` patterns |
-| TypeScript strict mode | Enabled    | Base config, inherited by all packages  |
-| ESM compliance         | 100%       | All packages `"type": "module"`         |
+| Aspect                           | Status                            |
+| -------------------------------- | --------------------------------- |
+| TypeScript strict mode           | 15/15 packages                    |
+| ESM modules (`"type": "module"`) | 14/14 packages (apps/web missing) |
+| Package naming (`@nasty-plot/*`) | 14/14                             |
+| Barrel exports field             | 14/14                             |
+| ESLint (flat config)             | Consistent across all packages    |
+| Prettier                         | Consistent settings (.prettierrc) |
+| Project references (tsconfig)    | All 14 packages listed correctly  |
 
-### 6.3 Issues Found
+### Findings
 
-| Finding                               | Severity | Details                                                   |
-| ------------------------------------- | -------- | --------------------------------------------------------- |
-| No CI/CD workflow                     | HIGH     | No GitHub Actions configuration                           |
-| No env variable validation at startup | MEDIUM   | Missing runtime validation for required ENV vars          |
-| TypeScript version inconsistency      | LOW      | Root uses `^5` (flexible), packages use `^5.9.3` (pinned) |
-| 6 transitive vulnerabilities          | LOW      | lodash prototype pollution, hono XSS/cache bypass, qs DoS |
+| ID  | Finding                                               | Severity | Details                                                                    |
+| --- | ----------------------------------------------------- | -------- | -------------------------------------------------------------------------- |
+| C1  | `apps/web` missing `"type": "module"`                 | Medium   | Has null instead of `"module"`. Next.js 16 expects ESM.                    |
+| C2  | No env var validation at startup                      | Medium   | Missing Zod schema check for required vars (DATABASE_URL, NEXTAUTH_SECRET) |
+| C3  | 3 packages have redundant `"main"` + `"types"` fields | Low      | Duplicate the `"exports"` field; harmless but unnecessary                  |
+| C4  | Inconsistent tsconfig include pattern in llm package  | Low      | Uses `["src"]` instead of `["src/**/*.ts"]`                                |
 
 ---
 
-## 7. Ranked Findings
+## Consolidated Findings - Ranked by Impact
 
-### Critical (Must Fix Before Production)
+### Critical (1)
 
-| #   | Finding                                                             | Category    | Location                              |
-| --- | ------------------------------------------------------------------- | ----------- | ------------------------------------- |
-| 1   | Hardcoded NextAuth secret                                           | Security    | `.env:17`                             |
-| 2   | O(n^2) matchup matrix (240 damage calcs per request, 1-2s response) | Performance | `damage-calc/src/calc.service.ts:225` |
-| 3   | N+1 `getSpecies()` in team hydration                                | Performance | `teams/src/team.service.ts:85`        |
-| 4   | Auth disabled in dev, must verify production config                 | Security    | `middleware.ts:76`                    |
-| 5   | No CI/CD pipeline                                                   | Build       | Missing GitHub Actions                |
+| ID  | Category | Finding                                                      | Impact                                                 |
+| --- | -------- | ------------------------------------------------------------ | ------------------------------------------------------ |
+| S1  | Security | Dev auth accepts any credentials; disabled in non-production | Full system compromise if deployed with wrong NODE_ENV |
 
-### High (Address Within 2 Sprints)
+### High (6)
 
-| #   | Finding                                                    | Category        | Location                                       |
-| --- | ---------------------------------------------------------- | --------------- | ---------------------------------------------- |
-| 6   | Unbounded usage stats query (limit: 9999)                  | Performance     | `api/pokemon/route.ts:39`                      |
-| 7   | O(n^2) threat identification loop                          | Performance     | `analysis/src/threat.service.ts:42`            |
-| 8   | Batch simulation fire-and-forget (orphaned batches)        | Performance     | `api/battles/batch/route.ts:61`                |
-| 9   | Weak MCP session ID generation                             | Security        | `mcp-server/src/index.ts:50`                   |
-| 10  | Missing security headers (CSP, X-Frame-Options)            | Security        | `next.config.ts`                               |
-| 11  | UI package has 7% test coverage (1 test for 15 components) | Maintainability | `packages/ui/`                                 |
-| 12  | Protocol parser is 1,111 lines with 68+ case statements    | Code Quality    | `battle-engine/src/protocol-parser.service.ts` |
-| 13  | Battle manager god object (701 lines, 15+ methods)         | Code Quality    | `battle-engine/src/battle-manager.service.ts`  |
-| 14  | 67 duplicate mock type casts across 21 test files          | Code Quality    | `tests/**/*.test.ts`                           |
-| 15  | Cleanup endpoint has no authentication                     | Security        | `api/data/cleanup/route.ts`                    |
+| ID  | Category        | Finding                                                | Impact                           |
+| --- | --------------- | ------------------------------------------------------ | -------------------------------- |
+| S2  | Security        | Hardcoded NEXTAUTH_SECRET in committed .env            | Token forgery in production      |
+| S3  | Security        | Seed endpoint unprotected when SEED_SECRET unset       | DoS via expensive data sync      |
+| M1  | Maintainability | BattleManager handles 8+ concerns (711 lines)          | Hard to test, modify, or extend  |
+| M2  | Maintainability | DamageCalculator monolithic component (615 lines)      | Mixed UI/logic; poor reusability |
+| M3  | Maintainability | GuidedBuilderProvider mixes context with orchestration | Violates single responsibility   |
+| P5  | Performance     | battle-engine may bundle @pkmn/sim to client (~500KB)  | Client bundle bloat              |
 
-### Medium (Address Next Quarter)
+### Medium (10)
 
-| #   | Finding                                                         | Category        | Location                                                 |
-| --- | --------------------------------------------------------------- | --------------- | -------------------------------------------------------- |
-| 16  | Missing React.memo on team grid components                      | Performance     | `teams/[teamId]/page.tsx:277`                            |
-| 17  | Coverage recommender iterates all Pokemon                       | Performance     | `recommendations/src/coverage-recommender.service.ts:41` |
-| 18  | No HTTP Cache-Control headers on API responses                  | Performance     | All API routes                                           |
-| 19  | Sequential async calls in analyzeTeam()                         | Performance     | `analysis/src/analysis.service.ts:25`                    |
-| 20  | React component naming inconsistency (PascalCase vs kebab-case) | Maintainability | `apps/web/src/features/`                                 |
-| 21  | CORS hardcodes localhost origins                                | Security        | `middleware.ts:5-9`                                      |
-| 22  | Rate limits too loose on expensive operations                   | Security        | `middleware.ts:21-25`                                    |
-| 23  | Missing env variable validation at startup                      | Build           | No runtime validation                                    |
-| 24  | 20+ magic numbers in battle AI without named constants          | Maintainability | `battle-engine/src/ai/`                                  |
-| 25  | Data-pipeline test coverage at 29%                              | Maintainability | `packages/data-pipeline/`                                |
-| 26  | MCP server uses HTTP instead of direct package imports          | Architecture    | `mcp-server/src/api-client.service.ts`                   |
-| 27  | BattleState god object (40+ fields, 4 nesting levels)           | Code Quality    | `battle-engine/src/types.ts`                             |
-| 28  | Potential memory leak in batch simulation polling               | Performance     | `battle/simulate/page.tsx:96-165`                        |
-| 29  | Pokemon detail page missing Next.js Image component             | Performance     | `pokemon/[pokemonId]/page.tsx:74`                        |
+| ID  | Category        | Finding                                        | Impact                               |
+| --- | --------------- | ---------------------------------------------- | ------------------------------------ |
+| S4  | Security        | API key fallback to literal string             | Confusing error behavior             |
+| S5  | Security        | Unvalidated MCP_URL from environment           | SSRF if env is compromised           |
+| S6  | Security        | Prompt injection via chat context              | Limited by tool allowlisting         |
+| S7  | Security        | CORS origin validation not strict              | Cross-site requests if misconfigured |
+| P1  | Performance     | Pokemon search filters 1000+ species in memory | Scales poorly with dataset growth    |
+| P2  | Performance     | Damage calc results not cached across requests | Redundant expensive computations     |
+| P3  | Performance     | Over-fetching slot columns in team list        | Unnecessary data transfer            |
+| M4  | Maintainability | @nasty-plot/db has zero tests                  | Untested critical path               |
+| M5  | Maintainability | Only 1 error boundary in web app               | Unhandled errors crash UI            |
+| C1  | Config          | apps/web missing "type": "module"              | Potential module resolution issues   |
 
-### Low (Backlog)
+### Low (10)
 
-| #   | Finding                                                    | Category        | Location                                 |
-| --- | ---------------------------------------------------------- | --------------- | ---------------------------------------- |
-| 30  | 5 unused mega/z-crystal functions (Gen 9 doesn't use them) | Code Quality    | `pokemon-data/dex.service.ts`            |
-| 31  | 82 console.log calls (should use structured logger)        | Maintainability | 10+ files                                |
-| 32  | In-memory rate limiting won't scale to multi-server        | Security        | `lib/rate-limit.ts`                      |
-| 33  | 1 `any[]` type in usage-stats                              | Code Quality    | `usage-stats.service.ts:234`             |
-| 34  | TypeScript version inconsistency (root vs packages)        | Build           | `package.json` files                     |
-| 35  | 6 transitive dep vulnerabilities (lodash, hono, qs)        | Security        | Prisma dev tools chain                   |
-| 36  | Sample teams data constant (1,219 lines in memory)         | Performance     | `data-pipeline/src/data/sample-teams.ts` |
-| 37  | Sequential batch deletes in cleanupEmptyTeams              | Performance     | `teams/src/team.service.ts:226`          |
+| ID  | Category     | Finding                                     | Impact                          |
+| --- | ------------ | ------------------------------------------- | ------------------------------- |
+| S8  | Security     | Silent validation failure in seed endpoint  | Masks input errors              |
+| S9  | Security     | Auth endpoints use default rate limit       | Brute-force possible at 100/min |
+| S10 | Security     | TOCTOU in temp file handling                | Symlink attack in multi-tenant  |
+| P4  | Performance  | Loop-based getSpecies calls (3 services)    | Minor; dex is in-memory         |
+| P6  | Performance  | UI imports full @pkmn/dex                   | Browser bundle ~800KB           |
+| P7  | Performance  | Missing composite index on BattleTurn       | Slower replay queries           |
+| Q1  | Code Quality | 6 `as unknown` assertions for @pkmn interop | Fragile but necessary           |
+| Q2  | Code Quality | Battle request handler duplication          | Clarity trade-off               |
+| C3  | Config       | Redundant main/types fields in 3 packages   | Harmless noise                  |
+| C4  | Config       | Inconsistent tsconfig include in llm        | Functional but inconsistent     |
 
 ---
 
-## 8. Recommendations
+## Actionable Recommendations - Ordered by Impact
 
-### Tier 1: Critical (Before Production Deployment)
+### Tier 1: Security Hardening (Do First)
 
-1. **Secure authentication configuration**
-   - Generate production NextAuth secret: `openssl rand -base64 32`
-   - Define `SEED_SECRET` in production environment
-   - Verify `NODE_ENV=production` is set in deployment
-   - Replace dev credentials with real auth (OAuth2/OIDC)
-   - _Effort: 4-8 hours_
+1. **Implement real authentication** - Replace the accept-all `authorize()` callback with proper user database + bcrypt password hashing. Add rate limiting on failed login attempts.
+2. **Rotate NEXTAUTH_SECRET** - Generate 32+ char random secret for production. Add `.env` to `.gitignore` (keep `.env.example` tracked).
+3. **Fix seed endpoint auth** - Require `SEED_SECRET` always (not just in production). Fail closed, not open.
+4. **Validate MCP_URL** - Whitelist localhost URLs only. Reject external URLs in production.
+5. **Add env var validation** - Zod schema check at app startup for all required variables.
 
-2. **Add damage calc caching**
-   - Memoize by `(attacker_id, move, defender_id, level)` tuple
-   - Reduce 240 calcs to ~60 unique calcs per matchup matrix
-   - _Estimated speedup: 3-4x (from 1-2s to 300-500ms)_
-   - _Effort: 4-6 hours_
+### Tier 2: Maintainability Decomposition (High Impact)
 
-3. **Batch species hydration**
-   - Replace per-slot `getSpecies()` calls with bulk lookup
-   - Cache at request level for team list operations
-   - _Estimated speedup: 2-3x on team list endpoints_
-   - _Effort: 2-4 hours_
+6. **Decompose BattleManager** - Extract protocol handling, AI delegation, and set prediction into separate services. Target: under 300 lines for orchestrator.
+7. **Split DamageCalculator** - Extract attacker/defender config pickers into components. Move calculation logic to `useDamageCalc()` hook.
+8. **Separate GuidedBuilderProvider** - Move API orchestration to `useGuidedBuilderOrchestration()` hook. Keep provider as thin context wrapper.
+9. **Add error boundaries** - Wrap battle, teams, and chat pages with `FeatureErrorBoundary`.
+10. **Wrap GET routes in try-catch** - Ensure all 46 API routes consistently handle service errors.
 
-4. **Set up CI/CD pipeline**
-   - GitHub Actions: lint, typecheck, test on PR
-   - Block merge on failure
-   - _Effort: 2-4 hours_
+### Tier 3: Performance Optimization (Medium Impact)
 
-5. **Add security headers**
-   - CSP, X-Frame-Options, X-Content-Type-Options, Referrer-Policy
-   - Configure in `next.config.ts` headers
-   - _Effort: 1-2 hours_
+11. **Add global LRU cache for damage calc** - Persistent across requests, keyed by `[attacker, defender, move]`.
+12. **Create lightweight browser entry for pokemon-data** - Avoid bundling full @pkmn/dex (~800KB) in client.
+13. **Verify battle-engine client export tree-shakes** - Ensure `./client` subpath does not pull in @pkmn/sim.
+14. **Optimize Pokemon search** - Consider pushing text filter + pagination to dex layer instead of loading all then filtering.
 
-### Tier 2: High Priority (Within 2-4 Weeks)
+### Tier 4: Polish (Low Impact)
 
-6. **Fix MCP session ID generation** — use `crypto.randomUUID()` instead of `Math.random()`
-7. **Cap usage stats queries** — enforce `limit: 100` max on Pokemon search
-8. **Add auth to admin endpoints** — `/api/data/cleanup`, `/api/data/seed`
-9. **Create shared test utilities** — extract 67 duplicate mock casts + 200 lines of factory helpers to `tests/test-utils/`
-10. **Parallelize independent async calls** — `Promise.all()` in `analyzeTeam()` and Pokemon detail page
-11. **Add error recovery to batch simulation** — retry logic, timeout handling, status cleanup
-12. **Add HTTP Cache-Control headers** — immutable Pokemon data (1 day), usage stats (1 hour)
-
-### Tier 3: Medium Priority (Next Quarter)
-
-13. **Decompose protocol parser** — split 1,111-line file into handler modules (<200 lines each)
-14. **Split battle-engine package** — extract AI, replay, and export into sub-packages
-15. **Add UI component tests** — prioritize `move-selector.tsx`, `pokemon-search-selector.tsx`
-16. **Standardize React component naming** — pick PascalCase or kebab-case, add ESLint rule
-17. **Document battle AI scoring logic** — extract magic numbers to named constants with comments
-18. **Add React.memo** to team grid slot cards and other high-frequency components
-19. **Implement env variable validation** — fail-fast at startup if required vars missing
-20. **Refactor MCP server** to import package services directly instead of HTTP
-
-### Tier 4: Backlog
-
-21. Remove 5 unused mega/z-crystal functions
-22. Migrate `console.log` to structured logger (pino/winston)
-23. Move sample teams from in-memory constant to lazy DB loading
-24. Add component-level React error boundaries
-25. Upgrade next-auth from v4 to v5
+15. **Extract sample-teams.ts to JSON** - Replace 1,219-line TypeScript data file.
+16. **Add `"type": "module"` to apps/web** - Match ESM convention of all other packages.
+17. **Increase inline comments** in battle-engine AI (hint-engine, mcts-ai, heuristic-ai) to 8-10% density.
+18. **Add JSDoc to React components and hooks** - Currently at 35-40% coverage; target 80%.
+19. **Update 4 outdated packages** - Prisma, jsdom, turbo (all minor/patch updates).
 
 ---
 
-## Appendix: Codebase Metrics at a Glance
+## Conclusion
 
-```
-Repository Statistics
----------------------
-Total source files:        462
-Total test files:           80
-Total lines of code:    41,017
-Total lines of tests:   36,206
-Test-to-code ratio:       1.93x
-Packages:                   15
-API routes:                 47
-Service files:              48
-React components:          230+
+This is a **well-engineered codebase** that demonstrates strong architectural discipline, excellent type safety, and comprehensive testing. The primary risks are concentrated in **security** (dev-mode auth shortcuts that would be dangerous in production) rather than in code quality or architecture.
 
-Type Safety
------------
-any types:                   1
-Type assertions:            82 (67 in tests)
-@ts-ignore:                  0
-Loose equality (==):         0
+**Key strengths:**
 
-Architecture
-------------
-Layer violations:            0
-Circular dependencies:       0
-Barrel export coverage:    100%
-Strict TypeScript:         100%
-ESM compliance:            100%
+- Zero circular dependencies across 14 packages
+- Strict 5-layer dependency architecture with zero critical violations
+- Only 1 `any` type in the entire codebase (in test code)
+- 86% test-to-source line ratio
+- 100% barrel export and README coverage
 
-Quality Gates
--------------
-Pre-commit hooks:          Yes (husky + lint-staged)
-ESLint:                    Yes (v10 flat config)
-Prettier:                  Yes
-CI/CD:                      No (MISSING)
+**Key risks:**
 
-Dependencies
-------------
-External deps:              40
-External devDeps:           28
-Known vulnerabilities:       6 (all transitive, low-moderate)
-Workspace protocol:        100%
-```
+- Authentication is entirely cosmetic in dev mode and fragile in production
+- 6 behavioral files exceed 500 lines and need decomposition
+- Client bundles may include server-only libraries (~1.3MB)
 
----
-
-_Report generated through parallel automated analysis of architecture, code quality, security, performance, maintainability, and dependency health across the entire monorepo._
+**Estimated effort to address all Tier 1 + Tier 2 recommendations: 3-4 weeks** with one developer.

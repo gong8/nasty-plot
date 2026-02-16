@@ -4,6 +4,7 @@ import {
   DEFAULT_NATURE,
   PERFECT_IV,
   STATUS_CALC_MAP,
+  LRUCache,
   fillStats,
   toPercent,
   type CalcStatusName,
@@ -16,6 +17,57 @@ import {
   type TeamSlotData,
 } from "@nasty-plot/core"
 import { getGen9, resolveSpeciesName } from "@nasty-plot/pokemon-data"
+
+// ---------------------------------------------------------------------------
+// Global LRU cache for damage calculation results
+// ---------------------------------------------------------------------------
+
+const CACHE_MAX_SIZE = 1000
+const CACHE_TTL_MS = 10 * 60 * 1000 // 10 minutes
+
+const damageCalcCache = new LRUCache<DamageCalcResult>(CACHE_MAX_SIZE, CACHE_TTL_MS)
+
+function serializeStats(stats: Partial<StatsTable> | undefined): string {
+  if (!stats) return ""
+  return `${stats.hp ?? ""}/${stats.atk ?? ""}/${stats.def ?? ""}/${stats.spa ?? ""}/${stats.spd ?? ""}/${stats.spe ?? ""}`
+}
+
+function serializePokemonInput(p: DamageCalcInput["attacker"]): string {
+  return [
+    p.pokemonId,
+    p.level,
+    p.ability ?? "",
+    p.item ?? "",
+    p.nature ?? "",
+    serializeStats(p.evs),
+    serializeStats(p.ivs),
+    serializeStats(p.boosts),
+    p.teraType ?? "",
+    p.status ?? "",
+  ].join("|")
+}
+
+function serializeField(field: DamageCalcInput["field"]): string {
+  if (!field) return ""
+  return [
+    field.weather ?? "",
+    field.terrain ?? "",
+    field.isReflect ? "1" : "0",
+    field.isLightScreen ? "1" : "0",
+    field.isAuroraVeil ? "1" : "0",
+    field.isCritical ? "1" : "0",
+    field.isDoubles ? "1" : "0",
+  ].join("|")
+}
+
+function buildCacheKey(input: DamageCalcInput): string {
+  return `${serializePokemonInput(input.attacker)}||${input.move}||${serializePokemonInput(input.defender)}||${serializeField(input.field)}`
+}
+
+/** Clear the global damage calc cache. Exported for testing. */
+export function clearDamageCalcCache(): void {
+  damageCalcCache.clear()
+}
 
 function toCalcBoosts(boosts: Partial<StatsTable> | undefined): Partial<StatsTable> | undefined {
   if (!boosts) return undefined
@@ -109,6 +161,10 @@ function buildField(input: DamageCalcInput["field"], move: Move): Field {
 // ---------------------------------------------------------------------------
 
 export function calculateDamage(input: DamageCalcInput): DamageCalcResult {
+  const cacheKey = buildCacheKey(input)
+  const cached = damageCalcCache.get(cacheKey)
+  if (cached) return cached
+
   const attackerName = resolveSpeciesName(input.attacker.pokemonId)
   const defenderName = resolveSpeciesName(input.defender.pokemonId)
 
@@ -132,7 +188,7 @@ export function calculateDamage(input: DamageCalcInput): DamageCalcResult {
     description = `${attackerName} ${input.move} vs ${defenderName}: ${minPercent}-${maxPercent}%`
   }
 
-  return {
+  const calcResult: DamageCalcResult = {
     moveName: input.move,
     damage: damageArr,
     minPercent,
@@ -142,6 +198,9 @@ export function calculateDamage(input: DamageCalcInput): DamageCalcResult {
     koChance: deriveKoChance(damageArr, defenderHp),
     description,
   }
+
+  damageCalcCache.set(cacheKey, calcResult)
+  return calcResult
 }
 
 function slotToAttackerInput(slot: TeamSlotData): CalcPokemonInput {

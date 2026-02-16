@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label"
 import { Progress } from "@/components/ui/progress"
 import { Play, BarChart3 } from "lucide-react"
 import { LoadingSpinner } from "@/components/LoadingSpinner"
+import { FeatureErrorBoundary } from "@/components/FeatureErrorBoundary"
 import type { BatchAnalytics } from "@nasty-plot/battle-engine/client"
 import { FormatSelector } from "@/features/battle/components/FormatSelector"
 import { TeamPicker, type TeamSelection } from "@/features/battle/components/TeamPicker"
@@ -82,7 +83,7 @@ function TurnDistributionChart({ distribution }: { distribution: Record<string, 
   )
 }
 
-export default function SimulatePage() {
+function SimulatePageContent() {
   const [phase, setPhase] = useState<Phase>("setup")
   const [team1Selection, setTeam1Selection] = useState<TeamSelection>(emptySelection(""))
   const [team2Selection, setTeam2Selection] = useState<TeamSelection>(emptySelection(""))
@@ -437,5 +438,13 @@ export default function SimulatePage() {
         )}
       </main>
     </>
+  )
+}
+
+export default function SimulatePage() {
+  return (
+    <FeatureErrorBoundary name="BattleSimulate">
+      <SimulatePageContent />
+    </FeatureErrorBoundary>
   )
 }

@@ -1,6 +1,14 @@
 export * from "./types"
 export * from "./battle-manager.service"
 export {
+  actionToChoice,
+  buildPartialDoublesChoice,
+  escapeTeam,
+  pasteToPackedTeam,
+} from "./battle-utils"
+export { updateSetPredictorFromChunk, populatePredictions } from "./set-prediction.service"
+export { parseProtocolFromChunk, processDeduplicatedProtocol } from "./protocol-handler"
+export {
   serializeBattleState,
   formatMoveStats,
   formatBoosts,

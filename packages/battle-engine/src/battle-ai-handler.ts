@@ -1,4 +1,5 @@
 import type { BattleState, AIPlayer, BattleActionSet } from "./types"
+import { actionToChoice, buildPartialDoublesChoice } from "./battle-utils"
 
 /** AI thinking delay ranges in milliseconds (simulates decision time for realism) */
 const AI_THINK_DELAY = {
@@ -15,29 +16,6 @@ const AI_THINK_DELAY = {
 /** Simulate AI "thinking" with a randomized delay for realism. */
 function aiThinkDelay(baseMs: number, jitterMs: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, baseMs + Math.random() * jitterMs))
-}
-
-function actionToChoice(action: {
-  type: string
-  moveIndex?: number
-  targetSlot?: number
-  tera?: boolean
-  mega?: boolean
-  pokemonIndex?: number
-}): string {
-  if (action.type === "move") {
-    let choice = `move ${action.moveIndex}`
-    if (action.targetSlot != null) choice += ` ${action.targetSlot}`
-    if (action.tera) choice += " terastallize"
-    if (action.mega) choice += " mega"
-    return choice
-  }
-  return `switch ${action.pokemonIndex}`
-}
-
-/** Build a doubles choice string where only one slot acts and the other passes. */
-function buildPartialDoublesChoice(actionStr: string, activeSlot: number): string {
-  return activeSlot === 0 ? `${actionStr}, pass` : `pass, ${actionStr}`
 }
 
 export interface AIHandlerContext {

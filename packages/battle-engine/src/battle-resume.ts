@@ -1,4 +1,4 @@
-import { Battle, BattleStreams, Teams } from "@pkmn/sim"
+import { Battle, BattleStreams } from "@pkmn/sim"
 import { parseRequest, parseRequestForSlot } from "./protocol-parser.service"
 import { DEFAULT_FORMAT_ID } from "@nasty-plot/core"
 import type {
@@ -8,6 +8,7 @@ import type {
   AIPlayer,
   BattleCheckpoint,
 } from "./types"
+import { escapeTeam, pasteToPackedTeam } from "./battle-utils"
 
 const RESUME_INIT_DELAY_MS = 50
 
@@ -40,27 +41,6 @@ export interface ResumableManager {
     opponentTeam: string
     playerName?: string
     opponentName?: string
-  }
-}
-
-function escapeTeam(team: string): string {
-  return team.replace(/\\/g, "\\\\").replace(/"/g, '\\"')
-}
-
-function pasteToPackedTeam(team: string): string | null {
-  const trimmed = team.trim()
-  if (!trimmed) return null
-
-  if (!trimmed.includes("\n") || (trimmed.includes("|") && !trimmed.includes("Ability:"))) {
-    return trimmed
-  }
-
-  try {
-    const sets = Teams.import(trimmed)
-    if (!sets || sets.length === 0) return null
-    return Teams.pack(sets)
-  } catch {
-    return null
   }
 }
 

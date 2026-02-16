@@ -1,0 +1,128 @@
+[
+  {
+    "name": "OU Balance",
+    "formatId": "gen9ou",
+    "archetype": "balance",
+    "source": "curated-seed",
+    "paste": "Gholdengo @ Air Balloon\nAbility: Good as Gold\nTera Type: Fighting\nEVs: 252 SpA / 4 SpD / 252 Spe\nTimid Nature\n- Make It Rain\n- Shadow Ball\n- Focus Blast\n- Recover\n\nGreat Tusk @ Booster Energy\nAbility: Protosynthesis\nTera Type: Ground\nEVs: 252 Atk / 4 Def / 252 Spe\nJolly Nature\n- Headlong Rush\n- Ice Spinner\n- Rapid Spin\n- Knock Off\n\nKingambit @ Leftovers\nAbility: Supreme Overlord\nTera Type: Dark\nEVs: 252 HP / 252 Atk / 4 SpD\nAdamant Nature\n- Kowtow Cleave\n- Sucker Punch\n- Iron Head\n- Swords Dance\n\nDragapult @ Choice Specs\nAbility: Infiltrator\nTera Type: Ghost\nEVs: 252 SpA / 4 SpD / 252 Spe\nTimid Nature\n- Shadow Ball\n- Draco Meteor\n- Flamethrower\n- U-turn\n\nSlowking-Galar @ Assault Vest\nAbility: Regenerator\nTera Type: Poison\nEVs: 252 HP / 4 Def / 252 SpD\nSassy Nature\nIVs: 0 Spe\n- Future Sight\n- Sludge Bomb\n- Flamethrower\n- Chilly Reception\n\nClefable @ Leftovers\nAbility: Magic Guard\nTera Type: Steel\nEVs: 252 HP / 252 Def / 4 SpD\nBold Nature\n- Moonblast\n- Flamethrower\n- Stealth Rock\n- Soft-Boiled"
+  },
+  {
+    "name": "OU Bulky Offense",
+    "formatId": "gen9ou",
+    "archetype": "bulky-offense",
+    "source": "curated-seed",
+    "paste": "Gliscor @ Toxic Orb\nAbility: Poison Heal\nTera Type: Water\nEVs: 244 HP / 8 Def / 200 SpD / 56 Spe\nCareful Nature\n- Earthquake\n- Knock Off\n- Toxic\n- Roost\n\nGholdengo @ Choice Specs\nAbility: Good as Gold\nTera Type: Fighting\nEVs: 252 SpA / 4 SpD / 252 Spe\nTimid Nature\n- Make It Rain\n- Shadow Ball\n- Focus Blast\n- Trick\n\nHeatran @ Leftovers\nAbility: Flash Fire\nTera Type: Grass\nEVs: 252 HP / 4 SpA / 252 SpD\nCalm Nature\n- Magma Storm\n- Earth Power\n- Stealth Rock\n- Taunt\n\nGreat Tusk @ Heavy-Duty Boots\nAbility: Protosynthesis\nTera Type: Ground\nEVs: 252 HP / 4 Atk / 252 Spe\nJolly Nature\n- Headlong Rush\n- Rapid Spin\n- Knock Off\n- Ice Spinner\n\nDragonite @ Choice Band\nAbility: Multiscale\nTera Type: Normal\nEVs: 252 Atk / 4 Def / 252 Spe\nAdamant Nature\n- Outrage\n- Extreme Speed\n- Earthquake\n- Ice Spinner\n\nKingambit @ Black Glasses\nAbility: Supreme Overlord\nTera Type: Dark\nEVs: 252 HP / 252 Atk / 4 SpD\nAdamant Nature\n- Kowtow Cleave\n- Sucker Punch\n- Iron Head\n- Swords Dance"
+  },
+  {
+    "name": "OU Hyper Offense",
+    "formatId": "gen9ou",
+    "archetype": "hyper-offense",
+    "source": "curated-seed",
+    "paste": "Roaring Moon @ Booster Energy\nAbility: Protosynthesis\nTera Type: Flying\nEVs: 252 Atk / 4 SpD / 252 Spe\nJolly Nature\n- Dragon Dance\n- Acrobatics\n- Knock Off\n- Earthquake\n\nIron Valiant @ Life Orb\nAbility: Quark Drive\nTera Type: Fairy\nEVs: 252 SpA / 4 SpD / 252 Spe\nTimid Nature\n- Moonblast\n- Close Combat\n- Shadow Ball\n- Calm Mind\n\nDragapult @ Choice Specs\nAbility: Infiltrator\nTera Type: Ghost\nEVs: 252 SpA / 4 SpD / 252 Spe\nTimid Nature\n- Shadow Ball\n- Draco Meteor\n- Flamethrower\n- U-turn\n\nGholdengo @ Focus Sash\nAbility: Good as Gold\nTera Type: Fighting\nEVs: 252 SpA / 4 SpD / 252 Spe\nTimid Nature\n- Make It Rain\n- Shadow Ball\n- Focus Blast\n- Nasty Plot\n\nGreat Tusk @ Heavy-Duty Boots\nAbility: Protosynthesis\nTera Type: Ground\nEVs: 252 Atk / 4 Def / 252 Spe\nJolly Nature\n- Headlong Rush\n- Stealth Rock\n- Rapid Spin\n- Ice Spinner\n\nKingambit @ Black Glasses\nAbility: Supreme Overlord\nTera Type: Flying\nEVs: 252 HP / 252 Atk / 4 SpD\nAdamant Nature\n- Kowtow Cleave\n- Sucker Punch\n- Iron Head\n- Swords Dance"
+  },
+  {
+    "name": "OU Offense",
+    "formatId": "gen9ou",
+    "archetype": "offense",
+    "source": "curated-seed",
+    "paste": "Dragonite @ Choice Band\nAbility: Multiscale\nTera Type: Normal\nEVs: 252 Atk / 4 SpD / 252 Spe\nAdamant Nature\n- Outrage\n- Extreme Speed\n- Earthquake\n- Ice Spinner\n\nIron Valiant @ Booster Energy\nAbility: Quark Drive\nTera Type: Electric\nEVs: 252 SpA / 4 SpD / 252 Spe\nTimid Nature\n- Moonblast\n- Thunderbolt\n- Shadow Ball\n- Psyshock\n\nGreat Tusk @ Leftovers\nAbility: Protosynthesis\nTera Type: Ground\nEVs: 252 HP / 4 Atk / 252 Spe\nJolly Nature\n- Headlong Rush\n- Rapid Spin\n- Knock Off\n- Stealth Rock\n\nGholdengo @ Air Balloon\nAbility: Good as Gold\nTera Type: Water\nEVs: 252 SpA / 4 SpD / 252 Spe\nTimid Nature\n- Make It Rain\n- Shadow Ball\n- Recover\n- Nasty Plot\n\nKingambit @ Leftovers\nAbility: Supreme Overlord\nTera Type: Flying\nEVs: 252 HP / 252 Atk / 4 SpD\nAdamant Nature\n- Kowtow Cleave\n- Sucker Punch\n- Iron Head\n- Swords Dance\n\nGarganacl @ Leftovers\nAbility: Purifying Salt\nTera Type: Ghost\nEVs: 252 HP / 252 Def / 4 SpD\nImpish Nature\n- Salt Cure\n- Recover\n- Stealth Rock\n- Body Press"
+  },
+  {
+    "name": "OU Rain",
+    "formatId": "gen9ou",
+    "archetype": "rain",
+    "source": "curated-seed",
+    "paste": "Pelipper @ Damp Rock\nAbility: Drizzle\nTera Type: Ground\nEVs: 248 HP / 8 SpA / 252 SpD\nCalm Nature\n- Scald\n- Hurricane\n- U-turn\n- Roost\n\nBarraskewda @ Choice Band\nAbility: Swift Swim\nTera Type: Water\nEVs: 252 Atk / 4 SpD / 252 Spe\nAdamant Nature\n- Liquidation\n- Flip Turn\n- Close Combat\n- Aqua Jet\n\nIron Valiant @ Booster Energy\nAbility: Quark Drive\nTera Type: Fairy\nEVs: 252 SpA / 4 SpD / 252 Spe\nTimid Nature\n- Moonblast\n- Close Combat\n- Shadow Ball\n- Calm Mind\n\nKingambit @ Leftovers\nAbility: Supreme Overlord\nTera Type: Water\nEVs: 252 HP / 252 Atk / 4 SpD\nAdamant Nature\n- Kowtow Cleave\n- Sucker Punch\n- Iron Head\n- Swords Dance\n\nFerrothorn @ Leftovers\nAbility: Iron Barbs\nTera Type: Water\nEVs: 252 HP / 24 Def / 232 SpD\nRelaxed Nature\nIVs: 0 Spe\n- Power Whip\n- Knock Off\n- Spikes\n- Leech Seed\n\nGreat Tusk @ Heavy-Duty Boots\nAbility: Protosynthesis\nTera Type: Ground\nEVs: 252 Atk / 4 Def / 252 Spe\nJolly Nature\n- Headlong Rush\n- Rapid Spin\n- Knock Off\n- Ice Spinner"
+  },
+  {
+    "name": "OU Sun",
+    "formatId": "gen9ou",
+    "archetype": "sun",
+    "source": "curated-seed",
+    "paste": "Torkoal @ Heat Rock\nAbility: Drought\nTera Type: Ground\nEVs: 248 HP / 8 Def / 252 SpD\nBold Nature\nIVs: 0 Spe\n- Lava Plume\n- Stealth Rock\n- Yawn\n- Rapid Spin\n\nGouging Fire @ Booster Energy\nAbility: Protosynthesis\nTera Type: Fairy\nEVs: 252 Atk / 4 SpD / 252 Spe\nJolly Nature\n- Dragon Dance\n- Flare Blitz\n- Breaking Swipe\n- Morning Sun\n\nGholdengo @ Choice Specs\nAbility: Good as Gold\nTera Type: Fighting\nEVs: 252 SpA / 4 SpD / 252 Spe\nTimid Nature\n- Make It Rain\n- Shadow Ball\n- Focus Blast\n- Trick\n\nGreat Tusk @ Heavy-Duty Boots\nAbility: Protosynthesis\nTera Type: Ground\nEVs: 252 Atk / 4 Def / 252 Spe\nJolly Nature\n- Headlong Rush\n- Ice Spinner\n- Knock Off\n- Rapid Spin\n\nOgerpon-Hearthflame @ Hearthflame Mask\nAbility: Mold Breaker\nTera Type: Fire\nEVs: 252 Atk / 4 SpD / 252 Spe\nJolly Nature\n- Ivy Cudgel\n- Horn Leech\n- Knock Off\n- Swords Dance\n\nKingambit @ Leftovers\nAbility: Supreme Overlord\nTera Type: Dark\nEVs: 252 HP / 252 Atk / 4 SpD\nAdamant Nature\n- Kowtow Cleave\n- Sucker Punch\n- Iron Head\n- Swords Dance"
+  },
+  {
+    "name": "OU Sand",
+    "formatId": "gen9ou",
+    "archetype": "sand",
+    "source": "curated-seed",
+    "paste": "Tyranitar @ Smooth Rock\nAbility: Sand Stream\nTera Type: Ghost\nEVs: 252 HP / 4 Atk / 252 SpD\nCareful Nature\n- Stone Edge\n- Knock Off\n- Stealth Rock\n- Thunder Wave\n\nGarchomp @ Life Orb\nAbility: Rough Skin\nTera Type: Steel\nEVs: 252 Atk / 4 SpD / 252 Spe\nJolly Nature\n- Earthquake\n- Scale Shot\n- Swords Dance\n- Iron Head\n\nGholdengo @ Air Balloon\nAbility: Good as Gold\nTera Type: Fighting\nEVs: 252 SpA / 4 SpD / 252 Spe\nTimid Nature\n- Make It Rain\n- Shadow Ball\n- Focus Blast\n- Recover\n\nLandorus-Therian @ Leftovers\nAbility: Intimidate\nTera Type: Water\nEVs: 252 HP / 4 Atk / 252 Def\nImpish Nature\n- Earthquake\n- U-turn\n- Stealth Rock\n- Knock Off\n\nCorviknight @ Rocky Helmet\nAbility: Pressure\nTera Type: Fire\nEVs: 252 HP / 168 Def / 88 SpD\nImpish Nature\n- Body Press\n- Brave Bird\n- Defog\n- Roost\n\nKingambit @ Leftovers\nAbility: Supreme Overlord\nTera Type: Flying\nEVs: 252 HP / 252 Atk / 4 SpD\nAdamant Nature\n- Kowtow Cleave\n- Sucker Punch\n- Iron Head\n- Swords Dance"
+  },
+  {
+    "name": "OU Stall",
+    "formatId": "gen9ou",
+    "archetype": "stall",
+    "source": "curated-seed",
+    "paste": "Toxapex @ Black Sludge\nAbility: Regenerator\nTera Type: Fairy\nEVs: 252 HP / 252 Def / 4 SpD\nBold Nature\n- Scald\n- Toxic Spikes\n- Haze\n- Recover\n\nCorviknight @ Rocky Helmet\nAbility: Pressure\nTera Type: Fire\nEVs: 252 HP / 168 Def / 88 SpD\nImpish Nature\n- Body Press\n- Brave Bird\n- Defog\n- Roost\n\nClefable @ Leftovers\nAbility: Magic Guard\nTera Type: Steel\nEVs: 252 HP / 252 Def / 4 SpD\nBold Nature\n- Moonblast\n- Knock Off\n- Stealth Rock\n- Soft-Boiled\n\nBlissey @ Heavy-Duty Boots\nAbility: Natural Cure\nTera Type: Ghost\nEVs: 252 HP / 252 Def / 4 SpD\nBold Nature\n- Seismic Toss\n- Toxic\n- Heal Bell\n- Soft-Boiled\n\nGreat Tusk @ Leftovers\nAbility: Protosynthesis\nTera Type: Poison\nEVs: 252 HP / 4 Atk / 252 Spe\nJolly Nature\n- Headlong Rush\n- Rapid Spin\n- Knock Off\n- Ice Spinner\n\nSlowking-Galar @ Assault Vest\nAbility: Regenerator\nTera Type: Poison\nEVs: 252 HP / 4 Def / 252 SpD\nSassy Nature\nIVs: 0 Spe\n- Future Sight\n- Sludge Bomb\n- Flamethrower\n- Chilly Reception"
+  },
+  {
+    "name": "UU Balance",
+    "formatId": "gen9uu",
+    "archetype": "balance",
+    "source": "curated-seed",
+    "paste": "Skeledirge @ Heavy-Duty Boots\nAbility: Unaware\nTera Type: Fairy\nEVs: 252 HP / 252 Def / 4 SpA\nBold Nature\n- Torch Song\n- Shadow Ball\n- Slack Off\n- Will-O-Wisp\n\nCobalion @ Leftovers\nAbility: Justified\nTera Type: Ghost\nEVs: 252 Atk / 4 SpD / 252 Spe\nJolly Nature\n- Close Combat\n- Iron Head\n- Stealth Rock\n- Swords Dance\n\nSalamence @ Choice Specs\nAbility: Intimidate\nTera Type: Fire\nEVs: 252 SpA / 4 SpD / 252 Spe\nTimid Nature\n- Draco Meteor\n- Hurricane\n- Flamethrower\n- Hydro Pump\n\nGastrodon @ Leftovers\nAbility: Storm Drain\nTera Type: Grass\nEVs: 252 HP / 252 Def / 4 SpD\nBold Nature\n- Scald\n- Earth Power\n- Recover\n- Toxic\n\nBisharp @ Eviolite\nAbility: Defiant\nTera Type: Dark\nEVs: 252 Atk / 4 SpD / 252 Spe\nAdamant Nature\n- Knock Off\n- Iron Head\n- Sucker Punch\n- Swords Dance\n\nQuaquaval @ Life Orb\nAbility: Moxie\nTera Type: Water\nEVs: 252 Atk / 4 SpD / 252 Spe\nJolly Nature\n- Aqua Step\n- Close Combat\n- Brave Bird\n- Swords Dance"
+  },
+  {
+    "name": "UU Offense",
+    "formatId": "gen9uu",
+    "archetype": "offense",
+    "source": "curated-seed",
+    "paste": "Iron Moth @ Heavy-Duty Boots\nAbility: Quark Drive\nTera Type: Grass\nEVs: 252 SpA / 4 SpD / 252 Spe\nTimid Nature\n- Fire Blast\n- Sludge Wave\n- Energy Ball\n- Psychic\n\nLucario @ Life Orb\nAbility: Inner Focus\nTera Type: Steel\nEVs: 252 Atk / 4 SpD / 252 Spe\nJolly Nature\n- Close Combat\n- Meteor Mash\n- Extreme Speed\n- Swords Dance\n\nSalamence @ Choice Scarf\nAbility: Moxie\nTera Type: Steel\nEVs: 252 Atk / 4 SpD / 252 Spe\nJolly Nature\n- Outrage\n- Earthquake\n- Dragon Dance\n- Dual Wingbeat\n\nSandy Shocks @ Booster Energy\nAbility: Protosynthesis\nTera Type: Steel\nEVs: 252 SpA / 4 SpD / 252 Spe\nTimid Nature\n- Thunderbolt\n- Earth Power\n- Stealth Rock\n- Volt Switch\n\nBisharp @ Eviolite\nAbility: Defiant\nTera Type: Dark\nEVs: 252 Atk / 4 SpD / 252 Spe\nAdamant Nature\n- Knock Off\n- Iron Head\n- Sucker Punch\n- Swords Dance\n\nAlomomola @ Heavy-Duty Boots\nAbility: Regenerator\nTera Type: Grass\nEVs: 252 HP / 252 Def / 4 SpD\nBold Nature\n- Flip Turn\n- Wish\n- Protect\n- Toxic"
+  },
+  {
+    "name": "UU Bulky Offense",
+    "formatId": "gen9uu",
+    "archetype": "bulky-offense",
+    "source": "curated-seed",
+    "paste": "Scizor @ Heavy-Duty Boots\nAbility: Technician\nTera Type: Dark\nEVs: 248 HP / 252 Atk / 8 SpD\nAdamant Nature\n- Bullet Punch\n- U-turn\n- Knock Off\n- Swords Dance\n\nSkeledirge @ Heavy-Duty Boots\nAbility: Unaware\nTera Type: Fairy\nEVs: 252 HP / 4 SpA / 252 SpD\nCalm Nature\n- Torch Song\n- Hex\n- Slack Off\n- Will-O-Wisp\n\nKrookodile @ Leftovers\nAbility: Intimidate\nTera Type: Poison\nEVs: 252 Atk / 4 Def / 252 Spe\nJolly Nature\n- Earthquake\n- Knock Off\n- Stealth Rock\n- Taunt\n\nSalamence @ Life Orb\nAbility: Moxie\nTera Type: Steel\nEVs: 252 Atk / 4 SpD / 252 Spe\nJolly Nature\n- Dragon Dance\n- Dual Wingbeat\n- Earthquake\n- Dragon Claw\n\nIron Moth @ Choice Specs\nAbility: Quark Drive\nTera Type: Grass\nEVs: 252 SpA / 4 SpD / 252 Spe\nTimid Nature\n- Fire Blast\n- Sludge Wave\n- Energy Ball\n- Psychic\n\nQuaquaval @ Life Orb\nAbility: Moxie\nTera Type: Water\nEVs: 252 Atk / 4 SpD / 252 Spe\nJolly Nature\n- Aqua Step\n- Close Combat\n- Ice Spinner\n- Swords Dance"
+  },
+  {
+    "name": "VGC Koraidon Sun",
+    "formatId": "gen9vgc2025",
+    "archetype": "sun",
+    "source": "curated-seed",
+    "paste": "Koraidon @ Assault Vest\nAbility: Orichalcum Pulse\nLevel: 50\nTera Type: Fire\nEVs: 252 Atk / 4 SpD / 252 Spe\nJolly Nature\n- Collision Course\n- Flare Blitz\n- Drain Punch\n- U-turn\n\nFlutter Mane @ Choice Specs\nAbility: Protosynthesis\nLevel: 50\nTera Type: Fairy\nEVs: 252 SpA / 4 SpD / 252 Spe\nTimid Nature\n- Moonblast\n- Shadow Ball\n- Dazzling Gleam\n- Mystical Fire\n\nIncineroar @ Safety Goggles\nAbility: Intimidate\nLevel: 50\nTera Type: Ghost\nEVs: 252 HP / 4 Atk / 252 SpD\nCareful Nature\n- Flare Blitz\n- Knock Off\n- Fake Out\n- Parting Shot\n\nRillaboom @ Miracle Seed\nAbility: Grassy Surge\nLevel: 50\nTera Type: Fire\nEVs: 252 HP / 252 Atk / 4 SpD\nAdamant Nature\n- Grassy Glide\n- Wood Hammer\n- Fake Out\n- U-turn\n\nUrshifu @ Focus Sash\nAbility: Unseen Fist\nLevel: 50\nTera Type: Stellar\nEVs: 252 Atk / 4 SpD / 252 Spe\nJolly Nature\n- Wicked Blow\n- Close Combat\n- Sucker Punch\n- Detect\n\nAmoonguss @ Sitrus Berry\nAbility: Regenerator\nLevel: 50\nTera Type: Water\nEVs: 252 HP / 252 Def / 4 SpD\nBold Nature\nIVs: 0 Atk / 0 Spe\n- Spore\n- Pollen Puff\n- Rage Powder\n- Clear Smog"
+  },
+  {
+    "name": "VGC Calyrex-Shadow",
+    "formatId": "gen9vgc2025",
+    "archetype": "offense",
+    "source": "curated-seed",
+    "paste": "Calyrex-Shadow @ Focus Sash\nAbility: As One (Spectrier)\nLevel: 50\nTera Type: Fairy\nEVs: 4 HP / 252 SpA / 252 Spe\nTimid Nature\n- Astral Barrage\n- Psyshock\n- Nasty Plot\n- Protect\n\nFlutter Mane @ Life Orb\nAbility: Protosynthesis\nLevel: 50\nTera Type: Stellar\nEVs: 252 SpA / 4 SpD / 252 Spe\nTimid Nature\n- Moonblast\n- Shadow Ball\n- Icy Wind\n- Protect\n\nIncineroar @ Sitrus Berry\nAbility: Intimidate\nLevel: 50\nTera Type: Water\nEVs: 252 HP / 4 Atk / 252 SpD\nCareful Nature\n- Flare Blitz\n- Knock Off\n- Fake Out\n- Parting Shot\n\nRillaboom @ Assault Vest\nAbility: Grassy Surge\nLevel: 50\nTera Type: Fire\nEVs: 252 HP / 252 Atk / 4 SpD\nAdamant Nature\n- Grassy Glide\n- Wood Hammer\n- Fake Out\n- U-turn\n\nUrshifu-Rapid-Strike @ Mystic Water\nAbility: Unseen Fist\nLevel: 50\nTera Type: Water\nEVs: 252 Atk / 4 SpD / 252 Spe\nJolly Nature\n- Surging Strikes\n- Close Combat\n- Aqua Jet\n- Detect\n\nWhimsicott @ Covert Cloak\nAbility: Prankster\nLevel: 50\nTera Type: Steel\nEVs: 252 HP / 4 SpA / 252 Spe\nTimid Nature\n- Moonblast\n- Tailwind\n- Encore\n- Helping Hand"
+  },
+  {
+    "name": "VGC Terapagos Goodstuffs",
+    "formatId": "gen9vgc2025",
+    "archetype": "balance",
+    "source": "curated-seed",
+    "paste": "Terapagos @ Leftovers\nAbility: Tera Shift\nLevel: 50\nTera Type: Stellar\nEVs: 252 HP / 4 SpA / 252 SpD\nCalm Nature\n- Tera Starstorm\n- Earth Power\n- Calm Mind\n- Protect\n\nFlutter Mane @ Choice Specs\nAbility: Protosynthesis\nLevel: 50\nTera Type: Fairy\nEVs: 252 SpA / 4 SpD / 252 Spe\nTimid Nature\n- Moonblast\n- Shadow Ball\n- Dazzling Gleam\n- Mystical Fire\n\nIncineroar @ Safety Goggles\nAbility: Intimidate\nLevel: 50\nTera Type: Water\nEVs: 252 HP / 252 Def / 4 SpD\nImpish Nature\n- Flare Blitz\n- Knock Off\n- Fake Out\n- Parting Shot\n\nUrshifu @ Choice Band\nAbility: Unseen Fist\nLevel: 50\nTera Type: Dark\nEVs: 252 Atk / 4 SpD / 252 Spe\nJolly Nature\n- Wicked Blow\n- Close Combat\n- Sucker Punch\n- U-turn\n\nRillaboom @ Miracle Seed\nAbility: Grassy Surge\nLevel: 50\nTera Type: Fire\nEVs: 252 HP / 252 Atk / 4 SpD\nAdamant Nature\n- Grassy Glide\n- Wood Hammer\n- Fake Out\n- U-turn\n\nOgerpon-Wellspring @ Wellspring Mask\nAbility: Water Absorb\nLevel: 50\nTera Type: Water\nEVs: 252 Atk / 4 SpD / 252 Spe\nJolly Nature\n- Ivy Cudgel\n- Horn Leech\n- Spiky Shield\n- Swords Dance"
+  },
+  {
+    "name": "Mono Steel",
+    "formatId": "gen9monotype",
+    "archetype": "balance",
+    "source": "curated-seed",
+    "paste": "Gholdengo @ Air Balloon\nAbility: Good as Gold\nTera Type: Fighting\nEVs: 252 SpA / 4 SpD / 252 Spe\nTimid Nature\n- Make It Rain\n- Shadow Ball\n- Focus Blast\n- Recover\n\nKingambit @ Leftovers\nAbility: Supreme Overlord\nTera Type: Flying\nEVs: 252 HP / 252 Atk / 4 SpD\nAdamant Nature\n- Kowtow Cleave\n- Sucker Punch\n- Iron Head\n- Swords Dance\n\nCorviknight @ Rocky Helmet\nAbility: Pressure\nTera Type: Fire\nEVs: 252 HP / 168 Def / 88 SpD\nImpish Nature\n- Body Press\n- Brave Bird\n- Defog\n- Roost\n\nHeatran @ Leftovers\nAbility: Flash Fire\nTera Type: Grass\nEVs: 252 HP / 4 SpA / 252 SpD\nCalm Nature\n- Magma Storm\n- Earth Power\n- Stealth Rock\n- Taunt\n\nScizor @ Heavy-Duty Boots\nAbility: Technician\nTera Type: Dark\nEVs: 248 HP / 252 Atk / 8 SpD\nAdamant Nature\n- Bullet Punch\n- U-turn\n- Knock Off\n- Swords Dance\n\nFerrothorn @ Leftovers\nAbility: Iron Barbs\nTera Type: Water\nEVs: 252 HP / 24 Def / 232 SpD\nRelaxed Nature\nIVs: 0 Spe\n- Power Whip\n- Knock Off\n- Spikes\n- Leech Seed"
+  },
+  {
+    "name": "Mono Dragon",
+    "formatId": "gen9monotype",
+    "archetype": "offense",
+    "source": "curated-seed",
+    "paste": "Dragapult @ Choice Specs\nAbility: Infiltrator\nTera Type: Ghost\nEVs: 252 SpA / 4 SpD / 252 Spe\nTimid Nature\n- Shadow Ball\n- Draco Meteor\n- Flamethrower\n- U-turn\n\nDragonite @ Heavy-Duty Boots\nAbility: Multiscale\nTera Type: Steel\nEVs: 252 Atk / 4 SpD / 252 Spe\nAdamant Nature\n- Dragon Dance\n- Earthquake\n- Extreme Speed\n- Iron Head\n\nGarchomp @ Life Orb\nAbility: Rough Skin\nTera Type: Steel\nEVs: 252 Atk / 4 SpD / 252 Spe\nJolly Nature\n- Earthquake\n- Scale Shot\n- Swords Dance\n- Iron Head\n\nRoaring Moon @ Booster Energy\nAbility: Protosynthesis\nTera Type: Flying\nEVs: 252 Atk / 4 SpD / 252 Spe\nJolly Nature\n- Dragon Dance\n- Acrobatics\n- Knock Off\n- Earthquake\n\nKommo-o @ Leftovers\nAbility: Bulletproof\nTera Type: Steel\nEVs: 252 HP / 4 Atk / 252 SpD\nCareful Nature\n- Stealth Rock\n- Drain Punch\n- Dragon Tail\n- Thunder Wave\n\nCyclizar @ Heavy-Duty Boots\nAbility: Regenerator\nTera Type: Ghost\nEVs: 252 HP / 4 Def / 252 Spe\nJolly Nature\n- Rapid Spin\n- Knock Off\n- Shed Tail\n- Dragon Claw"
+  },
+  {
+    "name": "Doubles OU Rain",
+    "formatId": "gen9doublesou",
+    "archetype": "rain",
+    "source": "curated-seed",
+    "paste": "Pelipper @ Damp Rock\nAbility: Drizzle\nTera Type: Ghost\nEVs: 252 HP / 4 SpA / 252 SpD\nCalm Nature\n- Weather Ball\n- Hurricane\n- Tailwind\n- Protect\n\nFlutter Mane @ Choice Specs\nAbility: Protosynthesis\nTera Type: Water\nEVs: 252 SpA / 4 SpD / 252 Spe\nTimid Nature\n- Moonblast\n- Shadow Ball\n- Dazzling Gleam\n- Thunderbolt\n\nIron Hands @ Assault Vest\nAbility: Quark Drive\nTera Type: Grass\nEVs: 252 HP / 252 Atk / 4 SpD\nAdamant Nature\n- Drain Punch\n- Thunder Punch\n- Fake Out\n- Heavy Slam\n\nBarraskewda @ Choice Band\nAbility: Swift Swim\nTera Type: Water\nEVs: 252 Atk / 4 SpD / 252 Spe\nAdamant Nature\n- Liquidation\n- Flip Turn\n- Close Combat\n- Aqua Jet\n\nAmoonguss @ Rocky Helmet\nAbility: Regenerator\nTera Type: Steel\nEVs: 252 HP / 252 Def / 4 SpD\nBold Nature\nIVs: 0 Atk / 0 Spe\n- Spore\n- Pollen Puff\n- Rage Powder\n- Clear Smog\n\nKingambit @ Lum Berry\nAbility: Supreme Overlord\nTera Type: Dark\nEVs: 252 HP / 252 Atk / 4 SpD\nAdamant Nature\n- Kowtow Cleave\n- Sucker Punch\n- Iron Head\n- Protect"
+  },
+  {
+    "name": "Doubles OU Trick Room",
+    "formatId": "gen9doublesou",
+    "archetype": "trick-room",
+    "source": "curated-seed",
+    "paste": "Hatterene @ Focus Sash\nAbility: Magic Bounce\nTera Type: Water\nEVs: 252 HP / 252 SpA / 4 SpD\nQuiet Nature\nIVs: 0 Atk / 0 Spe\n- Trick Room\n- Dazzling Gleam\n- Psychic\n- Mystical Fire\n\nTorkoal @ Charcoal\nAbility: Drought\nTera Type: Grass\nEVs: 252 HP / 252 SpA / 4 SpD\nQuiet Nature\nIVs: 0 Atk / 0 Spe\n- Eruption\n- Heat Wave\n- Earth Power\n- Protect\n\nIron Hands @ Assault Vest\nAbility: Quark Drive\nTera Type: Grass\nEVs: 252 HP / 252 Atk / 4 SpD\nBrave Nature\nIVs: 0 Spe\n- Drain Punch\n- Thunder Punch\n- Fake Out\n- Heavy Slam\n\nAmoonguss @ Sitrus Berry\nAbility: Regenerator\nTera Type: Steel\nEVs: 252 HP / 252 Def / 4 SpD\nRelaxed Nature\nIVs: 0 Atk / 0 Spe\n- Spore\n- Pollen Puff\n- Rage Powder\n- Protect\n\nKingambit @ Life Orb\nAbility: Supreme Overlord\nTera Type: Flying\nEVs: 252 HP / 252 Atk / 4 SpD\nBrave Nature\nIVs: 0 Spe\n- Kowtow Cleave\n- Sucker Punch\n- Iron Head\n- Protect\n\nFlutter Mane @ Life Orb\nAbility: Protosynthesis\nTera Type: Fairy\nEVs: 252 SpA / 4 SpD / 252 Spe\nTimid Nature\n- Moonblast\n- Shadow Ball\n- Icy Wind\n- Protect"
+  }
+]

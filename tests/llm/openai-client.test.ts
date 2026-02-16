@@ -76,11 +76,10 @@ describe("openai-client", () => {
     expect((client as unknown as { apiKey: string }).apiKey).toBe("openai-key")
   })
 
-  it("uses 'not-needed' when no API key env is set", async () => {
+  it("throws when no API key and no proxy is configured", async () => {
     const mod = await import("#llm/openai-client.service")
-    const client = mod.getOpenAI()
 
-    expect((client as unknown as { apiKey: string }).apiKey).toBe("not-needed")
+    expect(() => mod.getOpenAI()).toThrow("No LLM API key configured")
   })
 
   it("passes baseURL when LLM_BASE_URL is set", async () => {

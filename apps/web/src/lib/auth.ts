@@ -10,8 +10,10 @@ export const authOptions: NextAuthOptions = {
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        // Simple local dev auth — accept any non-empty credentials
+        // DEV-ONLY credentials: username="dev", password="dev"
+        // WARNING: This MUST be replaced with a real auth provider before production deployment
         if (!credentials?.username || !credentials?.password) return null
+        if (credentials.username !== "dev" || credentials.password !== "dev") return null
         return { id: "1", name: credentials.username }
       },
     }),

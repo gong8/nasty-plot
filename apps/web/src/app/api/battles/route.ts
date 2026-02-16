@@ -8,13 +8,17 @@ export async function GET(req: NextRequest) {
   const [params, error] = validateSearchParams(req.url, battleListSearchSchema)
   if (error) return error
 
-  const result = await listBattles({
-    page: params.page,
-    limit: params.limit,
-    teamId: params.teamId,
-  })
+  try {
+    const result = await listBattles({
+      page: params.page,
+      limit: params.limit,
+      teamId: params.teamId,
+    })
 
-  return NextResponse.json(result)
+    return NextResponse.json(result)
+  } catch (error) {
+    return apiErrorResponse(error)
+  }
 }
 
 export async function POST(req: NextRequest) {

@@ -1,19 +1,23 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getBatchSimulation, deleteBatchSimulation } from "@nasty-plot/battle-engine/db"
-import { notFoundResponse } from "../../../../../lib/api-error"
+import { apiErrorResponse, notFoundResponse } from "../../../../../lib/api-error"
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ batchId: string }> }) {
-  const { batchId } = await params
-  const batch = await getBatchSimulation(batchId)
+  try {
+    const { batchId } = await params
+    const batch = await getBatchSimulation(batchId)
 
-  if (!batch) {
-    return notFoundResponse("Batch")
+    if (!batch) {
+      return notFoundResponse("Batch")
+    }
+
+    return NextResponse.json({
+      ...batch,
+      analytics: batch.analytics ? JSON.parse(batch.analytics) : null,
+    })
+  } catch (error) {
+    return apiErrorResponse(error)
   }
-
-  return NextResponse.json({
-    ...batch,
-    analytics: batch.analytics ? JSON.parse(batch.analytics) : null,
-  })
 }
 
 export async function DELETE(

@@ -78,8 +78,12 @@ async function seedFormat(format: SeedableFormat, force: boolean) {
 export async function POST(request: NextRequest) {
   const authHeader = request.headers.get("authorization")
   const expectedToken = process.env.SEED_SECRET
-  const isProduction = process.env.NODE_ENV === "production"
-  if (isProduction || expectedToken) {
+  const isDevelopment = process.env.NODE_ENV === "development"
+
+  // Fail closed: only skip auth when explicitly in development AND no SEED_SECRET is configured.
+  // In production or when SEED_SECRET is set, always require a valid Bearer token.
+  const skipAuth = isDevelopment && !expectedToken
+  if (!skipAuth) {
     if (!expectedToken || authHeader !== `Bearer ${expectedToken}`) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
@@ -95,7 +99,13 @@ export async function POST(request: NextRequest) {
   }
 
   const result = seedSchema.safeParse(raw)
-  const { formatId, force } = result.success ? result.data : { formatId: undefined, force: false }
+  if (!result.success) {
+    return NextResponse.json(
+      { error: "Invalid request body", details: result.error.flatten().fieldErrors },
+      { status: 400 },
+    )
+  }
+  const { formatId, force } = result.data
   const formats = resolveFormats(formatId)
 
   const results = []

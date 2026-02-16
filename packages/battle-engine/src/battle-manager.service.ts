@@ -1,7 +1,7 @@
-import { BattleStreams, Teams } from "@pkmn/sim"
-import { processChunk, parseRequest } from "./protocol-parser.service"
+import { BattleStreams } from "@pkmn/sim"
+import { parseRequest } from "./protocol-parser.service"
 import type { SetPredictor } from "./ai/set-predictor"
-import { DEFAULT_FORMAT_ID, toId, type GameType } from "@nasty-plot/core"
+import { DEFAULT_FORMAT_ID, type GameType } from "@nasty-plot/core"
 import {
   defaultSideConditions,
   type BattleState,
@@ -11,7 +11,6 @@ import {
   type AIPlayer,
   type AIDifficulty,
   type BattleCheckpoint,
-  type PredictedSet,
 } from "./types"
 import { handleAITurn as aiHandleTurn } from "./battle-ai-handler"
 import {
@@ -19,10 +18,17 @@ import {
   handleP2Request as reqHandleP2,
 } from "./battle-request-handler"
 import { resumeBattle, type ResumableManager } from "./battle-resume"
+import { parseProtocolFromChunk } from "./protocol-handler"
+import { updateSetPredictorFromChunk, populatePredictions } from "./set-prediction.service"
+import {
+  actionToChoice,
+  buildPartialDoublesChoice,
+  escapeTeam,
+  pasteToPackedTeam,
+} from "./battle-utils"
 
 const START_TIMEOUT_MS = 10_000
 const UPDATE_TIMEOUT_MS = 15_000
-const PLAYER_ID_PATTERN = /^p[1-4]$/
 
 /** Create an empty BattleState in "setup" phase, ready for BattleManager.start(). */
 export function createInitialState(id: string, gameType: GameType): BattleState {
@@ -78,7 +84,7 @@ export type BattleEventHandler = (state: BattleState, entries: BattleLogEntry[])
  *
  * Architecture:
  * - Wraps a BattleStream which runs the @pkmn/sim engine
- * - Parses the sim's protocol output into normalized BattleState via protocol-parser.service
+ * - Parses the sim's protocol output into normalized BattleState via protocol-handler
  * - Routes player actions (moves/switches) to the stream as formatted choice strings
  * - Delegates AI (p2) decisions to an AIPlayer implementation via battle-ai-handler
  * - Handles both singles and doubles formats, including multi-slot action sequencing
@@ -101,19 +107,15 @@ export class BattleManager implements ResumableManager {
   private startError: string | null = null
   /** Error received mid-battle before waitForUpdate was called */
   private pendingError: string | null = null
-  private lastProtocolChunk = ""
-  private protocolLog = ""
   private setPredictor: SetPredictor | null = null
   private submitting = false
   /** Stored slot-0 action while waiting for slot-1 in doubles */
   private pendingP1Slot1Action: BattleAction | null = null
   private suppressingOutput = false
 
-  private static readonly OBSERVATION_COMMANDS: Record<string, string> = {
-    move: "moveUsed",
-    "-item": "itemRevealed",
-    "-ability": "abilityRevealed",
-  }
+  /** Mutable refs for protocol deduplication state, passed to protocol-handler functions. */
+  private lastChunkRef = { value: "" }
+  private protocolLogRef = { value: "" }
 
   constructor(config: BattleManagerConfig) {
     this.config = config
@@ -140,7 +142,7 @@ export class BattleManager implements ResumableManager {
     this.state = state
   }
   _setProtocolLog(log: string) {
-    this.protocolLog = log
+    this.protocolLogRef.value = log
   }
   _setPendingP2Actions(actions: BattleActionSet | null) {
     this.pendingP2Actions = actions
@@ -225,9 +227,7 @@ export class BattleManager implements ResumableManager {
     })
   }
 
-  /**
-   * Submit team preview lead order.
-   */
+  /** Submit team preview lead order. */
   async chooseLead(leadOrder: number[]): Promise<void> {
     if (this.submitting) return
     this.submitting = true
@@ -267,7 +267,7 @@ export class BattleManager implements ResumableManager {
   async submitAction(action: BattleAction): Promise<void> {
     const isDoubles = this.state.gameType === "doubles"
 
-    // Doubles: first slot action — store it and show slot 2's options
+    // Doubles: first slot action -- store it and show slot 2's options
     if (isDoubles && this.pendingP1Slot1Action === null && this.pendingP1Slot2Actions) {
       this.pendingP1Slot1Action = action
       // Swap to slot 2 actions so the UI shows the second Pokemon's moves
@@ -296,32 +296,28 @@ export class BattleManager implements ResumableManager {
     }
   }
 
-  /** Build the p1 choice string, handling singles, doubles, and forceSwitch. */
-  private buildP1Choice(action: BattleAction, isDoubles: boolean): string {
-    if (isDoubles && this.pendingP1Slot1Action) {
-      // Doubles: combine both slot actions
-      const slot1Choice =
-        this.pendingP1Slot1Action.type === "move" && this.pendingP1Slot1Action.moveIndex === 0
-          ? "pass"
-          : actionToChoice(this.pendingP1Slot1Action)
-      this.pendingP1Slot1Action = null
-      const choice = `${slot1Choice}, ${actionToChoice(action)}`
-      console.log("[BattleManager] p1 doubles choice:", choice)
-      return choice
-    }
+  /**
+   * Submit both slot actions at once in doubles (bypasses the two-call flow of submitAction).
+   * Used internally by AI handlers that compute both slot decisions simultaneously.
+   */
+  async submitDoubleActions(action1: BattleAction, action2: BattleAction): Promise<void> {
+    if (this.submitting) return
+    this.submitting = true
+    this.state.waitingForChoice = false
 
-    if (isDoubles && this.state.availableActions?.forceSwitch) {
-      // Doubles forceSwitch with only one slot needing to switch
-      const choice = buildPartialDoublesChoice(
-        actionToChoice(action),
-        this.state.availableActions.activeSlot ?? 0,
-      )
-      console.log("[BattleManager] p1 doubles forceSwitch choice:", choice)
-      return choice
-    }
+    try {
+      const choice = `${actionToChoice(action1)}, ${actionToChoice(action2)}`
+      this.stream.write(`>p1 ${choice}`)
 
-    // Singles or fallback
-    return actionToChoice(action)
+      // Let AI make its choice
+      if (this.ai && this.pendingP2Actions) {
+        await this.delegateAITurn()
+      }
+
+      await this.waitForUpdate()
+    } finally {
+      this.submitting = false
+    }
   }
 
   /**
@@ -346,7 +342,7 @@ export class BattleManager implements ResumableManager {
    * Used for saving battles and replay.
    */
   getProtocolLog(): string {
-    return this.protocolLog
+    return this.protocolLogRef.value
   }
 
   /**
@@ -366,7 +362,7 @@ export class BattleManager implements ResumableManager {
       savedAt: Date.now(),
       serializedBattle,
       battleState: structuredClone(this.state),
-      protocolLog: this.protocolLog,
+      protocolLog: this.protocolLogRef.value,
       config: {
         formatId: this.config.formatId,
         simFormatId: this.config.simFormatId,
@@ -408,6 +404,10 @@ export class BattleManager implements ResumableManager {
     }
   }
 
+  // ---------------------------------------------------------------------------
+  // Private: stream reading and output dispatch
+  // ---------------------------------------------------------------------------
+
   private async readStream() {
     try {
       for await (const chunk of this.stream) {
@@ -425,29 +425,26 @@ export class BattleManager implements ResumableManager {
     }
   }
 
-  /** Process accumulated protocol lines, deduplicating identical chunks from the sim. */
-  private processDeduplicatedProtocol(protocolLines: string): BattleLogEntry[] {
-    const trimmed = protocolLines.trim()
-    if (!trimmed || trimmed === this.lastProtocolChunk) return []
-
-    this.lastProtocolChunk = trimmed
-    this.protocolLog += protocolLines
-    return processChunk(this.state, protocolLines)
-  }
-
   private processOutput(chunk: string) {
     if (this.suppressingOutput) return
 
-    const allEntries = this.parseProtocolFromChunk(chunk)
+    const allEntries = parseProtocolFromChunk(
+      chunk,
+      this.state,
+      this.lastChunkRef,
+      this.protocolLogRef,
+      (requestJson) => this.handleRequest(requestJson),
+      (errorMsg) => this.handleSimError(errorMsg),
+    )
 
-    // Resolve immediately if battle has ended — sim might not send a final request after |win|
+    // Resolve immediately if battle has ended -- sim might not send a final request after |win|
     if (this.state.phase === "ended") {
       this.resolveWaiter()
     }
 
     if (this.setPredictor) {
-      this.updateSetPredictorFromLines(chunk)
-      this.populatePredictions()
+      updateSetPredictorFromChunk(this.setPredictor, chunk)
+      populatePredictions(this.setPredictor, this.state)
     }
 
     if (allEntries.length > 0 && this.eventHandler) {
@@ -455,43 +452,15 @@ export class BattleManager implements ResumableManager {
     }
   }
 
-  /** Split a raw chunk into protocol lines, dispatching requests and errors inline. */
-  private parseProtocolFromChunk(chunk: string): BattleLogEntry[] {
-    const lines = chunk.split("\n")
-    let protocolLines = ""
-    const allEntries: BattleLogEntry[] = []
-
-    for (const line of lines) {
-      if (line.startsWith("|request|")) {
-        allEntries.push(...this.processDeduplicatedProtocol(protocolLines))
-        protocolLines = ""
-        this.handleRequest(line.slice(9))
-        continue
-      }
-
-      if (line.startsWith("|error|")) {
-        this.handleSimError(line.slice(7))
-        continue
-      }
-
-      // Skip stream markers — these differ per player (sideupdate + p1/p2)
-      // and break the deduplication check that prevents double-processing.
-      if (line === "update" || line === "sideupdate" || PLAYER_ID_PATTERN.test(line)) {
-        continue
-      }
-
-      protocolLines += line + "\n"
-    }
-
-    allEntries.push(...this.processDeduplicatedProtocol(protocolLines))
-    return allEntries
-  }
+  // ---------------------------------------------------------------------------
+  // Private: request and error handling
+  // ---------------------------------------------------------------------------
 
   private handleSimError(errorMsg: string) {
     console.error("[BattleManager] Sim error:", errorMsg)
     this.startError = errorMsg
 
-    // During start(), the timeout handles errors — only resolve mid-battle.
+    // During start(), the timeout handles errors -- only resolve mid-battle.
     if (this.state.phase !== "battle") return
 
     // Resolve pending waiter, or store the error for when waitForUpdate is called.
@@ -500,51 +469,6 @@ export class BattleManager implements ResumableManager {
     } else {
       this.pendingError = errorMsg
     }
-  }
-
-  /** Scan protocol lines for p2 observations and update SetPredictor. */
-  private updateSetPredictorFromLines(chunk: string) {
-    if (!this.setPredictor) return
-
-    for (const line of chunk.split("\n")) {
-      const parts = line.split("|")
-      if (parts.length < 3) continue
-
-      const observationKey = BattleManager.OBSERVATION_COMMANDS[parts[1]]
-      if (!observationKey || !parts[3]) continue
-
-      const ident = parts[2] || ""
-      if (!ident.startsWith("p2")) continue
-
-      const pokemonName = ident.replace(/^p2[a-d]?:\s*/, "").trim()
-      this.setPredictor.updateFromObservation(toId(pokemonName), { [observationKey]: parts[3] })
-    }
-  }
-
-  /** Build opponentPredictions on state from the SetPredictor's current beliefs. */
-  private populatePredictions() {
-    if (!this.setPredictor) return
-
-    const predictions: Record<string, PredictedSet> = {}
-    for (const pokemon of this.state.sides.p2.team) {
-      const preds = this.setPredictor.getPrediction(pokemon.pokemonId)
-      if (preds.length === 0) continue
-
-      // Use the most likely prediction
-      const top = preds[0]
-      const moves = Array.isArray(top.set.moves)
-        ? top.set.moves.flat().filter((m): m is string => typeof m === "string")
-        : []
-
-      predictions[pokemon.pokemonId] = {
-        pokemonId: pokemon.pokemonId,
-        predictedMoves: moves,
-        predictedItem: top.set.item || undefined,
-        predictedAbility: top.set.ability || undefined,
-        confidence: top.probability,
-      }
-    }
-    this.state.opponentPredictions = predictions
   }
 
   private handleRequest(requestJson: string) {
@@ -596,28 +520,36 @@ export class BattleManager implements ResumableManager {
     this.pendingP2Slot2Actions = result.pendingP2Slot2Actions
   }
 
-  /**
-   * Submit both slot actions at once in doubles (bypasses the two-call flow of submitAction).
-   * Used internally by AI handlers that compute both slot decisions simultaneously.
-   */
-  async submitDoubleActions(action1: BattleAction, action2: BattleAction): Promise<void> {
-    if (this.submitting) return
-    this.submitting = true
-    this.state.waitingForChoice = false
+  // ---------------------------------------------------------------------------
+  // Private: choice building, AI delegation, waiter management
+  // ---------------------------------------------------------------------------
 
-    try {
-      const choice = `${actionToChoice(action1)}, ${actionToChoice(action2)}`
-      this.stream.write(`>p1 ${choice}`)
-
-      // Let AI make its choice
-      if (this.ai && this.pendingP2Actions) {
-        await this.delegateAITurn()
-      }
-
-      await this.waitForUpdate()
-    } finally {
-      this.submitting = false
+  /** Build the p1 choice string, handling singles, doubles, and forceSwitch. */
+  private buildP1Choice(action: BattleAction, isDoubles: boolean): string {
+    if (isDoubles && this.pendingP1Slot1Action) {
+      // Doubles: combine both slot actions
+      const slot1Choice =
+        this.pendingP1Slot1Action.type === "move" && this.pendingP1Slot1Action.moveIndex === 0
+          ? "pass"
+          : actionToChoice(this.pendingP1Slot1Action)
+      this.pendingP1Slot1Action = null
+      const choice = `${slot1Choice}, ${actionToChoice(action)}`
+      console.log("[BattleManager] p1 doubles choice:", choice)
+      return choice
     }
+
+    if (isDoubles && this.state.availableActions?.forceSwitch) {
+      // Doubles forceSwitch with only one slot needing to switch
+      const choice = buildPartialDoublesChoice(
+        actionToChoice(action),
+        this.state.availableActions.activeSlot ?? 0,
+      )
+      console.log("[BattleManager] p1 doubles forceSwitch choice:", choice)
+      return choice
+    }
+
+    // Singles or fallback
+    return actionToChoice(action)
   }
 
   /** Delegate AI turn to the extracted handler. */
@@ -663,49 +595,5 @@ export class BattleManager implements ResumableManager {
         }
       }, UPDATE_TIMEOUT_MS)
     })
-  }
-}
-
-/** Build a doubles choice string where only one slot acts and the other passes. */
-function buildPartialDoublesChoice(actionStr: string, activeSlot: number): string {
-  return activeSlot === 0 ? `${actionStr}, pass` : `pass, ${actionStr}`
-}
-
-function actionToChoice(action: BattleAction): string {
-  if (action.type === "move") {
-    // @pkmn/sim format: move [index] [target] [mega|terastallize]
-    let choice = `move ${action.moveIndex}`
-    if (action.targetSlot != null) choice += ` ${action.targetSlot}`
-    if (action.tera) choice += " terastallize"
-    if (action.mega) choice += " mega"
-    return choice
-  }
-  return `switch ${action.pokemonIndex}`
-}
-
-function escapeTeam(team: string): string {
-  return team.replace(/\\/g, "\\\\").replace(/"/g, '\\"')
-}
-
-/**
- * Convert a Showdown paste string into @pkmn/sim's packed team format.
- * If the input is already packed (no newlines, pipe-delimited), returns it as-is.
- */
-function pasteToPackedTeam(team: string): string | null {
-  const trimmed = team.trim()
-  if (!trimmed) return null
-
-  // Already in packed format (single line with pipes, no newlines except between mons)
-  if (!trimmed.includes("\n") || (trimmed.includes("|") && !trimmed.includes("Ability:"))) {
-    return trimmed
-  }
-
-  // Parse paste -> PokemonSet[] -> packed string
-  try {
-    const sets = Teams.import(trimmed)
-    if (!sets || sets.length === 0) return null
-    return Teams.pack(sets)
-  } catch {
-    return null
   }
 }

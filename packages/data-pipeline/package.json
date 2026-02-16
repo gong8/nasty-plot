@@ -6,8 +6,6 @@
   "exports": {
     ".": "./src/index.ts"
   },
-  "main": "src/index.ts",
-  "types": "src/index.ts",
   "scripts": {
     "seed": "tsx src/cli/seed.ts",
     "clean": "tsx src/cli/clean.ts",

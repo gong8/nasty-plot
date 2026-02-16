@@ -1,0 +1,373 @@
+"use client"
+
+import { ArrowLeft, Plus, Swords, BarChart3, FlaskConical, History } from "lucide-react"
+import { Skeleton } from "@/components/ui/skeleton"
+import { Button } from "@/components/ui/button"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { useTeamEditor } from "../hooks/use-team-editor"
+import { TeamHeader } from "./TeamHeader"
+import { TeamGrid } from "./TeamGrid"
+import { SlotEditor } from "./SlotEditor"
+import { CoverageChart } from "@/features/analysis/components/CoverageChart"
+import { WeaknessHeatmap } from "@/features/analysis/components/WeaknessHeatmap"
+import { ThreatList } from "@/features/analysis/components/ThreatList"
+import { SpeedTiers } from "@/features/analysis/components/SpeedTiers"
+import { MatchupMatrix } from "@/features/damage-calc/components/MatchupMatrix"
+import { RecommendationPanel } from "@/features/recommendations/components/RecommendationPanel"
+import { MergeWizard } from "./MergeWizard"
+import { VersionPanel } from "./VersionPanel"
+import { OpponentSelector } from "@/features/damage-calc/components/OpponentSelector"
+import { QuickBattleCard } from "@/features/battle/components/QuickBattleCard"
+
+interface TeamEditorProps {
+  teamId: string
+}
+
+export function TeamEditor({ teamId }: TeamEditorProps) {
+  const {
+    team,
+    isLoading,
+    error,
+    router,
+
+    selectedSlot,
+    selectedSlotData,
+    addingNew,
+
+    activeTab,
+    setActiveTab,
+
+    compareTargetId,
+    setCompareTargetId,
+    mergeOpen,
+    setMergeOpen,
+    versionsOpen,
+    setVersionsOpen,
+
+    customThreatIds,
+    setCustomThreatIds,
+
+    analysisQuery,
+    matchupQuery,
+    lineageQuery,
+    compareQuery,
+
+    analysis,
+    coverageScore,
+    nextPosition,
+    dialogOpen,
+
+    mergeLoading,
+
+    handleFork,
+    handleArchive,
+    handleMerge,
+    handleUpdateName,
+    handleDelete,
+    handleImport,
+    handleAddSlot,
+    handleSaveSlot,
+    handleRemoveSlot,
+    handleSelectSlot,
+    closeDialog,
+  } = useTeamEditor(teamId)
+
+  if (isLoading) {
+    return (
+      <div className="container mx-auto max-w-[1600px] py-6 px-4 space-y-6">
+        <Skeleton className="h-10 w-64" />
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <div className="lg:col-span-4 space-y-4">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <Skeleton key={i} className="h-[100px] w-full" />
+            ))}
+          </div>
+          <div className="lg:col-span-8">
+            <Skeleton className="h-[600px]" />
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (error || !team) {
+    return (
+      <div className="container mx-auto max-w-6xl py-8 px-4">
+        <div className="text-center py-12">
+          <h2 className="text-xl font-semibold font-display">Team not found</h2>
+          <p className="text-muted-foreground mt-2">
+            This team has vanished. It may have been deleted.
+          </p>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="min-h-screen bg-background/50">
+      <div className="container mx-auto max-w-[1600px] py-6 px-4 space-y-6">
+        {/* Header Section */}
+        <div className="flex flex-col gap-4 border-b border-border/40 pb-6">
+          <div className="flex items-center gap-3">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 shrink-0 text-muted-foreground hover:text-foreground"
+              onClick={() => router.push("/teams")}
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+            <div className="flex-1 min-w-0">
+              <TeamHeader
+                team={team}
+                onUpdateName={handleUpdateName}
+                onDelete={handleDelete}
+                onImport={handleImport}
+                onFork={handleFork}
+                onArchive={handleArchive}
+                onShowVersions={() => setVersionsOpen(true)}
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          {/* LEFT COLUMN: ROSTER (Pinned) */}
+          <div className="lg:col-span-4 xl:col-span-3 space-y-4 sticky top-6">
+            <div className="flex items-center justify-between mb-2 px-1">
+              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+                Roster ({team.slots.length}/6)
+              </h3>
+              {team.slots.length < 6 && (
+                <Button size="sm" variant="ghost" className="h-6 text-xs" onClick={handleAddSlot}>
+                  <Plus className="w-3 h-3 mr-1" /> Add
+                </Button>
+              )}
+            </div>
+
+            <div className="space-y-3">
+              <TeamGrid
+                team={team}
+                selectedSlot={selectedSlot}
+                onSelectSlot={handleSelectSlot}
+                onAddSlot={handleAddSlot}
+                layout="vertical"
+              />
+            </div>
+
+            {/* Mini Analysis Summary Card */}
+            {analysis && (
+              <Card className="bg-card/30 border-border/40 mt-6">
+                <CardContent className="p-4 space-y-3">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Coverage Score</span>
+                    <span className="font-mono font-bold text-primary">{coverageScore}%</span>
+                  </div>
+                  <div className="h-1.5 w-full bg-secondary/20 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-primary transition-all"
+                      style={{ width: `${coverageScore}%` }}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+
+          {/* RIGHT COLUMN: DASHBOARD HUB */}
+          <div className="lg:col-span-8 xl:col-span-9 min-h-[500px]">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+              <div className="flex items-center justify-between mb-6">
+                <TabsList className="bg-card/50 border border-border/50 p-1 h-auto">
+                  <TabsTrigger
+                    value="overview"
+                    className="gap-2 px-4 py-2 data-[state=active]:bg-primary/10 data-[state=active]:text-primary"
+                  >
+                    <BarChart3 className="w-4 h-4" /> Overview
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="battle"
+                    className="gap-2 px-4 py-2 data-[state=active]:bg-accent/10 data-[state=active]:text-accent"
+                  >
+                    <Swords className="w-4 h-4" /> Battle & Test
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="analysis"
+                    className="gap-2 px-4 py-2 data-[state=active]:bg-secondary/20 data-[state=active]:text-secondary-foreground"
+                  >
+                    <FlaskConical className="w-4 h-4" /> Deep Analysis
+                  </TabsTrigger>
+                  <TabsTrigger value="matchups" className="gap-2 px-4 py-2">
+                    <History className="w-4 h-4" /> Matchups
+                  </TabsTrigger>
+                </TabsList>
+              </div>
+
+              <TabsContent
+                value="overview"
+                className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500"
+              >
+                {/* Recommendations */}
+                {team.slots.length < 6 && (
+                  <RecommendationPanel
+                    teamId={teamId}
+                    formatId={team.formatId}
+                    currentSlotCount={team.slots.length}
+                  />
+                )}
+
+                {/* Main Stats Grid */}
+                {team.slots.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <Card>
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-base">Type Coverage</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <CoverageChart coverage={analysis?.coverage} compact />
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-base">Top Threats</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <ThreatList
+                          threats={analysis?.threats}
+                          isLoading={analysisQuery.isLoading}
+                          slots={team.slots}
+                          compact
+                        />
+                      </CardContent>
+                    </Card>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-20 border-2 border-dashed border-border/50 rounded-xl bg-card/20">
+                    <p className="text-lg text-muted-foreground font-medium">Your team is empty</p>
+                    <p className="text-sm text-muted-foreground/60">
+                      Add Pokemon from the left to see stats
+                    </p>
+                  </div>
+                )}
+              </TabsContent>
+
+              <TabsContent
+                value="battle"
+                className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500"
+              >
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <QuickBattleCard teamId={teamId} formatId={team.formatId} />
+
+                  <Card className="bg-card/50">
+                    <CardHeader>
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <History className="w-4 h-4" /> Battle History
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-sm text-muted-foreground text-center py-8">
+                        No battles recorded yet for this team version.
+                      </div>
+                      <Button
+                        variant="outline"
+                        className="w-full"
+                        onClick={() => router.push(`/teams/${teamId}/battles`)}
+                      >
+                        View Full History
+                      </Button>
+                    </CardContent>
+                  </Card>
+                </div>
+              </TabsContent>
+
+              <TabsContent
+                value="analysis"
+                className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500"
+              >
+                <div className="space-y-8">
+                  <WeaknessHeatmap slots={team.slots} />
+                  <SpeedTiers tiers={analysis?.speedTiers} />
+                  <CoverageChart coverage={analysis?.coverage} />
+                </div>
+              </TabsContent>
+
+              <TabsContent
+                value="matchups"
+                className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500"
+              >
+                <OpponentSelector
+                  selectedIds={customThreatIds}
+                  onSelectionChange={setCustomThreatIds}
+                  formatId={team.formatId}
+                />
+                <MatchupMatrix
+                  matrix={matchupQuery.data?.data}
+                  isLoading={matchupQuery.isLoading}
+                />
+              </TabsContent>
+            </Tabs>
+          </div>
+        </div>
+
+        {/* Dialogs & Panels */}
+        <VersionPanel
+          open={versionsOpen}
+          onOpenChange={setVersionsOpen}
+          teamId={teamId}
+          lineageData={lineageQuery.data}
+          lineageLoading={lineageQuery.isLoading}
+          compareTargetId={compareTargetId}
+          onCompareTargetChange={setCompareTargetId}
+          compareData={compareQuery.data}
+          compareLoading={compareQuery.isLoading}
+          onMerge={() => setMergeOpen(true)}
+          mergeDisabled={!compareTargetId || !compareQuery.data}
+        />
+
+        <Dialog open={dialogOpen} onOpenChange={(open) => !open && closeDialog()}>
+          <DialogContent className="sm:max-w-[90vw] sm:h-[90vh] flex flex-col overflow-y-auto bg-card border-primary/20">
+            <DialogHeader>
+              <DialogTitle className="text-2xl font-display text-primary">
+                {addingNew ? "Recruit Pokemon" : "Modify Specimen"}
+              </DialogTitle>
+              <DialogDescription>
+                {addingNew
+                  ? "Search the Pokedex for a new team member."
+                  : "Adjust stats, moves, and items."}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="flex-1 overflow-hidden">
+              <SlotEditor
+                slot={addingNew ? null : selectedSlotData}
+                teamId={teamId}
+                nextPosition={nextPosition}
+                onSave={handleSaveSlot}
+                onRemove={handleRemoveSlot}
+                isNew={addingNew}
+                formatId={team.formatId}
+              />
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {compareQuery.data && (
+          <MergeWizard
+            open={mergeOpen}
+            onOpenChange={setMergeOpen}
+            diff={compareQuery.data}
+            onMerge={handleMerge}
+            isLoading={mergeLoading}
+          />
+        )}
+      </div>
+    </div>
+  )
+}

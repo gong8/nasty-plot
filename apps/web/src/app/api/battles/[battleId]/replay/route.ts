@@ -1,17 +1,21 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getBattleReplay } from "@nasty-plot/battle-engine/db"
-import { notFoundResponse } from "../../../../../lib/api-error"
+import { apiErrorResponse, notFoundResponse } from "../../../../../lib/api-error"
 
 export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ battleId: string }> },
 ) {
-  const { battleId } = await params
-  const battle = await getBattleReplay(battleId)
+  try {
+    const { battleId } = await params
+    const battle = await getBattleReplay(battleId)
 
-  if (!battle) {
-    return notFoundResponse("Battle")
+    if (!battle) {
+      return notFoundResponse("Battle")
+    }
+
+    return NextResponse.json(battle)
+  } catch (error) {
+    return apiErrorResponse(error)
   }
-
-  return NextResponse.json(battle)
 }

@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react"
 import { PokemonSprite } from "@nasty-plot/ui"
 
-vi.mock("@nasty-plot/pokemon-data", () => ({
+vi.mock("@nasty-plot/pokemon-data/browser", () => ({
   getSpriteUrl: vi.fn(
     (pokemonId: string) => `https://play.pokemonshowdown.com/sprites/gen5/${pokemonId}.png`,
   ),

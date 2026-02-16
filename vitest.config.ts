@@ -21,6 +21,10 @@ export default defineConfig({
         replacement: path.resolve(__dirname, "packages/llm/src/browser.ts"),
       },
       {
+        find: "@nasty-plot/pokemon-data/browser",
+        replacement: path.resolve(__dirname, "packages/pokemon-data/src/browser.ts"),
+      },
+      {
         find: /^@nasty-plot\/(.+)$/,
         replacement: path.resolve(__dirname, "packages/$1/src/index.ts"),
       },
